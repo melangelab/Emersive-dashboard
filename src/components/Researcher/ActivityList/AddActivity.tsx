@@ -188,6 +188,7 @@ export default function AddActivity({
           if (index === otherSpecs.length - 1) {
             setActivitySpecs(availableSpecs)
             setLoading(false)
+            console.log(availableSpecs)
           }
         })
       } else {

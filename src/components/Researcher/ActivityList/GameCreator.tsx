@@ -24,6 +24,7 @@ import ScratchCard from "../../../icons/ScratchCard.svg"
 import JournalIcon from "../../../icons/Journal.svg"
 import BreatheIcon from "../../../icons/Breathe.svg"
 import { duplicate } from "vega-lite"
+import cbtThoughtRecordInstance from "./CBTSettings"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -99,7 +100,12 @@ export default function GameCreator({
     streak: details?.streak ?? null,
     visualSettings: details?.visualSettings ?? null,
     showFeed: details?.showFeed ?? null,
-    settings: !!value ? value.settings : {},
+    settings: value?.settings
+      ? value.settings
+      : activitySpecId === "lamp.cbt_thought_record"
+      ? cbtThoughtRecordInstance.settings
+      : // ? []
+        [], // Or whatever default you want when it's not "lamp.cbt_thought_record"
     studyID: !!value ? value.study_id : study,
     category: value?.category ?? null,
   })

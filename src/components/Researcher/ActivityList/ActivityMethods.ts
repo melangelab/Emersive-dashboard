@@ -970,38 +970,149 @@ export const SchemaList = () => {
         },
       },
     },
-    "lamp.emotion_recognition": {
+    "lamp.cbt_thought_record": {
       type: "object",
       properties: {
         settings: {
-          title: i18n.t("Activity settings"),
+          title: "CBT",
+          description: "Configure questions, descriptions, and types.",
           type: "array",
-          description: i18n.t("A maximum of 50 images can only be uploaded."),
+          "ui:schema": {
+            copyable: true,
+          },
+          "ui:options": {
+            addable: true,
+            removable: true,
+            orderable: true,
+            copyable: true,
+          },
           items: {
-            required: ["image", "emotion", "emotionText"],
             type: "object",
-            properties: {
-              image: {
-                type: "string",
-                title: i18n.t("Image"),
-                description: i18n.t(
-                  "Images should be in the format .jpeg/.png/.gif/.svg and the size should not exceed 4 MB."
-                ),
-                format: "data-url",
-                "ui:widget": "file",
-                "ui:options": {
-                  accept: ".gif,.jpg,.png,.svg",
-                },
+            required: ["text", "type1", "type2"],
+            dependencies: {
+              type1: {
+                oneOf: [
+                  {
+                    properties: {
+                      type1: {
+                        enum: ["none"],
+                      },
+                    },
+                  },
+                  {
+                    properties: {
+                      type1: {
+                        enum: ["text"],
+                      },
+                    },
+                  },
+                  {
+                    properties: {
+                      type1: {
+                        enum: ["slider"],
+                      },
+                      options1: {
+                        type: "array",
+                        title: "Response Options for Type1",
+                        minItems: 1,
+                        items: {
+                          type: "object",
+                          properties: {
+                            value: {
+                              title: "Option Text (Numerical)",
+                              type: "number",
+                              default: 0,
+                            },
+                            description: {
+                              title: "Option Description",
+                              type: "string",
+                              default: "",
+                            },
+                          },
+                        },
+                      },
+                    },
+                    required: ["options1"],
+                  },
+                ],
               },
-              emotionText: {
-                title: i18n.t("Text"),
+              type2: {
+                oneOf: [
+                  {
+                    properties: {
+                      type2: {
+                        enum: ["none"],
+                      },
+                    },
+                  },
+                  {
+                    properties: {
+                      type2: {
+                        enum: ["text"],
+                      },
+                    },
+                  },
+                  {
+                    properties: {
+                      type2: {
+                        enum: ["slider"],
+                      },
+                      options2: {
+                        type: "array",
+                        title: "Response Options for Type2",
+                        minItems: 1,
+                        items: {
+                          type: "object",
+                          properties: {
+                            value: {
+                              title: "Option Text (Numerical)",
+                              type: "number",
+                              default: 0,
+                            },
+                            description: {
+                              title: "Option Description",
+                              type: "string",
+                              default: "",
+                            },
+                          },
+                        },
+                      },
+                    },
+                    required: ["options2"],
+                  },
+                ],
+              },
+            },
+            properties: {
+              text: {
                 type: "string",
+                title: "Question Text",
+                minLength: 1,
                 default: "",
               },
-              emotion: {
+              required: {
+                title: "Required",
+                type: "boolean",
+                default: true,
+              },
+              description: {
                 type: "string",
-                "ui:widget": AutoSuggest,
-                title: i18n.t("Emotion"),
+                title: "Question Description",
+                default: "",
+              },
+              type1: {
+                type: "string",
+                title: "Question Type",
+                enum: ["none", "text", "slider"],
+                enumNames: ["None", "Text", "Slider"],
+                default: "none",
+              },
+              type2: {
+                type: "string",
+                title: "Question Type",
+                enum: ["none", "text", "slider"],
+                enumNames: ["None", "Text", "Slider"],
+                default: "none",
               },
             },
           },
@@ -1496,6 +1607,7 @@ export async function saveTipActivity(x) {
 
 export async function saveCTestActivity(x) {
   let newItem = (await LAMP.Activity.create(x.studyID, x)) as any
+  console.log("inside save CTest activity", newItem)
   await LAMP.Type.setAttachment(newItem.data, "me", "lamp.dashboard.activity_details", {
     description: x.description,
     photo: x.photo,
@@ -1509,6 +1621,7 @@ export async function saveCTestActivity(x) {
 export async function saveSurveyActivity(x) {
   const { raw, tag } = unspliceActivity(x)
   let newItem = (await LAMP.Activity.create(x.studyID, raw)) as any
+  console.log("inside save survey activity", newItem)
   await LAMP.Type.setAttachment(newItem.data, "me", "lamp.dashboard.survey_description", tag)
   return newItem
 }
@@ -1542,6 +1655,7 @@ export async function getDefaultTab(spec) {
       return "manage"
     }
     if (spec === "lamp.tips") return "learn"
+    if (spec === "lamp.cbt_thought_record") return "manage"
   }
 }
 

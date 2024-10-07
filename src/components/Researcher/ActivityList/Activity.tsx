@@ -3,6 +3,7 @@ import { Backdrop, CircularProgress, AppBar, Toolbar, Icon, Box, Divider, Typogr
 import { makeStyles, Theme, createStyles } from "@material-ui/core/styles"
 import GroupCreator from "./GroupCreator"
 import Tips from "./Tips"
+// import CBTThoughtRecord from "./CBTThoughtRecord"
 import GameCreator from "./GameCreator"
 import {
   saveTipActivity,
@@ -93,6 +94,7 @@ export default function Activity({
 
   useEffect(() => {
     setLoading(true)
+    console.log("in activity.tsx use effect")
     Service.getAll("studies").then((studies) => {
       setStudies(studies)
       Service.getAll("activities").then((activities) => {
@@ -100,6 +102,7 @@ export default function Activity({
         if (!!id) {
           Service.getDataByKey("activities", [id], "id").then((data) => {
             setActivity(data[0])
+            console.log("inside Activity.tsx and data is:", data[0])
           })
         } else setLoading(false)
       })
@@ -250,7 +253,17 @@ export default function Activity({
               allActivities={allActivities}
               study={activity?.study_id ?? null}
             />
+          ) : type === "<>" ? (
+            <></>
           ) : (
+            // (<CBTThoughtRecord
+            //   value={activity}
+            //   details={details ?? null}
+            //   onSave={activity && activity?.id ? updateActivity : saveActivity}
+            //   studies={studies}
+            //   allActivities={allActivities}
+            //   study={activity?.study_id ?? null}
+            // />)
             <GameCreator
               activities={allActivities}
               value={activity ?? null}

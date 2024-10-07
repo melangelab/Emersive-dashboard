@@ -37,8 +37,10 @@ export default function Manage({ participant, activities, showStreak, ...props }
         (!!x?.category && x?.category.includes("manage"))
     )
     setSavedActivities(gActivities)
+    console.log("gActivities", gActivities)
     if (gActivities.length > 0) {
       Service.getAllTags("activitytags").then((data) => {
+        console.log("data", data)
         setTag(
           (data || []).filter(
             (x: any) =>
@@ -53,6 +55,10 @@ export default function Manage({ participant, activities, showStreak, ...props }
       setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    console.log("inside the manage file of the participant and its tag", tag)
+  }, [tag])
 
   return (
     <Container className={classes.thumbContainer}>

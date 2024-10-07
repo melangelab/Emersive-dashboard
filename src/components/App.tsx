@@ -296,6 +296,7 @@ function AppRouter({ ...props }) {
       })
       return
     })
+    console.log(identity)
     if (!!identity) {
       getAdminType()
       let type = {

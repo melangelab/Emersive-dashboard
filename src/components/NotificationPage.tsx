@@ -119,6 +119,8 @@ export default function NotificationPage({ participant, activityId, mode, tab, .
   const [visualPopup, setVisualPopup] = useState(null)
   const [staticData, setStaticData] = useState(0)
 
+  console.log("In the notification page and the value of the tab", tab)
+
   useEffect(() => {
     setLoading(true)
     setResponse(false)
@@ -182,6 +184,10 @@ export default function NotificationPage({ participant, activityId, mode, tab, .
       }
     })
   }
+
+  useEffect(() => {
+    console.log("Static Data print through Notification Page:", staticData)
+  }, [staticData])
 
   return (
     <div style={{ height: "100%" }}>

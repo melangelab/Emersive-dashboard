@@ -167,18 +167,22 @@ export default function ActivityHeader({
           </Grid>
           <ActivityTab onChange={onTabChange} activitySpecId={activitySpecId} value={value} />
         </Grid>
-        <Box style={{ marginTop: "15px" }}>
-          <TextField
-            fullWidth
-            multiline
-            label={`${t("Activity Description")}`}
-            variant="filled"
-            rows={2}
-            defaultValue={description}
-            onChange={(event) => setDescription(removeExtraSpace(event.target.value))}
-            inputProps={{ maxLength: 2500 }}
-          />
-        </Box>
+        {activitySpecId == "lamp.cbt_thought_record" ? (
+          <></>
+        ) : (
+          <Box style={{ marginTop: "15px" }}>
+            <TextField
+              fullWidth
+              multiline
+              label={`${t("Activity Description")}`}
+              variant="filled"
+              rows={2}
+              defaultValue={description}
+              onChange={(event) => setDescription(removeExtraSpace(event.target.value))}
+              inputProps={{ maxLength: 2500 }}
+            />
+          </Box>
+        )}
 
         <FormControlLabel
           control={

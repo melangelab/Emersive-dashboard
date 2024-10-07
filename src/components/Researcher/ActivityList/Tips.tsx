@@ -454,6 +454,7 @@ export default function Tips({
 
   useEffect(() => {
     validate()
+    console.log(data)
   }, [data])
 
   const validate = () => {
@@ -476,6 +477,8 @@ export default function Tips({
             setIsImagError(false)
           }
         }
+
+        console.log("inside validate of the tips", item)
         return (
           item.title === "" ||
           typeof item.title === "undefined" ||
@@ -526,6 +529,10 @@ export default function Tips({
       duplicates.length > 0
     )
   }
+
+  useEffect(() => {
+    console.log("hey study id changed, ", studyId)
+  }, [studyId])
 
   const handleType = (val) => {
     val === 1 ? handleSaveTips(isDuplicate) : handleSaveTipsData()
@@ -590,6 +597,7 @@ export default function Tips({
                     value={studyId || ""}
                     onChange={(e) => {
                       setStudyId(e.target.value)
+                      console.log(studyId)
                       setCategory("")
                       validate()
                     }}

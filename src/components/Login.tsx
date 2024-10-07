@@ -128,6 +128,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
       options.push({ label: state.serverAddress })
       localStorage.setItem("cachedOptions", JSON.stringify(options))
     }
+    console.log(state)
     setOptions(options)
     setLoginClick(true)
     if (mode === undefined && (!state.id || !state.password)) {
