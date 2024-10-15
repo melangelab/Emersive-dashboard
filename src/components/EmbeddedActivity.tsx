@@ -47,6 +47,7 @@ const demoActivities = {
   "lamp.symbol_digit_substitution": "symbol_digit_substitution",
   "lamp.gyroscope": "gyroscope",
   "lamp.dcog": "d-cog",
+  "lamp.cbt_thought_record": "cbt_thought_record",
 }
 
 export default function EmbeddedActivity({ participant, activity, name, onComplete, noBack, tab, ...props }) {
@@ -115,7 +116,27 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
         onComplete(null)
         setLoading(false)
       } else if (!saved && currentActivity?.id !== null && currentActivity?.id !== "") {
-        let data = JSON.parse(e.data)
+        console.log("event, inside the handleSaveData", currentActivity?.id, e, e.data)
+        let data
+
+        data = JSON.parse(e.data)
+
+        // try {
+        //   data = JSON.parse(e.data);
+        // } catch (error) {
+        //   console.error("Error parsing JSON data:", error);
+        // }
+
+        // try {
+        //   if (typeof e.data === "string") {
+        //     data = JSON.parse(e.data); // Parse it if it's a string
+        //   } else {
+        //     data = e.data; // Use it directly if it's already an object
+        //   }
+        //   console.log("Parsed data:", data);
+        // } catch (error) {
+        //   console.error("Error parsing JSON data:", error);
+        // }
         if (!!data["timestamp"]) {
           setLoading(true)
           delete data["activity"]
@@ -145,6 +166,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
       var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message"
       // Listen to message from child window
       eventer(messageEvent, handleSubmit, false)
+      console.log("iframe here")
       return () => window.removeEventListener(messageEvent, handleSubmit)
     }
   }, [iFrame])
@@ -200,13 +222,23 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
         autoCorrect: !(exist === "true"),
         noBack: noBack,
       })
-      let activitySpec = await LAMP.ActivitySpec.view(currentActivity.spec)
-      if (activitySpec?.executable?.startsWith("data:")) {
-        response = atob(activitySpec.executable.split(",")[1])
-      } else if (activitySpec?.executable?.startsWith("https:")) {
-        response = atob(await (await fetch(activitySpec.executable)).text())
+
+      if (currentActivity.spec === "lamp.cbt_thought_record") {
+        console.log("Inside the cbt activity fetch")
+        // const filePath = "/home/temp1/LampCode/test-build/dist/out/cbt_thought_record_3.html.b64"
+        const filePath = "http://192.168.21.214:3009/CBT_Thought_Record_3/dist.html.b64"
+        // const filePath = "http://192.168.21.214:3009/out/cbt_thought_record_3.html.b64"
+        response = atob(await (await fetch(filePath)).text())
+        console.log("response here", response, "ends")
       } else {
-        response = await loadFallBack()
+        let activitySpec = await LAMP.ActivitySpec.view(currentActivity.spec)
+        if (activitySpec?.executable?.startsWith("data:")) {
+          response = atob(activitySpec.executable.split(",")[1])
+        } else if (activitySpec?.executable?.startsWith("https:")) {
+          response = atob(await (await fetch(activitySpec.executable)).text())
+        } else {
+          response = await loadFallBack()
+        }
       }
       setEmbeddedActivity(response)
       setLoading(false)
@@ -235,6 +267,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
 
   return (
     <div style={{ display: "flex", width: "100%", height: "100vh", flexDirection: "column", overflow: "hidden" }}>
+      {console.log("print embed act", embeddedActivity)}
       {embeddedActivity !== "" && (
         <iframe
           ref={(e) => {

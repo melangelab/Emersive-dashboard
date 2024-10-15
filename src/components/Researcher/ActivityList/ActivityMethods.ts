@@ -988,97 +988,38 @@ export const SchemaList = () => {
           },
           items: {
             type: "object",
-            required: ["text", "type1", "type2"],
+            required: ["text", "type1", "type"],
             dependencies: {
-              type1: {
+              type: {
                 oneOf: [
                   {
                     properties: {
-                      type1: {
+                      type: {
                         enum: ["none"],
                       },
                     },
                   },
                   {
                     properties: {
-                      type1: {
-                        enum: ["text"],
-                      },
-                    },
-                  },
-                  {
-                    properties: {
-                      type1: {
+                      type: {
                         enum: ["slider"],
                       },
-                      options1: {
+                      options: {
                         type: "array",
-                        title: "Response Options for Type1",
+                        title: "Emotions",
                         minItems: 1,
                         items: {
                           type: "object",
                           properties: {
                             value: {
-                              title: "Option Text (Numerical)",
-                              type: "number",
-                              default: 0,
-                            },
-                            description: {
-                              title: "Option Description",
+                              title: "Emotion",
                               type: "string",
-                              default: "",
+                              mindLength: 1,
                             },
                           },
                         },
                       },
                     },
-                    required: ["options1"],
-                  },
-                ],
-              },
-              type2: {
-                oneOf: [
-                  {
-                    properties: {
-                      type2: {
-                        enum: ["none"],
-                      },
-                    },
-                  },
-                  {
-                    properties: {
-                      type2: {
-                        enum: ["text"],
-                      },
-                    },
-                  },
-                  {
-                    properties: {
-                      type2: {
-                        enum: ["slider"],
-                      },
-                      options2: {
-                        type: "array",
-                        title: "Response Options for Type2",
-                        minItems: 1,
-                        items: {
-                          type: "object",
-                          properties: {
-                            value: {
-                              title: "Option Text (Numerical)",
-                              type: "number",
-                              default: 0,
-                            },
-                            description: {
-                              title: "Option Description",
-                              type: "string",
-                              default: "",
-                            },
-                          },
-                        },
-                      },
-                    },
-                    required: ["options2"],
                   },
                 ],
               },
@@ -1102,16 +1043,15 @@ export const SchemaList = () => {
               },
               type1: {
                 type: "string",
-                title: "Question Type",
-                enum: ["none", "text", "slider"],
-                enumNames: ["None", "Text", "Slider"],
-                default: "none",
+                title: "Response 1 type",
+                default: "Text",
+                readOnly: true,
               },
-              type2: {
+              type: {
                 type: "string",
-                title: "Question Type",
-                enum: ["none", "text", "slider"],
-                enumNames: ["None", "Text", "Slider"],
+                title: "Response 2 type",
+                enum: ["none", "slider"],
+                enumNames: ["None", "Slider"],
                 default: "none",
               },
             },

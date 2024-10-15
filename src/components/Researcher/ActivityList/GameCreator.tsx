@@ -110,6 +110,8 @@ export default function GameCreator({
     category: value?.category ?? null,
   })
 
+  // useEffect()
+
   useEffect(() => {
     validate()
   }, [data])
