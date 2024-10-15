@@ -13,7 +13,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
-          repository: 'bidmcdigitalpsychiatry/lamp-dashboard'
+          repository: 'lamp-aiims-ihub/lamp-dashboard'
           auto_tag: true
   build_pages:
     if: github.event_name == 'tags'
