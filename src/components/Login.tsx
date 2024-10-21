@@ -15,6 +15,8 @@ import {
   createStyles,
   Link,
   Theme,
+  Divider,
+  Typography,
 } from "@material-ui/core"
 import { useSnackbar } from "notistack"
 import LAMP from "lamp-core"
@@ -27,6 +29,25 @@ import { ReactComponent as Logo } from "../icons/Logo.svg"
 import { ReactComponent as Logotext } from "../icons/mindLAMP.svg"
 import { useTranslation } from "react-i18next"
 import { Autocomplete } from "@mui/material"
+
+// google login
+import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google"
+import { jwtDecode } from "jwt-decode"
+// import jwtDecode from 'jwt-decode';
+
+const GOOGLE_CLIENT_ID = "777556044651-vbh5cmbk8rbll6qlg7nftvp3je52imff.apps.googleusercontent.com"
+interface GoogleJwtPayload {
+  email: string
+  email_verified: boolean
+  name: string
+  picture: string
+  given_name: string
+  family_name: string
+  locale: string
+  iat: number
+  exp: number
+  sub: string
+}
 
 type SuggestedUrlOption = {
   label: string
@@ -63,6 +84,25 @@ const useStyles = makeStyles((theme: Theme) =>
     loginInner: { maxWidth: 320 },
     loginDisabled: {
       opacity: 0.5,
+    },
+    dividerContainer: {
+      display: "flex",
+      alignItems: "center",
+      margin: "20px 0",
+    },
+    divider: {
+      flex: 1,
+    },
+    dividerText: {
+      margin: "0 10px",
+      color: theme.palette.text.secondary,
+    },
+    googleButton: {
+      width: "100%",
+      marginBottom: "20px",
+      "& > div": {
+        width: "100% !important",
+      },
     },
   })
 )
@@ -111,6 +151,73 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
   useEffect(() => {
     i18n.changeLanguage(selectedLanguage)
   }, [selectedLanguage])
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      const decoded = jwtDecode<GoogleJwtPayload>(credentialResponse.credential)
+
+      // const googleUser = {
+      //   id: decoded.email.split("@")[0],
+      //   password: credentialResponse.credential,
+      //   serverAddress: state.serverAddress || lastDomain,
+      // }
+      const googleUser = {
+        id: decoded.email.split(".org")[0],
+        password: decoded.email.split("@")[0],
+        serverAddress: state.serverAddress || lastDomain,
+      }
+      setLoginClick(true)
+
+      try {
+        const res = await setIdentity(googleUser)
+
+        console.log("returned", res)
+
+        if (res.authType === "participant") {
+          localStorage.setItem("lastTab" + res.identity.id, JSON.stringify(new Date().getTime()))
+          await LAMP.SensorEvent.create(res.identity.id, {
+            timestamp: Date.now(),
+            sensor: "lamp.analytics",
+            data: {
+              type: "login",
+              device_type: "Dashboard",
+              user_agent: `LAMP-dashboard/${process.env.REACT_APP_GIT_SHA} ${window.navigator.userAgent}`,
+              login_method: "google",
+            },
+          } as any)
+          await LAMP.Type.setAttachment(res.identity.id, "me", "lamp.participant.timezone", timezoneVal())
+        }
+
+        localStorage.setItem(
+          "LAMP_user_" + res.identity.id,
+          JSON.stringify({
+            language: selectedLanguage,
+          })
+        )
+
+        await Service.deleteDB()
+        await Service.deleteUserDB()
+
+        setLoginClick(false)
+        onComplete()
+      } catch (err) {
+        enqueueSnackbar(`${t("Failed to authenticate with Google credentials.")}`, {
+          variant: "error",
+        })
+        setLoginClick(false)
+      }
+    } catch (error) {
+      enqueueSnackbar(`${t("Error processing Google sign-in.")}`, {
+        variant: "error",
+      })
+      setLoginClick(false)
+    }
+  }
+  const handleGoogleError = () => {
+    enqueueSnackbar(`${t("Google sign-in was unsuccessful.")}`, {
+      variant: "error",
+    })
+  }
 
   let handleServerInput = (value) => {
     setState({ ...state, serverAddress: value?.label ?? value })
@@ -371,6 +478,28 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                     />
                   </Fab>
                 </Box>
+
+                {/* google login here */}
+                <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                  <div className={classes.dividerContainer}>
+                    <Divider className={classes.divider} />
+                    <Typography variant="body2" className={classes.dividerText}>
+                      {t("or")}
+                    </Typography>
+                    <Divider className={classes.divider} />
+                  </div>
+
+                  <div className={classes.googleButton}>
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      shape="rectangular"
+                      theme="filled_blue"
+                      text="continue_with"
+                      locale={selectedLanguage}
+                    />
+                  </div>
+                </GoogleOAuthProvider>
 
                 <Box textAlign="center" width={1} mt={4} mb={4}>
                   <Link
