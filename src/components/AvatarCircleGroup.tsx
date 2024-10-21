@@ -326,7 +326,7 @@ export default function AvatarCircleGroup({
     [handleOpen, addAccount, deleteAccount, handleAdd, accounts]
   );*/
   let accounts = Accounts
-
+  // TODO handle image here also
   return (
     <>
       <AvatarMesh diameter={diameter} avatarWidth={avatarWidth} lines={lines} classes={classes}>

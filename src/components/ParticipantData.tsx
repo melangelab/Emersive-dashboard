@@ -28,6 +28,7 @@ async function getVisualizations(participant: ParticipantObj) {
   for (let attachmentID of ((await LAMP.Type.listAttachments(participant.id)) as any).data) {
     if (!attachmentID.startsWith("lamp.dashboard.experimental")) continue
     let bstr = ((await LAMP.Type.getAttachment(participant.id, attachmentID)) as any).data
+    // change path here TODO
     visualizations[attachmentID] = bstr.startsWith("data:") ? bstr : `data:image/svg+xml;base64,${bstr}` // defaults
   }
   return visualizations
@@ -424,6 +425,7 @@ export default function ParticipantData({
             </Typography>
             <Divider style={{ marginBottom: 16 }} />
             <Grid container justifyContent="center">
+              {/* change src here from data to path TODO */}
               <img
                 alt={`${t("visualization")}`}
                 src={visualizations["lamp.dashboard.experimental." + x]}

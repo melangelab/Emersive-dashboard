@@ -27,7 +27,7 @@ import { useTranslation } from "react-i18next"
 import Streak from "./Streak"
 import locale_lang from "../locale_map.json"
 import VisualPopup from "./VisualPopup"
-
+// TODO changes here
 export async function getImage(activityId: string, spec: string) {
   return [
     await LAMP.Type.getAttachment(

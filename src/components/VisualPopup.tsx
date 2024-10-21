@@ -88,6 +88,7 @@ export default function VisualPopup({
     >
       <DialogContent>
         <Box textAlign="center">
+          {/* TODO check image for fts  */}
           <Box
             style={{
               margin: "auto",

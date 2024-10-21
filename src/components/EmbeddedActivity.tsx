@@ -119,13 +119,28 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
         console.log("event, inside the handleSaveData", currentActivity?.id, e, e.data)
         let data
 
-        data = JSON.parse(e.data)
+        // data = JSON.parse(e.data)
 
-        // try {
-        //   data = JSON.parse(e.data);
-        // } catch (error) {
-        //   console.error("Error parsing JSON data:", error);
-        // }
+        try {
+          data = JSON.parse(e.data)
+          if (!!data["timestamp"]) {
+            setLoading(true)
+            delete data["activity"]
+            delete data["timestamp"]
+            data["activity"] = currentActivity.id
+            data["timestamp"] = activityTimestamp
+            data["duration"] = new Date().getTime() - activityTimestamp
+            setData(data)
+            setEmbeddedActivity(undefined)
+            setSettings(null)
+          } else {
+            setSaved(true)
+            onComplete(null)
+            setLoading(false)
+          }
+        } catch (error) {
+          console.error("Error parsing JSON data:", error)
+        }
 
         // try {
         //   if (typeof e.data === "string") {
@@ -137,21 +152,21 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
         // } catch (error) {
         //   console.error("Error parsing JSON data:", error);
         // }
-        if (!!data["timestamp"]) {
-          setLoading(true)
-          delete data["activity"]
-          delete data["timestamp"]
-          data["activity"] = currentActivity.id
-          data["timestamp"] = activityTimestamp
-          data["duration"] = new Date().getTime() - activityTimestamp
-          setData(data)
-          setEmbeddedActivity(undefined)
-          setSettings(null)
-        } else {
-          setSaved(true)
-          onComplete(null)
-          setLoading(false)
-        }
+        // if (!!data["timestamp"]) {
+        //   setLoading(true)
+        //   delete data["activity"]
+        //   delete data["timestamp"]
+        //   data["activity"] = currentActivity.id
+        //   data["timestamp"] = activityTimestamp
+        //   data["duration"] = new Date().getTime() - activityTimestamp
+        //   setData(data)
+        //   setEmbeddedActivity(undefined)
+        //   setSettings(null)
+        // } else {
+        //   setSaved(true)
+        //   onComplete(null)
+        //   setLoading(false)
+        // }
       }
     }
   }
@@ -226,8 +241,9 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
       if (currentActivity.spec === "lamp.cbt_thought_record") {
         console.log("Inside the cbt activity fetch")
         // const filePath = "/home/temp1/LampCode/test-build/dist/out/cbt_thought_record_3.html.b64"
-        const filePath = "http://192.168.21.214:3009/CBT_Thought_Record_3/dist.html.b64"
+        // const filePath = "http://192.168.21.214:3009/CBT_Thought_Record_3/dist.html.b64"
         // const filePath = "http://192.168.21.214:3009/out/cbt_thought_record_3.html.b64"
+        const filePath = "https://raw.githubusercontent.com/iHubAnubhuti/LAMP-activities-bcode/main/dist.html.b64"
         response = atob(await (await fetch(filePath)).text())
         console.log("response here", response, "ends")
       } else {

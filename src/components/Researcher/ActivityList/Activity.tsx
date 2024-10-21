@@ -71,6 +71,7 @@ const toBinary = (string) => {
     codeUnits[i] = string.charCodeAt(i)
   }
 }
+//change defaults here to folder path TODO
 const defaultBase64 = toBinary("data:image/png;base64,")
 
 export default function Activity({
@@ -128,6 +129,7 @@ export default function Activity({
         } else if (activity.spec === "lamp.tips") {
           activity.settings = activity.settings.reduce((ds, d) => {
             let newD = d
+            // change object assign image to default path TODO
             if (d.image === "") {
               newD = Object.assign({}, d, { image: defaultBase64 })
             }
@@ -159,7 +161,7 @@ export default function Activity({
         ? await saveSurveyActivity(x)
         : x.spec === "lamp.tips"
         ? await saveTipActivity(x)
-        : await saveCTestActivity(x)
+        : await saveCTestActivity(x) // photo
     if (!!newItem.error) {
       setLoading(false)
       enqueueSnackbar(`${t("Failed to create a new Activity.")}`, {

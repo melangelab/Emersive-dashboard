@@ -283,6 +283,7 @@ export default function NotificationPage({ participant, activityId, mode, tab, .
           </Button>
         </DialogActions>
       </Dialog>
+      {/* TODO changes here for image */}
       <VisualPopup
         open={visualPopup?.checked ?? false}
         image={visualPopup?.image}
