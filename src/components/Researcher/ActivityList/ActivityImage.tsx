@@ -60,6 +60,7 @@ function compress(file, width, height) {
     }
   })
 }
+// TODO : change from data to fts
 export default function ActivityImage({ ...props }) {
   const classes = useStyles()
   const { t } = useTranslation()

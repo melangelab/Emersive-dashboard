@@ -72,7 +72,7 @@ export function CredentialEditor({ credential, auxData, mode, onChange, title, p
   const [accepted, setAccepted] = useState(true)
   const [showLink, setShowLink] = useState(false)
   const { t } = useTranslation()
-
+  // TODO change from data to file path
   useEffect(() => {
     setPhoto(auxData.photo)
     setRole(auxData.role)
@@ -339,11 +339,13 @@ export async function updateDetails(id, data, mode, allRoles, type, title) {
         return result.error
       }
       await LAMP.Type.setAttachment(id, "me", "lamp.dashboard.credential_roles", {
+        // Photo of user send
         ...allRoles,
         [data.emailAddress]:
           !data.role && !data.photo && !data.name ? undefined : { role: data.role, name: data.name, photo: data.photo },
       })
     } else if (mode === "update-profile" && !!data.name && !!data.emailAddress && !!data.password) {
+      // Photo of user send
       let result = (await LAMP.Credential.update(id, data.credential.access_key, {
         ...data.credential,
         secret_key: data.password,

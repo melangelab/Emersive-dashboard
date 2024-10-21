@@ -182,6 +182,7 @@ async function getVisualizations(participant: ParticipantObj) {
   for (let attachmentID of ((await LAMP.Type.listAttachments(participant.id)) as any).data || []) {
     if (!attachmentID.startsWith("lamp.dashboard.experimental")) continue
     let bstr = ((await LAMP.Type.getAttachment(participant.id, attachmentID)) as any).data
+    // change default from data to path here TODO
     visualizations[attachmentID] =
       typeof bstr === "object"
         ? bstr

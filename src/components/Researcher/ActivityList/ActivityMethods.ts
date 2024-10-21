@@ -1467,7 +1467,7 @@ export function unspliceActivity(x) {
     },
     tag: {
       description: x.description,
-      photo: x.photo,
+      photo: x.photo, // photo
       streak: x.streak,
       showFeed: x.showFeed,
       questions: (x.settings && Array.isArray(x.settings) ? x.settings : [])?.map((y) => ({
@@ -1528,6 +1528,7 @@ export async function saveTipActivity(x) {
   if (!x.id && x.name) {
     result = (await LAMP.Activity.create(x.studyID, raw)) as any
     await LAMP.Type.setAttachment(result.data, "me", "lamp.dashboard.activity_details", {
+      //photo
       photo: x.icon,
       streak: x.streak,
       showFeed: x.showFeed,
@@ -1549,6 +1550,7 @@ export async function saveCTestActivity(x) {
   let newItem = (await LAMP.Activity.create(x.studyID, x)) as any
   console.log("inside save CTest activity", newItem)
   await LAMP.Type.setAttachment(newItem.data, "me", "lamp.dashboard.activity_details", {
+    // photo
     description: x.description,
     photo: x.photo,
     streak: x.streak,
@@ -1559,7 +1561,7 @@ export async function saveCTestActivity(x) {
 }
 
 export async function saveSurveyActivity(x) {
-  const { raw, tag } = unspliceActivity(x)
+  const { raw, tag } = unspliceActivity(x) //photo
   let newItem = (await LAMP.Activity.create(x.studyID, raw)) as any
   console.log("inside save survey activity", newItem)
   await LAMP.Type.setAttachment(newItem.data, "me", "lamp.dashboard.survey_description", tag)

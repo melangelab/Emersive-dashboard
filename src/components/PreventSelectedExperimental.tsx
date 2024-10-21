@@ -72,6 +72,7 @@ export default function PreventSelectedExperimental({
                 </Typography>
                 <Grid container justifyContent="center">
                   <Box className={classes.vega}>
+                    {/* image rendering here TODO */}
                     <Vega spec={visualization} />
                   </Box>
                 </Grid>

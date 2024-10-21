@@ -81,7 +81,7 @@ export default function ActivityHeader({
       visualSettings,
     })
   }, [text, description, photo, studyId, streak, showFeed, visualSettings])
-
+  // TODO change data to fts logic
   const { acceptedFiles, getRootProps, getInputProps, isDragActive, isDragAccept } = useDropzone({
     onDropAccepted: useCallback((acceptedFiles) => {
       compress(acceptedFiles[0], 64, 64).then(setPhoto)

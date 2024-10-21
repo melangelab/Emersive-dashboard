@@ -167,6 +167,7 @@ export default function Tips({
       codeUnits[i] = string.charCodeAt(i)
     }
   }
+  // change default image data to folder path here TODO
   const defaultBase64 = toBinary("data:image/png;base64,")
   const defaultSettingsArray: any = [
     {
@@ -317,7 +318,7 @@ export default function Tips({
       })
     }
   }
-
+  // TODO : change storage from mongodb to fts
   const uploadImageFile = (event, type = "new", id = "") => {
     const file = event.target.files[0]
     const fileName = event.target.files[0].name
@@ -463,6 +464,7 @@ export default function Tips({
       validationData = data.settings.some((item) => {
         let sizeInBytes = 0
         let type = ""
+        // TODO change image validation logic for filepath existence
         let imageTypes = ["jpeg", "jpg", "png", "gif", "svg+xml"]
         let base64Img = item.image
         if (base64Img !== "" && base64Img !== undefined) {
