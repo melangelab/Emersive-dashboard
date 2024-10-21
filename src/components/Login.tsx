@@ -33,7 +33,7 @@ import { Autocomplete } from "@mui/material"
 // google login
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google"
 import { jwtDecode } from "jwt-decode"
-// import jwtDecode from 'jwt-decode';
+// import jwtDecode from "jwt-decode"
 
 const GOOGLE_CLIENT_ID = "777556044651-vbh5cmbk8rbll6qlg7nftvp3je52imff.apps.googleusercontent.com"
 interface GoogleJwtPayload {
@@ -155,7 +155,6 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
       const decoded = jwtDecode<GoogleJwtPayload>(credentialResponse.credential)
-
       // const googleUser = {
       //   id: decoded.email.split("@")[0],
       //   password: credentialResponse.credential,
