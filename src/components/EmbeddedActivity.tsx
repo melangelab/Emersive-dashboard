@@ -48,6 +48,7 @@ const demoActivities = {
   "lamp.gyroscope": "gyroscope",
   "lamp.dcog": "d-cog",
   "lamp.cbt_thought_record": "cbt_thought_record",
+  "lamp.form_builder": "form_builder",
 }
 
 export default function EmbeddedActivity({ participant, activity, name, onComplete, noBack, tab, ...props }) {

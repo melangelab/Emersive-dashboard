@@ -41,7 +41,7 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-export default function GameCreator({
+export default function FormBuilderCreator({
   activities,
   value,
   onSave,
@@ -73,7 +73,7 @@ export default function GameCreator({
   }, [])
 
   useEffect(() => {
-    console.log(" game creator activityspecId", activitySpecId)
+    console.log("%&activityspecId", activitySpecId)
   }, [])
 
   useEffect(() => {
@@ -107,8 +107,6 @@ export default function GameCreator({
     showFeed: details?.showFeed ?? null,
     settings: value?.settings
       ? value.settings
-      : activitySpecId === "lamp.cbt_thought_record"
-      ? cbtThoughtRecordInstance.settings
       : // ? []
         [], // Or whatever default you want when it's not "lamp.cbt_thought_record"
     studyID: !!value ? value.study_id : study,
@@ -527,7 +525,8 @@ export default function GameCreator({
         }
       })
     }
-    setData({ ...data, settings: settingsData?.settings })
+    console.log("settingsData", settingsData)
+    setData({ ...data, settings: settingsData?.fields })
   }
 
   return (
@@ -544,41 +543,15 @@ export default function GameCreator({
           study={data?.studyID ?? ""}
           onChange={handleChange}
           onTabChange={handleTabChange}
-          image={
-            (value?.spec && ["lamp.jewels_a", "lamp.jewels_b"].includes(value.spec)) ||
-            ["lamp.jewels_a", "lamp.jewels_b"].includes(activitySpecId)
-              ? Jewels
-              : (value?.spec && "lamp.scratch_image" === value.spec) || "lamp.scratch_image" === activitySpecId
-              ? ScratchCard
-              : (value?.spec && "lamp.journal" === value.spec) || "lamp.journal" === activitySpecId
-              ? JournalIcon
-              : (value?.spec && "lamp.breathe" === value.spec) || "lamp.breathe" === activitySpecId
-              ? BreatheIcon
-              : null
-          }
+          image={null}
         />
-        {validateAudioSize() > breatheFileLimit && (
-          <Box my={2} p={2} border={1} borderColor="#0000001f" className={classes.errorcustom}>
-            <Typography variant="h6">Errors</Typography>
-            <Box alignItems="center" display="flex" p={2}>
-              <Icon>error</Icon> {`${t("The audio size should not exceed 10 MB.")}`}
-            </Box>
-          </Box>
-        )}
-
-        {((value?.spec && Object.keys(schemaListObj).includes(value.spec)) ||
-          Object.keys(schemaListObj).includes(activitySpecId)) && (
-          <>
-            <DynamicForm
-              schema={schemaListObj[activitySpecId]}
-              initialData={data}
-              onChange={(x) => {
-                updateSettings(x)
-              }}
-            />
-            <ActivityFooter onSave={onSave} validate={validate} value={value} data={data ?? []} />
-          </>
-        )}
+        <FormBuilder
+          onChange={(formData) => {
+            updateSettings(formData)
+          }}
+          formFieldsProp={data.settings}
+        />
+        <ActivityFooter onSave={onSave} validate={validate} value={value} data={data ?? []} />
       </Container>
     </Grid>
   )

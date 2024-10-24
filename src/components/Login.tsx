@@ -17,8 +17,10 @@ import {
   Theme,
   Divider,
   Typography,
+  Select,
 } from "@material-ui/core"
 import { useSnackbar } from "notistack"
+import TranslateIcon from "@mui/icons-material/Translate"
 import LAMP from "lamp-core"
 import locale_lang from "../locale_map.json"
 import { Service } from "./DBService/DBService"
@@ -109,7 +111,12 @@ const useStyles = makeStyles((theme: Theme) =>
 
 export default function Login({ setIdentity, lastDomain, onComplete, ...props }) {
   const { t, i18n } = useTranslation()
-  const [state, setState] = useState({ serverAddress: lastDomain, id: undefined, password: undefined })
+  // defaultaddress = "lamp-aiims.ihub-anubhuti-iiitd.org:3000"
+  const [state, setState] = useState({
+    serverAddress: lastDomain ?? "192.168.21.214:8000",
+    id: undefined,
+    password: undefined,
+  })
   const [srcLocked, setSrcLocked] = useState(false)
   const [tryitMenu, setTryitMenu] = useState<Element>()
   const [helpMenu, setHelpMenu] = useState<Element>()
@@ -118,6 +125,12 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
   const { enqueueSnackbar } = useSnackbar()
   const classes = useStyles()
   const userLanguages = ["en-US", "es-ES", "hi-IN", "de-DE", "da-DK", "fr-FR", "ko-KR", "it-IT", "zh-CN", "zh-HK"]
+
+  // selecting language button
+  const [fabMenu, setFabMenu] = useState(null)
+  // const [open, setOpen] = useState(false)
+  // const handleOpen = () => setOpen(true)
+  // const handleClose = () => setOpen(false)
 
   const getSelectedLanguage = () => {
     const matched_codes = Object.keys(locale_lang).filter((code) => code.startsWith(navigator.language))
@@ -161,10 +174,13 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
       //   serverAddress: state.serverAddress || lastDomain,
       // }
       const googleUser = {
-        id: decoded.email.split(".org")[0],
-        password: decoded.email.split("@")[0],
+        id: " _google_ " + decoded.email.split(".org")[0],
+        password: credentialResponse.credential, //decoded.email.split("@")[0],
+        // loginType: '_google_',
+        // token: credentialResponse.credential,
         serverAddress: state.serverAddress || lastDomain,
       }
+      console.log("oauth user", googleUser)
       setLoginClick(true)
 
       try {
@@ -308,56 +324,114 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
   return (
     <Slide direction="right" in={true} mountOnEnter unmountOnExit>
       <ResponsiveMargin>
-        <IconButton
-          style={{ position: "fixed", top: 8, right: 8 }}
-          onClick={(event) => setHelpMenu(event.currentTarget)}
-        >
-          <Icon>help</Icon>
-        </IconButton>
-        <Menu
-          id="simple-menu"
-          anchorEl={helpMenu}
-          keepMounted
-          open={Boolean(helpMenu)}
-          onClose={() => setHelpMenu(undefined)}
-        >
-          <MenuItem
-            dense
-            onClick={() => {
-              setHelpMenu(undefined)
-              window.open("https://docs.lamp.digital", "_blank")
-            }}
+        <div style={{ position: "fixed", top: 8, right: 16, display: "flex", alignItems: "center", gap: "8px" }}>
+          <Fab
+            color="primary"
+            aria-label="select language"
+            // onClick={handleOpen}
+            onClick={(event) => setFabMenu(event.currentTarget)} // Open menu on click
+            size="small"
+            // style={{ position: "fixed", top: 16, right: 16 }}
           >
-            <b style={{ color: colors.grey["600"] }}>{`${t("Help & Support")}`}</b>
-          </MenuItem>
-          <MenuItem
-            dense
-            onClick={() => {
-              setHelpMenu(undefined)
-              window.open("https://community.lamp.digital", "_blank")
-            }}
+            <TranslateIcon />
+          </Fab>
+          <Menu
+            anchorEl={fabMenu} // Position menu relative to Fab
+            open={Boolean(fabMenu)} // Open the menu if fabMenu is set
+            onClose={() => setFabMenu(null)} // Close menu on selection or outside click
           >
-            <b style={{ color: colors.grey["600"] }}>LAMP {`${t("Community")}`}</b>
-          </MenuItem>
-          <MenuItem
-            dense
-            onClick={() => {
-              setHelpMenu(undefined)
-              window.open("mailto:team@digitalpsych.org", "_blank")
-            }}
+            {Object.keys(locale_lang).map((key) => {
+              if (userLanguages.includes(key)) {
+                return (
+                  <MenuItem
+                    key={key}
+                    value={key}
+                    onClick={() => {
+                      setSelectedLanguage(key) // Set language on click
+                      setFabMenu(null) // Close menu
+                    }}
+                  >
+                    {`${locale_lang[key].native} (${locale_lang[key].english})`}
+                  </MenuItem>
+                )
+              }
+            })}
+          </Menu>
+
+          {/* Language Selection Menu */}
+          {/* <Select
+        open={open}
+        onClose={handleClose}
+        value={selectedLanguage || "en-US"}
+        onChange={(event) => {
+          setSelectedLanguage(event.target.value)
+          handleClose() // Close dropdown on language select
+        }}
+        variant="filled"
+        style={{ display: "none" }} // Hide the Select visually, handled by FAB
+      >
+        {Object.keys(locale_lang).map((key) => {
+          if (userLanguages.includes(key)) {
+            return (
+              <MenuItem key={key} value={key}>
+                {locale_lang[key].native + " (" + locale_lang[key].english + ")"}
+              </MenuItem>
+            )
+          }
+        })}
+      </Select> */}
+          <IconButton
+            size="small"
+            // style={{ position: "fixed", top: 8, right: 8 }}
+            onClick={(event) => setHelpMenu(event.currentTarget)}
           >
-            <b style={{ color: colors.grey["600"] }}>{`${t("Contact Us")}`}</b>
-          </MenuItem>
-          <MenuItem
-            dense
-            onClick={() => {
-              setHelpMenu(undefined)
-              window.open("https://docs.lamp.digital/privacy/", "_blank")
-            }}
+            <Icon>help</Icon>
+          </IconButton>
+          <Menu
+            id="simple-menu"
+            anchorEl={helpMenu}
+            keepMounted
+            open={Boolean(helpMenu)}
+            onClose={() => setHelpMenu(undefined)}
           >
-            <b style={{ color: colors.grey["600"] }}>{`${t("Privacy Policy")}`}</b>
-          </MenuItem>
-        </Menu>
+            <MenuItem
+              dense
+              onClick={() => {
+                setHelpMenu(undefined)
+                window.open("https://docs.lamp.digital", "_blank")
+              }}
+            >
+              <b style={{ color: colors.grey["600"] }}>{`${t("Help & Support")}`}</b>
+            </MenuItem>
+            <MenuItem
+              dense
+              onClick={() => {
+                setHelpMenu(undefined)
+                window.open("https://community.lamp.digital", "_blank")
+              }}
+            >
+              <b style={{ color: colors.grey["600"] }}>LAMP {`${t("Community")}`}</b>
+            </MenuItem>
+            <MenuItem
+              dense
+              onClick={() => {
+                setHelpMenu(undefined)
+                window.open("mailto:team@digitalpsych.org", "_blank")
+              }}
+            >
+              <b style={{ color: colors.grey["600"] }}>{`${t("Contact Us")}`}</b>
+            </MenuItem>
+            <MenuItem
+              dense
+              onClick={() => {
+                setHelpMenu(undefined)
+                window.open("https://docs.lamp.digital/privacy/", "_blank")
+              }}
+            >
+              <b style={{ color: colors.grey["600"] }}>{`${t("Privacy Policy")}`}</b>
+            </MenuItem>
+          </Menu>
+        </div>
         <Grid container direction="row" justifyContent="center" alignItems="center" className={classes.loginContainer}>
           <Grid item className={classes.loginInner}>
             <form onSubmit={(e) => handleLogin(e)}>
@@ -376,7 +450,8 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                     }}
                   />
                 </Box>
-                <TextField
+                {/* TODO remove in next commit  */}
+                {/* <TextField
                   select
                   label={`${t("Select Language")}`}
                   style={{ width: "100%" }}
@@ -395,13 +470,14 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                       )
                     }
                   })}
-                </TextField>
+                </TextField> */}
                 <Autocomplete
                   freeSolo={true}
                   id="serever-selector"
                   options={options}
                   sx={{ width: "100%", marginTop: "12px" }}
                   value={state.serverAddress || ""}
+                  // disabled
                   onChange={(event, value) => handleServerInput(value)}
                   renderInput={(params) => (
                     <TextField

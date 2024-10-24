@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next"
 import LAMP from "lamp-core"
 import { Service } from "../../DBService/DBService"
 import { SchemaList } from "./ActivityMethods"
+import FormBuilderCreator from "./FormBuilderCreator"
 
 export const games = [
   "lamp.jewels_a",
@@ -95,7 +96,7 @@ export default function Activity({
 
   useEffect(() => {
     setLoading(true)
-    console.log("in activity.tsx use effect")
+    console.log("in activity.tsx use effect", type)
     Service.getAll("studies").then((studies) => {
       setStudies(studies)
       Service.getAll("activities").then((activities) => {
@@ -255,17 +256,17 @@ export default function Activity({
               allActivities={allActivities}
               study={activity?.study_id ?? null}
             />
-          ) : type === "<>" ? (
-            <></>
+          ) : type === "form_builder" || activity?.spec === "lamp.form_builder" ? (
+            <FormBuilderCreator
+              activities={allActivities}
+              value={activity ?? null}
+              details={details ?? null}
+              onSave={!!type ? saveActivity : updateActivity}
+              studies={studies}
+              activitySpecId={!!type ? "lamp." + type : activity.spec ?? activity.spec}
+              study={activity?.study_id ?? null}
+            /> // Closing tag added here
           ) : (
-            // (<CBTThoughtRecord
-            //   value={activity}
-            //   details={details ?? null}
-            //   onSave={activity && activity?.id ? updateActivity : saveActivity}
-            //   studies={studies}
-            //   allActivities={allActivities}
-            //   study={activity?.study_id ?? null}
-            // />)
             <GameCreator
               activities={allActivities}
               value={activity ?? null}
