@@ -35,6 +35,10 @@ export default function UpdateActivity({
   const [participantCount, setParticipantCount] = useState(0)
 
   useEffect(() => {
+    console.log("inside update activity", activity)
+  }, [])
+
+  useEffect(() => {
     if (!!profile) {
       LAMP.Participant.allByStudy(activity.study_id).then((result) => {
         setParticipantCount(result.length)
@@ -44,6 +48,7 @@ export default function UpdateActivity({
 
   const confirmAction = (status: string) => {
     if (status === "Yes") {
+      console.log("inside update activity", activity)
       window.location.href = `/#/researcher/${researcherId}/activity/${activity.id}`
     }
     setConfirmationDialog(0)
