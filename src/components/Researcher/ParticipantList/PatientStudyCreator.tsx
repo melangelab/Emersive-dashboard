@@ -69,6 +69,7 @@ export default function PatientStudyCreator({
   closePopUp: Function
 } & DialogProps) {
   const [studyName, setStudyName] = useState("")
+  const [groupName, setGroupName] = useState("")
   const classes = useStyles()
   const [duplicateCnt, setDuplicateCnt] = useState(0)
   const { t, i18n } = useTranslation()
@@ -82,7 +83,9 @@ export default function PatientStudyCreator({
     return !(
       duplicateCnt > 0 ||
       typeof studyName === "undefined" ||
-      (typeof studyName !== "undefined" && studyName?.trim() === "")
+      (typeof studyName !== "undefined" && studyName?.trim() === "") ||
+      typeof groupName === "undefined" ||
+      (typeof groupName !== "undefined" && groupName?.trim() === "")
     )
   }
 
@@ -345,9 +348,9 @@ export default function PatientStudyCreator({
               fullWidth
               variant="outlined"
               label={`${t("Group Name")}`}
-              value={studyName}
+              value={groupName}
               onChange={(e) => {
-                setStudyName(e.target.value)
+                setGroupName(e.target.value)
               }}
               inputProps={{ maxLength: 80 }}
               helperText={
@@ -355,6 +358,27 @@ export default function PatientStudyCreator({
                   ? `${t("Unique group name required")}`
                   : !validate()
                   ? `${t("Please enter group name.")}`
+                  : ""
+              }
+            />
+          </Box>
+          <Box mb={2}>
+            <TextField
+              error={!validate()}
+              autoFocus
+              fullWidth
+              variant="outlined"
+              label={`${t("Study Name")}`}
+              value={studyName}
+              onChange={(e) => {
+                setStudyName(e.target.value)
+              }}
+              inputProps={{ maxLength: 80 }}
+              helperText={
+                duplicateCnt > 0
+                  ? `${t("Unique Study name required")}`
+                  : !validate()
+                  ? `${t("Please enter Study name.")}`
                   : ""
               }
             />
