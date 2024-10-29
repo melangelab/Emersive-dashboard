@@ -62,7 +62,6 @@ const FormBuilder = ({ onChange, formFieldsProp }) => {
         showValues: false,
         dateInputType: "",
         timeFormat: "",
-        subLabel: "",
         firstNameLabel: "",
         lastNameLabel: "",
         dateFormat: "",
@@ -252,8 +251,6 @@ const FormBuilder = ({ onChange, formFieldsProp }) => {
               }
             >
               <MenuItem value="datePicker">Date Picker</MenuItem>
-              <MenuItem value="dateField">Date Field</MenuItem>
-              <MenuItem value="dateDropDown">Date Drop Down</MenuItem>
             </Select>
             <TextField
               fullWidth
@@ -283,19 +280,8 @@ const FormBuilder = ({ onChange, formFieldsProp }) => {
               }
             >
               <MenuItem value="12">12 Hour</MenuItem>
-              <MenuItem value="24">24 Hour</MenuItem>
+              {/* <MenuItem value="24">24 Hour</MenuItem> */}
             </Select>
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Custom Sub-Label"
-              value={field.settings?.subLabel || ""}
-              onChange={(e) =>
-                updateField(field.id, {
-                  settings: { ...field.settings, subLabel: e.target.value },
-                })
-              }
-            />
           </>
         )
 

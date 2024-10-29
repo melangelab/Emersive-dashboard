@@ -47,8 +47,8 @@ const demoActivities = {
   "lamp.symbol_digit_substitution": "symbol_digit_substitution",
   "lamp.gyroscope": "gyroscope",
   "lamp.dcog": "d-cog",
-  "lamp.cbt_thought_record": "cbt_thought_record",
-  "lamp.form_builder": "form_builder",
+  "lamp.cbt_thought_record": "cbtThoughtRecord",
+  "lamp.form_builder": "formBuilder",
 }
 
 export default function EmbeddedActivity({ participant, activity, name, onComplete, noBack, tab, ...props }) {
@@ -239,12 +239,14 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
         noBack: noBack,
       })
 
-      if (currentActivity.spec === "lamp.cbt_thought_record") {
+      if (["lamp.cbt_thought_record", "lamp.form_builder"].includes(currentActivity.spec)) {
         console.log("Inside the cbt activity fetch")
         // const filePath = "/home/temp1/LampCode/test-build/dist/out/cbt_thought_record_3.html.b64"
         // const filePath = "http://192.168.21.214:3009/CBT_Thought_Record_3/dist.html.b64"
         // const filePath = "http://192.168.21.214:3009/out/cbt_thought_record_3.html.b64"
-        const filePath = "https://raw.githubusercontent.com/iHubAnubhuti/LAMP-activities-bcode/main/dist.html.b64"
+        const filePath = `https://raw.githubusercontent.com/iHubAnubhuti/LAMP-activities-bcode/main/${
+          demoActivities[currentActivity.spec]
+        }.html.b64`
         response = atob(await (await fetch(filePath)).text())
         console.log("response here", response, "ends")
       } else {

@@ -35,6 +35,8 @@ import { Autocomplete } from "@mui/material"
 // google login
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google"
 import { jwtDecode } from "jwt-decode"
+import HelpIcon from "@mui/icons-material/Help"
+import { HelpCenterOutlined } from "@mui/icons-material"
 // import jwtDecode from "jwt-decode"
 
 const GOOGLE_CLIENT_ID = "777556044651-vbh5cmbk8rbll6qlg7nftvp3je52imff.apps.googleusercontent.com"
@@ -113,7 +115,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
   const { t, i18n } = useTranslation()
   // defaultaddress = "lamp-aiims.ihub-anubhuti-iiitd.org:3000"
   const [state, setState] = useState({
-    serverAddress: lastDomain ?? "192.168.21.214:8000",
+    serverAddress: lastDomain ?? "192.168.21.214:3000",
     id: undefined,
     password: undefined,
   })
@@ -174,7 +176,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
       //   serverAddress: state.serverAddress || lastDomain,
       // }
       const googleUser = {
-        id: " _google_ " + decoded.email.split(".org")[0],
+        id: " _google_ " + decoded.email, //.split(".org")[0],
         password: credentialResponse.credential, //decoded.email.split("@")[0],
         // loginType: '_google_',
         // token: credentialResponse.credential,
@@ -380,13 +382,17 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
           }
         })}
       </Select> */}
-          <IconButton
+          <Fab
             size="small"
+            color="primary"
+            aria-label="help"
             // style={{ position: "fixed", top: 8, right: 8 }}
             onClick={(event) => setHelpMenu(event.currentTarget)}
           >
-            <Icon>help</Icon>
-          </IconButton>
+            {/* <HelpCenterOutlined/> */}
+            <HelpIcon style={{ fontSize: "2.5 rem" }} />
+            {/* <Icon style={{ fontSize: "2rem", color:"#23c433" }}>help</Icon> */}
+          </Fab>
           <Menu
             id="simple-menu"
             anchorEl={helpMenu}
