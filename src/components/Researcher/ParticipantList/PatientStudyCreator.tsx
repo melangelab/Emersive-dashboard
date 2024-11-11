@@ -72,6 +72,7 @@ export default function PatientStudyCreator({
   const [groupName, setGroupName] = useState("")
   const classes = useStyles()
   const [duplicateCnt, setDuplicateCnt] = useState(0)
+  const [gduplicateCnt, setGDuplicateCnt] = useState(0)
   const { t, i18n } = useTranslation()
   const { enqueueSnackbar } = useSnackbar()
   const [duplicateStudyName, setDuplicateStudyName] = useState<any>("")
@@ -79,14 +80,8 @@ export default function PatientStudyCreator({
   const [loading, setLoading] = useState(false)
   const [newId, setNewId] = useState(null)
 
-  const validate = () => {
-    return !(
-      duplicateCnt > 0 ||
-      typeof studyName === "undefined" ||
-      (typeof studyName !== "undefined" && studyName?.trim() === "") ||
-      typeof groupName === "undefined" ||
-      (typeof groupName !== "undefined" && groupName?.trim() === "")
-    )
+  const validate = (name, dcount) => {
+    return !(dcount > 0 || typeof name === "undefined" || (typeof name !== "undefined" && name?.trim() === ""))
   }
 
   const saveStudyData = async (result, type) => {
@@ -350,7 +345,7 @@ export default function PatientStudyCreator({
         <DialogContent dividers={false} classes={{ root: classes.activityContent }}>
           <Box mb={2}>
             <TextField
-              error={!validate()}
+              error={!validate(groupName, gduplicateCnt)}
               autoFocus
               fullWidth
               variant="outlined"
@@ -363,7 +358,7 @@ export default function PatientStudyCreator({
               helperText={
                 duplicateCnt > 0
                   ? `${t("Unique group name required")}`
-                  : !validate()
+                  : !validate(groupName, gduplicateCnt)
                   ? `${t("Please enter group name.")}`
                   : ""
               }
@@ -371,7 +366,7 @@ export default function PatientStudyCreator({
           </Box>
           <Box mb={2}>
             <TextField
-              error={!validate()}
+              error={!validate(studyName, duplicateCnt)}
               autoFocus
               fullWidth
               variant="outlined"
@@ -384,8 +379,8 @@ export default function PatientStudyCreator({
               helperText={
                 duplicateCnt > 0
                   ? `${t("Unique Study name required")}`
-                  : !validate()
-                  ? `${t("Please enter Study name.")}`
+                  : !validate(studyName, duplicateCnt)
+                  ? `${t("Please enter new Study name.")}`
                   : ""
               }
             />
@@ -445,7 +440,7 @@ export default function PatientStudyCreator({
               }}
               color="primary"
               autoFocus
-              disabled={!validate()}
+              disabled={!validate(groupName, gduplicateCnt) && !validate(studyName, duplicateCnt)}
             >
               {`${t("Confirm")}`}
             </Button>

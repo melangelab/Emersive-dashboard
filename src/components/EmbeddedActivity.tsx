@@ -48,7 +48,7 @@ const demoActivities = {
   "lamp.gyroscope": "gyroscope",
   "lamp.dcog": "d-cog",
   "lamp.cbt_thought_record": "cbtThoughtRecord",
-  "lamp.form_builder": "formBuilder",
+  "lamp.form_builder": "formBuilder2",
 }
 
 export default function EmbeddedActivity({ participant, activity, name, onComplete, noBack, tab, ...props }) {
@@ -244,9 +244,12 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
         // const filePath = "/home/temp1/LampCode/test-build/dist/out/cbt_thought_record_3.html.b64"
         // const filePath = "http://192.168.21.214:3009/CBT_Thought_Record_3/dist.html.b64"
         // const filePath = "http://192.168.21.214:3009/out/cbt_thought_record_3.html.b64"
+        // const filePath = `https://raw.githubusercontent.com/iHubAnubhuti/LAMP-activities-bcode/main/${
+        //   demoActivities[currentActivity.spec]
+        // }.html.b64`
         const filePath = `https://raw.githubusercontent.com/iHubAnubhuti/LAMP-activities-bcode/main/${
           demoActivities[currentActivity.spec]
-        }.html.b64`
+        }.html.b64?${Date.now()}`
         response = atob(await (await fetch(filePath)).text())
         console.log("response here", response, "ends")
       } else {

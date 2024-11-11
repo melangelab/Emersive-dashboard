@@ -58,25 +58,47 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
   const { t } = useTranslation()
   const classes = useStyles()
   const [duplicateCnt, setCount] = useState(0)
+  const [groupName, setGroupName] = useState("")
+  const [duplicateStudyName, setDuplicateStudyName] = useState<any>("")
 
   const validate = () => {
+    console.log(duplicateCnt, studyName, groupName)
     return !(
       duplicateCnt > 0 ||
       typeof studyName === "undefined" ||
-      (typeof studyName !== "undefined" && studyName.trim() === "")
+      (typeof studyName !== "undefined" && studyName.trim() === "") ||
+      typeof groupName === "undefined" ||
+      (typeof groupName !== "undefined" && groupName.trim() === "")
     )
   }
 
+  // const saveGroupData = async (studyId: string, groupName: string) => {
+  //   const groupData = {
+  //     study_id: studyId,
+  //     name: groupName,
+  //   };
+  //   Service.addData("groups", [groupData]);
+  // };
+
+  // const handleEnter = () => {
+  //   setStudyName("")
+  //   setGroupName("")
+  //   setCount(0)
+  // }
   useEffect(() => {
+    console.log(studies)
     let duplicateCount = 0
     if (!(typeof studyName === "undefined" || (typeof studyName !== "undefined" && studyName?.trim() === ""))) {
-      duplicateCount = studies.filter((study) => study.name?.trim().toLowerCase() === studyName?.trim().toLowerCase())
-        .length
+      studies.forEach((study) => {
+        duplicateCount += study.gname?.some((gn) => gn?.trim().toLowerCase() === groupName?.trim().toLowerCase())
+          ? 1
+          : 0
+      })
     }
     setCount(duplicateCount)
-  }, [studyName])
+  }, [groupName])
 
-  const createStudy = async (studyName: string) => {
+  const createGroup = async (studyName: string) => {
     setLoading(true)
     const newStudy = new Study()
     newStudy.name = studyName
@@ -93,18 +115,22 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
           }
 
           Service.addData("studies", [newStudyData])
-          enqueueSnackbar(t("Successfully created new study - {{studyName}}.", { studyName }), { variant: "success" })
+          enqueueSnackbar(t("Successfully created new group - {{groupName}}.", { groupName }), { variant: "success" })
 
           newStudyData.participant_count = 0
           handleNewStudy(newStudyData)
-          closePopUp(3)
+          // handleEnter()
           setStudyName("")
+          setGroupName("")
+          setDuplicateStudyName("")
+          setCount(0)
+          closePopUp(3)
         } else {
-          enqueueSnackbar(t("Error creating study."), { variant: "error" })
+          enqueueSnackbar(t("Error creating group."), { variant: "error" })
         }
       })
       .catch(() => {
-        enqueueSnackbar(t("An error occurred while creating new study - {{studyName}}.", { studyName }), {
+        enqueueSnackbar(t("An error occurred while creating new group - {{groupName}}.", { groupName }), {
           variant: "error",
         })
       })
@@ -114,25 +140,74 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
   }
 
   return (
-    <Dialog {...props} onClose={() => closePopUp(3)}>
-      <DialogTitle>{t("Create New Study")}</DialogTitle>
+    <Dialog
+      {...props}
+      onClose={() => {
+        setStudyName("")
+        setGroupName("")
+        setDuplicateStudyName("")
+        setCount(0)
+        closePopUp(3)
+      }}
+    >
+      <DialogTitle>{t("Create New Group")}</DialogTitle>
       <DialogContent>
-        <TextField
-          label={t("Study Name")}
-          fullWidth
-          variant="outlined"
-          value={studyName}
-          onChange={(e) => setStudyName(e.target.value)}
-          error={duplicateCnt > 0}
-          helperText={duplicateCnt > 0 ? t("Study name already exists.") : ""}
-        />
+        <Box mb={2}>
+          <TextField
+            error={!validate()}
+            label={t("Group Name")}
+            fullWidth
+            variant="outlined"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            helperText={
+              duplicateCnt > 0
+                ? `${t("Unique group name required")}`
+                : !validate()
+                ? `${t("Please enter group name.")}`
+                : ""
+            }
+          />
+        </Box>
+        <Box>
+          <TextField
+            select
+            autoFocus
+            fullWidth
+            variant="outlined"
+            label={`${t("Select Study")}`}
+            value={studyName}
+            onChange={(e) => {
+              setStudyName(e.target.value)
+            }}
+            inputProps={{ maxLength: 80 }}
+          >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+            {(studies || []).map((study) => (
+              <MenuItem key={study.id} value={study.id}>
+                {study.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => closePopUp(3)} color="primary">
+        <Button
+          onClick={() => {
+            setStudyName("")
+            setGroupName("")
+            setDuplicateStudyName("")
+            setCount(0)
+            closePopUp(3)
+          }}
+          color="primary"
+        >
           {t("Cancel")}
         </Button>
-        <Button onClick={() => createStudy(studyName)} color="primary" disabled={!studyName || loading}>
-          {loading ? <CircularProgress size={24} /> : t("Create Study")}
+        <Button onClick={() => createGroup(studyName)} color="primary" disabled={!studyName || loading}>
+          {loading ? <CircularProgress size={24} /> : t("Confirm")}
         </Button>
       </DialogActions>
       <Backdrop className={classes.backdrop} open={loading}>
