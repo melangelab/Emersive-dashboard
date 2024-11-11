@@ -125,36 +125,70 @@ export default function GameCreator({
 
   const validateQuestions = (questions) => {
     let status = 0
-    if (!!questions && questions.length > 0) {
-      let optionsArray = []
-      {
-        ;(questions || []).map((x, idx) => {
-          questions[idx].type === "list" ||
-          questions[idx].type === "multiselect" ||
-          questions[idx].type === "slider" ||
-          questions[idx].type === "rating"
-            ? !Array.isArray(questions[idx].options) ||
-              questions[idx].options === null ||
-              (!!questions[idx].options && questions[idx].options.length === 0)
-              ? optionsArray.push(1)
-              : (questions[idx].options || []).filter(
-                  (i) =>
-                    (!!i &&
-                      (((questions[idx].type === "slider" || questions[idx].type === "rating") && i?.value >= 0) ||
-                        ((questions[idx].type === "list" || questions[idx].type === "multiselect") &&
-                          (i?.value === 0 ||
-                            i?.value === "0" ||
-                            (i?.value !== 0 &&
-                              i?.value !== "0" &&
-                              ((i?.value || "").toString() || "")?.trim().length > 0))))) ||
-                    i === ""
-                ).length === (questions[idx].options || []).length
-              ? optionsArray.push(0)
-              : optionsArray.push(1)
-            : optionsArray.push(0)
-        })
-      }
 
+    if (questions && questions.length > 0) {
+      let optionsArray = []
+
+      questions.forEach((x) => {
+        if (
+          x.type === "list" ||
+          x.type === "multiselect" ||
+          x.type === "slider" ||
+          x.type === "rating" ||
+          x.type === "matrix"
+        ) {
+          // For matrix, check if options is an array and each option has valid properties
+          if (x.type === "matrix") {
+            if (
+              !Array.isArray(x.options) ||
+              x.options === null ||
+              x.options.length === 0 ||
+              x.options.some(
+                (option) =>
+                  !option.text ||
+                  !option.type ||
+                  !["text", "radio"].includes(option.type) ||
+                  typeof option.required !== "boolean"
+              )
+            ) {
+              optionsArray.push(1) // Invalid matrix options
+            } else {
+              optionsArray.push(0) // Valid matrix options
+            }
+          }
+          // For other types like list, multiselect, slider, rating
+          else {
+            if (
+              !Array.isArray(x.options) ||
+              x.options === null ||
+              x.options.length === 0 ||
+              x.options.some((i) => {
+                // Validate options for slider and rating (value should be a number)
+                if (x.type === "slider" || x.type === "rating") {
+                  return typeof i?.value !== "number" || i.value < 0
+                }
+                // Validate options for list and multiselect (value should not be empty or invalid)
+                if (x.type === "list" || x.type === "multiselect") {
+                  return (
+                    i?.value === 0 ||
+                    i?.value === "0" ||
+                    (i?.value !== 0 && i?.value !== "0" && (i?.value || "").toString().trim().length === 0)
+                  )
+                }
+                return false // If neither slider, rating, list, nor multiselect
+              })
+            ) {
+              optionsArray.push(1) // Invalid options
+            } else {
+              optionsArray.push(0) // Valid options
+            }
+          }
+        } else {
+          optionsArray.push(0) // Invalid question type
+        }
+      })
+
+      // If any invalid options found, return false
       if (optionsArray.filter((val) => val !== 0).length > 0) {
         status = 1
         return false
@@ -162,19 +196,141 @@ export default function GameCreator({
         status = 0
       }
     }
+
+    // Check for empty or invalid questions
     if (
       questions.length === 0 ||
       questions.filter((val) => !!val.text && val.text?.trim().length !== 0).length !== questions.length
     ) {
       return false
-    } else if (
+    }
+
+    // If there are questions with types like list, multiselect, slider, rating, and invalid options, return false
+    if (
       questions.filter((q) => ["list", "multiselect", "slider", "rating", "time"].includes(q.type)).length > 0 &&
       status === 1
     ) {
       return false
     }
+
     return true
   }
+
+  // const validateQuestions = (questions) => {
+  //   let status = 0;
+  //   if (questions && questions.length > 0) {
+  //     let optionsArray = [];
+  //     questions.forEach((question, idx) => {
+  //       const isComplexType = ["list", "multiselect", "slider", "rating", "matrix"].includes(question.type);
+
+  //       if (isComplexType) {
+
+  //         const hasOptions = Array.isArray(question.options) && question.options.length > 0;
+
+  //         console.log("hasOptions", hasOptions, question.options)
+
+  //         if (!hasOptions) {
+  //           optionsArray.push(1); // No options provided
+  //         } else {
+  //           console.log("OPTIONS:", question.options)
+  //           const isOptionsValid = question.options.every((option) => {
+  //             if (["slider", "rating"].includes(question.type)) {
+  //               // Slider/Rating validation: Check for valid numerical value
+  //               return option && option.value >= 0;
+  //             } else if (["list", "multiselect"].includes(question.type)) {
+  //               // List/Multiselect validation: Check for non-empty value
+  //               return (
+  //                 option &&
+  //                 (typeof option.value === "number" || (option.value || "").trim().length > 0)
+  //               );
+  //             } else if (question.type === "matrix") {
+  //               // Matrix validation: Check for required fields in each option
+  //               return option && option.text && option.type && typeof option.required === "boolean";
+  //             }
+  //             return false;
+  //           });
+
+  //           optionsArray.push(isOptionsValid ? 0 : 1); // Mark 1 if any option fails validation
+  //         }
+  //       } else {
+  //         optionsArray.push(0); // Non-complex types pass
+  //       }
+  //     });
+
+  //     if (optionsArray.some((val) => val !== 0)) {
+  //       status = 1;
+  //       return false;
+  //     }
+  //   }
+
+  //   // Additional validation for questions array and text fields
+  //   if (
+  //     questions.length === 0 ||
+  //     questions.filter((val) => val.text && val.text.trim().length !== 0).length !== questions.length
+  //   ) {
+  //     return false;
+  //   } else if (
+  //     questions.some((q) => ["list", "multiselect", "slider", "rating", "time"].includes(q.type)) &&
+  //     status === 1
+  //   ) {
+  //     return false;
+  //   }
+  //   return true;
+  // };
+
+  // const validateQuestions = (questions) => {
+  //   let status = 0
+  //   if (!!questions && questions.length > 0) {
+  //     let optionsArray = []
+  //     {
+  //       ;(questions || []).map((x, idx) => {
+  //         questions[idx].type === "list" ||
+  //         questions[idx].type === "multiselect" ||
+  //         questions[idx].type === "slider" ||
+  //         questions[idx].type === "rating" ||
+  //         questions[idx].type === "matrix"
+  //           ? !Array.isArray(questions[idx].options) ||
+  //             questions[idx].options === null ||
+  //             (!!questions[idx].options && questions[idx].options.length === 0)
+  //             ? optionsArray.push(1)
+  //             : (questions[idx].options || []).filter(
+  //                 (i) =>
+  //                   (!!i &&
+  //                     (((questions[idx].type === "slider" || questions[idx].type === "rating") && i?.value >= 0) ||
+  //                       ((questions[idx].type === "list" || questions[idx].type === "multiselect") &&
+  //                         (i?.value === 0 ||
+  //                           i?.value === "0" ||
+  //                           (i?.value !== 0 &&
+  //                             i?.value !== "0" &&
+  //                             ((i?.value || "").toString() || "")?.trim().length > 0))))) ||
+  //                   i === ""
+  //               ).length === (questions[idx].options || []).length
+  //             ? optionsArray.push(0)
+  //             : optionsArray.push(1)
+  //           : optionsArray.push(0)
+  //       })
+  //     }
+
+  //     if (optionsArray.filter((val) => val !== 0).length > 0) {
+  //       status = 1
+  //       return false
+  //     } else {
+  //       status = 0
+  //     }
+  //   }
+  //   if (
+  //     questions.length === 0 ||
+  //     questions.filter((val) => !!val.text && val.text?.trim().length !== 0).length !== questions.length
+  //   ) {
+  //     return false
+  //   } else if (
+  //     questions.filter((q) => ["list", "multiselect", "slider", "rating", "time"].includes(q.type)).length > 0 &&
+  //     status === 1
+  //   ) {
+  //     return false
+  //   }
+  //   return true
+  // }
 
   const validate = () => {
     let duplicates = []
@@ -510,7 +666,8 @@ export default function GameCreator({
             x.type === "list" ||
             x.type === "multiselect" ||
             x.type === "slider" ||
-            x.type === "rating"
+            x.type === "rating" ||
+            x.type === "matrix"
           ) &&
           typeof x.options !== "undefined"
         ) {

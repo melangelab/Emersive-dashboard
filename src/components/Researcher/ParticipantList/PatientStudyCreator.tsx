@@ -104,7 +104,7 @@ export default function PatientStudyCreator({
     setDuplicateCnt(duplicateCount)
   }, [studyName])
 
-  const createNewStudy = (studyName) => {
+  const createNewStudy = (groupName, studyName) => {
     let lampAuthId = LAMP.Auth._auth.id
     if (
       LAMP.Auth._type === "researcher" &&
@@ -112,7 +112,8 @@ export default function PatientStudyCreator({
     ) {
       createDemoStudy(studyName)
     } else {
-      createStudy(studyName)
+      createStudy(studyName, groupName)
+      // createStudy("Group : " + groupName + " , Study : "+ studyName)
     }
   }
 
@@ -207,7 +208,7 @@ export default function PatientStudyCreator({
     localStorage.setItem("studies_" + authId, JSON.stringify(studiesSelected))
   }
 
-  const createStudy = async (studyName: string) => {
+  const createStudy = async (studyName: string, groupName?: string) => {
     setLoading(true)
     let authId = researcherId
     let authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
@@ -221,9 +222,12 @@ export default function PatientStudyCreator({
       let newUriStudyID = "?study_id=" + newStudyId
       if (duplicateStudyName) {
         Service.getDataByKey("studies", duplicateStudyName, "id").then((studyAllData: any) => {
+          let gnameArray = Array.isArray(studyAllData[0]?.gname) ? [...studyAllData[0].gname] : []
+          if (groupName) gnameArray.push(groupName)
           let newStudyData = {
             id: studyData.data,
             name: studyName,
+            gname: gnameArray,
             participant_count: 0,
             activity_count: studyAllData.length > 0 ? studyAllData[0].activity_count : 0,
             sensor_count: studyAllData.length > 0 ? studyAllData[0].sensor_count : 0,
@@ -268,6 +272,7 @@ export default function PatientStudyCreator({
         let newStudyData = {
           id: studyData.data,
           name: studyName,
+          gname: groupName ? [groupName] : [],
           participant_count: 0,
           activity_count: 0,
           sensor_count: 0,
@@ -308,6 +313,7 @@ export default function PatientStudyCreator({
 
   const handleEnter = () => {
     setStudyName("")
+    setGroupName("")
     setDuplicateStudyName("")
     setCreatePatient(false)
   }
@@ -333,6 +339,7 @@ export default function PatientStudyCreator({
             onClick={() => {
               closePopUp(1)
               setStudyName("")
+              setGroupName("")
               setDuplicateStudyName("")
               setCreatePatient(false)
             }}
@@ -434,7 +441,7 @@ export default function PatientStudyCreator({
             </Button>
             <Button
               onClick={() => {
-                createNewStudy(studyName)
+                createNewStudy(groupName, studyName)
               }}
               color="primary"
               autoFocus

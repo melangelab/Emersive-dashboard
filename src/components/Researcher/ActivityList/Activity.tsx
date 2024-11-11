@@ -156,6 +156,7 @@ export default function Activity({
   }, [activity])
 
   const saveActivity = async (x) => {
+    console.log("SAVE ACTIVITY CALLED")
     setLoading(true)
     let newItem =
       x.spec === "lamp.survey"
@@ -186,6 +187,7 @@ export default function Activity({
 
   // Commit an update to an Activity object (ONLY DESCRIPTIONS).
   const updateActivity = async (x, isDuplicated) => {
+    console.log("UPDATE ACTIVITY CALLED")
     setLoading(true)
     let result = await updateActivityData(x, isDuplicated, activity)
     if (!!result.error)

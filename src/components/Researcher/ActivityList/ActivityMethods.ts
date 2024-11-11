@@ -798,7 +798,6 @@ export const SchemaList = () => {
           },
           items: {
             required: ["text", "type"],
-
             type: "object",
             dependencies: {
               type: {
@@ -806,7 +805,7 @@ export const SchemaList = () => {
                   {
                     properties: {
                       type: {
-                        enum: ["text", "boolean", "short", "likert", "matrix"],
+                        enum: ["text", "boolean", "short", "likert"],
                       },
                     },
                   },
@@ -832,6 +831,42 @@ export const SchemaList = () => {
                               title: i18n.t("Option Description"),
                               type: "string",
                               default: "",
+                            },
+                          },
+                        },
+                      },
+                    },
+                    required: ["options"],
+                  },
+                  {
+                    properties: {
+                      type: {
+                        enum: ["matrix"],
+                      },
+                      options: {
+                        type: "array",
+                        title: "Matrix Options",
+                        minItems: 1,
+                        items: {
+                          type: "object",
+                          properties: {
+                            text: {
+                              title: i18n.t("Option Text"),
+                              type: "string",
+                              minLength: 1,
+                              default: "",
+                            },
+                            type: {
+                              title: i18n.t("Option Type"),
+                              type: "string",
+                              enum: ["text", "radio"],
+                              enumNames: [i18n.t("Text"), i18n.t("Radio")],
+                              default: "text",
+                            },
+                            required: {
+                              title: i18n.t("Required"),
+                              type: "boolean",
+                              default: true,
                             },
                           },
                         },
@@ -895,7 +930,6 @@ export const SchemaList = () => {
                 ],
               },
             },
-
             properties: {
               text: {
                 type: "string",
@@ -1597,7 +1631,7 @@ export async function getDefaultTab(spec) {
       return "manage"
     }
     if (spec === "lamp.tips") return "learn"
-    if (spec === "lamp.cbt_thought_record") return "manage"
+    if (spec === "lamp.cbt_thought_record" || spec === "lamp.form_builder") return "manage"
   }
 }
 
@@ -1607,6 +1641,7 @@ export const updateSchedule = async (activity) => {
 }
 // Commit an update to an Activity object (ONLY DESCRIPTIONS).
 export async function updateActivityData(x, isDuplicated, selectedActivity) {
+  console.log("i234n update activity data", x, selectedActivity)
   let result
   if (!["lamp.group", "lamp.survey", "lamp.tips"].includes(x.spec)) {
     // Short-circuit for groups and CTests
@@ -1642,7 +1677,9 @@ export async function updateActivityData(x, isDuplicated, selectedActivity) {
       }
     }
   } else if (x.spec === "lamp.group" || x.spec === "lamp.dbt_diary_card") {
+    console.log("came inside if")
     if (isDuplicated) {
+      console.log("VIA UPDATE AND x photo if dupli", x.photo)
       result = (await LAMP.Activity.create(x.studyID, x)) as any
       await LAMP.Type.setAttachment(result.data, "me", "lamp.dashboard.activity_details", {
         description: x.description,
@@ -1652,6 +1689,7 @@ export async function updateActivityData(x, isDuplicated, selectedActivity) {
       })
       return result
     } else {
+      console.log("VIA UPDATE AND x photo", x.photo)
       result = (await LAMP.Activity.update(selectedActivity?.id, x)) as any
 
       await LAMP.Type.setAttachment(selectedActivity?.id, "me", "lamp.dashboard.activity_details", {
