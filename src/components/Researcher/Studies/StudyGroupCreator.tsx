@@ -59,11 +59,16 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
   const classes = useStyles()
   const [duplicateCnt, setCount] = useState(0)
 
+  const [groupName, setGroupName] = useState("")
+  const [duplicateStudyName, setDuplicateStudyName] = useState<any>("")
+
   const validate = () => {
     return !(
       duplicateCnt > 0 ||
       typeof studyName === "undefined" ||
-      (typeof studyName !== "undefined" && studyName.trim() === "")
+      (typeof studyName !== "undefined" && studyName.trim() === "") ||
+      typeof groupName === "undefined" ||
+      (typeof groupName !== "undefined" && groupName.trim() === "")
     )
   }
 
@@ -115,16 +120,16 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
 
   return (
     <Dialog {...props} onClose={() => closePopUp(3)}>
-      <DialogTitle>{t("Create New Study")}</DialogTitle>
+      <DialogTitle>{t("Create New Group")}</DialogTitle>
       <DialogContent>
         <TextField
-          label={t("Study Name")}
+          label={t("Group Name")}
           fullWidth
           variant="outlined"
           value={studyName}
           onChange={(e) => setStudyName(e.target.value)}
           error={duplicateCnt > 0}
-          helperText={duplicateCnt > 0 ? t("Study name already exists.") : ""}
+          helperText={duplicateCnt > 0 ? t("Group name already exists.") : ""}
         />
       </DialogContent>
       <DialogActions>
@@ -132,7 +137,7 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
           {t("Cancel")}
         </Button>
         <Button onClick={() => createStudy(studyName)} color="primary" disabled={!studyName || loading}>
-          {loading ? <CircularProgress size={24} /> : t("Create Study")}
+          {loading ? <CircularProgress size={24} /> : t("Confirm")}
         </Button>
       </DialogActions>
       <Backdrop className={classes.backdrop} open={loading}>

@@ -113,9 +113,9 @@ const useStyles = makeStyles((theme: Theme) =>
 
 export default function Login({ setIdentity, lastDomain, onComplete, ...props }) {
   const { t, i18n } = useTranslation()
-  // defaultaddress = "lamp-aiims.ihub-anubhuti-iiitd.org:3000"
+  // defaultaddress = "lamp-aiims.ihub-anubhuti-iiitd.org:3000" 192.168.21.214:3000
   const [state, setState] = useState({
-    serverAddress: lastDomain ?? "192.168.21.214:3000",
+    serverAddress: lastDomain ?? "lamp-aiims.ihub-anubhuti-iiitd.org:3000",
     id: undefined,
     password: undefined,
   })
