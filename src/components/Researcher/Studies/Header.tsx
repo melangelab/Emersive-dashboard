@@ -3,7 +3,8 @@ import { Box, Popover, Fab, Typography, Icon, MenuItem, makeStyles, Theme, creat
 import { useTranslation } from "react-i18next"
 import PatientStudyCreator from "../ParticipantList/PatientStudyCreator"
 import SearchBox from "../../SearchBox"
-
+import StudyCreator from "../ParticipantList/StudyCreator"
+import StudyGroupCreator from "./StudyGroupCreator"
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     header: {
@@ -67,15 +68,26 @@ export default function Header({ studies, researcherId, searchData, setParticipa
   const { t } = useTranslation()
   const [popover, setPopover] = useState(null)
   const [addParticipantStudy, setAddParticipantStudy] = useState(false)
+  const [addGroup, setAddGroup] = useState(false)
+  const [addStudy, setAddStudy] = useState(false)
 
   const handleNewStudyData = (data) => {
     setParticipants()
     newStudyObj(data)
   }
 
+  // const handleClosePopUp = (data) => {
+  //   if (data === 1) {
+  //     setAddParticipantStudy(false)
+  //   }
+  // }
   const handleClosePopUp = (data) => {
     if (data === 1) {
       setAddParticipantStudy(false)
+    } else if (data === 2) {
+      setAddStudy(false)
+    } else {
+      setAddGroup(false)
     }
   }
 
@@ -117,15 +129,57 @@ export default function Header({ studies, researcherId, searchData, setParticipa
             <MenuItem
               onClick={() => {
                 setPopover(null)
+                setAddGroup(true)
+              }}
+            >
+              <Typography variant="h6">{`${t("Add a group")}`}</Typography>
+              <Typography variant="body2">{`${t("Create a new group in existing study.")}`}</Typography>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setPopover(null)
+                setAddStudy(true)
+              }}
+            >
+              <Typography variant="h6">{`${t("Add a new study")}`}</Typography>
+              <Typography variant="body2">{`${t("Create a new study")}.`}</Typography>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setPopover(null)
+                setAddParticipantStudy(true)
+              }}
+            >
+              <Typography variant="h6">{`${t("Add a new group and study")}`}</Typography>
+              <Typography variant="body2">{`${t("Create a new study and a group within it.")}`}</Typography>
+            </MenuItem>
+            {/* <MenuItem
+              onClick={() => {
+                setPopover(null)
                 setAddParticipantStudy(true)
               }}
             >
               <Typography variant="h6">{`${t("Add a new group")}`}</Typography>
               <Typography variant="body2">{`${t("Create a new group.")}`}</Typography>
-            </MenuItem>
+            </MenuItem> */}
           </React.Fragment>
         </Popover>
-
+        <StudyGroupCreator
+          studies={studies}
+          researcherId={researcherId}
+          onClose={() => setAddGroup(false)}
+          open={addGroup}
+          handleNewStudy={handleNewStudyData}
+          closePopUp={handleClosePopUp}
+        />
+        <StudyCreator
+          studies={studies}
+          researcherId={researcherId}
+          open={addStudy}
+          onClose={() => setAddStudy(false)}
+          handleNewStudy={handleNewStudyData}
+          closePopUp={handleClosePopUp}
+        />
         <PatientStudyCreator
           studies={studies}
           researcherId={researcherId}

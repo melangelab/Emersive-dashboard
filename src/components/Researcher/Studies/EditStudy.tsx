@@ -56,26 +56,34 @@ export default function EditStudy({ study, upatedDataStudy, allStudies, research
   return (
     <Box display="flex" alignItems="center">
       <Box flexGrow={1} pl={1}>
-        {editStudy && study.id == editStudyName ? (
-          <Box flexGrow={1} className={classes.studyName}>
-            <EditStudyField
-              study={study.id}
-              studyName={study.name}
-              editData={editStudy}
-              editStudyName={editStudyName}
-              updateName={updateStudyName}
-              callbackModal={callbackModal}
-              allStudies={allStudies}
-              researcherId={researcherId}
-            />
-          </Box>
-        ) : aliasStudyName && editStudyName === study.id ? (
-          `${t(aliasStudyName)}`
-        ) : studyArray[study.id] ? (
-          `${t(studyArray[study.id])}`
-        ) : (
-          `${t(study.name)}`
-        )}
+        {
+          editStudy && study.id == editStudyName ? (
+            <Box flexGrow={1} className={classes.studyName}>
+              <EditStudyField
+                study={study.id}
+                studyName={study.name}
+                editData={editStudy}
+                editStudyName={editStudyName}
+                updateName={updateStudyName}
+                callbackModal={callbackModal}
+                allStudies={allStudies}
+                researcherId={researcherId}
+              />
+            </Box>
+          ) : aliasStudyName && editStudyName === study.id ? (
+            `${t(aliasStudyName)}`
+          ) : studyArray[study.id] ? (
+            `${t(studyArray[study.id])}`
+          ) : (
+            <>
+              <div>{`Study: ${t(study.name)}`}</div>
+              <div>{`Group: ${study.gname ? t(study.gname) : "No group available"}`}</div>
+            </>
+          )
+          // (
+          //   `${t(study.name)}`
+          // )
+        }
       </Box>
       <Box>
         <Fab
