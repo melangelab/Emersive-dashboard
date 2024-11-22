@@ -41,4 +41,9 @@ export class Participant {
    * Study name
    */
   study_name: string
+
+  /**
+   * Group name
+   */
+  group_name: string
 }

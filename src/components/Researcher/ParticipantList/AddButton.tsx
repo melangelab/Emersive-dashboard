@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next"
 import AddUser from "./AddUser"
 import StudyCreator from "./StudyCreator"
 import PatientStudyCreator from "../ParticipantList/PatientStudyCreator"
-
+import AddUserGroup from "../ParticipantList/AddUserGroup"
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     toolbardashboard: {
@@ -101,7 +101,7 @@ const useStyles = makeStyles((theme: Theme) =>
 
 export default function AddButton({ researcherId, studies, setParticipants, setData, mode, ...props }) {
   const [addUser, setAddUser] = useState(false)
-  const [addStudy, setAddStudy] = useState(false)
+  const [addGroupUser, setAddGroupUser] = useState(false)
   const { t } = useTranslation()
   const classes = useStyles()
   const [popover, setPopover] = useState(null)
@@ -115,9 +115,9 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
     if (data === 1) {
       setAddParticipantStudy(false)
     } else if (data === 2) {
-      setAddStudy(false)
-    } else {
       setAddUser(false)
+    } else {
+      setAddGroupUser(false)
     }
   }
 
@@ -164,7 +164,7 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
             <MenuItem
               onClick={() => {
                 setPopover(null)
-                setAddStudy(true)
+                setAddGroupUser(true)
               }}
             >
               <Typography variant="h6">{`${t("Add a new group")}`}</Typography>
@@ -174,7 +174,7 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
           <MenuItem
             onClick={() => {
               setPopover(null)
-              setAddStudy(false)
+              setAddGroupUser(false)
               setAddParticipantStudy(true)
             }}
           >
@@ -183,11 +183,12 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
           </MenuItem>
         </React.Fragment>
       </Popover>
-      <StudyCreator
+      <AddUserGroup
         studies={studies}
         researcherId={researcherId}
-        open={addStudy}
-        onClose={() => setAddStudy(false)}
+        setParticipants={setParticipants}
+        open={addGroupUser}
+        onClose={() => setAddGroupUser(false)}
         handleNewStudy={handleNewStudyData}
         closePopUp={handleClosePopUp}
       />

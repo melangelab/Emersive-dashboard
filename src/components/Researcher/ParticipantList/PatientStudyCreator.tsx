@@ -228,6 +228,7 @@ export default function PatientStudyCreator({
             sensor_count: studyAllData.length > 0 ? studyAllData[0].sensor_count : 0,
           }
           Service.addData("studies", [newStudyData])
+          console.log("checking psc", newStudyData)
           fetchResult(authString, authId, "activity" + newUriStudyID, "researcher").then((result) => {
             let filteredActivities = (result?.activities || []).filter(
               (eachActivities) => eachActivities.study_id === newStudyId
@@ -303,6 +304,15 @@ export default function PatientStudyCreator({
     Service.addData("studies", [newStudyData])
     if (!!studyName) updateStudyLocalStorage(authId, studyName)
     handleNewStudy(newStudyData)
+
+    LAMP.Study.update(newStudyData.id, newStudyData)
+      .then((res) => {
+        console.log(res)
+      })
+      .catch((error) => {
+        console.log("error updating group to newly created study", error)
+      })
+
     closePopUp(1)
   }
 

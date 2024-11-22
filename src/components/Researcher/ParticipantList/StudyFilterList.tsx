@@ -9,10 +9,12 @@ import { Service } from "../../DBService/DBService"
 export interface NewStudy {
   id?: string
   study_name?: string
+  group_name?: string
 }
 export interface Study {
   id?: string
   name?: string
+  group_name?: string
 }
 export interface Researcher {
   id?: string

@@ -118,6 +118,7 @@ export default function StudiesList({
           searchData={handleSearchData}
           setParticipants={searchFilterStudies}
           newStudyObj={setNewStudy}
+          updatedDataStudy={handleUpdatedStudyObject}
         />
         <Box className={classes.tableContainer} py={4}>
           <Grid container spacing={3}>

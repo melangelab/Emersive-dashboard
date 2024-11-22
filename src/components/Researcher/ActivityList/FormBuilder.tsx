@@ -18,18 +18,23 @@ import {
 } from "@mui/material"
 import { Add as AddIcon, Delete as DeleteIcon, Description } from "@mui/icons-material"
 
-const FormBuilder = ({ onChange, formFieldsProp }) => {
+const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
   const [formFields, setFormFields] = useState(formFieldsProp)
   const [selectedFieldType, setSelectedFieldType] = useState("")
+  const [selectedFormulaType, setSelectedFormulaType] = useState("")
 
   console.log("formFieldProp", formFieldsProp)
+
+  const [fieldsFormula, setFieldsFormula] = useState(formula)
+
+  console.log("Fields Formula", fieldsFormula)
 
   // Sync form fields with parent component when needed
   useEffect(() => {
     if (onChange) {
-      onChange({ fields: formFields })
+      onChange({ fields: formFields, formula: fieldsFormula })
     }
-  }, [formFields])
+  }, [formFields, fieldsFormula])
 
   const fieldTypes = [
     { value: "singleLine", label: "Single Line Text" },
@@ -54,6 +59,7 @@ const FormBuilder = ({ onChange, formFieldsProp }) => {
       label: "",
       description: "",
       required: false,
+      useInCalculation: false,
       options: [],
       settings: {
         placeholder: "",
@@ -97,6 +103,26 @@ const FormBuilder = ({ onChange, formFieldsProp }) => {
 
   const updateField = (fieldId, updates) => {
     setFormFields(formFields.map((field) => (field.id === fieldId ? { ...field, ...updates } : field)))
+
+    // Only update fields4Calc if updates contain `useInCalculation`
+    if (Object.prototype.hasOwnProperty.call(updates, "useInCalculation")) {
+      setFields4Calc((prevFields4Calc) => {
+        const isChecked = updates.useInCalculation
+
+        const updatedField = formFields.find((field) => field.id === fieldId)
+
+        if (isChecked) {
+          // Add the field if it's not already in fields4Calc
+          // if (!prevFields4Calc.includes(updatedField)) {
+          return [...prevFields4Calc, updatedField]
+          // }
+        } else {
+          // Remove the field if it exists in fields4Calc
+          return prevFields4Calc.filter((field) => field.id !== updatedField.id)
+        }
+        return prevFields4Calc
+      })
+    }
   }
 
   const addOption = (fieldId) => {
@@ -112,6 +138,8 @@ const FormBuilder = ({ onChange, formFieldsProp }) => {
       })
     )
   }
+
+  const [fields4Calc, setFields4Calc] = useState(formFields.filter((field) => field.useInCalculation))
 
   const renderFieldSettings = (field) => {
     switch (field.type) {
@@ -340,6 +368,46 @@ const FormBuilder = ({ onChange, formFieldsProp }) => {
     }
   }
 
+  const [error4Fields, setError4Fields] = useState("")
+
+  const handleFormulaType = (value) => {
+    let formula = ""
+    if (value === "Sum All") {
+      formula = fields4Calc.map((field) => `(${field.label})`).join(" + ")
+    } else if (value === "Multiply all") {
+      formula = fields4Calc.map((field) => `(${field.label})`).join(" x ")
+    } else if (value === "Subtract all") {
+      formula = fields4Calc.map((field) => `(${field.label})`).join(" - ")
+    }
+    setFieldsFormula(formula)
+    // Clear error if formula is set successfully
+  }
+
+  const handleSelectChange = (value) => {
+    setSelectedFormulaType(value)
+    if (fields4Calc.length < 2) {
+      setError4Fields("Please select at least two fields to perform a calculation.")
+      return
+    } else {
+      setError4Fields("")
+    }
+    handleFormulaType(value)
+  }
+
+  useEffect(() => {
+    console.log("#$#$#$#$#$#", selectedFormulaType)
+    if (selectedFormulaType != "") {
+      if (fields4Calc.length > 1) {
+        setError4Fields("")
+        handleFormulaType(selectedFormulaType)
+        return
+      } else {
+        setError4Fields("Please select at least two fields to perform a calculation.")
+        setFieldsFormula("")
+      }
+    }
+  }, [fields4Calc])
+
   return (
     <Grid container spacing={4} direction="column">
       {/* Column for "Add Field" section */}
@@ -448,6 +516,20 @@ const FormBuilder = ({ onChange, formFieldsProp }) => {
 
                     <Divider sx={{ my: 2 }} />
                     {renderFieldSettings(field)}
+                    {["number", "dropdown", "checkbox", "radio"].includes(field.type) ? (
+                      <>
+                        <Divider sx={{ my: 2 }} />
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={field.useInCalculation}
+                              onChange={(e) => updateField(field.id, { useInCalculation: e.target.checked })}
+                            />
+                          }
+                          label="Use in calculation"
+                        />
+                      </>
+                    ) : null}
                   </CardContent>
                 </Card>
               </Grid>
@@ -455,6 +537,62 @@ const FormBuilder = ({ onChange, formFieldsProp }) => {
           </Grid>
         </Box>
       </Grid>
+      {/* <Grid item xs={12}> */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column", // Align items in a row
+          justifyContent: "center", // Center items horizontally
+          alignItems: "center", // Center items vertically
+          // marginTop: "3%",
+          padding: "10px 0",
+        }}
+      >
+        <FormControl sx={{ width: 400 }}>
+          <InputLabel>Calculation Type</InputLabel>
+          <Select
+            value={selectedFormulaType}
+            label="Formula Type"
+            onChange={(e) => {
+              handleSelectChange(e.target.value)
+            }}
+          >
+            {["Sum All", "Multiply all", "Subtract all", "Custom"].map((item) => (
+              <MenuItem key={item} value={item}>
+                {item}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {error4Fields && (
+          <Typography color="error" variant="body2">
+            {error4Fields}
+          </Typography>
+        )}
+
+        {fieldsFormula && !error4Fields && (
+          <Typography variant="body1" sx={{ marginTop: 2 }}>
+            Generated Formula: {fieldsFormula}
+          </Typography>
+        )}
+
+        {selectedFormulaType === "Custom" && !error4Fields ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column", // Align items in a row
+              justifyContent: "center", // Center items horizontally
+              alignItems: "center", // Center items vertically
+              // marginTop: "3%",
+              // padding: "10px 0"
+            }}
+          >
+            {fields4Calc.length > 0 ? <></> : null}
+          </div>
+        ) : null}
+      </Box>
+      {/* </Grid> */}
     </Grid>
   )
 }
