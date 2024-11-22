@@ -36,4 +36,6 @@ export class Activity {
    * Study name
    */
   study_name: string
+
+  formula4Fields: string
 }

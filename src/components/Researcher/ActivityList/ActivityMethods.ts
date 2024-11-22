@@ -1737,6 +1737,17 @@ export async function updateActivityData(x, isDuplicated, selectedActivity) {
       })
       return result
     }
+  } else if (x.spec === "lamp.form_builder") {
+    result = (await LAMP.Activity.update(selectedActivity?.id, x)) as any
+
+    await LAMP.Type.setAttachment(selectedActivity?.id, "me", "lamp.dashboard.activity_details", {
+      description: x.description,
+      photo: x.photo,
+      streak: x.streak,
+      showFeed: x?.showFeed,
+    })
+    console.log("UPDATING ACTIVITY RRESULT", result)
+    return result
   }
 }
 export function addActivity(x, studies) {

@@ -99,6 +99,7 @@ export default function FormBuilderCreator({
     id: value?.id ?? undefined,
     name: value?.name ?? "",
     spec: value?.spec ?? activitySpecId,
+    formula4Fields: value?.formula4Fields ?? null,
     schedule: !!value ? value?.schedule : [],
     description: "",
     photo: details?.photo ?? null,
@@ -471,6 +472,7 @@ export default function FormBuilderCreator({
       id: value?.id ?? undefined,
       name: details.text,
       spec: value?.spec ?? activitySpecId,
+      formula4Fields: value?.formula4Fields ?? null,
       schedule: value?.schedule ?? [],
       settings: data.settings,
       description: details.description,
@@ -526,7 +528,7 @@ export default function FormBuilderCreator({
       })
     }
     console.log("settingsData", settingsData)
-    setData({ ...data, settings: settingsData?.fields })
+    setData({ ...data, formula4Fields: settingsData.formula, settings: settingsData?.fields })
   }
 
   return (
@@ -550,6 +552,7 @@ export default function FormBuilderCreator({
             updateSettings(formData)
           }}
           formFieldsProp={data.settings}
+          formula={data.formula4Fields}
         />
         <ActivityFooter onSave={onSave} validate={validate} value={value} data={data ?? []} />
       </Container>

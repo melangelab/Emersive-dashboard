@@ -134,7 +134,13 @@ export default function ParticipantListItem({
             title={
               <ParticipantName participant={user} updateParticipant={updateParticipant} openSettings={openSettings} />
             }
-            subheader={<Typography variant="overline">{participant.study_name}</Typography>}
+            subheader={
+              <React.Fragment>
+                <Typography variant="overline">{participant.study_name}</Typography>
+                <Typography variant="overline">{" , "}</Typography>
+                <Typography variant="overline">{participant.group_name || "Not enrolled in any Group"}</Typography>
+              </React.Fragment>
+            }
             className={classes.participantHeader}
           />
           <CardContent className={classes.participantSub}>

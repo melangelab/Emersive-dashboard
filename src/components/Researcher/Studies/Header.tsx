@@ -63,7 +63,15 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-export default function Header({ studies, researcherId, searchData, setParticipants, newStudyObj, ...props }) {
+export default function Header({
+  studies,
+  researcherId,
+  searchData,
+  setParticipants,
+  newStudyObj,
+  updatedDataStudy,
+  ...props
+}) {
   const classes = useStyles()
   const { t } = useTranslation()
   const [popover, setPopover] = useState(null)
@@ -74,6 +82,7 @@ export default function Header({ studies, researcherId, searchData, setParticipa
   const handleNewStudyData = (data) => {
     setParticipants()
     newStudyObj(data)
+    updatedDataStudy(data)
   }
 
   // const handleClosePopUp = (data) => {

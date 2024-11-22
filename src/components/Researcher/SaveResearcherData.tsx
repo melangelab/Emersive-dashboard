@@ -5,6 +5,7 @@ import LAMP from "lamp-core"
 interface StudyObject {
   id: string
   name: string
+  gname: Array<any>
   participants: Array<any>
   activities: Array<any>
   sensors: Array<any>
@@ -61,7 +62,18 @@ const saveStudiesAndParticipants = (result, studies, researcherId) => {
     localStorage.setItem("studyFilter_" + researcherId, JSON.stringify(1))
   }
   Service.addData("studies", studies)
+  participants.map((p) => {
+    Service.getDataByKey("participants", [p.id], "id").then((data) => {
+      console.log("cached participants before", data)
+    })
+  })
   Service.addData("participants", participants)
+  console.log("pariticipants logged", participants)
+  participants.map((p) => {
+    Service.getDataByKey("participants", [p.id], "id").then((data) => {
+      console.log("cached participants", data)
+    })
+  })
   Service.addData("sensors", sensors)
   Service.addData("activities", activities)
 }
@@ -108,12 +120,12 @@ export const saveDataToCache = (authString, id) => {
       " $list :={'unity_settings': $LAMP.Tag.get('" +
       id +
       "','to.unityhealth.psychiatry.enabled')," +
-      "'studies':[$map($studyList,function($study){{'name': $study.name,'id':$study.id," +
+      "'studies':[$map($studyList,function($study){{'name': $study.name,'id':$study.id, 'gname':$study.gname," +
       "'participants':[$map($LAMP.Participant.list($study.id).id,function($id){{'name': " +
       "$LAMP.Tag.get($id,'lamp.name'), 'is_deleted': $LAMP.Tag.get($id,'lamp.is_deleted'), 'unity_settings' : $unitySettings ? " +
-      "$LAMP.Tag.get($id,'to.unityhealth.psychiatry.settings') : null,'id':$id, 'study_id' : $study.id, 'study_name': $study.name }})]," +
+      "$LAMP.Tag.get($id,'to.unityhealth.psychiatry.settings') : null,'id':$id, 'study_id' : $study.id, 'study_name': $study.name, 'group_name': $LAMP.Tag.get($id,'lamp.group_name') }})]," +
       "'activities':[$map($LAMP.Activity.list($study.id),function($activity){{'name': " +
-      " $activity.name, 'spec': $activity.spec, 'category': $activity.category, 'schedule': $activity.schedule, 'settings': $filterAudioOut($activity.settings),  'id':$activity.id, 'study_id' " +
+      " $activity.name, 'spec': $activity.spec, 'category': $activity.category, 'formula4Fields': $activity.formula4Fields, 'schedule': $activity.schedule, 'settings': $filterAudioOut($activity.settings),  'id':$activity.id, 'study_id' " +
       ": $study.id, 'study_name': $study.name}})]," +
       "'sensors':[$map($LAMP.Sensor.list($study.id),function($sensor){{'name': " +
       " $sensor.name,'id':$sensor.id,'spec': $sensor.spec,'study_id': $study.id,'study_name': $study.name}})]}})]})"
@@ -122,6 +134,7 @@ export const saveDataToCache = (authString, id) => {
       return {
         id: study?.id || "",
         name: study?.name || "",
+        gname: study?.gname || [],
         participant_count: (study?.participants || []).length,
         activity_count: (study?.activities || []).length,
         sensor_count: (study?.sensors || []).length,

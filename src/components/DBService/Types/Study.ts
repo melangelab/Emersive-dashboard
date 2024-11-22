@@ -36,4 +36,9 @@ export class Study {
    * Study name
    */
   study_name: string
+
+  /**
+   * Group Array
+   */
+  gname: Array<string>
 }

@@ -18,7 +18,7 @@ import {
 } from "@material-ui/core"
 
 import { useSnackbar } from "notistack"
-import LAMP from "lamp-core"
+import LAMP, { Participant } from "lamp-core"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
 import NewPatientDetail from "./NewPatientDetail"
@@ -75,21 +75,23 @@ export default function AddUser({
 } & DialogProps) {
   const classes = useStyles()
   const [selectedStudy, setSelectedStudy] = useState("")
-  const [showErrorMsg, setShowErrorMsg] = useState(false)
+  const [selectedGroup, setSelectedGroup] = useState("")
+  const [showErrorMsg, setShowErrorMsg] = useState(true)
   const [studyBtnClicked, setStudyBtnClicked] = useState(false)
   const { enqueueSnackbar } = useSnackbar()
   const { t } = useTranslation()
   const [newId, setNewId] = useState(null)
 
-  const validate = () => {
-    return !(
-      typeof selectedStudy === "undefined" ||
-      (typeof selectedStudy !== "undefined" && selectedStudy?.trim() === "")
-    )
+  const validate = (element) => {
+    return !(typeof element === "undefined" || (typeof element !== "undefined" && element?.trim() === ""))
   }
   const handleChangeStudy = (event) => {
     setShowErrorMsg(false)
     setSelectedStudy(event.target.value)
+    setSelectedGroup("")
+  }
+  const handleChangeGroup = (event) => {
+    setSelectedGroup(event.target.value)
   }
 
   let createStudy = async () => {
@@ -114,19 +116,33 @@ export default function AddUser({
         } else {
           newParticipant.study_id = selectedStudy
           newParticipant.study_name = studies.filter((study) => study.id === selectedStudy)[0]?.name
+          newParticipant.group_name = selectedGroup
           Service.addData("participants", [newParticipant])
           Service.updateCount("studies", selectedStudy, "participant_count")
           Service.getData("studies", selectedStudy).then((studiesObject) => {
             handleNewStudy(studiesObject)
           })
+          console.log("LAMP.Participant.allByStudy", await LAMP.Participant.allByStudy(selectedStudy))
           setNewId(newParticipant.id)
+          // const updParticipant : Participant = {
+          //   ...newParticipant,
+          //   group_name: selectedGroup,
+          // }
+          console.log("here", newParticipant, idData)
+          Service.getDataByKey("participants", [newParticipant.id], "id").then((data) => {
+            console.log("updated participants", data)
+          })
+          await LAMP.Type.setAttachment(id, "me", "lamp.group_name", selectedGroup)
+          await LAMP.Participant.update(newParticipant.id, newParticipant).then((res) =>
+            console.log("updaqted partiicpant", res)
+          )
         }
         ids = [...ids, id]
       }
       setParticipants()
     }
     setSelectedStudy("")
-    closePopUp(3)
+    closePopUp(2)
     props.onClose as any
   }
 
@@ -159,17 +175,19 @@ export default function AddUser({
         handleNewStudy(studiesObject)
       })
       setNewId(newParticipant.id)
-      closePopUp(3)
+      closePopUp(2)
       setSelectedStudy("")
       setParticipants()
     }
     setSelectedStudy("")
-    closePopUp(3)
+    closePopUp(2)
     props.onClose as any
   }
 
   const handleEnter = () => {
     setSelectedStudy("")
+    setSelectedGroup("")
+    setShowErrorMsg(true)
   }
 
   return (
@@ -195,18 +213,18 @@ export default function AddUser({
         </DialogTitle>
         <DialogContent dividers={false} classes={{ root: classes.activityContent }}>
           <Box mt={2} mb={3}>
-            <Typography variant="body2">{`${t("Choose the Group you want to save this participant.")}`}</Typography>
+            <Typography variant="body2">{`${t("Choose the Study you want to save this participant.")}`}</Typography>
           </Box>
           <TextField
-            error={!validate()}
+            error={!validate(selectedStudy)}
             select
             autoFocus
             fullWidth
             variant="outlined"
-            label={`${t("Group")}`}
+            label={`${t("Study")}`}
             value={selectedStudy}
             onChange={handleChangeStudy}
-            helperText={!validate() ? `${t("Please select the group")}` : ""}
+            helperText={!validate(selectedStudy) ? `${t("Please select the Study")}` : ""}
           >
             {(studies || []).map((study) => (
               <MenuItem key={study.id} value={study.id}>
@@ -214,9 +232,39 @@ export default function AddUser({
               </MenuItem>
             ))}
           </TextField>
-          {!!showErrorMsg && (
+          {/* {!showErrorMsg && !selectedStudy && (
             <Box mt={1}>
-              <Typography className={classes.errorMsg}>{`${t("Select a Group to create a participant.")}`}</Typography>
+              <Typography className={classes.errorMsg}>{`${t("Select a Study to create a participant.")}`}</Typography>
+            </Box>
+          )} */}
+          <Box mt={2} mb={3}>
+            <Typography variant="body2">{`${t("Choose the Group you want to save this participant.")}`}</Typography>
+          </Box>
+          <TextField
+            error={!validate(selectedGroup)}
+            select
+            autoFocus
+            fullWidth
+            variant="outlined"
+            label={`${t("Group")}`}
+            value={selectedGroup}
+            onChange={handleChangeGroup}
+            disabled={!selectedStudy}
+            helperText={!validate(selectedGroup) && !showErrorMsg ? `${t("Please select the Group")}` : ""}
+          >
+            {((selectedStudy && studies.find((study) => study.id === selectedStudy)?.gname) || []).map(
+              (groupName, index) => (
+                <MenuItem key={index} value={groupName}>
+                  {groupName}
+                </MenuItem>
+              )
+            )}
+          </TextField>
+          {showErrorMsg && (
+            <Box mt={1}>
+              <Typography className={classes.errorMsg}>{`${t(
+                "Select a Study first for choosing groups."
+              )}`}</Typography>
             </Box>
           )}
         </DialogContent>
@@ -225,7 +273,7 @@ export default function AddUser({
             <Button
               color="primary"
               onClick={() => {
-                closePopUp(3)
+                closePopUp(2)
               }}
             >
               {`${t("Cancel")}`}
@@ -238,7 +286,7 @@ export default function AddUser({
               color="primary"
               autoFocus
               //disabled={!!studyBtnClicked ? true : false}
-              disabled={!validate()}
+              disabled={!validate(selectedStudy)}
             >
               {`${t("Save")}`}
             </Button>

@@ -22,6 +22,7 @@ import LAMP, { Study } from "lamp-core"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
 import { fetchPostData, fetchResult } from "../SaveResearcherData"
+import NewPatientDetail from "./NewPatientDetail"
 
 const useStyles = makeStyles((theme) => ({
   dataQuality: {
@@ -53,7 +54,14 @@ const useStyles = makeStyles((theme) => ({
   checkboxActive: { color: "#7599FF !important" },
 }))
 
-export default function StudyGroupCreator({ studies, researcherId, handleNewStudy, closePopUp, ...props }: any) {
+export default function AddUserGroup({
+  studies,
+  researcherId,
+  setParticipants,
+  handleNewStudy,
+  closePopUp,
+  ...props
+}: any) {
   const [studyName, setStudyName] = useState("")
   const [loading, setLoading] = useState(false)
   const { enqueueSnackbar } = useSnackbar()
@@ -61,6 +69,8 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
   const classes = useStyles()
   const [duplicateCnt, setCount] = useState(0)
   const [groupName, setGroupName] = useState("")
+  const [newId, setNewId] = useState(null)
+  const [studyBtnClicked, setStudyBtnClicked] = useState(false)
   const [duplicateStudyName, setDuplicateStudyName] = useState<any>("")
 
   const validate = () => {
@@ -73,19 +83,43 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
     )
   }
 
-  // const saveGroupData = async (studyId: string, groupName: string) => {
-  //   const groupData = {
-  //     study_id: studyId,
-  //     name: groupName,
-  //   };
-  //   Service.addData("groups", [groupData]);
-  // };
+  const createParticipant = async (studyId: string) => {
+    let idData = ((await LAMP.Participant.create(studyId, { study_code: "001" } as any)) as any).data
+    let id = typeof idData === "object" ? idData.id : idData
+    let newParticipant: any = {}
+    if (typeof idData === "object") {
+      newParticipant = idData
+    } else {
+      newParticipant["id"] = idData
+    }
+    if (!!((await LAMP.Credential.create(id, `${id}@lamp.com`, id, "Temporary Login")) as any).error) {
+      enqueueSnackbar(`${t("Could not create credential for id.", { id })}`, { variant: "error" })
+    } else {
+      newParticipant.study_id = studyId
+      newParticipant.study_name = studies.find((study) => study.id === studyId)?.name
+      newParticipant.group_name = groupName
+      Service.addData("participants", [newParticipant])
+      Service.updateCount("studies", studyId, "participant_count")
+      Service.getData("studies", studyId).then((studiesObject) => {
+        handleNewStudy(studiesObject)
+      })
+      console.log("here", newParticipant, idData)
+      Service.getDataByKey("participants", [newParticipant.id], "id").then((data) => {
+        console.log("updated participants", data)
+      })
+      setNewId(newParticipant.id)
+    }
+    handleEnter()
+    setParticipants()
+  }
 
-  // const handleEnter = () => {
-  //   setStudyName("")
-  //   setGroupName("")
-  //   setCount(0)
-  // }
+  const handleEnter = () => {
+    setStudyName("")
+    setGroupName("")
+    setCount(0)
+    setNewId(null)
+  }
+
   useEffect(() => {
     console.log("chnaging studies on groupnaem", studies)
     let duplicateCount = 0
@@ -101,12 +135,7 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
 
   const createGroup = async (sName: string, groupName: string) => {
     setLoading(true)
-    // let authId = researcherId
-    // let authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
-    // let bodyData = {
-    //   study_id: sName, //old study id
-    //   name: duplicateStudyName,
-    // }
+    setStudyBtnClicked(true)
     console.log("created group", sName, groupName)
     const studyToUpdate = studies.find((study) => study.id === sName)
     if (studyToUpdate) {
@@ -129,6 +158,8 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
             localStorage.setItem("studies_" + researcherId, JSON.stringify(data))
             enqueueSnackbar(`${t("Successfully updated group in Study.", { studyId: sName })}`, { variant: "success" })
             console.log(LAMP.Study.allByResearcher(researcherId))
+            createParticipant(sName)
+            console.log("created new user")
           })
           .catch((error) => {
             console.log("error", error)
@@ -147,7 +178,6 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
         Service.getData("studies", sName).then((studiesObject) => {
           console.log("getting db ", studiesObject)
         })
-        // enqueueSnackbar(t("Successfully updated study with new group - {{groupName}}.", { groupName }), { variant: "success" })
         setStudyName("")
         setGroupName("")
         setDuplicateStudyName("")
@@ -169,128 +199,103 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
       enqueueSnackbar(t("Study not found."), { variant: "error" })
       setLoading(false)
     }
-    // LAMP.Study.create(researcherId, newStudy)
-    // .then((res) => {
-    //   const result = JSON.parse(JSON.stringify(res))
-    //   if (result?.data) {
-    //     const newStudyData = {
-    //       id: result.data,
-    //       name: sName,
-    //       gname: result.gname ? result.gname + [groupName] : [groupName],
-    //       participant_count: 1,
-    //       activity_count: 0,
-    //       sensor_count: 0,
-    //     }
-    //     Service.addData("studies", [newStudyData])
-    //     enqueueSnackbar(t("Successfully created new group - {{groupName}}.", { groupName }), { variant: "success" })
-
-    //     newStudyData.participant_count = 0
-    //     handleNewStudy(newStudyData)
-    //     // handleEnter()
-    //     setStudyName("")
-    //     setGroupName("")
-    //     setDuplicateStudyName("")
-    //     setCount(0)
-    //     closePopUp(3)
-    //   } else {
-    //     enqueueSnackbar(t("Error creating group."), { variant: "error" })
-    //   }
-    // })
-    // .catch(() => {
-    //   enqueueSnackbar(t("An error occurred while creating new group - {{groupName}}.", { groupName }), {
-    //     variant: "error",
-    //   })
-    // })
-    // .finally(() => {
-    //   setLoading(false)
-    // })
   }
 
   return (
-    <Dialog
-      {...props}
-      onClose={() => {
-        setStudyName("")
-        setGroupName("")
-        setDuplicateStudyName("")
-        setCount(0)
-        closePopUp(3)
-      }}
-    >
-      <DialogTitle id="alert-dialog-slide-title" disableTypography>
-        <Typography variant="h6">{`${t("Create a new group")}`}</Typography>
-        <IconButton aria-label="close" className={classes.closeButton} onClick={props.onClose as any}>
-          <Icon>close</Icon>
-        </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        <Box mb={2}>
-          <TextField
-            error={!validate()}
-            label={t("Group Name")}
-            fullWidth
-            variant="outlined"
-            value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
-            helperText={
-              duplicateCnt > 0
-                ? `${t("Unique group name required")}`
-                : !validate()
-                ? `${t("Please enter group name.")}`
-                : ""
-            }
-          />
-        </Box>
-        <Box>
-          <TextField
-            select
-            autoFocus
-            fullWidth
-            variant="outlined"
-            label={`${t("Select Study")}`}
-            value={studyName}
-            onChange={(e) => {
-              // const { id, name } = JSON.parse(e.target.value) // Parse JSON to get id and name
-              // setDuplicateStudyName(name)
-              setStudyName(e.target.value)
-            }}
-            inputProps={{ maxLength: 80 }}
+    <React.Fragment>
+      <Dialog
+        {...props}
+        onEnter={handleEnter}
+        onClose={() => {
+          setStudyName("")
+          setGroupName("")
+          setDuplicateStudyName("")
+          setCount(0)
+          setNewId(null)
+          closePopUp(3)
+        }}
+      >
+        <DialogTitle id="alert-dialog-slide-title" disableTypography>
+          <Typography variant="h6">{`${t("Create a new group")}`}</Typography>
+          <IconButton
+            aria-label="close"
+            className={classes.closeButton}
+            onClick={props.onClose as any}
+            disabled={!!studyBtnClicked ? true : false}
           >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {(studies || []).map((study) => (
-              <MenuItem
-                key={study.id}
-                value={study.id}
-                // value={JSON.stringify({ id: study.id, name: study.name })}
-              >
-                {study.name}
+            <Icon>close</Icon>
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box mb={2}>
+            <TextField
+              error={!validate()}
+              label={t("Group Name")}
+              fullWidth
+              variant="outlined"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              helperText={
+                duplicateCnt > 0
+                  ? `${t("Unique group name required")}`
+                  : !validate()
+                  ? `${t("Please enter group name.")}`
+                  : ""
+              }
+            />
+          </Box>
+          <Box>
+            <TextField
+              select
+              autoFocus
+              fullWidth
+              variant="outlined"
+              label={`${t("Select Study")}`}
+              value={studyName}
+              onChange={(e) => {
+                // const { id, name } = JSON.parse(e.target.value) // Parse JSON to get id and name
+                // setDuplicateStudyName(name)
+                setStudyName(e.target.value)
+              }}
+              inputProps={{ maxLength: 80 }}
+            >
+              <MenuItem value="">
+                <em>None</em>
               </MenuItem>
-            ))}
-          </TextField>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button
-          onClick={() => {
-            setStudyName("")
-            setGroupName("")
-            setDuplicateStudyName("")
-            setCount(0)
-            closePopUp(3)
-          }}
-          color="primary"
-        >
-          {t("Cancel")}
-        </Button>
-        <Button onClick={() => createGroup(studyName, groupName)} color="primary" disabled={!studyName || loading}>
-          {loading ? <CircularProgress size={24} /> : t("Confirm")}
-        </Button>
-      </DialogActions>
-      <Backdrop className={classes.backdrop} open={loading}>
-        <CircularProgress color="inherit" />
-      </Backdrop>
-    </Dialog>
+              {(studies || []).map((study) => (
+                <MenuItem
+                  key={study.id}
+                  value={study.id}
+                  // value={JSON.stringify({ id: study.id, name: study.name })}
+                >
+                  {study.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setStudyName("")
+              setGroupName("")
+              setDuplicateStudyName("")
+              setCount(0)
+              closePopUp(3)
+            }}
+            color="primary"
+          >
+            {t("Cancel")}
+          </Button>
+          <Button onClick={() => createGroup(studyName, groupName)} color="primary" disabled={!studyName || loading}>
+            {loading ? <CircularProgress size={24} /> : t("Confirm")}
+          </Button>
+        </DialogActions>
+        <Backdrop className={classes.backdrop} open={loading}>
+          <CircularProgress color="inherit" />
+        </Backdrop>
+      </Dialog>
+      {!!newId && <NewPatientDetail id={newId} />}
+    </React.Fragment>
   )
 }

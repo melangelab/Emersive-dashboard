@@ -18,6 +18,7 @@ interface LampDB extends DBSchema {
       participant_count: number
       activity_count: number
       sensor_count: number
+      gname: Array<string>
     }
     indexes: { id: string }
   }
@@ -33,6 +34,7 @@ interface LampDB extends DBSchema {
       analytics: Array<JSON>
       study_id: string
       study_name: string
+      group_name: string
     }
     indexes: { study_name: string; id: string }
   }
@@ -44,6 +46,7 @@ interface LampDB extends DBSchema {
       spec: string
       study_id: string
       study_name: string
+      formula4Fields: string
       schedule: Array<JSON>
       settings?: Array<JSON>
     }
