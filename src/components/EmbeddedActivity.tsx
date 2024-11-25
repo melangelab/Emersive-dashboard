@@ -131,6 +131,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
             data["activity"] = currentActivity.id
             data["timestamp"] = activityTimestamp
             data["duration"] = new Date().getTime() - activityTimestamp
+            console.log("INSIDE HANDLE SAVE DATA", data)
             setData(data)
             setEmbeddedActivity(undefined)
             setSettings(null)
@@ -201,7 +202,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
           setCurrentActivity(null)
           LAMP.ActivityEvent.create(participant?.id ?? participant, data)
             .catch((e) => {
-              enqueueSnackbar(`${t("An error occured while saving the results.")}`, {
+              enqueueSnackbar(`${t("An error occurred while saving the results.")}`, {
                 variant: "error",
               })
             })
@@ -310,7 +311,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogContent>{t("An exception occured. The data could not be submitted.")}</DialogContent>
+        <DialogContent>{t("An exception occurred. The data could not be submitted.")}</DialogContent>
         <DialogActions>
           <Button
             onClick={() => {

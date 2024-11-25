@@ -1552,6 +1552,7 @@ export function spliceCTActivity({ raw, tag }) {
     schedule: raw.schedule,
     settings: raw.settings,
     category: raw.category,
+    ...(raw.spec === "lamp.form_builder" && { formula4Fields: raw?.formula4Fields }),
   }
 }
 

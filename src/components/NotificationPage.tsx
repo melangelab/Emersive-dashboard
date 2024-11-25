@@ -127,6 +127,7 @@ export default function NotificationPage({ participant, activityId, mode, tab, .
     ;(async () => {
       LAMP.Activity.view(activityId)
         .then((data: any) => {
+          console.log("HELLO FROM NOTIFICATIOn PAGE activity view", data)
           if (!!data) {
             Service.getUserDataByKey("activitytags", [activityId], "id").then((tags) => {
               setTag(tags[0])
