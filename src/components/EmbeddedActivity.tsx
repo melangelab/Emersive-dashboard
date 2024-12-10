@@ -15,6 +15,8 @@ import { useTranslation } from "react-i18next"
 import LAMP from "lamp-core"
 import { useSnackbar } from "notistack"
 import { sensorEventUpdate } from "./BottomMenu"
+// import { promises as fs } from "fs";
+
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     backdrop: {

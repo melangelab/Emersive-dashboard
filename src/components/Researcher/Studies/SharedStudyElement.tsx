@@ -292,10 +292,13 @@ export default function SharedStudyElement({
                       aria-labelledby="alert-dialog-slide-title"
                       aria-describedby="alert-dialog-slide-description"
                       classes={{ paper: classes.manageStudyDialog }}
+                      BackdropProps={{
+                        invisible: true,
+                      }}
                     >
                       <DialogContent dividers={false} classes={{ root: classes.activityContent }}>
                         <Box mt={2} mb={2}>
-                          {`${t("Are you sure you want to delete this group?")}`}
+                          {`${t("Are you sure you want to exit this study?")}`}
                         </Box>
                         <DialogActions>
                           <Box textAlign="center" width={1} mb={3}>
