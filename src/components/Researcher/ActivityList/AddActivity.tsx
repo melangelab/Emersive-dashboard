@@ -242,13 +242,17 @@ export default function AddActivity({
               </Grid>
             </Grid>
           </MenuItem>
-          {activitySpecs.filter((x) => ["lamp.group", "lamp.survey"].includes(x.id)).length > 0 && (
+          {activitySpecs.filter((x) =>
+            ["lamp.group", "lamp.form_builder", "lamp.survey", "lamp.cbt_thought_record"].includes(x.id)
+          ).length > 0 && (
             <React.Fragment>
               <MenuItem disabled divider>
                 <b>{`${t("Create a new...")}`}</b>
               </MenuItem>
               {activitySpecs
-                .filter((x) => ["lamp.group", "lamp.survey"].includes(x.id))
+                .filter((x) =>
+                  ["lamp.group", "lamp.form_builder", "lamp.survey", "lamp.cbt_thought_record"].includes(x.id)
+                )
                 .map((x) => (
                   <Link
                     href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}
@@ -261,12 +265,16 @@ export default function AddActivity({
                 ))}
             </React.Fragment>
           )}
-          {activitySpecs.filter((x) => !["lamp.group", "lamp.survey"].includes(x.id)).length > 0 && [
+          {activitySpecs.filter(
+            (x) => !["lamp.group", "lamp.survey", "lamp.form_builder", "lamp.cbt_thought_record"].includes(x.id)
+          ).length > 0 && [
             <MenuItem divider key="head" disabled className={classes.borderTop}>
               <b>{`${t("Smartphone Cognitive Tests")}`}</b>
             </MenuItem>,
             ...activitySpecs
-              .filter((x) => !["lamp.group", "lamp.survey"].includes(x.id))
+              .filter(
+                (x) => !["lamp.group", "lamp.survey", "lamp.form_builder", "lamp.cbt_thought_record"].includes(x.id)
+              )
               .map((x) => (
                 <Link
                   href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}

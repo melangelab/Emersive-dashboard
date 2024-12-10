@@ -134,7 +134,7 @@ export default function ActivityHeader({
               error={typeof studyId == "undefined" || studyId === null || studyId === "" ? true : false}
               id="filled-select-currency"
               select
-              label={`${t("Group")}`}
+              label={`${t("Study")}`}
               value={studyId}
               onChange={(e) => {
                 setStudyId(e.target.value)

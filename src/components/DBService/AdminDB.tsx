@@ -35,6 +35,10 @@ interface LampDB extends DBSchema {
       study_id: string
       study_name: string
       group_name: string
+      sub_researchers?: {
+        ResearcherID: string
+        access_scope: number
+      }[]
     }
     indexes: { study_name: string; id: string }
   }

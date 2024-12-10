@@ -18,11 +18,13 @@ import ParticipantList from "./ParticipantList/Index"
 import ActivityList from "./ActivityList/Index"
 import SensorsList from "./SensorsList/Index"
 import StudiesList from "./Studies/Index"
+import SharedStudiesList from "./Studies/SharedStudy"
 import { ResponsivePaper } from "../Utils"
 import { ReactComponent as Patients } from "../../icons/Patients.svg"
 import { ReactComponent as Activities } from "../../icons/Activities.svg"
 import { ReactComponent as Sensors } from "../../icons/Sensor.svg"
 import { ReactComponent as Studies } from "../../icons/Study.svg"
+import { ReactComponent as SharedStudies } from "../../icons/SharedStudy.svg"
 import { ReactComponent as DataPortalIcon } from "../../icons/DataPortal.svg"
 import { useTranslation } from "react-i18next"
 import { Service } from "../DBService/DBService"
@@ -344,6 +346,19 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   <ListItem
                     className={classes.menuItems + " " + classes.btnCursor}
                     button
+                    selected={tab === "sharedstudies"}
+                    onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/sharedstudies`)}
+                  >
+                    <ListItemIcon className={classes.menuIcon}>
+                      <SharedStudies />
+                    </ListItemIcon>
+                    <ListItemText primary={`${t("Shared Studies")}`} />
+                  </ListItem>
+                )}
+                {mode === "researcher" && (
+                  <ListItem
+                    className={classes.menuItems + " " + classes.btnCursor}
+                    button
                     selected={tab === "portal"}
                     onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/portal`)}
                   >
@@ -396,6 +411,18 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
             )}
             {tab === "studies" && (
               <StudiesList
+                title={null}
+                researcherId={researcherId}
+                studies={studies}
+                upatedDataStudy={(data) => setUpdatedData(data)}
+                deletedDataStudy={(data) => setDeletedData(data)}
+                searchData={(data) => setSearch(data)}
+                newAdddeStudy={setNewStudy}
+                getAllStudies={getAllStudies}
+              />
+            )}
+            {tab === "sharedstudies" && (
+              <SharedStudiesList
                 title={null}
                 researcherId={researcherId}
                 studies={studies}
