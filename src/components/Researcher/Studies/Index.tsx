@@ -6,6 +6,7 @@ import DeleteStudy from "./DeleteStudy"
 import EditStudy from "./EditStudy"
 import { Service } from "../../DBService/DBService"
 import useInterval from "../../useInterval"
+import AddSubResearcher from "./AddSubResearcher"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -134,6 +135,11 @@ export default function StudiesList({
                         researcherId={researcherId}
                       />
                     </Box>
+                    <AddSubResearcher
+                      study={study}
+                      upatedDataStudy={handleUpdatedStudyObject}
+                      researcherId={researcherId}
+                    />
                     <DeleteStudy study={study} deletedStudy={handleDeletedStudy} researcherId={researcherId} />
                   </Box>
                 </Grid>

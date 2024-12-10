@@ -15,8 +15,11 @@ import {
   CardContent,
   Box,
   Divider,
+  Modal,
 } from "@mui/material"
 import { Add as AddIcon, Delete as DeleteIcon, Description } from "@mui/icons-material"
+
+import QuestionLogic from "./QuestionLogic"
 
 const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
   const [formFields, setFormFields] = useState(formFieldsProp)
@@ -58,6 +61,7 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
       type: selectedFieldType,
       label: "",
       description: "",
+      logic: null,
       required: false,
       useInCalculation: false,
       options: [],
@@ -78,10 +82,6 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
 
     setFormFields([...formFields, newField])
     setSelectedFieldType("")
-
-    // if (scrollBoxRef.current) {
-    //   scrollBoxRef.current.scrollTop = scrollBoxRef.current.scrollHeight;
-    // }
   }
 
   const [prevFormFieldsLength, setPrevFormFieldsLength] = useState(formFields.length)
@@ -408,6 +408,18 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
     }
   }, [fields4Calc])
 
+  const [showLogicWindow, setShowLogicWindow] = useState(false)
+
+  const [currentField, setCurrentField] = useState(null)
+
+  const [currentFieldIndx, setCurrentFieldIndx] = useState(null)
+
+  const handleAddLogicClick = (field, indx) => {
+    setCurrentField(field) // Set the selected form field
+    setCurrentFieldIndx(indx)
+    setShowLogicWindow(true) // Open the modal
+  }
+
   return (
     <Grid container spacing={4} direction="column">
       {/* Column for "Add Field" section */}
@@ -459,7 +471,7 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
           }}
         >
           <Grid container spacing={2}>
-            {formFields.map((field) => (
+            {formFields.map((field, indx) => (
               <Grid item xs={12} key={field.id}>
                 <Card
                   sx={{
@@ -516,28 +528,72 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
 
                     <Divider sx={{ my: 2 }} />
                     {renderFieldSettings(field)}
+
                     {["number", "dropdown", "checkbox", "radio"].includes(field.type) ? (
                       <>
                         <Divider sx={{ my: 2 }} />
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={field.useInCalculation}
-                              onChange={(e) => updateField(field.id, { useInCalculation: e.target.checked })}
-                            />
-                          }
-                          label="Use in calculation"
-                        />
+                        <div
+                          style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}
+                        >
+                          <FormControlLabel
+                            style={{ textAlign: "center" }} // Centers label text if needed
+                            control={
+                              <Checkbox
+                                checked={field.useInCalculation}
+                                onChange={(e) => updateField(field.id, { useInCalculation: e.target.checked })}
+                              />
+                            }
+                            label="Use in calculation"
+                          />
+                        </div>
                       </>
                     ) : null}
+                    <Divider sx={{ my: 2 }} />
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+                      <Button
+                        style={{ borderRadius: "10px", backgroundColor: "#0099ff", color: "white" }}
+                        onClick={() => handleAddLogicClick(field, indx)}
+                      >
+                        {field.logic ? "Edit Logic" : "Add Logic"}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </Grid>
             ))}
           </Grid>
         </Box>
+        <Modal
+          open={showLogicWindow}
+          onClose={() => setShowLogicWindow(false)}
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: "white",
+              padding: 2,
+              borderRadius: 2,
+              boxShadow: 24,
+              maxWidth: "60%",
+              height: "90%",
+              width: "100%",
+              // overflow:"auto"
+            }}
+          >
+            <QuestionLogic
+              updateField={updateField}
+              onClose={() => setShowLogicWindow(false)}
+              formFields={formFields}
+              field={currentField}
+              qIndx={currentFieldIndx}
+            />
+          </Box>
+        </Modal>
       </Grid>
-      {/* <Grid item xs={12}> */}
       <Box
         sx={{
           display: "flex",

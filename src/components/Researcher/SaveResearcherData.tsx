@@ -9,6 +9,10 @@ interface StudyObject {
   participants: Array<any>
   activities: Array<any>
   sensors: Array<any>
+  sub_researchers?: {
+    ResearcherID: string
+    access_scope: number
+  }[]
 }
 export const fetchResult = async (authString, id, type, modal) => {
   const baseUrl = "https://" + (!!LAMP.Auth._auth.serverAddress ? LAMP.Auth._auth.serverAddress : "api.lamp.digital")
@@ -128,7 +132,8 @@ export const saveDataToCache = (authString, id) => {
       " $activity.name, 'spec': $activity.spec, 'category': $activity.category, 'formula4Fields': $activity.formula4Fields, 'schedule': $activity.schedule, 'settings': $filterAudioOut($activity.settings),  'id':$activity.id, 'study_id' " +
       ": $study.id, 'study_name': $study.name}})]," +
       "'sensors':[$map($LAMP.Sensor.list($study.id),function($sensor){{'name': " +
-      " $sensor.name,'id':$sensor.id,'spec': $sensor.spec,'study_id': $study.id,'study_name': $study.name}})]}})]})"
+      " $sensor.name,'id':$sensor.id,'spec': $sensor.spec,'study_id': $study.id,'study_name': $study.name}})]," +
+      "'sub_researchers':$study.sub_researchers}})]})"
   ).then((data: any) => {
     let studies = Object.values(data?.studies || []).map((study: StudyObject) => {
       return {
@@ -138,6 +143,10 @@ export const saveDataToCache = (authString, id) => {
         participant_count: (study?.participants || []).length,
         activity_count: (study?.activities || []).length,
         sensor_count: (study?.sensors || []).length,
+        sub_researchers: (study?.sub_researchers || []).map((researcher: any) => ({
+          ResearcherID: researcher.ResearcherID,
+          access_scope: researcher.access_scope,
+        })),
       }
     })
     saveStudiesAndParticipants(data, studies, id)
