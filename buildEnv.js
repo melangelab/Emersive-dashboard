@@ -5,6 +5,8 @@ const debug = false
 
 var isDev = process.argv[2] === "dev"
 
+console.log(isDev, process.argv[2])
+
 function execShellCommand(cmd) {
   return new Promise((resolve, reject) => {
     exec(cmd, (error, stdout, stderr) => {
@@ -62,11 +64,12 @@ function writeFile() {
               file,
               [
                 "SKIP_PREFLIGHT_CHECK=true",
-                "NODE_ENV=production",
+                `NODE_ENV=${isDev ? "development" : "production"}`,
                 `REACT_APP_GIT_NUM=${headCount}`,
                 `REACT_APP_GIT_SHA=${description}`,
                 `REACT_APP_LATEST_LAMP=${latest}`,
                 isDev ? "BROWSER=none" : "CI=false",
+                "PORT=8080"
               ].join("\r\n")
             )
               .then(() => resolve(true))

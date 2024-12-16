@@ -115,7 +115,10 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
   const { t, i18n } = useTranslation()
   // defaultaddress = "lamp-aiims.ihub-anubhuti-iiitd.org:3000" 192.168.21.214:3000
   const [state, setState] = useState({
-    serverAddress: lastDomain ?? "lamp-aiims.ihub-anubhuti-iiitd.org:3000",
+    serverAddress:
+      lastDomain ?? process.env.NODE_ENV === "development"
+        ? "192.168.21.214:8000"
+        : "lamp-aiims.ihub-anubhuti-iiitd.org:3000",
     id: undefined,
     password: undefined,
   })
@@ -477,7 +480,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                     }
                   })}
                 </TextField> */}
-                <Autocomplete
+                {/* <Autocomplete
                   freeSolo={true}
                   id="serever-selector"
                   options={options}
@@ -497,7 +500,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                       helperText={t("Don't enter a domain if you're not sure what this option does.")}
                     />
                   )}
-                />
+                /> */}
                 <TextField
                   required
                   name="id"
