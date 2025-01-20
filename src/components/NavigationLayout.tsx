@@ -619,6 +619,7 @@ export default function NavigationLayout({
             marginTop: 20,
             marginLeft: "auto",
             marginRight: "auto",
+            backgroundColor: "pink",
           }}
         >
           <Box
@@ -633,8 +634,25 @@ export default function NavigationLayout({
                 ? " " + classes.logResearcherBorder
                 : " ")
             }
+            // style={{ background: 'radial-gradient(circle at top left, rgba(255,179,94,1) 0%, rgba(255,197,131,1) 20%, rgba(255,245,233,1) 100%)'}}
           >
-            {props.children}
+            <svg
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                width: "250px",
+                height: "250px",
+                zIndex: 0,
+                pointerEvents: "none",
+              }}
+            >
+              <path d="M 0 0 Q 110 210 250 180" fill="none" stroke="rgba(255, 178, 91, 0.8)" strokeWidth="3" />
+              <path d="M 80 0 Q 130 230 250 220" fill="none" stroke="rgba(255, 178, 91, 0.8)" strokeWidth="3" />
+            </svg>
+
+            {/* Children with relative positioning to appear above the SVG */}
+            <div style={{ position: "relative", zIndex: 1 }}>{props.children}</div>
           </Box>
         </ResponsiveMargin>
       </Box>

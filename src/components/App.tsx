@@ -991,18 +991,6 @@ export default function App({ ...props }) {
             </HashRouter>
           </SnackbarProvider>
         </MuiPickersUtilsProvider>
-        {/* <span
-          style={{
-            position: "fixed",
-            bottom: 16,
-            left: 16,
-            fontSize: "8",
-            zIndex: -1,
-            opacity: 0.1,
-          }}
-        >
-          {`v${process.env.REACT_APP_GIT_NUM} (${process.env.REACT_APP_GIT_SHA})}`}
-        </span> */}
       </ThemeProvider>
     </ErrorBoundary>
   )

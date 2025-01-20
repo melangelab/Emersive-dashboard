@@ -15,7 +15,7 @@ const useStyles = makeStyles((theme: Theme) =>
       "& div.MuiInput-underline:after": { borderBottom: "0 !important" },
       "& div.MuiInput-underline": {
         "& span.material-icons": {
-          width: 21,
+          width: 81,
           height: 19,
           fontSize: 27,
           lineHeight: "23PX",

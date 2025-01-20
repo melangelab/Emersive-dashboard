@@ -39,6 +39,13 @@ import HelpIcon from "@mui/icons-material/Help"
 import { HelpCenterOutlined } from "@mui/icons-material"
 // import jwtDecode from "jwt-decode"
 
+// put in env
+const MINIORANGE_AUTH_ENDPOINT = "https://mindlampihub.xecurify.com/moas/login/idp/openidsso"
+const MINIORANGE_TOKEN_ENDPOINT = "https://mindlampihub.xecurify.com/moas/login/rest/oauth/token"
+const MINIORANGE_USERINFO_ENDPOINT = "https://mindlampihub.xecurify.com/moas/login/rest/oauth/getuserinfo"
+const MINIORANGE_CLIENT_ID = "6s_rx-3lpJNQxnU"
+const MINIORANGE_CLIENT_SECRET = "g2Cstn9sNC5niJh6yK3dD3KLtW4"
+const MINIORANGE_REDIRECT_URI = "http://localhost:3000/oauth/callback"
 const GOOGLE_CLIENT_ID = "777556044651-vbh5cmbk8rbll6qlg7nftvp3je52imff.apps.googleusercontent.com"
 interface GoogleJwtPayload {
   email: string
@@ -106,6 +113,33 @@ const useStyles = makeStyles((theme: Theme) =>
       marginBottom: "20px",
       "& > div": {
         width: "100% !important",
+      },
+    },
+    miniorangeButton: {
+      width: "100%",
+      marginBottom: "20px",
+      backgroundColor: "#FF6B4A",
+      color: "white",
+      padding: "10px",
+      borderRadius: "4px",
+      cursor: "pointer",
+      textAlign: "center",
+      "&:hover": {
+        backgroundColor: "#E85E40",
+      },
+    },
+    miniOrangeButton: {
+      width: "100%",
+      marginBottom: "20px",
+      backgroundColor: "#FF6B2B",
+      color: "white",
+      padding: "10px",
+      borderRadius: "4px",
+      cursor: "pointer",
+      border: "none",
+      fontWeight: "bold",
+      "&:hover": {
+        backgroundColor: "#E55A1A",
       },
     },
   })
@@ -238,6 +272,212 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
       variant: "error",
     })
   }
+
+  const [miniOrangeLoading, setMiniOrangeLoading] = useState(false)
+  const handleMiniOrangeLogin = () => {
+    setMiniOrangeLoading(true)
+    const authUrl = `${MINIORANGE_AUTH_ENDPOINT}?client_id=${MINIORANGE_CLIENT_ID}&redirect_uri=${MINIORANGE_REDIRECT_URI}&response_type=code&scope=openid email profile`
+    console.log("authUrl", authUrl)
+    window.location.href = authUrl
+  }
+  useEffect(() => {
+    const handleMiniOrangeCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const code = urlParams.get("code")
+      console.log("entry to miniorange")
+      if (code) {
+        try {
+          // Exchange code for token
+          const tokenResponse = await fetch(MINIORANGE_TOKEN_ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              grant_type: "authorization_code",
+              code,
+              client_id: MINIORANGE_CLIENT_ID,
+              client_secret: MINIORANGE_CLIENT_SECRET,
+              redirect_uri: MINIORANGE_REDIRECT_URI,
+            }),
+          })
+
+          const tokenData = await tokenResponse.json()
+
+          // Get user info using access token
+          const userInfoResponse = await fetch(MINIORANGE_USERINFO_ENDPOINT, {
+            headers: {
+              Authorization: `Bearer ${tokenData.access_token}`,
+            },
+          })
+
+          const userData = await userInfoResponse.json()
+
+          // Format user data similar to Google login
+          const miniOrangeUser = {
+            id: "_miniorange_" + userData.email,
+            password: tokenData.access_token,
+            serverAddress: state.serverAddress || lastDomain,
+          }
+
+          setLoginClick(true)
+
+          try {
+            const res = await setIdentity(miniOrangeUser)
+
+            if (res.authType === "participant") {
+              localStorage.setItem("lastTab" + res.identity.id, JSON.stringify(new Date().getTime()))
+              await LAMP.SensorEvent.create(res.identity.id, {
+                timestamp: Date.now(),
+                sensor: "lamp.analytics",
+                data: {
+                  type: "login",
+                  device_type: "Dashboard",
+                  user_agent: `LAMP-dashboard/${process.env.REACT_APP_GIT_SHA} ${window.navigator.userAgent}`,
+                  login_method: "miniorange",
+                },
+              } as any)
+              await LAMP.Type.setAttachment(res.identity.id, "me", "lamp.participant.timezone", timezoneVal())
+            }
+
+            localStorage.setItem(
+              "LAMP_user_" + res.identity.id,
+              JSON.stringify({
+                language: selectedLanguage,
+              })
+            )
+
+            await Service.deleteDB()
+            await Service.deleteUserDB()
+
+            setLoginClick(false)
+            onComplete()
+          } catch (err) {
+            enqueueSnackbar(`${t("Failed to authenticate with MiniOrange credentials.")}`, {
+              variant: "error",
+            })
+            setLoginClick(false)
+          }
+        } catch (error) {
+          enqueueSnackbar(`${t("Error processing MiniOrange sign-in.")}`, {
+            variant: "error",
+          })
+          setLoginClick(false)
+        }
+      }
+    }
+
+    handleMiniOrangeCallback()
+  }, [])
+
+  const handleMiniorangeLogin = async () => {
+    try {
+      // Generate random state for security
+      const state = Math.random().toString(36).substring(7)
+      localStorage.setItem("miniorange_state", state)
+
+      // Construct auth URL with required parameters
+      const authUrl =
+        `${MINIORANGE_AUTH_ENDPOINT}?` +
+        `client_id=${MINIORANGE_CLIENT_ID}&` +
+        `redirect_uri=${encodeURIComponent(MINIORANGE_REDIRECT_URI)}&` +
+        `state=${state}&` +
+        `response_type=code&` +
+        `scope=openid profile email`
+
+      // Redirect to MinioRange login
+      window.location.href = authUrl
+    } catch (error) {
+      enqueueSnackbar(`${t("Error initiating MinioRange login.")}`, {
+        variant: "error",
+      })
+    }
+  }
+
+  useEffect(() => {
+    const handleMiniorangeCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const code = urlParams.get("code")
+      const returnedState = urlParams.get("state")
+      const savedState = localStorage.getItem("miniorange_state")
+
+      if (code && returnedState === savedState) {
+        try {
+          // Exchange code for token
+          const tokenResponse = await fetch(MINIORANGE_TOKEN_ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              grant_type: "authorization_code",
+              code,
+              client_id: MINIORANGE_CLIENT_ID,
+              client_secret: MINIORANGE_CLIENT_SECRET,
+              redirect_uri: MINIORANGE_REDIRECT_URI,
+            }),
+          })
+
+          const tokenData = await tokenResponse.json()
+
+          if (tokenData.access_token) {
+            // Get user info using access token
+            const userResponse = await fetch("https://login.xecurify.com/moas/rest/oauth/user", {
+              headers: {
+                Authorization: `Bearer ${tokenData.access_token}`,
+              },
+            })
+            const userData = await userResponse.json()
+
+            // Create user object similar to Google login
+            const miniorangeUser = {
+              id: `_miniorange_${userData.email}`,
+              password: tokenData.access_token,
+              serverAddress: state.serverAddress || lastDomain,
+            }
+
+            setLoginClick(true)
+            const res = await setIdentity(miniorangeUser)
+
+            // Handle successful login similar to Google login
+            if (res.authType === "participant") {
+              localStorage.setItem("lastTab" + res.identity.id, JSON.stringify(new Date().getTime()))
+              await LAMP.SensorEvent.create(res.identity.id, {
+                timestamp: Date.now(),
+                sensor: "lamp.analytics",
+                data: {
+                  type: "login",
+                  device_type: "Dashboard",
+                  user_agent: `LAMP-dashboard/${process.env.REACT_APP_GIT_SHA} ${window.navigator.userAgent}`,
+                  login_method: "miniorange",
+                },
+              })
+            }
+
+            localStorage.setItem(
+              "LAMP_user_" + res.identity.id,
+              JSON.stringify({
+                language: selectedLanguage,
+              })
+            )
+
+            await Service.deleteDB()
+            await Service.deleteUserDB()
+
+            setLoginClick(false)
+            onComplete()
+          }
+        } catch (error) {
+          enqueueSnackbar(`${t("Failed to authenticate with MinioRange.")}`, {
+            variant: "error",
+          })
+          setLoginClick(false)
+        }
+      }
+    }
+
+    handleMiniorangeCallback()
+  }, [])
 
   let handleServerInput = (value) => {
     setState({ ...state, serverAddress: value?.label ?? value })
@@ -584,6 +824,22 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                     />
                   </div>
                 </GoogleOAuthProvider>
+
+                <div className={classes.dividerContainer}>
+                  <Divider className={classes.divider} />
+                  <Typography variant="body2" className={classes.dividerText}>
+                    {t("or")}
+                  </Typography>
+                  <Divider className={classes.divider} />
+                </div>
+
+                <button
+                  className={classes.miniOrangeButton}
+                  onClick={handleMiniOrangeLogin}
+                  disabled={miniOrangeLoading}
+                >
+                  {miniOrangeLoading ? t("Loading...") : t("Continue with MiniOrange")}
+                </button>
 
                 <Box textAlign="center" width={1} mt={4} mb={4}>
                   <Link

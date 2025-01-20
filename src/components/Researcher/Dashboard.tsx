@@ -104,6 +104,7 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     dataPortalPaper: {
       height: "100%",
+      // width: "100%"
     },
     menuOuter: {
       paddingTop: 0,
@@ -279,7 +280,8 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
         }
       >
         {!!studies && (
-          <ResponsivePaper className={tab === "portal" ? classes.dataPortalPaper : null} elevation={0}>
+          // <ResponsivePaper className={tab === "portal" ? classes.dataPortalPaper : null} elevation={0}>
+          <>
             <Drawer
               anchor={supportsSidebar ? "left" : "bottom"}
               variant="permanent"
@@ -288,6 +290,19 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
               }}
             >
               <List component="nav" className={classes.menuOuter}>
+                {mode === "researcher" && (
+                  <ListItem
+                    className={classes.menuItems + " " + classes.btnCursor}
+                    button
+                    selected={tab === "studies"}
+                    onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/studies`)}
+                  >
+                    <ListItemIcon className={classes.menuIcon}>
+                      <Studies />
+                    </ListItemIcon>
+                    <ListItemText primary={`${t("Studies")}`} />
+                  </ListItem>
+                )}
                 <ListItem
                   className={classes.menuItems + " " + classes.btnCursor}
                   button
@@ -327,19 +342,6 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                       <Sensors />
                     </ListItemIcon>
                     <ListItemText primary={`${t("Sensors")}`} />
-                  </ListItem>
-                )}
-                {mode === "researcher" && (
-                  <ListItem
-                    className={classes.menuItems + " " + classes.btnCursor}
-                    button
-                    selected={tab === "studies"}
-                    onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/studies`)}
-                  >
-                    <ListItemIcon className={classes.menuIcon}>
-                      <Studies />
-                    </ListItemIcon>
-                    <ListItemText primary={`${t("Studies")}`} />
                   </ListItem>
                 )}
                 {mode === "researcher" && (
@@ -447,7 +449,8 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 data={LAMP.Auth}
               />
             )}
-          </ResponsivePaper>
+            {/* </ResponsivePaper> */}
+          </>
         )}
       </Container>
     </Container>
