@@ -99,7 +99,7 @@
     "start-test": "node buildEnv test && react-scripts start",
     "start-sw": "http-server -p 3000 ./build",
     "test": "echo \"no tests configured\"",
-    "build": "node --max-old-space-size=4096 buildEnv prod && --max-old-space-size=8192 react-scripts build",
+    "build": "node --max-old-space-size=8192 buildEnv prod && --max-old-space-size=8192 react-scripts build",
     "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx,json,css,scss}'"
   },
   "husky": {
