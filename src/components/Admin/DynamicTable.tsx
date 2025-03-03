@@ -22,7 +22,7 @@ import LAMP, { Researcher } from "lamp-core"
 import { useSnackbar } from "notistack"
 import { useTranslation } from "react-i18next"
 import ConfirmationDialog from "../ConfirmationDialog"
-import { ReactComponent as ColumnIcon } from "/home/temp1/LampCode/LAMP-dashboard/src/icons/Pictogrammers-Material-Table-filter.svg"
+import { ReactComponent as ColumnIcon } from "../../icons/Pictogrammers-Material-Table-filter.svg"
 
 interface ColumnConfig {
   [key: string]: string
