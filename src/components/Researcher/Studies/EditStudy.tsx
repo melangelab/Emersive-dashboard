@@ -13,6 +13,18 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Grid,
+  TextField,
+  Select,
+  FormControl,
+  InputLabel,
+  Switch,
+  Paper,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
 } from "@material-ui/core"
 import { useSnackbar } from "notistack"
 import EditStudyField from "./EditStudyField"
@@ -91,6 +103,34 @@ const useStyles = makeStyles((theme: Theme) =>
         minWidth: "auto",
       },
     },
+    studyDetailsContainer: {
+      padding: theme.spacing(3),
+      marginBottom: theme.spacing(2),
+    },
+    sectionTitle: {
+      fontWeight: 600,
+      marginBottom: theme.spacing(2),
+    },
+    detailRow: {
+      marginBottom: theme.spacing(2),
+    },
+    chip: {
+      margin: theme.spacing(0.5),
+    },
+    statsContainer: {
+      backgroundColor: theme.palette.background.default,
+      padding: theme.spacing(2),
+      borderRadius: theme.shape.borderRadius,
+    },
+    fileUpload: {
+      marginTop: theme.spacing(1),
+    },
+    actionButtons: {
+      display: "flex",
+      justifyContent: "flex-end",
+      gap: theme.spacing(1),
+      marginTop: theme.spacing(2),
+    },
   })
 )
 
@@ -109,6 +149,14 @@ export default function EditStudy({ study, upatedDataStudy, allStudies, research
   const [editGroupName, setEditGroupName] = useState("")
   const [aliasGroupName, setAliasGroupName] = useState("")
   const [openDialogDeleteStudy, setOpenDialogDeleteStudy] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const [editStudyId, setEditStudyId] = useState(null)
+  const [expandedStudyId, setExpandedStudyId] = useState(null)
+
+  const formatDate = (date) => {
+    return date ? new Date(date).toLocaleDateString() : "Not available"
+  }
 
   const updateStudyName = (data) => {
     setEditStudy(false)
@@ -149,6 +197,157 @@ export default function EditStudy({ study, upatedDataStudy, allStudies, research
     setOpenDialogDeleteStudy(false)
   }
 
+  const renderStudyDetails = () => (
+    <Paper className={classes.studyDetailsContainer}>
+      <Grid container spacing={3}>
+        {/* Basic Information */}
+        <Grid item xs={12}>
+          <Typography variant="h6" className={classes.sectionTitle}>
+            Study Information
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField fullWidth label="Study ID" value={study.id} disabled />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField fullWidth label="Study Name" value={study.name} disabled={!editMode} />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Description"
+                value={study.description || ""}
+                disabled={!editMode}
+              />
+            </Grid>
+          </Grid>
+        </Grid>
+
+        {/* Study Configuration */}
+        <Grid item xs={12}>
+          <Typography variant="h6" className={classes.sectionTitle}>
+            Study Configuration
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <InputLabel>Study Purpose</InputLabel>
+                <Select value={study.purpose} disabled={!editMode}>
+                  <MenuItem value="practice">Practice</MenuItem>
+                  <MenuItem value="support">Support</MenuItem>
+                  <MenuItem value="research">Research</MenuItem>
+                  <MenuItem value="other">Other</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            {study.purpose === "research" && (
+              <Grid item xs={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Study Type</InputLabel>
+                  <Select value={study.studyType} disabled={!editMode}>
+                    <MenuItem value="DE">Descriptive</MenuItem>
+                    <MenuItem value="CC">Case Control</MenuItem>
+                    <MenuItem value="CO">Cohort</MenuItem>
+                    <MenuItem value="OB">Observational</MenuItem>
+                    <MenuItem value="RCT">RCTs</MenuItem>
+                    <MenuItem value="OC">Other Clinical trials</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+          </Grid>
+        </Grid>
+
+        {/* Funding & Ethics */}
+        <Grid item xs={12}>
+          <Typography variant="h6" className={classes.sectionTitle}>
+            Funding & Ethics
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <FormControl component="fieldset">
+                <Typography>Has Funding</Typography>
+                <Switch checked={study.hasFunding} disabled={!editMode} />
+              </FormControl>
+            </Grid>
+            {study.hasFunding && (
+              <Grid item xs={12}>
+                <TextField fullWidth label="Funding Agency" value={study.fundingAgency || ""} disabled={!editMode} />
+              </Grid>
+            )}
+            <Grid item xs={12}>
+              <FormControl component="fieldset">
+                <Typography>Ethics Permission</Typography>
+                <Switch checked={study.hasEthicsPermission} disabled={!editMode} />
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Grid>
+
+        {/* Study Status & Statistics */}
+        <Grid item xs={12}>
+          <Typography variant="h6" className={classes.sectionTitle}>
+            Study Status & Statistics
+          </Typography>
+          <Box className={classes.statsContainer}>
+            <Grid container spacing={2}>
+              <Grid item xs={4}>
+                <Typography variant="subtitle2">State</Typography>
+                <Typography>{study.state}</Typography>
+              </Grid>
+              <Grid item xs={4}>
+                <Typography variant="subtitle2">Participants</Typography>
+                <Typography>{study.participants?.length || 0}</Typography>
+              </Grid>
+              <Grid item xs={4}>
+                <Typography variant="subtitle2">Activities</Typography>
+                <Typography>{study.activities?.length || 0}</Typography>
+              </Grid>
+            </Grid>
+          </Box>
+        </Grid>
+
+        {/* Timestamps */}
+        <Grid item xs={12}>
+          <Typography variant="h6" className={classes.sectionTitle}>
+            Important Dates
+          </Typography>
+          <Grid container spacing={2}>
+            {study.timestamps &&
+              Object.entries(study.timestamps).map(([key, value]) => (
+                <Grid item xs={6} key={key}>
+                  <Typography variant="subtitle2">
+                    {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
+                  </Typography>
+                  <Typography>{formatDate(value)}</Typography>
+                </Grid>
+              ))}
+          </Grid>
+        </Grid>
+      </Grid>
+
+      {/* Action Buttons */}
+      <Box className={classes.actionButtons}>
+        {editMode ? (
+          <>
+            <Button variant="contained" color="primary" onClick={() => setEditMode(false)}>
+              Save Changes
+            </Button>
+            <Button variant="outlined" onClick={() => setEditMode(false)}>
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <Button variant="contained" color="primary" onClick={() => setEditMode(true)}>
+            Edit Study
+          </Button>
+        )}
+      </Box>
+    </Paper>
+  )
+
   return (
     <Box display="flex" alignItems="center">
       <Box flexGrow={1} pl={1}>
@@ -171,18 +370,21 @@ export default function EditStudy({ study, upatedDataStudy, allStudies, research
           ) : studyArray[study.id] ? (
             `${t(studyArray[study.id])}`
           ) : (
-            <>
-              <div>{`Study: ${t(study.name)}`}</div>
-              <div>{`Group: ${
-                study.gname && study.gname.length > 0 ? study.gname.join(", ") : "No group available"
-              }`}</div>
-            </>
+            <Typography>{`${t(study.name)}`}</Typography>
           )
           // (
           //   `${t(study.name)}`
           // )
         }
       </Box>
+      {/* <Button
+          variant="outlined"
+          onClick={() => setShowDetails(!showDetails)}
+          className={classes.btnWhite}
+        >
+          {showDetails ? 'Hide Details' : 'Show Details'}
+        </Button>
+      {showDetails && renderStudyDetails()} */}
       <Box>
         <Fab
           size="small"
@@ -208,7 +410,9 @@ export default function EditStudy({ study, upatedDataStudy, allStudies, research
           onClick={(event) => setGpopover(event.currentTarget)}
         >
           {/* <Icon size="small"> */}
-          <ExpandCircleDownOutlinedIcon style={{ fontSize: "1em" }} />
+          <ExpandCircleDownOutlinedIcon
+          // style={{ fontSize: "1em" }}
+          />
           {/* </Icon>  */}
           <span className={classes.addText}>{`${t("Group")}`}</span>
         </Fab>

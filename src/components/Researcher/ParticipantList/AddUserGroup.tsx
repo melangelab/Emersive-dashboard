@@ -139,10 +139,16 @@ export default function AddUserGroup({
     console.log("created group", sName, groupName)
     const studyToUpdate = studies.find((study) => study.id === sName)
     if (studyToUpdate) {
-      // Append the new group name to the gname array
+      // Append the new group name to the gname array and timestamps
+      const newtimestamps = {
+        ...studyToUpdate.timestamps,
+        lastEnrollmentAt: new Date(),
+        firstEnrollmentAt: new Date(),
+      }
       const updatedStudy: Study = {
         ...studyToUpdate,
         gname: studyToUpdate.gname ? [...studyToUpdate.gname, groupName] : [groupName],
+        timestamps: newtimestamps,
       }
       try {
         // Update the study with the new group appended

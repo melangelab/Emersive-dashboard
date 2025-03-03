@@ -70,6 +70,8 @@ export default function DeleteActivity({
         Service.updateCount("studies", activity.study_id, "activity_count", 1, 1)
       }
       Service.delete("activities", activityIds)
+      // const _owner = await LAMP.Type.parent(activityIds[0])
+      // await LAMP.Researcher.update(_owner.data.Researcher, {"timestamps.lastActivityAt": new Date()} as any).then(()=>console.log("successfully updated for ", activityIds[0]))
       setActivities()
       enqueueSnackbar(`${t("Successfully deleted the selected Activities.")}`, {
         variant: "success",

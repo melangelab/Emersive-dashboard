@@ -147,6 +147,44 @@ export default function Participant({
   const [currentActivity, setCurrentActivity] = useState(null)
   const { t, i18n } = useTranslation()
 
+  setInterval(async () => {
+    const part = participant as any
+    if (!part.isLoggedIn) {
+      try {
+        await LAMP.Participant.update(part.id, {
+          ...part,
+          isLoggedIn: true,
+          systemTimestamps: {
+            ...part.systemTimestamps,
+            lastActivityTime: new Date(),
+          },
+        })
+        console.log("Updated login status from user side", await LAMP.Participant.view(part.id))
+      } catch (error) {
+        console.error("Failed to update activity timestamp", part, error)
+      }
+    }
+  }, 60000)
+
+  window.addEventListener("beforeunload", async () => {
+    const part = participant as any
+    if (part.isLoggedIn) {
+      try {
+        await LAMP.Participant.update(part.id, {
+          ...part,
+          isLoggedIn: false,
+          systemTimestamps: {
+            ...part.systemTimestamps,
+            lastActivityTime: new Date(),
+          },
+        })
+      } catch (error) {
+        console.error("Failed to update logout status", part, error)
+        console.dir(part)
+      }
+    }
+  })
+
   const tabDirection = (currentTab) => {
     return supportsSidebar ? "up" : "left"
   }
@@ -356,6 +394,7 @@ export default function Participant({
             setShowDemoMessage={(val) => props.setShowDemoMessage(val)}
           />
           <ResponsiveDialog open={!!openDialog} transient animate fullScreen>
+            {/* welcome dialog box here */}
             <Welcome
               activities={activities}
               onClose={() => {

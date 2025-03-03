@@ -95,10 +95,29 @@ const useStyles = makeStyles((theme) =>
   })
 )
 
+interface SensorSettings {
+  frequency?: number
+}
+
+interface SettingsInfo {
+  "lamp.analytics": SensorSettings
+  "lamp.gps": SensorSettings
+  "lamp.accelerometer": SensorSettings
+  "lamp.accelerometer.motion": SensorSettings
+  "lamp.accelerometer.device_motion": SensorSettings
+  "lamp.device_state": SensorSettings
+  "lamp.steps": SensorSettings
+  "lamp.nearby_device": SensorSettings
+  "lamp.telephony": SensorSettings
+  "lamp.sleep": SensorSettings
+  "lamp.ambient": SensorSettings
+}
+
 export interface Sensors {
   id?: string
   study_id?: string
   name?: string
+  group?: string
   spec?: string
 }
 export default function SensorDialog({
@@ -108,6 +127,7 @@ export default function SensorDialog({
   type,
   addOrUpdateSensor,
   allSensors,
+  settingsInfo,
   ...props
 }: {
   sensor?: Sensors
@@ -116,6 +136,7 @@ export default function SensorDialog({
   type?: string
   addOrUpdateSensor?: Function
   allSensors?: Array<any>
+  settingsInfo?: SettingsInfo
 } & DialogProps) {
   const classes = useStyles()
   const [selectedStudy, setSelectedStudy] = useState(sensor ? sensor.study_id : studyId ?? "")
@@ -129,6 +150,8 @@ export default function SensorDialog({
   const [duplicateCnt, setDuplicateCnt] = useState(0)
   const [oldSensorName, setOldSensorName] = useState(sensor ? sensor.name : "")
   const [allSensorData, setAllSensorData] = useState([])
+  const [groups, setGroups] = useState(null)
+  const [selectedGroup, setSelectedGroup] = useState("")
 
   useEffect(() => {
     LAMP.SensorSpec.all().then((res) => {
@@ -192,6 +215,12 @@ export default function SensorDialog({
     }
   }, [selectedStudy])
 
+  useEffect(() => {
+    const study = studies?.find((study) => study?.id === selectedStudy)
+    console.log("&&#$#&$#^$ grps", studies, study?.gname)
+    setGroups(study?.gname)
+  }, [selectedStudy])
+
   const validate = () => {
     return !(
       duplicateCnt > 0 ||
@@ -236,20 +265,28 @@ export default function SensorDialog({
 
   const saveSensor = async () => {
     setLoading(true)
-    const result = await LAMP.Sensor.create(selectedStudy, {
+    await LAMP.Sensor.create(selectedStudy, {
       name: sensorName.trim(),
       spec: sensorSpec,
-    })
-      .then((res) => {
-        let result = JSON.parse(JSON.stringify(res))
+      group: selectedGroup,
+      settings: settingsInfo[sensorSpec],
+    } as any)
+      .then((res: any) => {
+        console.log("THE RESULT", res)
+        let result = JSON.parse(JSON.stringify(res.data))
         Service.getData("studies", selectedStudy).then((studiesObject) => {
           let sensorObj = {
-            id: result.data,
+            id: result._id,
             name: sensorName.trim(),
             spec: sensorSpec,
             study_id: selectedStudy,
             study_name: studies.filter((study) => study.id === selectedStudy)[0]?.name,
+            settings: result.settings,
+            studies: result.studies,
+            group: result.gname || selectedGroup,
+            statusInUsers: result.statusInUsers,
           }
+          console.log("SENSOR OBJ in save sensor", sensorObj)
           Service.addData("sensors", [sensorObj])
           Service.updateMultipleKeys(
             "studies",
@@ -307,6 +344,32 @@ export default function SensorDialog({
             {(studies || []).map((option) => (
               <MenuItem key={option.id} value={option.id} data-selected-study-name={t(option.name)}>
                 {t(option.name)}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+        <Box mt={4}>
+          <TextField
+            error={typeof selectedStudy == "undefined" || selectedStudy === null || selectedStudy === ""}
+            id="filled-select-currency"
+            select
+            label={`${t("Group")}`}
+            value={selectedGroup}
+            //disabled={!!studyId ? true : false}
+            disabled={!!sensor ? true : false}
+            onChange={(e) => {
+              setSelectedGroup(e.target.value)
+            }}
+            helperText={
+              typeof selectedStudy == "undefined" || selectedStudy === null || selectedStudy === ""
+                ? `${t("Please select the group")}.`
+                : ""
+            }
+            variant="filled"
+          >
+            {(groups || []).map((option, idx) => (
+              <MenuItem key={idx} value={option} data-selected-study-name={t(option)}>
+                {t(option)}
               </MenuItem>
             ))}
           </TextField>

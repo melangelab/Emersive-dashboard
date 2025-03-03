@@ -395,6 +395,7 @@ export const CredentialManager: React.FunctionComponent<{
   const [int, setInt] = useState([])
   const [permissions, setPermissions] = useState([])
 
+  console.log("debug credman", id, type)
   useEffect(() => {
     LAMP.Type.parent(id)
       .then((x) => Object.keys(x?.data || []).length === 0)

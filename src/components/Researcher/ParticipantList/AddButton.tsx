@@ -14,6 +14,9 @@ import {
   makeStyles,
   Theme,
   createStyles,
+  Button,
+  useMediaQuery,
+  useTheme,
 } from "@material-ui/core"
 import LAMP from "lamp-core"
 import { useTranslation } from "react-i18next"
@@ -21,8 +24,33 @@ import AddUser from "./AddUser"
 import StudyCreator from "./StudyCreator"
 import PatientStudyCreator from "../ParticipantList/PatientStudyCreator"
 import AddUserGroup from "../ParticipantList/AddUserGroup"
+import { Add as AddIcon, FilterList as FilterListIcon, Search as SearchIcon } from "@material-ui/icons"
+
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
+    addButton: {
+      backgroundColor: "#4285f4",
+      color: "#fff",
+      padding: "8px 24px",
+      borderRadius: 20,
+      textTransform: "none",
+      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+      "&:hover": {
+        backgroundColor: "#3367d6",
+      },
+    },
+    addButtonCompact: {
+      width: theme.spacing(5), // Ensures some width
+      height: theme.spacing(5),
+      flexShrink: 0,
+      minWidth: "unset",
+      fontSize: "1.5rem",
+
+      // boxSizing: "content-box",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    },
     toolbardashboard: {
       minHeight: 100,
       padding: "0 10px",
@@ -106,7 +134,7 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
   const classes = useStyles()
   const [popover, setPopover] = useState(null)
   const [addParticipantStudy, setAddParticipantStudy] = useState(false)
-
+  const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
   const handleNewStudyData = (data) => {
     setData()
   }
@@ -123,15 +151,30 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
 
   return (
     <Box>
-      <Fab
+      {/* <Fab
         variant="extended"
         color="primary"
         classes={{ root: classes.btnBlue + " " + (!!popover ? classes.popexpand : "") }}
         onClick={(event) => setPopover(event.currentTarget)}
       >
         <Icon>add</Icon> <span className={classes.addText}>{`${t("Add")}`}</span>
-      </Fab>
+      </Fab> */}
 
+      {/* <Button
+        variant="contained"
+        className={classes.addButton}
+        startIcon={<AddIcon />}
+        onClick={(event) => setPopover(event.currentTarget)}
+      >
+        {t("Add")}
+      </Button> */}
+      <Button
+        variant="contained"
+        className={`${classes.addButton} ${!supportsSidebar ? classes.addButtonCompact : ""}`}
+        onClick={(event) => setPopover(event.currentTarget)}
+      >
+        {supportsSidebar ? t("+ Add") : "+"}
+      </Button>
       <Popover
         classes={{ root: classes.customPopover, paper: classes.customPaper }}
         open={!!popover ? true : false}
@@ -160,7 +203,7 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
               <Typography variant="body2">{`${t("Create a new entry in this group.")}`}</Typography>
             </MenuItem>
           )}
-          {mode === "researcher" && (
+          {/* {mode === "researcher" && (
             <MenuItem
               onClick={() => {
                 setPopover(null)
@@ -180,10 +223,10 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
           >
             <Typography variant="h6">{`${t("Add a new user and group")}`}</Typography>
             <Typography variant="body2">{`${t("Create a user under their own group.")}`}</Typography>
-          </MenuItem>
+          </MenuItem> */}
         </React.Fragment>
       </Popover>
-      <AddUserGroup
+      {/* <AddUserGroup
         studies={studies}
         researcherId={researcherId}
         setParticipants={setParticipants}
@@ -191,7 +234,7 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
         onClose={() => setAddGroupUser(false)}
         handleNewStudy={handleNewStudyData}
         closePopUp={handleClosePopUp}
-      />
+      /> */}
       <AddUser
         researcherId={researcherId}
         studies={studies}
@@ -201,14 +244,14 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
         setParticipants={setParticipants}
         closePopUp={handleClosePopUp}
       />
-      <PatientStudyCreator
+      {/* <PatientStudyCreator
         studies={studies}
         researcherId={researcherId}
         onClose={() => setAddParticipantStudy(false)}
         open={addParticipantStudy}
         handleNewStudy={handleNewStudyData}
         closePopUp={handleClosePopUp}
-      />
+      /> */}
     </Box>
   )
 }

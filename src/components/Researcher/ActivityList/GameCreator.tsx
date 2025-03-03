@@ -96,6 +96,7 @@ export default function GameCreator({
   }, [schemaListObj])
 
   const [data, setData] = useState({
+    ...value,
     id: value?.id ?? undefined,
     name: value?.name ?? "",
     spec: value?.spec ?? activitySpecId,
@@ -339,10 +340,13 @@ export default function GameCreator({
         (x) =>
           (!!value
             ? x.name?.toLowerCase() === data.name?.trim().toLowerCase() && x.id !== value?.id
-            : x.name?.toLowerCase() === data.name?.trim().toLowerCase()) && data.studyID === x.study_id
+            : x.name?.toLowerCase() === data.name?.trim().toLowerCase()) &&
+          data.studyID === x.study_id &&
+          !x.isCommunityActivity
       )
       if (duplicates.length > 0) {
         enqueueSnackbar("Activity with same name already exist.", { variant: "error" })
+        console.log("duplicates", duplicates)
       }
     }
     if (value?.spec === "lamp.survey" || activitySpecId === "lamp.survey") {

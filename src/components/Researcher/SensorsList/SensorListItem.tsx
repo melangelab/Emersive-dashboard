@@ -18,7 +18,8 @@ const useStyles = makeStyles((theme: Theme) =>
     activityHeader: { padding: "12px 5px" },
     cardMain: {
       boxShadow: "none !important ",
-      background: "#F8F8F8",
+      background: "#E0E0E0",
+      margin: "11px",
       "& span.MuiCardHeader-title": { fontSize: "16px", fontWeight: 500 },
     },
     checkboxActive: { color: "#7599FF !important" },

@@ -301,6 +301,14 @@ export default function PatientStudyCreator({
     let authId = researcherId
     newStudyData.participant_count = !!createPatient ? 1 : 0
     setLoading(false)
+    if (createPatient) {
+      const timestamps = {
+        ...newStudyData.timestamps,
+        lastEnrollmentAt: new Date(),
+        firstEnrollmentAt: new Date(),
+      }
+      newStudyData.timestamps = timestamps
+    }
     Service.addData("studies", [newStudyData])
     if (!!studyName) updateStudyLocalStorage(authId, studyName)
     handleNewStudy(newStudyData)

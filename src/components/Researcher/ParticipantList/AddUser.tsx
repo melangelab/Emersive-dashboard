@@ -136,7 +136,62 @@ export default function AddUser({
           await LAMP.Participant.update(newParticipant.id, newParticipant).then((res) =>
             console.log("updaqted partiicpant", res)
           )
+          const currentStudy = studies.find((study) => study.id === selectedStudy)
+          const timestamps = currentStudy.timestamps || {}
+          const updatedTimestamps = {
+            ...timestamps,
+            lastEnrollmentAt: new Date(),
+            firstEnrollmentAt: timestamps.firstEnrollmentAt || new Date(), // Set only if not already set
+          }
+          const updatedStudy = {
+            ...currentStudy,
+            timestamps: updatedTimestamps,
+          }
+          const fieldsToUpdate = ["timestamps"]
+          LAMP.Study.update(selectedStudy, updatedStudy).then((res) => {
+            Service.update(
+              "studies",
+              {
+                studies: [
+                  {
+                    id: selectedStudy,
+                    ...updatedStudy,
+                  },
+                ],
+              },
+              "name",
+              "id"
+            )
+            Service.updateMultipleKeys(
+              "studies",
+              {
+                studies: [
+                  {
+                    id: selectedStudy,
+                    ...updatedStudy,
+                  },
+                ],
+              },
+              fieldsToUpdate,
+              "id"
+            )
+          })
+          await Service.updateMultipleKeys(
+            "studies",
+            {
+              studies: [
+                {
+                  id: selectedStudy,
+                  timestamps: updatedTimestamps,
+                },
+              ],
+            },
+            ["timestamps"],
+            "id"
+          )
         }
+        // const _owner = await LAMP.Type.parent(id)
+        // await LAMP.Researcher.update(_owner.data.Researcher, {"timestamps.lastActivityAt": new Date()} as any).then(()=>console.log("successfully updated for participant", id))
         ids = [...ids, id]
       }
       setParticipants()

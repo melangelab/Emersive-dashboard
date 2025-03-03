@@ -176,6 +176,8 @@ export default function Activity({
       enqueueSnackbar(`${t("Successfully created a new Activity.")}`, {
         variant: "success",
       })
+      // const _owner = await LAMP.Type.parent(x["id"])
+      // await LAMP.Researcher.update(_owner.data.Researcher, {"timestamps.lastActivityAt": new Date()} as any).then(()=>console.log("successfully updated for study _id", x["study_id"]))
       history.back()
     }
   }
@@ -201,6 +203,8 @@ export default function Activity({
         enqueueSnackbar(`${t("Successfully duplicated the Activity under a new name.")}`, {
           variant: "success",
         })
+        // const _owner = await LAMP.Type.parent(x["id"])
+        // await LAMP.Researcher.update(_owner.data.Researcher, {"timestamps.lastActivityAt": new Date()} as any).then(()=>console.log("successfully updated for study _id", x["study_id"]))
         history.back()
       } else {
         x["study_id"] = x.studyID
@@ -210,6 +214,9 @@ export default function Activity({
         enqueueSnackbar(`${t("Successfully updated the Activity.")}`, {
           variant: "success",
         })
+        // const _owner = await LAMP.Type.parent(x["study_id"])
+        // console.log("owner fetched,",_owner.data.Researcher)
+        // await LAMP.Researcher.update(_owner.data.Researcher, {"timestamps.lastActivityAt": new Date()} as any).then(()=>console.log("successfully updated for study _id", x["study_id"]))
         history.back()
       }
     }
