@@ -22,10 +22,33 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     activityHeader: { padding: "20px 5px 20px 15px" },
     cardMain: {
+      borderRadius: 16,
+      padding: theme.spacing(1),
+      backgroundColor: "#E0E0E0",
+      marginBottom: theme.spacing(1),
+      "& .MuiTypography-root": {
+        marginBottom: theme.spacing(1),
+      },
       boxShadow: "none !important ",
       background: "#F8F8F8",
+      // width: 'fit-content',
+      // marginLeft:'4vh',
+      margin: "0 auto",
+      width: "100%",
+      alignItems: "center",
+      maxWidth: 400,
       "& span.MuiCardHeader-title": { fontSize: "16px", fontWeight: 500 },
     },
+    researcherCard: {
+      borderRadius: 16,
+      padding: theme.spacing(2),
+      backgroundColor: "#fff",
+      marginBottom: theme.spacing(2),
+      "& .MuiTypography-root": {
+        marginBottom: theme.spacing(1),
+      },
+    },
+
     checkboxActive: { color: "#7599FF !important" },
     btnWhite: {
       background: "#fff",
@@ -60,39 +83,40 @@ export default function ResearcherRow({
 
   return (
     <Card className={classes.cardMain}>
-      <Box display="flex" alignItems="center">
-        <Box flexGrow={1} py={1}>
-          <CardHeader className={classes.activityHeader} title={name} />
-        </Box>
-        <Box>
-          <CardActions>
-            {adminType !== "practice_lead" && (
-              <Box display="flex" flexDirection="row" className={classes.buttoncontainer}>
-                <Credentials user={researcher} />
-                <AddUpdateResearcher
-                  researcher={researcher}
-                  refreshResearchers={refreshResearchers}
-                  setName={setName}
-                  researchers={researchers}
-                  updateStore={updateStore}
-                />
-                <DeleteResearcher researcher={researcher} refreshResearchers={refreshResearchers} />
-              </Box>
-            )}
-            {adminType !== "user_admin" && (
-              <Fab
-                size="small"
-                classes={{ root: classes.btnWhite }}
-                onClick={() => {
-                  history.push(`/researcher/${researcher.id}/users`)
-                }}
-              >
-                <Icon>arrow_forward</Icon>
-              </Fab>
-            )}
-          </CardActions>
-        </Box>
+      {/* <Box display="flex" alignItems="center" style={{ width: 'auto' }}> */}
+      {/* <Box flexGrow={1} py={1}> */}
+      <Box display="flex" flexDirection="column">
+        <CardHeader className={classes.activityHeader} title={name} titleTypographyProps={{ align: "center" }} />
+        {/* </Box> */}
+        {/* <Box> */}
+        <CardActions style={{ justifyContent: "center" }}>
+          {adminType !== "practice_lead" && (
+            <Box display="flex" flexDirection="row" className={classes.buttoncontainer}>
+              <Credentials user={researcher} />
+              <AddUpdateResearcher
+                researcher={researcher}
+                refreshResearchers={refreshResearchers}
+                setName={setName}
+                researchers={researchers}
+                updateStore={updateStore}
+              />
+              <DeleteResearcher researcher={researcher} refreshResearchers={refreshResearchers} />
+            </Box>
+          )}
+          {adminType !== "user_admin" && (
+            <Fab
+              size="small"
+              classes={{ root: classes.btnWhite }}
+              onClick={() => {
+                history.push(`/researcher/${researcher.id}/studies`)
+              }}
+            >
+              <Icon>arrow_forward</Icon>
+            </Fab>
+          )}
+        </CardActions>
       </Box>
+      {/* </Box> */}
     </Card>
   )
 }

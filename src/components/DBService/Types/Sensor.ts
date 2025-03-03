@@ -26,4 +26,10 @@ export class Sensor {
    * Study name
    */
   study_name: string
+
+  studies: any[]
+
+  statusInUsers?: any[]
+
+  group?: string
 }

@@ -1,7 +1,44 @@
 // Core Imports
 import React from "react"
 import { Box, Paper, useTheme, useMediaQuery } from "@material-ui/core"
+import { useLocation } from "react-router-dom"
 
+export function useQuery() {
+  return new URLSearchParams(useLocation().search)
+}
+export const handleCopyToClipboard = (text: string, enqueueSnackbar) => {
+  navigator.clipboard.writeText(text)
+  enqueueSnackbar("Copied to clipboard", { variant: "success", autoHideDuration: 1000 })
+}
+
+export const getVideoMimeType = (fileType: string | undefined): string => {
+  if (!fileType) return "video/mp4"
+  if (fileType.startsWith("video/")) return fileType
+  const mimeTypeMap: { [key: string]: string } = {
+    webm: "video/webm",
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    avi: "video/x-msvideo",
+    m4v: "video/mp4",
+    mkv: "video/x-matroska",
+  }
+  return mimeTypeMap[fileType.toLowerCase()] || `video/${fileType}`
+}
+
+export const getAudioMimeType = (fileType: string | undefined): string => {
+  if (!fileType) return "audio/mpeg"
+  if (fileType.startsWith("audio/")) return fileType
+  const mimeTypeMap: { [key: string]: string } = {
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    aac: "audio/aac",
+    m4a: "audio/mp4",
+    flac: "audio/flac",
+    webm: "audio/webm",
+  }
+  return mimeTypeMap[fileType.toLowerCase()] || `audio/${fileType}`
+}
 // Convert underscore case into human-readable strings.
 export const humanize = (str) => str.replace(/(^|_)(\w)/g, ($0, $1, $2) => ($1 && " ") + $2.toUpperCase())
 

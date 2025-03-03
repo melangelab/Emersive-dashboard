@@ -1,0 +1,61 @@
+// Add to styles
+const useStyles = makeStyles((theme: Theme) => ({
+  // ... existing styles
+  videoContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(3),
+  },
+  previewDialog: {
+    '& .MuiDialog-paper': {
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+    },
+  },
+  previewVideo: {
+    width: '100%',
+    maxHeight: '70vh',
+  },
+  videoInfo: {
+    padding: theme.spacing(2),
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  uploadSection: {
+    // ... existing styles
+    marginTop: theme.spacing(3),
+    padding: theme.spacing(2),
+  },
+  videoPreview: {
+    display: 'flex',
+    gap: theme.spacing(2),
+    marginTop: theme.spacing(2),
+    cursor: 'pointer',
+    '&:hover': {
+      opacity: 0.8,
+    },
+  },
+}));
+
+// Add states
+const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+const [selectedVideo, setSelectedVideo] = useState<{
+  src: string;
+  type: 'recorded' | 'uploaded';
+  timestamp?: Date;
+  duration?: number;
+} | null>(null);
+
+// Add this function to handle video preview
+const handleVideoPreview = (video: string, type: 'recorded' | 'uploaded') => {
+  setSelectedVideo({
+    src: video,
+    type,
+    timestamp: new Date(),
+    duration: previewRef.current?.duration || videoRef.current?.duration
+  });
+  setPreviewDialogOpen(true);
+};
+
+// Modify the video tab content

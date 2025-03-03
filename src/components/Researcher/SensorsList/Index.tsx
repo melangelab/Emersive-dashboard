@@ -1,12 +1,41 @@
 import React, { useState, useEffect } from "react"
-import { Box, Grid, Icon, Backdrop, CircularProgress, makeStyles, Theme, createStyles } from "@material-ui/core"
+import {
+  Box,
+  Grid,
+  Icon,
+  Backdrop,
+  CircularProgress,
+  makeStyles,
+  Theme,
+  createStyles,
+  useMediaQuery,
+  useTheme,
+} from "@material-ui/core"
 import Header from "./Header"
 import { useTranslation } from "react-i18next"
+import LAMP, { Sensor } from "lamp-core"
 import SensorListItem from "./SensorListItem"
 import { Service } from "../../DBService/DBService"
 import { sortData } from "../Dashboard"
 import Pagination from "../../PaginatedElement"
 import useInterval from "../../useInterval"
+import { useLayoutStyles } from "../../GlobalStyles"
+import DynamicTableSensors from "./DynamicTableSensors"
+import { useQuery } from "../../Utils"
+
+const settingsInfo = {
+  "lamp.analytics": {},
+  "lamp.gps": { frequency: 1 },
+  "lamp.accelerometer": { frequency: 1 },
+  "lamp.accelerometer.motion": { frequency: 1 },
+  "lamp.accelerometer.device_motion": { frequency: 1 },
+  "lamp.device_state": {},
+  "lamp.steps": {},
+  "lamp.nearby_device": { frequency: 1 },
+  "lamp.telephony": {},
+  "lamp.sleep": {},
+  "lamp.ambient": { frequency: 1 },
+}
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -50,6 +79,10 @@ export default function SensorsList({
   setOrder,
   getAllStudies,
   order,
+  authType,
+  ptitle,
+  goBack,
+  onLogout,
   ...props
 }: {
   title?: string
@@ -60,6 +93,10 @@ export default function SensorsList({
   getAllStudies?: Function
   setOrder?: Function
   order?: boolean
+  authType?: string
+  ptitle?: string
+  goBack?: () => void
+  onLogout?: () => void
 }) {
   const classes = useStyles()
   const { t } = useTranslation()
@@ -71,6 +108,12 @@ export default function SensorsList({
   const [rowCount, setRowCount] = useState(40)
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState(null)
+  const layoutClasses = useLayoutStyles()
+  const query = useQuery()
+  const filterParam = query.get("filter")
+  const [isLoading, setIsLoading] = useState(false)
+
+  const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
 
   useInterval(
     () => {
@@ -108,37 +151,50 @@ export default function SensorsList({
       setSelectedSensors(selected)
     }
   }
+
   const searchFilterSensors = (searchVal?: string) => {
     const searchTxt = searchVal ?? search
     const selectedData = selected.filter((o) => studies.some(({ name }) => o === name))
+
     if (selectedData.length > 0) {
       setLoading(true)
       let result = []
+
       Service.getAll("sensors").then((sensorData) => {
         if ((sensorData || []).length > 0) {
-          if (!!searchTxt && searchTxt.trim().length > 0) {
-            result = result.concat(sensorData)
+          result = result.concat(sensorData)
+          if (filterParam) {
+            console.log("Filtering by sensor ID:", filterParam)
+            result = result.filter((sensor) => sensor.id === filterParam)
+          } else if (!!searchTxt && searchTxt.trim().length > 0) {
             result = result.filter((i) => i.name?.toLowerCase().includes(searchTxt?.toLowerCase()))
-            setSensors(sortData(result, selectedData, "name"))
-          } else {
-            result = result.concat(sensorData)
-            setSensors(sortData(result, selectedData, "name"))
           }
-          setPaginatedSensors(sortData(result, selectedData, "name").slice(page * rowCount, page * rowCount + rowCount))
+          const sortedData = sortData(result, selectedData, "name")
+          setSensors(sortedData)
+          setPaginatedSensors(sortedData.slice(page * rowCount, page * rowCount + rowCount))
           setPage(page)
           setRowCount(rowCount)
         } else {
           setSensors([])
+          setPaginatedSensors([])
         }
         setLoading(false)
       })
     } else {
       setSensors([])
+      setPaginatedSensors([])
       setLoading(false)
     }
     setSelectedSensors([])
   }
 
+  useEffect(() => {
+    if (filterParam) {
+      console.log("Filter param changed:", filterParam)
+      setSearch(null)
+      searchFilterSensors()
+    }
+  }, [filterParam])
   const handleSearchData = (val: string) => {
     setSearch(val)
     searchFilterSensors(val)
@@ -152,6 +208,22 @@ export default function SensorsList({
     const selectedData = selected.filter((o) => studies.some(({ name }) => o === name))
     setPaginatedSensors(sortData(sensors, selectedData, "name").slice(page * rowCount, page * rowCount + rowCount))
     setLoading(false)
+  }
+
+  const columns = {
+    id: "ID",
+    name: "Name",
+    spec: "Sensor Type",
+    settings: "Settings",
+    study_id: "Study ID",
+    group: "Group",
+    statusInUsers: "Status in participants",
+    studies: "Studies/Groups",
+  }
+
+  const handleRowClick = (sensor: Sensor) => {
+    console.log("Researcher clicked:", sensor)
+    // Handle row click
   }
 
   return (
@@ -169,39 +241,51 @@ export default function SensorsList({
         setSensors={searchFilterSensors}
         setOrder={setOrder}
         order={order}
+        title={ptitle}
+        authType={authType}
+        onLogout={onLogout}
+        settingsInfo={settingsInfo}
       />
-      <Box className={classes.tableContainer} py={4}>
-        <Grid container spacing={3}>
-          {sensors !== null && sensors.length > 0 ? (
-            <Grid container spacing={3}>
-              {(paginatedSensors ?? []).map((item, index) => (
-                <Grid item lg={6} xs={12} key={item.id}>
-                  <SensorListItem
-                    sensor={item}
-                    studies={studies}
-                    handleSelectionChange={handleChange}
-                    selectedSensors={selectedSensors}
-                    setSensors={searchFilterSensors}
-                  />
-                </Grid>
-              ))}
-              <Pagination
-                data={sensors}
-                updatePage={handleChangePage}
-                rowPerPage={[20, 40, 60, 80]}
-                currentPage={page}
-                currentRowCount={rowCount}
-              />
-            </Grid>
-          ) : (
-            <Box className={classes.norecordsmain}>
-              <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
-                <Icon>info</Icon>
-                {`${t("No Records Found")}`}
-              </Box>
+      <Box
+        className={layoutClasses.tableContainer + " " + (!supportsSidebar ? layoutClasses.tableContainerMobile : "")}
+      >
+        {sensors !== null && sensors.length > 0 ? (
+          <DynamicTableSensors
+            columns={columns}
+            data={sensors}
+            onRowClick={handleRowClick}
+            refreshSensors={searchFilterSensors}
+            editable_columns={["name", "settings"]}
+            settingsInfo={settingsInfo}
+          />
+        ) : (
+          // <Grid container spacing={3}>
+          //   {(paginatedSensors ?? []).map((item, index) => (
+          //     <Grid item xs={12} sm={12} md={6} lg={5} key={item.id}>
+          //       <SensorListItem
+          //         sensor={item}
+          //         studies={studies}
+          //         handleSelectionChange={handleChange}
+          //         selectedSensors={selectedSensors}
+          //         setSensors={searchFilterSensors}
+          //       />
+          //     </Grid>
+          //   ))}
+          //   <Pagination
+          //     data={sensors}
+          //     updatePage={handleChangePage}
+          //     rowPerPage={[20, 40, 60, 80]}
+          //     currentPage={page}
+          //     currentRowCount={rowCount}
+          //   />
+          // </Grid>
+          <Box className={classes.norecordsmain}>
+            <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
+              <Icon>info</Icon>
+              {`${t("No Records Found")}`}
             </Box>
-          )}
-        </Grid>
+          </Box>
+        )}
       </Box>
     </React.Fragment>
   )

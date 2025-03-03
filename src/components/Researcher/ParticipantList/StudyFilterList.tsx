@@ -5,6 +5,7 @@ import LAMP, { StudyService } from "lamp-core"
 import MultipleSelect from "../../MultipleSelect"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
+import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
 
 export interface NewStudy {
   id?: string
@@ -28,7 +29,7 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     multiselect: {
       border: "1px solid #C6C6C6",
-      background: "#FFFFFF",
+      // background: "green",
       color: "rgba(0, 0, 0, 0.4)",
       height: "auto",
       minHeight: "32px",
@@ -50,6 +51,7 @@ const useStyles = makeStyles((theme: Theme) =>
       maxWidth: 1055,
       margin: "15px auto 0",
       width: "100%",
+      backgroundColor: "pink",
     },
     chiplabel: { whiteSpace: "break-spaces" },
   })
@@ -80,6 +82,8 @@ export default function StudyFilterList({
   const [allStudies, setAllStudies] = useState([])
   const [selectAll, setSelectAll] = useState(false)
   const [deSelectAll, setDeselectAll] = useState(false)
+
+  const headerClasses = useHeaderStyles()
 
   useEffect(() => {
     refreshStudies()
@@ -135,8 +139,21 @@ export default function StudyFilterList({
   return (
     <Box>
       {showFilterStudies === true && (
-        <Box mt={1}>
-          <Box className={classes.filterChips}>
+        <Box
+          mt={1}
+          style={{
+            position: "fixed",
+            maxWidth: "100%",
+            minWidth: "60%",
+            zIndex: 111111,
+            backgroundColor: "grey",
+            top: "98px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            margin: "auto",
+          }}
+        >
+          <Box className={headerClasses.filterChips}>
             {[`${t("Select All")}`, `${t("Deselect All")}`].map((item) => (
               <Tooltip key={item} style={{ margin: 4 }} title={item}>
                 <Chip

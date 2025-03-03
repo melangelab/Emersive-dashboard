@@ -4,8 +4,7 @@ const file = ".env"
 const debug = false
 
 var isDev = process.argv[2] === "dev"
-
-console.log(isDev, process.argv[2])
+var isTest = process.argv[2] == "test"
 
 function execShellCommand(cmd) {
   return new Promise((resolve, reject) => {
@@ -64,12 +63,13 @@ function writeFile() {
               file,
               [
                 "SKIP_PREFLIGHT_CHECK=true",
-                `NODE_ENV=${isDev ? "development" : "production"}`,
+                `NODE_ENV=${isDev || isTest ? "development" : "production"}`,
                 `REACT_APP_GIT_NUM=${headCount}`,
                 `REACT_APP_GIT_SHA=${description}`,
                 `REACT_APP_LATEST_LAMP=${latest}`,
-                isDev ? "BROWSER=none" : "CI=false",
-                "PORT=8080"
+                isDev || isTest ? "BROWSER=none" : "CI=false",
+                `REACT_APP_NODE_SERVER_URL=${isDev ? "https://192.168.21.214:8000" : isTest? "TEST_https://emersive.io" : "https://emersive.io" }`,
+                "PORT=8080",
               ].join("\r\n")
             )
               .then(() => resolve(true))

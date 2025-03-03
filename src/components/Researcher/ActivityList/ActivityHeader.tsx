@@ -69,6 +69,7 @@ export default function ActivityHeader({
   const [showFeed, setShowFeed] = useState(
     typeof details?.showFeed !== "undefined" && details?.showFeed !== null ? details?.showFeed : true
   )
+  const [groupId, setGroupId] = useState(!!value ? value.group_id : props.group_id)
 
   useEffect(() => {
     onChange({
@@ -141,13 +142,38 @@ export default function ActivityHeader({
               }}
               helperText={
                 typeof studyId == "undefined" || studyId === null || studyId === ""
-                  ? `${t("Please select the Group")}`
+                  ? `${t("Please select the Study")}`
                   : ""
               }
               variant="filled"
               disabled={!!value ? true : false}
             >
               {(studies || []).map((option) => (
+                <MenuItem key={option.id} value={option.id}>
+                  {t(option.name)}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid item lg={6} sm={6} xs={12}>
+            <TextField
+              error={typeof studyId == "undefined" || studyId === null || studyId === "" ? true : false}
+              id="filled-select-currency"
+              select
+              label={`${t("Group")}`}
+              value={studyId}
+              onChange={(e) => {
+                setGroupId(e.target.value)
+              }}
+              helperText={
+                typeof studyId == "undefined" || studyId === null || studyId === ""
+                  ? `${t("Please select the Group")}`
+                  : ""
+              }
+              variant="filled"
+              disabled={!!value ? true : false}
+            >
+              {(props.groups || []).map((option) => (
                 <MenuItem key={option.id} value={option.id}>
                   {t(option.name)}
                 </MenuItem>

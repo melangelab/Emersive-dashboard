@@ -7,7 +7,7 @@ import { SnackbarProvider, useSnackbar } from "notistack"
 import { ErrorBoundary } from "react-error-boundary"
 import StackTrace from "stacktrace-js"
 import DateFnsUtils from "@date-io/date-fns"
-import LAMP from "lamp-core"
+import LAMP, { Participant as ParticipantLamp } from "lamp-core"
 import Login from "./Login"
 import Messages from "./Messages"
 import Root from "./Admin/Index"
@@ -24,6 +24,9 @@ import ImportActivity from "./Researcher/ActivityList/ImportActivity"
 import PreventPage from "./PreventPage"
 import { sensorEventUpdate } from "./BottomMenu"
 import TwoFA from "./TwoFA"
+import NavigationBar from "./NavigationBar"
+import GlobalHeader from "./GlobalHeader"
+import HeaderBar from "./HeaderBar"
 
 function ErrorFallback({ error }) {
   const [trace, setTrace] = useState([])
@@ -289,6 +292,34 @@ function AppRouter({ ...props }) {
           user_agent: `LAMP-dashboard/${process.env.REACT_APP_GIT_SHA} ${window.navigator.userAgent}`,
         },
       } as any).then((res) => console.dir(res))
+      const participant = await LAMP.Participant.view((state.identity as any)?.id ?? null)
+      const currentParticipant = participant as any
+      if (currentParticipant) {
+        const updatedParticipant = {
+          ...currentParticipant,
+          isLoggedIn: false,
+          systemTimestamps: {
+            ...(currentParticipant.systemTimestamps || {}),
+            lastActivityTime: new Date(),
+          },
+        }
+
+        await LAMP.Participant.update((state.identity as any)?.id ?? null, updatedParticipant)
+        await Service.updateMultipleKeys(
+          "participants",
+          {
+            participants: [
+              {
+                id: (state.identity as any)?.id,
+                isLoggedIn: false,
+                systemTimestamps: updatedParticipant.systemTimestamps,
+              },
+            ],
+          },
+          ["isLoggedIn", "systemTimestamps"],
+          "id"
+        )
+      }
     }
     await LAMP.Auth.set_identity(identity).catch((e) => {
       enqueueSnackbar(`${t("Invalid id or password.")}`, {
@@ -508,7 +539,7 @@ function AppRouter({ ...props }) {
                 onComplete={() => {
                   state.authType === "admin"
                     ? props.history.replace("/researcher")
-                    : props.history.replace("/researcher/me/users")
+                    : props.history.replace("/researcher/me/studies")
                 }}
               />
             </React.Fragment>
@@ -611,7 +642,7 @@ function AppRouter({ ...props }) {
                 onComplete={() => {
                   state.authType === "admin"
                     ? props.history.replace("/researcher")
-                    : props.history.replace("/researcher/me/users")
+                    : props.history.replace("/researcher/me/studies")
                 }}
               />
             </React.Fragment>
@@ -655,7 +686,7 @@ function AppRouter({ ...props }) {
             ) : state.authType === "admin" ? (
               <Redirect to="/researcher" />
             ) : state.authType === "researcher" ? (
-              <Redirect to="/researcher/me/users" />
+              <Redirect to="/researcher/me/studies" />
             ) : (
               <Redirect to="/participant/me/assess" />
             )
@@ -696,7 +727,7 @@ function AppRouter({ ...props }) {
           ) : (
             <React.Fragment>
               <PageTitle>{`${t("Administrator")}`}</PageTitle>
-              <NavigationLayout
+              {/* <NavigationLayout
                 authType={state.authType}
                 title={
                   state.adminType === "admin"
@@ -707,9 +738,16 @@ function AppRouter({ ...props }) {
                 }
                 goBack={props.history.goBack}
                 onLogout={() => reset()}
-              >
-                <Root {...props} updateStore={updateStore} adminType={state.adminType} />
-              </NavigationLayout>
+              > */}
+              <Root
+                {...props}
+                updateStore={updateStore}
+                adminType={state.adminType}
+                authType={state.authType}
+                goBack={props.history.goBack}
+                onLogout={() => reset()}
+              />
+              {/* </NavigationLayout> */}
             </React.Fragment>
           )
         }
@@ -746,7 +784,7 @@ function AppRouter({ ...props }) {
           ) : (
             <React.Fragment>
               <PageTitle>{`${getResearcher(props.match.params.id).name}`}</PageTitle>
-              <NavigationLayout
+              {/* <NavigationBar 
                 authType={state.authType}
                 id={props.match.params.id}
                 title={`${getResearcher(props.match.params.id).name}`}
@@ -755,23 +793,55 @@ function AppRouter({ ...props }) {
                 activeTab="Researcher"
                 sameLineTitle={true}
                 changeResearcherType={changeResearcherType}
-              >
-                <Researcher
-                  researcher={getResearcher(props.match.params.id)}
-                  onParticipantSelect={(id) => {
-                    ;(async () => {
-                      await Service.deleteUserDB()
-                      setState((state) => ({
-                        ...state,
-                        activeTab: 3,
-                      }))
-                      props.history.push(`/participant/${id}/portal`)
-                    })()
-                  }}
-                  mode={"researcher"} // Defaulting to researcher mode for now {state.researcherType}
-                  tab={props.match.params.tab}
-                />
-              </NavigationLayout>
+                mode={"researcher"} 
+                tab={props.match.params.tab}
+                researcherid={getResearcher(props.match.params.id).id}
+               > */}
+              {/* <HeaderBar               
+                authType={state.authType}
+                id={getResearcher(props.match.params.id)}
+                title={`${getResearcher(props.match.params.id).name}`}
+                goBack={props.history.goBack}
+                onLogout={() => reset()}
+                activeTab="Researcher"
+                sameLineTitle={true}
+                mode={"researcher"} 
+                tab={props.match.params.tab}
+               > */}
+              {/*  < GlobalHeader
+                 authType={state.authType}
+                 id={props.match.params.id}
+                 title={`${getResearcher(props.match.params.id).name}`}
+                 goBack={props.history.goBack}
+                 onLogout={() => reset()}
+                 activeTab="Researcher"
+               > */}
+              {/* {(headerConfig) => ( */}
+              <Researcher
+                researcher={getResearcher(props.match.params.id)}
+                onParticipantSelect={(id) => {
+                  ;(async () => {
+                    await Service.deleteUserDB()
+                    setState((state) => ({
+                      ...state,
+                      activeTab: 3,
+                    }))
+                    props.history.push(`/participant/${id}/portal`)
+                  })()
+                }}
+                mode={"researcher"} // Defaulting to researcher mode for now {state.researcherType}
+                tab={props.match.params.tab}
+                authType={state.authType}
+                ptitle={`${getResearcher(props.match.params.id).name}`}
+                Adminid={props.match.params.id}
+                goBack={props.history.goBack}
+                onLogout={() => reset()}
+                // headerConfig={headerConfig}
+              />
+              {/* )} */}
+              {/* </GlobalHeader> */}
+              {/* </NavigationBar> */}
+              {/* </HeaderBar> */}
             </React.Fragment>
           )
         }

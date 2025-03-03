@@ -22,6 +22,7 @@ import Passive from "./PassiveBubble"
 import Active from "./ActiveBubble"
 import NotificationSettings from "./NotificationSettings"
 import Credentials from "../../Credentials"
+import ParticipantDetailsDialog from "./ParticipantDetailsDialog"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -55,8 +56,10 @@ const useStyles = makeStyles((theme: Theme) =>
       color: "#fff",
     },
     cardMain: {
-      boxShadow: "none !important ",
-      background: "#F8F8F8",
+      borderRadius: 16,
+      // boxShadow: "none !important ",
+      margin: "11px",
+      background: "#E0E0E0",
       "& span.MuiCardHeader-title": { fontSize: "16px", fontWeight: 500 },
     },
     checkboxActive: { color: "#7599FF !important" },
@@ -117,6 +120,7 @@ export default function ParticipantListItem({
   }, [user])
 
   useEffect(() => {}, [])
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
 
   return (
     <Card className={classes.cardMain}>
@@ -168,8 +172,43 @@ export default function ParticipantListItem({
             >
               <Icon>arrow_forward</Icon>
             </Fab>
+            {!participant.systemTimestamps?.suspensionTime && (
+              <Fab size="small" className={classes.btnWhite} onClick={() => props.onSuspend(participant)}>
+                <Icon>block</Icon>
+              </Fab>
+            )}
+            {participant.systemTimestamps?.suspensionTime && (
+              <Fab size="small" className={classes.btnWhite} onClick={() => props.onUnSuspend(participant)}>
+                <Icon>library_add</Icon>
+              </Fab>
+            )}
+
+            <Fab
+              size="small"
+              className={classes.btnWhite}
+              onClick={() => {
+                setDetailsDialogOpen(true)
+              }}
+            >
+              <Icon>app_registration</Icon>
+            </Fab>
           </CardActions>
         </Box>
+        <ParticipantDetailsDialog
+          participant={participant}
+          open={detailsDialogOpen}
+          onClose={() => setDetailsDialogOpen(false)}
+          onSave={async (updatedParticipant) => {
+            try {
+              await props.onParticipantUpdate(participant.id, updatedParticipant)
+              setDetailsDialogOpen(false)
+            } catch (error) {
+              console.error("Error updating participant:", error)
+            }
+          }}
+          formatDate={props.formatDate}
+          researcherId={researcherId}
+        />
       </Box>
     </Card>
   )

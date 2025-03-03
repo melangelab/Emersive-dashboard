@@ -1,0 +1,180 @@
+/* Login.css */
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid-item {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-container {
+  border-radius: 10px;
+  background: #cdced1;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 70%;
+}
+
+.fab-container {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-underline {
+  width: 100%;
+  max-width: 320px;
+  height: 6px;
+  margin: 0 auto 30px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 214, 69, 1) 0%,
+    rgba(255, 214, 69, 1) 25%,
+    rgba(101, 206, 191, 1) 25%,
+    rgba(101, 206, 191, 1) 50%,
+    rgba(255, 119, 91, 1) 50%,
+    rgba(255, 119, 91, 1) 75%,
+    rgba(134, 182, 255, 1) 75%,
+    rgba(134, 182, 255, 1) 100%
+  );
+}
+
+.logo-login {
+  width: 90px;
+  margin: 0 auto 30px;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .logo-login {
+    width: 69px;
+    margin-bottom: 30px;
+  }
+}
+
+.logo-text {
+  width: 100%;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .logo-text {
+    width: 80%;
+    margin: 0 auto;
+  }
+}
+
+.logo-text svg {
+  width: 100%;
+  height: 41px;
+  margin-bottom: 10px;
+}
+
+.textfield-style input {
+  background-color: #f5f5f5;
+  border-radius: 10px;
+}
+
+.textfield-style fieldset {
+  border: 0;
+}
+
+.button-nav button {
+  width: 200px;
+}
+
+.button-nav button span {
+  text-transform: capitalize;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.link-blue {
+  color: #6083e7;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.link-blue:hover {
+  text-decoration: underline;
+}
+
+.login-container {
+  height: 90vh;
+  padding-top: 3%;
+}
+
+.login-inner {
+  max-width: 320px;
+}
+
+.login-disabled {
+  opacity: 0.5;
+}
+
+.divider-container {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.divider {
+  flex: 1;
+}
+
+.divider-text {
+  margin: 0 10px;
+  color: gray; /* Replace with the theme color */
+}
+
+.google-button {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.google-button > div {
+  width: 100% !important;
+}
+
+.miniorange-button {
+  width: 100%;
+  margin-bottom: 20px;
+  background-color: #ff6b4a;
+  color: white;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.miniorange-button:hover {
+  background-color: #e85e40;
+}
+
+.mini-orange-button {
+  width: 100%;
+  margin-bottom: 20px;
+  background-color: #ff6b2b;
+  color: white;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  font-weight: bold;
+}
+
+.mini-orange-button:hover {
+  background-color: #e55a1a;
+}

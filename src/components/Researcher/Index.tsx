@@ -1,5 +1,5 @@
 // Core Imports
-import React, { useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import locale_lang from "../../locale_map.json"
 import Dashboard from "./Dashboard"
@@ -12,6 +12,20 @@ export default function Researcher({ researcher, onParticipantSelect, mode, tab,
   const { t, i18n } = useTranslation()
   // const [dataWorker] = useWorker(saveDataToCache)
   // const [demoWorker] = useWorker(saveDemoData)
+  // const [headerConfig, setHeaderConfig] = useState(null)
+
+  // useEffect(() => {
+  //   if (tab) {
+  //     // Get header config from Dashboard
+  //     const dashboardConfig = Dashboard({
+  //       onParticipantSelect,
+  //       researcherId: researcher.id,
+  //       mode,
+  //       tab
+  //     })
+  //     setHeaderConfig(dashboardConfig)
+  //   }
+  // }, [tab, researcher])
 
   const getSelectedLanguage = () => {
     const matched_codes = Object.keys(locale_lang).filter((code) => code.startsWith(navigator.language))
@@ -52,7 +66,16 @@ export default function Researcher({ researcher, onParticipantSelect, mode, tab,
 
   return (
     <React.Fragment>
-      <Dashboard onParticipantSelect={onParticipantSelect} researcherId={researcher.id} mode={mode} tab={tab} />
+      <Dashboard
+        onParticipantSelect={onParticipantSelect}
+        researcherId={researcher.id}
+        mode={mode}
+        tab={tab}
+        authType={props.authType}
+        ptitle={props.ptitle}
+        goBack={props.goBack}
+        onLogout={props.onLogout}
+      />
     </React.Fragment>
   )
 }

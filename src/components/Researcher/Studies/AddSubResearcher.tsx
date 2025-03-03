@@ -133,6 +133,14 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
     for (const [researcherId, value] of Object.entries(selectedResearchers)) {
       if (value && value.accessScope) {
         await addSubResearcher(study.id, researcherId, value.accessScope)
+        const updatedStudy = {
+          ...study,
+          timestamps: {
+            ...study.timestamps,
+            sharedAt: new Date(),
+          },
+        }
+        props.handleShareUpdate(study.id, updatedStudy)
       }
     }
     enqueueSnackbar(t("Sub-researchers added successfully."), { variant: "success" })

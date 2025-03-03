@@ -12,13 +12,29 @@ import {
   Theme,
   createStyles,
   Link,
+  Button,
+  useMediaQuery,
+  useTheme,
 } from "@material-ui/core"
 
 import LAMP from "lamp-core"
 import { useTranslation } from "react-i18next"
+import { Add as AddIcon } from "@material-ui/icons"
+import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
+    addButton: {
+      backgroundColor: "#4285f4",
+      color: "#fff",
+      padding: "8px 24px",
+      borderRadius: 20,
+      textTransform: "none",
+      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+      "&:hover": {
+        backgroundColor: "#3367d6",
+      },
+    },
     toolbardashboard: {
       minHeight: 100,
       padding: "0 10px",
@@ -32,6 +48,18 @@ const useStyles = makeStyles((theme: Theme) =>
           fontSize: 25,
         },
       },
+    },
+    addButtonCompact: {
+      width: theme.spacing(5), // Ensures some width
+      height: theme.spacing(5),
+      flexShrink: 0,
+      minWidth: "unset",
+      fontSize: "1.5rem",
+
+      // boxSizing: "content-box",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
     },
     btnBlue: {
       background: "#7599FF",
@@ -134,7 +162,7 @@ export default function AddActivity({
   const classes = useStyles()
   const [popover, setPopover] = useState(null)
   const [loading, setLoading] = useState(true)
-
+  const headerclasses = useHeaderStyles()
   const activitiesObj = {
     "lamp.journal": `${t("Journal")}`,
     "lamp.scratch_image": `${t("Scratch card")}`,
@@ -159,6 +187,8 @@ export default function AddActivity({
     "lamp.symbol_digit_substitution": `${t("Symbol-digit Substitution")}`,
     "lamp.dcog": `${t("D-Cog")}`,
   }
+
+  const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
 
   const getActivitySpec = async (id) => {
     try {
@@ -202,14 +232,29 @@ export default function AddActivity({
       <Backdrop className={classes.backdrop} open={loading}>
         <CircularProgress color="inherit" />
       </Backdrop>
-      <Fab
+      {/* <Fab
         variant="extended"
         color="primary"
         classes={{ root: classes.btnBlue + " " + (popover ? classes.popexpand : "") }}
         onClick={(event) => setPopover(event.currentTarget)}
       >
         <Icon>add</Icon> <span className={classes.addText}>{`${t("Add")}`}</span>
-      </Fab>
+      </Fab> */}
+      {/* <Button
+        variant="contained"
+        className={headerclasses.addButton}
+        startIcon={<AddIcon />}
+        onClick={(event) => setPopover(event.currentTarget)}
+      >
+        {t("Add")}
+      </Button> */}
+      <Button
+        variant="contained"
+        className={`${classes.addButton} ${!supportsSidebar ? classes.addButtonCompact : ""}`}
+        onClick={(event) => setPopover(event.currentTarget)}
+      >
+        {supportsSidebar ? t("+ Add") : "+"}
+      </Button>
       <Popover
         open={!!popover ? true : false}
         //anchorPosition={!!popover && popover.getBoundingClientRect()}

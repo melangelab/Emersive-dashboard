@@ -9,6 +9,8 @@ import {
   Container,
   useMediaQuery,
   useTheme,
+  Box,
+  Paper,
 } from "@material-ui/core"
 
 import LAMP from "lamp-core"
@@ -21,33 +23,113 @@ import locale_lang from "../../locale_map.json"
 import { Service } from "../DBService/DBService"
 import Researchers from "./Researchers"
 import DataPortal from "../data_portal/DataPortal"
+import NavigationBar from "../NavigationBar"
+import { useLayoutStyles } from "../GlobalStyles"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     researcherMenu: {
       background: "#F8F8F8",
-      maxWidth: 100,
+      width: "100%",
+      maxWidth: 120,
       border: 0,
-      [theme.breakpoints.down("sm")]: {
-        maxWidth: "100%",
+      borderRadius: "20px",
+      margin: theme.spacing(2),
+      "& span": {
+        fontSize: 14,
+        whiteSpace: "normal",
       },
-      "& span": { fontSize: 12 },
-      "& div.Mui-selected": { backgroundColor: "transparent", color: "#5784EE", "& path": { fill: "#5784EE" } },
+      "& div.Mui-selected": {
+        backgroundColor: "#5784EE",
+        color: "#fff",
+        borderRadius: "12px",
+        margin: "0 8px",
+        "& path": { fill: "#fff" },
+      },
     },
     menuItems: {
-      display: "inline-block",
-      textAlign: "center",
-      color: "rgba(0, 0, 0, 0.4)",
-      paddingTop: 40,
-      paddingBottom: 30,
-      [theme.breakpoints.down("sm")]: {
-        paddingTop: 16,
-        paddingBottom: 9,
+      width: "100%",
+      margin: 0,
+      borderRadius: "12px",
+      "&.Mui-selected": {
+        width: "100%",
       },
-      [theme.breakpoints.down("xs")]: {
-        padding: 6,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 80,
+      padding: theme.spacing(2),
+    },
+
+    menuItemsBottom: {
+      // backgroundColor: "pink",
+      height: "100%",
+      margin: 0,
+      borderRadius: "12px",
+      "&.Mui-selected": {
+        height: "100%",
+      },
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: 80,
+      padding: theme.spacing(2),
+    },
+
+    drawerContainer: {
+      height: "100vh",
+      position: "fixed",
+      top: 0,
+      left: 0,
+    },
+    contentContainer: {
+      padding: theme.spacing(3),
+      marginLeft: 136,
+      [theme.breakpoints.down("sm")]: {
+        marginLeft: 0,
+        marginBottom: 100,
       },
     },
+    mainPaper: {
+      borderRadius: 20,
+      backgroundColor: "#f8f8f8",
+      padding: theme.spacing(2),
+    },
+    researcherCard: {
+      padding: theme.spacing(2),
+      backgroundColor: "#fff",
+      marginBottom: theme.spacing(2),
+      borderRadius: 16,
+      "& .MuiTypography-root": {
+        marginBottom: theme.spacing(1),
+      },
+    },
+    // researcherMenu: {
+    //   background: "#F8F8F8",
+    //   maxWidth: 100,
+    //   border: 0,
+    //   [theme.breakpoints.down("sm")]: {
+    //     maxWidth: "100%",
+    //   },
+    //   "& span": { fontSize: 12 },
+    //   "& div.Mui-selected": { backgroundColor: "transparent", color: "#5784EE", "& path": { fill: "#5784EE" } },
+    // },
+    // menuItems: {
+    //   display: "inline-block",
+    //   textAlign: "center",
+    //   color: "rgba(0, 0, 0, 0.4)",
+    //   paddingTop: 40,
+    //   paddingBottom: 30,
+    //   [theme.breakpoints.down("sm")]: {
+    //     paddingTop: 16,
+    //     paddingBottom: 9,
+    //   },
+    //   [theme.breakpoints.down("xs")]: {
+    //     padding: 6,
+    //   },
+    // },
     menuIcon: {
       minWidth: "auto",
       [theme.breakpoints.down("xs")]: {
@@ -97,17 +179,25 @@ const useStyles = makeStyles((theme: Theme) =>
         display: "flex",
         padding: 0,
       },
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-start",
+      padding: 0,
+      height: "auto",
+      gap: theme.spacing(2),
+    },
+    menuOuterBottom: {
+      // backgroundColor:"pink",
+      flexDirection: "row",
+      height: "100%",
+      width: "98%",
     },
     logResearcher: {
-      marginTop: 50,
-      zIndex: 1111,
-      [theme.breakpoints.up("md")]: {
-        height: "calc(100vh - 55px)",
-      },
-      [theme.breakpoints.down("sm")]: {
-        borderBottom: "#7599FF solid 5px",
-        borderRight: "#7599FF solid 5px",
-      },
+      height: "100vh",
+      position: "fixed",
+      width: 120,
+      padding: theme.spacing(2),
+      overflowY: "hidden",
     },
     btnCursor: {
       "&:hover div": {
@@ -132,10 +222,11 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-export default function Root({ updateStore, adminType, ...props }) {
+export default function Root({ updateStore, adminType, authType, goBack, onLogout, ...props }) {
   const { t, i18n } = useTranslation()
   const [currentTab, setCurrentTab] = useState(0)
   const classes = useStyles()
+  const layoutClasses = useLayoutStyles()
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
 
   const getSelectedLanguage = () => {
@@ -162,53 +253,74 @@ export default function Root({ updateStore, adminType, ...props }) {
   }, [])
 
   return (
-    <Container maxWidth={false}>
+    <Container className={layoutClasses.mainContent}>
       <Container
         className={
           currentTab !== 1
             ? window.innerWidth >= 1280 && window.innerWidth <= 1350
-              ? classes.tableContainerWidthPad
-              : classes.tableContainerWidth
-            : classes.tableContainerDataPortalWidth
+              ? layoutClasses.tableContainerWidthPad
+              : layoutClasses.tableContainerWidth
+            : layoutClasses.tableContainerDataPortalWidth
         }
       >
         {/* <ResponsivePaper className={currentTab === 1 ? classes.dataPortalPaper : null} elevation={0}> */}
-        <Drawer
-          anchor={supportsSidebar ? "left" : "bottom"}
-          variant="permanent"
-          classes={{
-            paper: classes.researcherMenu + " " + classes.logResearcher,
-          }}
-          style={{ marginBottom: "0px" }}
+        <Box
+          className={`${layoutClasses.drawerContainer} ${!supportsSidebar ? layoutClasses.drawerContainerBottom : ""}`}
         >
-          <List component="nav" className={classes.menuOuter}>
-            <ListItem
-              className={classes.menuItems + " " + classes.btnCursor}
-              button
-              selected={currentTab === 0}
-              onClick={(event) => setCurrentTab(0)}
+          <Drawer
+            variant="permanent"
+            classes={{
+              paper:
+                layoutClasses.researcherMenu +
+                " " +
+                layoutClasses.logResearcher +
+                " " +
+                (!supportsSidebar ? layoutClasses.researcherMenuBottom + " " + layoutClasses.logResearcherBottom : ""),
+            }}
+            style={{ marginBottom: "0px" }}
+          >
+            <List
+              component="nav"
+              className={classes.menuOuter + " " + (!supportsSidebar ? classes.menuOuterBottom : "")}
             >
-              <ListItemIcon className={classes.menuIcon}>
-                <Researcher />
-              </ListItemIcon>
-              <ListItemText primary={`${t("Investigators")}`} />
-            </ListItem>
-            {adminType === "admin" && (
               <ListItem
-                className={classes.menuItems + " " + classes.btnCursor}
+                className={
+                  classes.menuItems + " " + classes.btnCursor + " " + (!supportsSidebar ? classes.menuItemsBottom : "")
+                }
                 button
-                selected={currentTab === 1}
-                onClick={(event) => setCurrentTab(1)}
+                selected={currentTab === 0}
+                onClick={(event) => setCurrentTab(0)}
               >
                 <ListItemIcon className={classes.menuIcon}>
-                  <DataPortalIcon />
+                  <Researcher />
                 </ListItemIcon>
-                <ListItemText primary={`${t("Data Portal")}`} />
+                <ListItemText primary={`${t("Investigators")}`} />
               </ListItem>
-            )}
-          </List>
-        </Drawer>
-        {currentTab === 0 && <Researchers history={props.history} updateStore={updateStore} adminType={adminType} />}
+              {adminType === "admin" && (
+                <ListItem
+                  className={classes.menuItems + " " + classes.btnCursor}
+                  button
+                  selected={currentTab === 1}
+                  onClick={(event) => setCurrentTab(1)}
+                >
+                  <ListItemIcon className={classes.menuIcon}>
+                    <DataPortalIcon />
+                  </ListItemIcon>
+                  <ListItemText primary={`${t("Data Portal")}`} />
+                </ListItem>
+              )}
+            </List>
+          </Drawer>
+        </Box>
+        {currentTab === 0 && (
+          <Researchers
+            history={props.history}
+            updateStore={updateStore}
+            adminType={adminType}
+            authType={authType}
+            onLogout={onLogout}
+          />
+        )}
         {currentTab === 1 && (
           <DataPortal
             onLogout={null}
@@ -221,7 +333,6 @@ export default function Root({ updateStore, adminType, ...props }) {
             }}
           />
         )}
-        {/* </ResponsivePaper> */}
       </Container>
     </Container>
   )

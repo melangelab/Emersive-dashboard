@@ -62,7 +62,10 @@ interface LampDB extends DBSchema {
       id: string
       name: string
       study_id: string
+      group: string
       study_name: string
+      studies: any[]
+      statusInUsers?: any[]
     }
     indexes: { study_name: string; id: string }
   }

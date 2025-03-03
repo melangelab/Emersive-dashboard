@@ -443,7 +443,7 @@ export default function NavigationLayout({
                       dense
                       onClick={() => {
                         setShowCustomizeMenu(undefined)
-                        window.open("mailto:team@digitalpsych.org", "_blank")
+                        window.open("mailto:abhijeet.singh@ihub-anubhuti-iiitd.org", "_blank")
                       }}
                     >
                       {`${t("Contact Us")}`}

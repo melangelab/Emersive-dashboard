@@ -14,6 +14,8 @@ import ScheduleActivity from "./ScheduleActivity"
 import UpdateActivity from "./UpdateActivity"
 import { updateSchedule } from "./ActivityMethods"
 import LAMP from "lamp-core"
+import { useTranslation } from "react-i18next"
+import DuplicateActivity from "./DuplicateActivity"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -33,11 +35,33 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     activityHeader: { padding: "12px 5px" },
     cardMain: {
+      borderRadius: 16,
       boxShadow: "none !important ",
-      background: "#F8F8F8",
+      background: "#E0E0E0",
+      margin: "11px",
       "& span.MuiCardHeader-title": { fontSize: "16px", fontWeight: 500 },
     },
     checkboxActive: { color: "#7599FF !important" },
+    communityCard: {
+      background: "#F0F7FF", // Light blue background
+      border: "1px solid #7599FF",
+      position: "relative",
+    },
+    communityBadge: {
+      position: "absolute",
+      bottom: "8px",
+      right: "8px",
+      background: "#7599FF",
+      color: "white",
+      padding: "2px 8px",
+      borderRadius: "12px",
+      fontSize: "0.75rem",
+    },
+    creatorInfo: {
+      fontSize: "0.75rem",
+      color: "#666",
+      marginTop: "4px",
+    },
   })
 )
 export default function ActivityItem({
@@ -55,23 +79,26 @@ export default function ActivityItem({
   const [checked, setChecked] = React.useState(
     selectedActivities.filter((d) => d.id === activity.id).length > 0 ? true : false
   )
-
+  const { t } = useTranslation()
   const handleChange = (activity, event: React.ChangeEvent<HTMLInputElement>) => {
     setChecked(event.target.checked)
     handleSelectionChange(activity, event.target.checked)
   }
 
   return (
-    <Card className={classes.cardMain}>
+    <Card className={`${classes.cardMain} ${activity.isCommunityActivity ? classes.communityCard : ""}`}>
+      {activity.isCommunityActivity && <Box className={classes.communityBadge}>{t("Community")}</Box>}
       <Box display="flex" p={1}>
-        <Box>
-          <Checkbox
-            checked={checked}
-            onChange={(event) => handleChange(activity, event)}
-            classes={{ checked: classes.checkboxActive }}
-            inputProps={{ "aria-label": "primary checkbox" }}
-          />
-        </Box>
+        {!activity.isCommunityActivity && (
+          <Box>
+            <Checkbox
+              checked={checked}
+              onChange={(event) => handleChange(activity, event)}
+              classes={{ checked: classes.checkboxActive }}
+              inputProps={{ "aria-label": "primary checkbox" }}
+            />
+          </Box>
+        )}
         <Box flexGrow={1}>
           <CardHeader
             className={classes.activityHeader}
@@ -80,21 +107,37 @@ export default function ActivityItem({
               <Box>
                 <Typography variant="subtitle1">{activity.spec?.replace("lamp.", "")}</Typography>
                 <Typography variant="body2">{activity.study_name}</Typography>
+                {activity.isCommunityActivity && (
+                  <Typography className={classes.creatorInfo}>
+                    {t("Creator")}: {activity.creator}
+                  </Typography>
+                )}
               </Box>
             }
           />
         </Box>
         <Box>
           <CardActions>
-            <UpdateActivity
-              activity={activity}
-              activities={activities}
-              studies={studies}
-              setActivities={setActivities}
-              profile={0}
-              researcherId={researcherId}
-            />
-            <ScheduleActivity activity={activity} setActivities={setActivities} activities={activities} />
+            {activity.isCommunityActivity ? (
+              <DuplicateActivity
+                activity={activity}
+                studies={studies}
+                researcherId={researcherId}
+                searchActivities={setActivities}
+              />
+            ) : (
+              <>
+                <UpdateActivity
+                  activity={activity}
+                  activities={activities}
+                  studies={studies}
+                  setActivities={setActivities}
+                  profile={0}
+                  researcherId={researcherId}
+                />
+                <ScheduleActivity activity={activity} setActivities={setActivities} activities={activities} />
+              </>
+            )}
           </CardActions>
         </Box>
       </Box>

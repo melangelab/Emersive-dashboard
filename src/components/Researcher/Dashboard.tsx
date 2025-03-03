@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
 import {
+  Box,
   Drawer,
   List,
   ListItem,
@@ -31,7 +32,11 @@ import { Service } from "../DBService/DBService"
 import LAMP from "lamp-core"
 import useInterval from "../useInterval"
 import DataPortal from "../data_portal/DataPortal"
-
+import { useLayoutStyles } from "../GlobalStyles"
+import DeleteSweepIcon from "@material-ui/icons/DeleteSweep"
+import ArchivedView from "./ArchiveList/ArchivedItemsView"
+import ArchivedItemsView from "./ArchiveList/ArchivedItemsView"
+import ArchivedList from "./ArchiveList/Index"
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     researcherMenu: {
@@ -112,6 +117,18 @@ const useStyles = makeStyles((theme: Theme) =>
         display: "flex",
         padding: 0,
       },
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-start",
+      padding: 0,
+      height: "auto",
+      gap: theme.spacing(2),
+    },
+    menuOuterBottom: {
+      // backgroundColor:"pink",
+      flexDirection: "row",
+      height: "100%",
+      width: "98%",
     },
     logResearcher: {
       marginTop: 50,
@@ -188,6 +205,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
   const classes = useStyles()
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
+  const layoutClasses = useLayoutStyles()
 
   useInterval(
     () => {
@@ -261,12 +279,13 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
       }
       selected.sort()
       if (!order) selected.reverse()
+      console.log("selected studies %%$%$%,", selected)
       setSelectedStudies(selected)
     }
   }
 
   return (
-    <Container maxWidth={false}>
+    <Container className={layoutClasses.mainContent}>
       <Backdrop className={classes.backdrop} open={loading}>
         <CircularProgress color="inherit" />
       </Backdrop>
@@ -274,104 +293,133 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
         className={
           tab !== "portal"
             ? window.innerWidth >= 1280 && window.innerWidth <= 1350
-              ? classes.tableContainerWidthPad
-              : classes.tableContainerWidth
-            : classes.tableContainerDataPortalWidth
+              ? layoutClasses.tableContainerWidthPad
+              : layoutClasses.tableContainerWidth
+            : layoutClasses.tableContainerDataPortalWidth
         }
       >
         {!!studies && (
           // <ResponsivePaper className={tab === "portal" ? classes.dataPortalPaper : null} elevation={0}>
           <>
-            <Drawer
-              anchor={supportsSidebar ? "left" : "bottom"}
-              variant="permanent"
-              classes={{
-                paper: classes.researcherMenu + " " + classes.logResearcher,
-              }}
+            <Box
+              className={`${layoutClasses.drawerContainer} ${
+                !supportsSidebar ? layoutClasses.drawerContainerBottom : ""
+              }`}
             >
-              <List component="nav" className={classes.menuOuter}>
-                {mode === "researcher" && (
-                  <ListItem
-                    className={classes.menuItems + " " + classes.btnCursor}
-                    button
-                    selected={tab === "studies"}
-                    onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/studies`)}
-                  >
-                    <ListItemIcon className={classes.menuIcon}>
-                      <Studies />
-                    </ListItemIcon>
-                    <ListItemText primary={`${t("Studies")}`} />
-                  </ListItem>
-                )}
-                <ListItem
-                  className={classes.menuItems + " " + classes.btnCursor}
-                  button
-                  selected={tab === "users"}
-                  onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/users`)}
+              <Drawer
+                variant="permanent"
+                classes={{
+                  paper:
+                    layoutClasses.researcherMenu +
+                    " " +
+                    layoutClasses.logResearcher +
+                    " " +
+                    (!supportsSidebar
+                      ? layoutClasses.researcherMenuBottom + " " + layoutClasses.logResearcherBottom
+                      : ""),
+                }}
+                style={{ marginBottom: "0px" }}
+              >
+                <List
+                  component="nav"
+                  className={classes.menuOuter + " " + (!supportsSidebar ? classes.menuOuterBottom : "")}
                 >
-                  <ListItemIcon className={classes.menuIcon}>
-                    <Patients />
-                  </ListItemIcon>
-                  <ListItemText primary={`${t("Users")}`} />
-                </ListItem>
-                {mode === "researcher" && (
+                  {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "studies"}
+                      onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/studies`)}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <Studies />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Studies")}`} />
+                    </ListItem>
+                  )}
                   <ListItem
                     className={classes.menuItems + " " + classes.btnCursor}
                     button
-                    selected={tab === "activities"}
-                    onClick={(event) => {
-                      window.location.href = `/#/researcher/${researcherId}/activities`
-                    }}
+                    selected={tab === "users"}
+                    onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/users`)}
                   >
                     <ListItemIcon className={classes.menuIcon}>
-                      <Activities />
+                      <Patients />
                     </ListItemIcon>
-                    <ListItemText primary={`${t("Activities")}`} />
+                    <ListItemText primary={`${t("Users")}`} />
                   </ListItem>
-                )}
-                {mode === "researcher" && (
-                  <ListItem
-                    className={classes.menuItems + " " + classes.btnCursor}
-                    button
-                    selected={tab === "sensors"}
-                    onClick={(event) => {
-                      window.location.href = `/#/researcher/${researcherId}/sensors`
-                    }}
-                  >
-                    <ListItemIcon className={classes.menuIcon}>
-                      <Sensors />
-                    </ListItemIcon>
-                    <ListItemText primary={`${t("Sensors")}`} />
-                  </ListItem>
-                )}
-                {mode === "researcher" && (
-                  <ListItem
-                    className={classes.menuItems + " " + classes.btnCursor}
-                    button
-                    selected={tab === "sharedstudies"}
-                    onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/sharedstudies`)}
-                  >
-                    <ListItemIcon className={classes.menuIcon}>
-                      <SharedStudies />
-                    </ListItemIcon>
-                    <ListItemText primary={`${t("Shared Studies")}`} />
-                  </ListItem>
-                )}
-                {mode === "researcher" && (
-                  <ListItem
-                    className={classes.menuItems + " " + classes.btnCursor}
-                    button
-                    selected={tab === "portal"}
-                    onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/portal`)}
-                  >
-                    <ListItemIcon className={classes.menuIcon}>
-                      <DataPortalIcon />
-                    </ListItemIcon>
-                    <ListItemText primary={`${t("Data Portal")}`} />
-                  </ListItem>
-                )}
-              </List>
-            </Drawer>
+                  {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "activities"}
+                      onClick={(event) => {
+                        window.location.href = `/#/researcher/${researcherId}/activities`
+                      }}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <Activities />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Activities")}`} />
+                    </ListItem>
+                  )}
+                  {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "sensors"}
+                      onClick={(event) => {
+                        window.location.href = `/#/researcher/${researcherId}/sensors`
+                      }}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <Sensors />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Sensors")}`} />
+                    </ListItem>
+                  )}
+                  {/* {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "sharedstudies"}
+                      onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/sharedstudies`)}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <SharedStudies />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Shared Studies")}`} />
+                    </ListItem>
+                  )} */}
+                  {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "archived"}
+                      onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/archived`)}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <DeleteSweepIcon />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Archived")}`} />
+                    </ListItem>
+                  )}
+                  {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "portal"}
+                      onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/portal`)}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <DataPortalIcon />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Data Portal")}`} />
+                    </ListItem>
+                  )}
+                </List>
+              </Drawer>
+            </Box>
             {tab === "users" && (
               <ParticipantList
                 title={null}
@@ -385,6 +433,10 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 mode={mode}
                 setOrder={() => setOrder(!order)}
                 order={order}
+                authType={props.authType}
+                ptitle={props.ptitle}
+                goBack={props.goBack}
+                onLogout={props.onLogout}
               />
             )}
             {tab === "activities" && (
@@ -397,6 +449,10 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 setOrder={() => setOrder(!order)}
                 getAllStudies={getAllStudies}
                 order={order}
+                authType={props.authType}
+                ptitle={props.ptitle}
+                goBack={props.goBack}
+                onLogout={props.onLogout}
               />
             )}
             {tab === "sensors" && (
@@ -409,6 +465,10 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 setOrder={() => setOrder(!order)}
                 getAllStudies={getAllStudies}
                 order={order}
+                authType={props.authType}
+                ptitle={props.ptitle}
+                goBack={props.goBack}
+                onLogout={props.onLogout}
               />
             )}
             {tab === "studies" && (
@@ -421,6 +481,11 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 searchData={(data) => setSearch(data)}
                 newAdddeStudy={setNewStudy}
                 getAllStudies={getAllStudies}
+                authType={props.authType}
+                ptitle={props.ptitle}
+                goBack={props.goBack}
+                onLogout={props.onLogout}
+                resins={researcher?.institution}
               />
             )}
             {tab === "sharedstudies" && (
@@ -434,6 +499,42 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 newAdddeStudy={setNewStudy}
                 getAllStudies={getAllStudies}
               />
+            )}
+            {tab === "archived" && (
+              <ArchivedList
+                title={null}
+                researcherId={researcherId}
+                studies={studies}
+                upatedDataStudy={(data) => setUpdatedData(data)}
+                deletedDataStudy={(data) => setDeletedData(data)}
+                searchData={(data) => setSearch(data)}
+                newAdddeStudy={setNewStudy}
+                getAllStudies={getAllStudies}
+                setOrder={() => setOrder(!order)}
+                order={order}
+                authType={props.authType}
+                ptitle={props.ptitle}
+                goBack={props.goBack}
+                onLogout={props.onLogout}
+                selectedStudies={selectedStudies}
+                setSelectedStudies={setSelectedStudies}
+              />
+              // <ArchivedItemsView
+              //   title={null}
+              //   researcherId={researcherId}
+              //   studies={studies}
+              //   upatedDataStudy={(data) => setUpdatedData(data)}
+              //   deletedDataStudy={(data) => setDeletedData(data)}
+              //   searchData={(data) => setSearch(data)}
+              //   newAdddeStudy={setNewStudy}
+              //   getAllStudies={getAllStudies}
+              //   setOrder={() => setOrder(!order)}
+              //   order={order}
+              //   authType={props.authType}
+              //   ptitle={props.ptitle}
+              //   goBack={props.goBack}
+              //   onLogout={props.onLogout}
+              // />
             )}
             {tab === "portal" && (
               <DataPortal

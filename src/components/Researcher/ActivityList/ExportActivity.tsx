@@ -60,6 +60,8 @@ export default function ExportActivity({ activities, ...props }) {
         } catch (e) {}
       } else data.push({ ...x, tableData: undefined })
     }
+    // const _owner = await LAMP.Type.parent(activities[0].id)
+    // await LAMP.Researcher.update(_owner.data.Researcher, {"timestamps.lastActivityAt": new Date()} as any).then(()=>console.log("successfully updated for ", activities[0].id))
     _saveFile(data)
     enqueueSnackbar(`${t("The selected Activities were successfully exported.")}`, {
       variant: "info",

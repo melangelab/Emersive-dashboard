@@ -1,1 +1,255 @@
-abcd
+import React, { useState, useEffect } from "react"
+import {
+  AppBar,
+  Box,
+  Button,
+  IconButton,
+  Typography,
+  Menu,
+  MenuItem,
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Container,
+  makeStyles,
+  Theme,
+  createStyles,
+} from "@material-ui/core"
+import { Add as AddIcon, FilterList as FilterListIcon, Search as SearchIcon } from "@material-ui/icons"
+import { useTranslation } from "react-i18next"
+import { CredentialManager } from "./CredentialManager"
+import LAMP from "lamp-core"
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    header: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: theme.spacing(2, 3),
+      backgroundColor: "#fff",
+      borderRadius: 20,
+      boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.05)",
+      marginBottom: theme.spacing(3),
+      marginTop: theme.spacing(2),
+    },
+    titleSection: {
+      display: "flex",
+      alignItems: "center",
+      "& h5": {
+        fontSize: "24px",
+        fontWeight: 500,
+        marginLeft: theme.spacing(2),
+      },
+    },
+    actionGroup: {
+      display: "flex",
+      alignItems: "center",
+      gap: theme.spacing(2),
+    },
+    addButton: {
+      backgroundColor: "#4285f4",
+      color: "#fff",
+      padding: "8px 24px",
+      borderRadius: 20,
+      textTransform: "none",
+      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+      "&:hover": {
+        backgroundColor: "#3367d6",
+      },
+    },
+    filterButton: {
+      backgroundColor: "#f1f3f4",
+      color: "#5f6368",
+      padding: "8px 24px",
+      borderRadius: 20,
+      textTransform: "none",
+      "&:hover": {
+        backgroundColor: "#e8eaed",
+      },
+    },
+    searchButton: {
+      padding: 8,
+      backgroundColor: "#fff",
+      border: "1px solid #dadce0",
+      borderRadius: 20,
+      "&:hover": {
+        backgroundColor: "#f8f9fa",
+      },
+    },
+    profileSection: {
+      cursor: "pointer",
+      "&:hover": {
+        backgroundColor: "rgba(0, 0, 0, 0.04)",
+      },
+      borderRadius: 20,
+      padding: "4px 8px",
+      display: "flex",
+      alignItems: "center",
+      marginLeft: theme.spacing(2),
+    },
+    avatar: {
+      width: 36,
+      height: 36,
+      marginRight: theme.spacing(1),
+    },
+    profileInfo: {
+      display: "flex",
+      flexDirection: "column",
+      "& .name": {
+        fontWeight: 500,
+      },
+      "& .role": {
+        color: theme.palette.text.secondary,
+        fontSize: "0.875rem",
+      },
+    },
+    mainContainer: {
+      marginTop: 0,
+      paddingBottom: 56,
+      width: "100%",
+      overflowY: "hidden",
+    },
+    contentContainer: {
+      width: "80%",
+      margin: "20px auto",
+      position: "relative",
+    },
+  })
+)
+
+export default function NavigationBar({
+  title,
+  id,
+  authType,
+  noToolbar,
+  goBack,
+  onLogout,
+  activeTab,
+  ...props
+}) {
+  const classes = useStyles()
+  const { t } = useTranslation()
+  const [anchorEl, setAnchorEl] = useState(null)
+  const [passwordChange, setPasswordChange] = useState(false)
+  const [confirmLogout, setConfirmLogout] = useState(false)
+
+  const handleClick = (event) => setAnchorEl(event.currentTarget)
+  const handleClose = () => setAnchorEl(null)
+  const handleLogoutClick = () => {
+    handleClose()
+    setConfirmLogout(true)
+  }
+
+  return (
+    <Box className={classes.mainContainer}>
+      <Container maxWidth={false}>
+        <Box className={classes.header}>
+          <Box className={classes.titleSection}>
+            <Avatar className={classes.avatar}>
+              {title?.charAt(0) || "U"}
+            </Avatar>
+            <Typography variant="h5">
+              {activeTab || "Investigators"}
+            </Typography>
+          </Box>
+
+          <Box className={classes.actionGroup}>
+            <IconButton className={classes.searchButton}>
+              <SearchIcon />
+            </IconButton>
+
+            <Button
+              variant="contained"
+              className={classes.filterButton}
+              startIcon={<FilterListIcon />}
+            >
+              Filter
+            </Button>
+
+            <Button
+              variant="contained"
+              className={classes.addButton}
+              startIcon={<AddIcon />}
+            >
+              Add
+            </Button>
+
+            <Box className={classes.profileSection} onClick={handleClick}>
+              <Avatar className={classes.avatar}>
+                {title?.charAt(0) || "U"}
+              </Avatar>
+              <Box className={classes.profileInfo}>
+                <Typography className="name">{title || "Name"}</Typography>
+                <Typography className="role">{authType || "Role"}</Typography>
+              </Box>
+            </Box>
+
+            <Menu
+              anchorEl={anchorEl}
+              keepMounted
+              open={Boolean(anchorEl)}
+              onClose={handleClose}
+            >
+              {authType === "admin" && (
+                <MenuItem onClick={() => setPasswordChange(true)}>
+                  {t("Manage Credentials")}
+                </MenuItem>
+              )}
+              <MenuItem onClick={handleLogoutClick}>{t("Logout")}</MenuItem>
+              <MenuItem onClick={() => window.open("https://docs.lamp.digital", "_blank")}>
+                {t("Help & Support")}
+              </MenuItem>
+              <MenuItem onClick={() => window.open("https://community.lamp.digital", "_blank")}>
+                {t("LAMP Community")}
+              </MenuItem>
+              <MenuItem onClick={() => window.open("mailto:team@digitalpsych.org", "_blank")}>
+                {t("Contact Us")}
+              </MenuItem>
+            </Menu>
+          </Box>
+        </Box>
+
+        <Box>{props.children}</Box>
+
+        <Dialog open={passwordChange} onClose={() => setPasswordChange(false)}>
+          <DialogContent>
+            <CredentialManager id={id || LAMP.Auth._auth.id} type={title} />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={confirmLogout}
+          onClose={() => setConfirmLogout(false)}
+        >
+          <DialogTitle>
+            {t("Are you sure you want to log out of LAMP right now?")}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              {t("If you've made some changes, make sure they're saved before you continue to log out.")}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmLogout(false)} color="secondary">
+              {t("Go Back")}
+            </Button>
+            <Button
+              onClick={() => {
+                onLogout()
+                setConfirmLogout(false)
+              }}
+              color="primary"
+              autoFocus
+            >
+              {t("Logout")}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </Box>
+  )
+}
