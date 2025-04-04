@@ -4,6 +4,8 @@ import { makeStyles, Theme, createStyles } from "@material-ui/core/styles"
 import Credentials from "../Credentials"
 import DeleteResearcher from "./DeleteResearcher"
 import AddUpdateResearcher from "./AddUpdateResearcher"
+import LAMP from "lamp-core"
+
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     tableContainer: {

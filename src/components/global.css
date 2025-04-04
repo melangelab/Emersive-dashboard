@@ -1,0 +1,361 @@
+.sidebar {
+  width: 16vw;
+  height: 100vh;
+  /* position: fixed;
+    z-index: 11111; */
+  background-color: white;
+  /* left:0;
+    top:0; */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 0 15px rgba(154, 154, 154, 0.8);
+  border-right: 0.5px solid black;
+}
+
+.sidebar.collapse {
+  width: 7vw;
+}
+
+.logo-component {
+  width: 60%;
+  margin-top: 20px;
+}
+
+.platform-name {
+  color: #eb8367;
+  font-size: 50px;
+  font-weight: 400;
+  margin: 0;
+}
+
+.platform-desc {
+  color: grey;
+  font-size: 15px;
+  margin-top: -16px;
+}
+
+.list-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 100px;
+}
+
+.sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px !important;
+  transition: background-color 0.3s ease;
+}
+
+.sidebar-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 50px;
+  margin: 0 12px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease, width 0.3s ease, height 0.3s ease;
+  cursor: pointer;
+}
+
+/* Default state for icon */
+.sidebar-icon svg {
+  width: 30px;
+  pointer-events: none;
+}
+
+.sidebar-icon svg path {
+  fill: #e47c62;
+  /* Gray color for inactive state */
+}
+
+/* Apply hover effect to the entire sidebar item */
+.sidebar-item:hover {
+  background-color: rgba(228, 124, 98, 0.08) !important;
+}
+
+.sidebar-icon.active {
+  border-radius: 50%;
+  background-color: #e47c62;
+}
+
+.sidebar-icon.active svg path {
+  fill: #fff !important; /* White fill for active state */
+}
+
+/* .sidebar-item:hover .sidebar-icon,
+.sidebar-item.active .sidebar-icon {
+  background-color: #e47c62;
+  border-radius: 50%;
+}
+
+.sidebar-item:hover .sidebar-icon path,
+.sidebar-item.active .sidebar-icon path {
+  fill: white !important;
+}
+
+.sidebar-item.active .sidebar-icon svg,
+.sidebar-item:hover .sidebar-icon svg {
+  width: 30px;
+}
+
+.sidebar-item.active .sidebar-icon svg path,
+.sidebar-item:hover .sidebar-icon svg path {
+  fill: white !important;
+} */
+
+/* Text styling */
+.sidebar-item .MuiListItemText-root .MuiTypography-root {
+  font-size: 14px;
+  color: #6c757d;
+  /* Gray color for inactive text */
+  font-weight: 400;
+  transition: color 0.3s ease;
+}
+
+.bottom-list-container {
+  /* width:100%; */
+  margin-top: auto !important;
+  margin-bottom: 20px;
+  margin-left: 25px;
+}
+
+.bottom-list {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.sidebar-bottom-item {
+  padding: 0px !important;
+  margin: 0px !important;
+  height: 30px;
+}
+
+.bottom-list.collapse {
+  flex-direction: column;
+}
+
+.sidebar-bottom-icon {
+  margin-right: 0;
+}
+
+.sidebar-bottom-icon svg {
+  width: 30px;
+  height: 50px !important;
+}
+
+.sidebar-bottom-icon path {
+  fill: #e47c62;
+  /* Gray color for inactive state */
+}
+
+.view-field-container {
+  margin-bottom: 20px;
+}
+
+.view-label {
+  font-size: 16;
+  font-weight: 500;
+  color: "#000000";
+  margin-bottom: 8px;
+}
+
+.view-value {
+  font-size: 14;
+  color: "#666666";
+  margin-bottom: 8px;
+}
+
+.view-divider {
+  margin-bottom: 8px;
+}
+
+.view-element-grid {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.view-element-info {
+  height: 100%;
+  /* box-sizing: border-box; */
+  overflow-y: hidden; /* Remove background-color: blue which was likely for debugging */
+}
+
+.view-element-grid .MuiGrid-item:nth-child(2) .MuiPaper-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.view-element-info-paper {
+  height: 100%;
+  overflow-y: auto;
+  padding: 15px;
+}
+
+.view-element-info-paper.editing-mode {
+  background-color: #f9f9ff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.more-info-content-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  width: 100%;
+  margin: 0 auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+}
+
+.m-f-header {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.tab-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 18px;
+  color: #555;
+}
+
+.tab {
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.tab.active {
+  font-weight: bold;
+  color: #333;
+}
+
+.separator {
+  margin: 0 10px;
+  color: #ccc;
+}
+
+.info-row {
+  display: flex;
+  padding: 12px 0;
+}
+
+.info-label {
+  width: 40%;
+  font-weight: 500;
+  color: #333;
+}
+
+.info-value {
+  width: 60%;
+  color: #555;
+}
+
+.blue-text {
+  color: #4285f4;
+}
+
+.url-text {
+  word-break: break-all;
+}
+
+.info-divider {
+  height: 1px;
+  background-color: #eee;
+}
+
+.edit-icon {
+  margin-left: auto;
+  color: #777;
+  cursor: pointer;
+}
+
+.action-buttons {
+  display: flex;
+  margin-top: 16px;
+  gap: 10px;
+}
+
+.edit-button {
+  display: flex;
+  align-items: center;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.status-button {
+  display: flex;
+  align-items: center;
+  background-color: #f1f5f9;
+  color: #4285f4;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.dropdown-icon {
+  margin-left: 4px;
+}
+
+.studies-list,
+.community-section {
+  padding-top: 8px;
+}
+
+.study-item,
+.community-item,
+.community-stat {
+  display: flex;
+  padding: 12px 0;
+  align-items: center;
+}
+
+.study-name,
+.item-title {
+  flex-grow: 1;
+  font-weight: 500;
+}
+
+.external-link-icon {
+  color: #777;
+  font-size: 1rem;
+}
+
+.stat-bullet {
+  margin-right: 10px;
+}
+
+.stat-label {
+  flex-grow: 1;
+}
+
+.stat-count {
+  margin-left: auto;
+  color: #555;
+  font-weight: 500;
+}

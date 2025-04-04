@@ -29,7 +29,7 @@ import { ColorLens } from "@mui/icons-material"
 import PreviewIcon from "@material-ui/icons/Visibility"
 import StudiesPreviewDialog from "./StudiesStatusPreviewDialog"
 
-interface ColumnConfig {
+export interface ColumnConfig {
   [key: string]: string
 }
 
@@ -303,6 +303,8 @@ interface DynamicTableProps {
   refreshSensors?: () => void
   editable_columns?: string[]
   settingsInfo?: SettingsInfo
+  selectedColumns: string[]
+  setSelectedColumns: any
 }
 
 type UpdateData = {
@@ -338,101 +340,6 @@ interface ScrollableCellProps {
   value: string
   onCopy?: (text: string, event: React.MouseEvent) => void
 }
-
-// const ScrollableCell: React.FC<ScrollableCellProps> = React.memo(({ value, onCopy }) => {
-//     const classes = useStyles();
-//     const scrollRef = React.useRef<HTMLDivElement>(null);
-//     const [isScrollable, setIsScrollable] = React.useState(false);
-//     const [isScrolling, setIsScrolling] = React.useState(false);
-//     const [startX, setStartX] = React.useState(0);
-//     const [scrollLeft, setScrollLeft] = React.useState(0);
-//     const [isDragging, setIsDragging] = React.useState(false);
-
-//     React.useEffect(() => {
-//         const checkScrollable = () => {
-//             if (scrollRef.current) {
-//                 const hasScroll = scrollRef.current.scrollWidth > scrollRef.current.clientWidth;
-//                 setIsScrollable(hasScroll);
-//             }
-//         };
-
-//         checkScrollable();
-
-//         const resizeObserver = new ResizeObserver(checkScrollable);
-//         if (scrollRef.current) {
-//             resizeObserver.observe(scrollRef.current);
-//         }
-
-//         return () => {
-//             if (scrollRef.current) {
-//                 resizeObserver.unobserve(scrollRef.current);
-//             }
-//         };
-//     }, [value]);
-
-//     const handleMouseDown = (e: React.MouseEvent) => {
-//         if (!scrollRef.current) return;
-
-//         setIsDragging(false);
-//         setIsScrolling(true);
-//         setStartX(e.pageX - scrollRef.current.offsetLeft);
-//         setScrollLeft(scrollRef.current.scrollLeft);
-//     };
-
-//     const handleMouseUp = (e: React.MouseEvent) => {
-//         if (!isDragging && onCopy) {
-//             e.stopPropagation();
-//             onCopy(value, e);
-//         }
-//         setIsScrolling(false);
-//         setIsDragging(false);
-//     };
-
-//     const handleMouseMove = (e: React.MouseEvent) => {
-//         if (!isScrolling || !scrollRef.current) return;
-
-//         e.preventDefault();
-//         const x = e.pageX - scrollRef.current.offsetLeft;
-//         const walk = (x - startX) * 2;
-
-//         if (Math.abs(walk) > 5) { // Add a small threshold to detect dragging
-//             setIsDragging(true);
-//         }
-
-//         scrollRef.current.scrollLeft = scrollLeft - walk;
-//     };
-
-//     const handleWheel = (event: React.WheelEvent) => {
-//         if (scrollRef.current && event.deltaY !== 0) {
-//             event.preventDefault();
-//             scrollRef.current.scrollLeft += event.deltaY;
-//         }
-//     };
-
-//     return (
-//         <div
-//             className={classes.scrollableContainer}
-//             onMouseDown={handleMouseDown}
-//             onMouseUp={handleMouseUp}
-//             onMouseMove={handleMouseMove}
-//             onMouseLeave={() => {
-//                 setIsScrolling(false);
-//                 setIsDragging(false);
-//             }}
-//         >
-//             <div
-//                 ref={scrollRef}
-//                 className={classes.scrollableContent}
-//                 onWheel={handleWheel}
-//             >
-//                 {value}
-//             </div>
-//             {isScrollable && (
-//                 <span className={classes.scrollHint}>⟷</span>
-//             )}
-//         </div>
-//     );
-// });
 
 // EditableCell component with TypeScript types
 const EditableCell: React.FC<EditableCellProps> = React.memo(({ columnKey, value, onChange, onClick }) => {
@@ -479,6 +386,9 @@ const DynamicTableSensors: React.FC<DynamicTableProps> = ({
   refreshSensors,
   editable_columns = [],
   settingsInfo,
+  selectedColumns,
+  setSelectedColumns,
+  // setSearch
 }) => {
   const columnKeys = Object.keys(columns)
   const classes = useStyles()
@@ -499,7 +409,7 @@ const DynamicTableSensors: React.FC<DynamicTableProps> = ({
 
   // Add new state for column selection
   const originalColumnKeys = Object.keys(columns)
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(columnKeys)
+  // const [selectedColumns, setSelectedColumns] = useState<string[]>(columnKeys)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
 
@@ -625,7 +535,7 @@ const DynamicTableSensors: React.FC<DynamicTableProps> = ({
                 sensors: [
                   {
                     id: updatedSensor.id,
-                    name: updatedSensor.name.trim(),
+                    name: updatedSensor.name?.trim(),
                     spec: updatedSensor.spec,
                     settings: updatedSensor.settings,
                   },

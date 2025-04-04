@@ -15,24 +15,37 @@ import {
   Button,
   useMediaQuery,
   useTheme,
+  Divider,
+  Slide,
+  Typography,
 } from "@material-ui/core"
 
 import LAMP from "lamp-core"
 import { useTranslation } from "react-i18next"
-import { Add as AddIcon } from "@material-ui/icons"
+import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
+import { slideStyles } from "../ParticipantList/AddButton"
+import { ReactComponent as ActivityIcon } from "../../../icons/NewIcons/time-fast-filled.svg"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     addButton: {
-      backgroundColor: "#4285f4",
-      color: "#fff",
-      padding: "8px 24px",
-      borderRadius: 20,
-      textTransform: "none",
-      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+      backgroundColor: "#4CAF50",
+      padding: theme.spacing(1),
+      borderRadius: "40%",
+      width: 40,
+      height: 40,
+      minWidth: 40,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      "& path": {
+        fill: "#FFFFFF",
+      },
       "&:hover": {
-        backgroundColor: "#3367d6",
+        backgroundColor: "#45a049",
       },
     },
     toolbardashboard: {
@@ -163,6 +176,8 @@ export default function AddActivity({
   const [popover, setPopover] = useState(null)
   const [loading, setLoading] = useState(true)
   const headerclasses = useHeaderStyles()
+  const sliderclasses = slideStyles()
+  const [slideOpen, setSlideOpen] = useState(false)
   const activitiesObj = {
     "lamp.journal": `${t("Journal")}`,
     "lamp.scratch_image": `${t("Scratch card")}`,
@@ -229,54 +244,30 @@ export default function AddActivity({
 
   return (
     <Box>
-      <Backdrop className={classes.backdrop} open={loading}>
-        <CircularProgress color="inherit" />
-      </Backdrop>
-      {/* <Fab
-        variant="extended"
-        color="primary"
-        classes={{ root: classes.btnBlue + " " + (popover ? classes.popexpand : "") }}
-        onClick={(event) => setPopover(event.currentTarget)}
-      >
-        <Icon>add</Icon> <span className={classes.addText}>{`${t("Add")}`}</span>
-      </Fab> */}
-      {/* <Button
-        variant="contained"
-        className={headerclasses.addButton}
-        startIcon={<AddIcon />}
-        onClick={(event) => setPopover(event.currentTarget)}
-      >
-        {t("Add")}
-      </Button> */}
-      <Button
-        variant="contained"
-        className={`${classes.addButton} ${!supportsSidebar ? classes.addButtonCompact : ""}`}
-        onClick={(event) => setPopover(event.currentTarget)}
-      >
-        {supportsSidebar ? t("+ Add") : "+"}
-      </Button>
-      <Popover
-        open={!!popover ? true : false}
-        //anchorPosition={!!popover && popover.getBoundingClientRect()}
-        anchorPosition={popover ? popover.getBoundingClientRect() : null}
-        anchorReference="anchorPosition"
-        classes={{ root: classes.customPopover, paper: classes.customPaper }}
-        onClose={() => setPopover(null)}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "right",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "right",
-        }}
-      >
-        <React.Fragment>
+      <AddIcon className={classes.addButton} onClick={(event) => setSlideOpen(true)} />
+      <Backdrop className={sliderclasses.backdrop} open={slideOpen} onClick={() => setSlideOpen(false)} />
+      <Slide direction="left" in={slideOpen} mountOnEnter unmountOnExit>
+        <Box
+          className={sliderclasses.slidePanel}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            borderRadius: 10,
+          }}
+        >
+          <Box className={sliderclasses.icon}>
+            <ActivityIcon />
+          </Box>
+          <Typography variant="h6">{t("Add Activity")}</Typography>
+
+          <Divider className={sliderclasses.divider} />
+
           <MenuItem
             divider
             onClick={() => {
               window.location.href = `/#/researcher/${researcherId}/activity/import`
+              setSlideOpen(false)
             }}
+            className={sliderclasses.menuitem}
           >
             <Grid container style={{ marginLeft: "-15px" }}>
               <Grid item xs={2} style={{ textAlign: "center" }}>
@@ -299,14 +290,23 @@ export default function AddActivity({
                   ["lamp.group", "lamp.form_builder", "lamp.survey", "lamp.cbt_thought_record"].includes(x.id)
                 )
                 .map((x) => (
-                  <Link
-                    href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}
-                    underline="none"
+                  <MenuItem
+                    key={x.id}
+                    onClick={() => {
+                      window.location.href = `/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`
+                      setSlideOpen(false)
+                    }}
+                    className={sliderclasses.menuLinks}
                   >
-                    {activitiesObj[x.id]
-                      ? `${t(activitiesObj[x.id])}`
-                      : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
-                  </Link>
+                    <Link
+                      href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}
+                      underline="none"
+                    >
+                      {activitiesObj[x.id]
+                        ? `${t(activitiesObj[x.id])}`
+                        : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
+                    </Link>
+                  </MenuItem>
                 ))}
             </React.Fragment>
           )}
@@ -321,18 +321,27 @@ export default function AddActivity({
                 (x) => !["lamp.group", "lamp.survey", "lamp.form_builder", "lamp.cbt_thought_record"].includes(x.id)
               )
               .map((x) => (
-                <Link
-                  href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}
-                  underline="none"
+                <MenuItem
+                  key={x.id}
+                  onClick={() => {
+                    window.location.href = `/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`
+                    setSlideOpen(false)
+                  }}
+                  className={`${sliderclasses.menuLinks}`}
                 >
-                  {activitiesObj[x.id]
-                    ? `${t(activitiesObj[x.id])}`
-                    : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
-                </Link>
+                  <Link
+                    href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}
+                    underline="none"
+                  >
+                    {activitiesObj[x.id]
+                      ? `${t(activitiesObj[x.id])}`
+                      : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
+                  </Link>
+                </MenuItem>
               )),
           ]}
-        </React.Fragment>
-      </Popover>
+        </Box>
+      </Slide>
     </Box>
   )
 }

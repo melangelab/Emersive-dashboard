@@ -111,7 +111,7 @@ export default function TwoFA({ ...props }) {
             api_key: apiKey,
             payload: {
               from: "noreply@lamp.com",
-              subject: "mindLAMP multi-factor authentication code",
+              subject: "Emersive multi-factor authentication code",
               body: `Your multi-factor authentication code is: ${passcode}`,
             },
           }

@@ -25,6 +25,7 @@ import {
 } from "@material-ui/core"
 import { useHistory } from "react-router-dom"
 import CloseIcon from "@material-ui/icons/Close"
+import LAMP from "lamp-core"
 
 const useStyles = makeStyles((theme: Theme) => ({
   appBar: {
@@ -78,6 +79,7 @@ export default function StudyDetailsDialog({
   const [formState, setFormState] = useState(study)
   const [isEditing, setIsEditing] = useState(false)
   const history = useHistory()
+  const [subResearcherDetails, setSubResearcherDetails] = useState({})
 
   const handleSensorClick = (sensorId: string) => {
     localStorage.setItem("sensor_filter", sensorId)
@@ -97,6 +99,9 @@ export default function StudyDetailsDialog({
 
   useEffect(() => {
     setFormState(study)
+    if (study?.sub_researchers?.length) {
+      fetchSubResearcherDetails(study.sub_researchers)
+    }
     setIsEditing(false)
   }, [study, open])
 
@@ -131,6 +136,24 @@ export default function StudyDetailsDialog({
     ans += value & 1 ? "View" : ""
     ans += value == 0 ? "None" : ""
     return ans
+  }
+
+  const fetchSubResearcherDetails = async (subResearchers) => {
+    const detailsMap = {}
+    await Promise.all(
+      subResearchers.map(async (SR) => {
+        try {
+          const researcher = (await LAMP.Researcher.view(SR.ResearcherID)) as any
+          detailsMap[SR.ResearcherID] = {
+            name: researcher.name,
+            institution: researcher.institution || "Unknown Institution",
+          }
+        } catch (error) {
+          console.error(`Error fetching researcher ${SR.ResearcherID}:`, error)
+        }
+      })
+    )
+    setSubResearcherDetails(detailsMap)
   }
 
   return (
@@ -320,7 +343,17 @@ export default function StudyDetailsDialog({
               </Grid>
               <Grid item xs={12}>
                 <Typography gutterBottom>Collaborating Institutions</Typography>
-                <TextField fullWidth value={study.collaboratingInstitutions?.join(", ") || ""} disabled={true} />
+                <TextField
+                  fullWidth
+                  value={
+                    subResearcherDetails && typeof subResearcherDetails === "object"
+                      ? Object.values(subResearcherDetails)
+                          .map((detail: any) => detail.institution)
+                          .join(", ")
+                      : "No Institute in collaboration."
+                  }
+                  disabled={true}
+                />
               </Grid>
             </Grid>
           </Grid>
@@ -410,8 +443,10 @@ export default function StudyDetailsDialog({
               {formState.sub_researchers?.map((researcher, index) => (
                 <ListItem key={index}>
                   <ListItemText
-                    primary={researcher.ResearcherID}
-                    secondary={`Access: ${getacessscope(researcher.access_scope)}`}
+                    primary={subResearcherDetails[researcher.ResearcherID]?.["name"]}
+                    secondary={`Researcher ID : ${researcher.ResearcherID}; Access: ${getacessscope(
+                      researcher.access_scope
+                    )}`}
                   />
                 </ListItem>
               ))}

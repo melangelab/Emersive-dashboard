@@ -1,0 +1,257 @@
+.display-content-container {
+  margin-right: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  height: 100%;
+}
+
+.header-container {
+  width: 100%;
+  background-color: white;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  border-bottom: 1px solid black;
+  padding: 15px;
+}
+
+.profile-container {
+  /* padding: 15px; */
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.profile-text-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.profile-text {
+  margin: 0 !important;
+}
+
+.profile-icon {
+  width: 45px !important;
+  height: 45px !important;
+}
+
+.profile-icon path {
+  fill: black !important;
+}
+
+.action-container {
+  flex-grow: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 15px;
+  padding-right: 15px;
+}
+
+.icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  /* Ensures a circular shape */
+  height: 40px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.icon-container:hover {
+  background-color: rgba(211, 211, 211, 0.5);
+  /* Light grey hover effect */
+  cursor: pointer;
+}
+
+.refresh-icon,
+.view-icon,
+.view-icon-filled,
+.filter-cols-icon,
+.filter,
+.download-icon {
+  width: 25px !important;
+  height: 25px !important;
+  /* border-radius: 50%; */
+}
+
+.view-icon-filled path {
+  fill: #06b0f0 !important;
+}
+
+.add-fab-btn {
+  background-color: #008607 !important;
+  color: white !important;
+  width: 35px !important;
+  height: 30px !important;
+  border-radius: 100%;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.add-fab-btn:hover {
+  background-color: #57a05d;
+}
+
+.table-container {
+  padding: 0 5px;
+  overflow-y: auto;
+  background-color: rgb(255, 255, 255) !important;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.table-container div.MuiInput-underline::before {
+  border-bottom: 0 !important;
+}
+
+.table-container div.MuiInput-underline::after {
+  border-bottom: 0 !important;
+}
+
+.table-container div.MuiInput-underline span.material-icons {
+  width: 100%;
+  font-size: 27px;
+  line-height: 23px;
+  color: rgba(0, 0, 0, 0.04);
+}
+
+.table-container div.MuiInput-underline button {
+  display: none;
+}
+
+.view-icon:hover path,
+.view-icon-filled:hover path,
+.filter-cols-icon:hover path,
+.filter:hover path,
+.download-icon:hover path,
+.refresh-icon:hover path {
+  fill: #06b0f0;
+}
+
+.table-actions-container {
+  display: flex;
+  flex-direction: row;
+  gap: 7px;
+}
+
+.table-actions-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  /* Ensures a circular shape */
+  height: 40px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.table-actions-icon-container.active {
+  background-color: rgba(211, 211, 211, 0.5);
+}
+
+.table-actions-icon-container:hover {
+  background-color: rgba(211, 211, 211, 0.5);
+  /* Light grey hover effect */
+  cursor: pointer;
+}
+
+.table-actions-icon-container.disabled-icon-container {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table-actions-icon {
+  width: 25px !important;
+  height: 25px !important;
+}
+
+.table-actions-icon.disabled-icon {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.add-researcher-header {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.add-researcher-icon {
+  border-radius: 100%;
+  background-color: #eb8367;
+  height: 40px;
+  width: 45px;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.add-researcher-icon svg {
+  fill: white;
+  width: 30px;
+  height: 26px;
+}
+
+.admin-dashboard-container {
+  width: 100% !important;
+  margin-left: 5px !important;
+  padding: 20px;
+}
+
+.dashboard-column {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.column-card {
+  border-radius: 10px !important;
+}
+
+.column-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-content-numerical-2ndcol {
+  font-size: 2.5rem !important;
+}
+
+.card-content-text {
+  color: grey;
+}
+
+.card-content-numerical.loading {
+  font-size: 1.8rem !important;
+}
+
+.view-element-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  width: 100%;
+}
+
+.forgot-password-container {
+  width: 100%;
+  min-width: 420px;
+  background-color: rgb(214, 214, 214);
+  padding: 30px;
+  border-radius: 15px;
+}

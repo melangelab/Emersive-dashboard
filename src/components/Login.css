@@ -1,27 +1,64 @@
 /* Login.css */
-.logo-container {
+
+.line-art-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.line-art-div {
+  height: 70%;
+  width: 80%;
+}
+
+.line-art {
+  width: 100%;
+  height: 100%;
+}
+
+.line-art path {
+  stroke: #faac96 !important;
+}
+
+.platform-name {
+  color: #eb8367;
+  font-size: 82px;
+  font-weight: 400;
+  margin: 0;
+}
+
+.platform-desc {
+  color: grey;
+  font-size: 25px;
+  margin-top: -16px;
 }
 
 .grid-item {
-  min-height: 100%;
+  height: 100vh;
+  min-height: fit-content;
   display: flex;
+  flex-grow: 1;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  background-color: rgb(226, 226, 226);
+  padding: 0;
+  margin: 0;
+  width: 100%;
 }
 
 .card-container {
   border-radius: 10px;
-  background: #cdced1;
+  background: #0f0f0f;
   padding: 30px;
   display: flex;
   flex-direction: column;
   position: relative;
+  align-items: center;
+  justify-content: center;
   width: 70%;
+  background: none;
 }
 
 .fab-container {
@@ -33,53 +70,8 @@
   gap: 8px;
 }
 
-.logo-underline {
-  width: 100%;
-  max-width: 320px;
-  height: 6px;
-  margin: 0 auto 30px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 214, 69, 1) 0%,
-    rgba(255, 214, 69, 1) 25%,
-    rgba(101, 206, 191, 1) 25%,
-    rgba(101, 206, 191, 1) 50%,
-    rgba(255, 119, 91, 1) 50%,
-    rgba(255, 119, 91, 1) 75%,
-    rgba(134, 182, 255, 1) 75%,
-    rgba(134, 182, 255, 1) 100%
-  );
-}
-
-.logo-login {
-  width: 90px;
-  margin: 0 auto 30px;
-  text-align: center;
-}
-
-@media (max-width: 600px) {
-  .logo-login {
-    width: 69px;
-    margin-bottom: 30px;
-  }
-}
-
-.logo-text {
-  width: 100%;
-  text-align: center;
-}
-
-@media (max-width: 600px) {
-  .logo-text {
-    width: 80%;
-    margin: 0 auto;
-  }
-}
-
-.logo-text svg {
-  width: 100%;
-  height: 41px;
-  margin-bottom: 10px;
+.logo-component {
+  width: 25%;
 }
 
 .textfield-style input {
@@ -89,6 +81,16 @@
 
 .textfield-style fieldset {
   border: 0;
+}
+
+.forgot-container {
+  width: 40% !important;
+  margin: -10px auto 23px;
+}
+
+.forgot-container:hover {
+  border-radius: 10%;
+  background-color: lightgray;
 }
 
 .button-nav button {
@@ -140,12 +142,16 @@
 }
 
 .google-button {
-  width: 100%;
-  margin-bottom: 20px;
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.google-button > div {
-  width: 100% !important;
+.google-button iframe {
+  background-color: white !important;
+  border-radius: 50px; /* To match the pill shape */
+  border: 1px solid #dadce0; /* Matches Google's button border */
 }
 
 .miniorange-button {

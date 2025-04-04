@@ -968,7 +968,7 @@
 >                       window.open("https://community.lamp.digital", "_blank")
 >                     }}
 1229,1236c678,685
-<                     {`${t("Research studies using mindLAMP")}`}
+<                     {`${t("Research studies using Emersive")}`}
 <                   </Link>
 <                   <Menu
 <                     keepMounted
@@ -987,7 +987,7 @@
 >                     }}
 1238,1277c687,903
 <                     <MenuItem disabled divider>
-<                       <b>{`${t("Try mindLAMP out as a...")}`}</b>
+<                       <b>{`${t("Try Emersive out as a...")}`}</b>
 <                     </MenuItem>
 <                     <MenuItem
 <                       onClick={(event) => {
@@ -1193,7 +1193,7 @@
 >                           className={classes.linkBlue}
 >                           onClick={(event) => window.open("https://www.digitalpsych.org/studies.html", "_blank")}
 >                         >
->                           {`${t("Research studies using mindLAMP")}`}
+>                           {`${t("Research studies using Emersive")}`}
 >                         </Link>
 >                         <Menu
 >                           keepMounted
@@ -1203,7 +1203,7 @@
 >                           onClose={() => setTryitMenu(undefined)}
 >                         >
 >                           <MenuItem disabled divider>
->                             <b>{`${t("Try mindLAMP out as a...")}`}</b>
+>                             <b>{`${t("Try Emersive out as a...")}`}</b>
 >                           </MenuItem>
 >                           <MenuItem
 >                             onClick={(event) => {

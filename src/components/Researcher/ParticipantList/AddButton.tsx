@@ -17,6 +17,8 @@ import {
   Button,
   useMediaQuery,
   useTheme,
+  Slide,
+  Backdrop,
 } from "@material-ui/core"
 import LAMP from "lamp-core"
 import { useTranslation } from "react-i18next"
@@ -24,19 +26,253 @@ import AddUser from "./AddUser"
 import StudyCreator from "./StudyCreator"
 import PatientStudyCreator from "../ParticipantList/PatientStudyCreator"
 import AddUserGroup from "../ParticipantList/AddUserGroup"
-import { Add as AddIcon, FilterList as FilterListIcon, Search as SearchIcon } from "@material-ui/icons"
+import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
+import { ReactComponent as UserIcon } from "../../../icons/NewIcons/users.svg"
 
+export const slideStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    slidePanel: {
+      position: "fixed",
+      right: 0,
+      top: 0,
+      bottom: 0,
+      backgroundColor: "#fff",
+      boxShadow: "0 0 10px rgba(0,0,0,0.3)",
+      padding: theme.spacing(3),
+      zIndex: 1301,
+      width: "30%",
+      color: "#000",
+      overflowY: "auto", // Enable vertical scrolling
+      overflowX: "hidden", // Prevent horizontal scrolling
+      paddingRight: theme.spacing(2), // Add some right padding for scroll bar
+      paddingBottom: theme.spacing(4), // Add bottom padding
+      WebkitOverflowScrolling: "touch", // Smooth scrolling on iOS
+      scrollbarWidth: "thin", // Thin scrollbar for Firefox
+      "&::-webkit-scrollbar": {
+        width: "8px", // Scrollbar width for Chrome, Safari, and newer versions of Opera
+      },
+      "&::-webkit-scrollbar-thumb": {
+        backgroundColor: "rgba(0,0,0,0.2)", // Light scrollbar thumb
+        borderRadius: "4px",
+      },
+      "&::-webkit-scrollbar-track": {
+        backgroundColor: "rgba(0,0,0,0.1)", // Light scrollbar track
+      },
+    },
+    TabSlidePanel: {
+      top: "100px",
+    },
+    divider: {
+      marginBottom: theme.spacing(2),
+      marginTop: theme.spacing(1),
+    },
+    headings: {
+      marginTop: theme.spacing(4),
+    },
+    submitbutton: {
+      marginTop: theme.spacing(2),
+      backgroundColor: "#E8F5E9",
+      color: "#2E7D32",
+      "&:hover": {
+        backgroundColor: "#C8E6C9",
+      },
+      border: "1px solid #2E7D32",
+      borderRadius: "4px",
+      padding: theme.spacing(1, 3),
+    },
+    button: {
+      marginTop: theme.spacing(2),
+      backgroundColor: "#FDEDE8",
+      color: "#EB8367",
+      "&:hover": {
+        backgroundColor: "#FCD2C2",
+      },
+      border: "1px solid #EB8367",
+      borderRadius: "4px",
+      padding: theme.spacing(1, 3),
+    },
+    icon: {
+      backgroundColor: "#EB8367",
+      borderRadius: "50%",
+      padding: theme.spacing(1.5),
+      marginBottom: theme.spacing(2),
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "50px",
+      height: "50px",
+      "& svg": {
+        fill: "#FFFFFF",
+        width: "24px",
+        height: "24px",
+      },
+    },
+    field: {
+      marginBottom: theme.spacing(1),
+      marginTop: theme.spacing(1),
+    },
+    backdrop: {
+      zIndex: 1300,
+      color: "rgba(255, 255, 255, 0.1)",
+    },
+    endbuttonsbox: {
+      position: "sticky",
+      bottom: 0,
+      backgroundColor: "white",
+      zIndex: 1310,
+      pt: 2,
+      mt: 2,
+      borderTop: "1px solid rgba(0,0,0,0.12)",
+    },
+    menuitem: {
+      display: "inline-block",
+      width: "100%",
+      padding: "8px 30px",
+      minWidth: "300px",
+      "&:hover": { backgroundColor: "#ECF4FF" },
+    },
+    menuLinks: {
+      display: "block",
+      fontSize: "1rem",
+      color: "rgba(0, 0, 0, 0.87)",
+      padding: "8px 30px",
+      textTransform: "capitalize",
+      "&:hover": { backgroundColor: "#ECF4FF" },
+      borderTop: "1px solid rgba(0,0,0,0.1)",
+    },
+    closeButton: {
+      position: "absolute",
+      right: theme.spacing(1),
+      top: theme.spacing(1),
+      color: theme.palette.grey[500],
+    },
+    buttonContainer: {
+      display: "flex",
+      justifyContent: "flex-start",
+      gap: theme.spacing(1),
+    },
+    researcherRow: {
+      display: "flex",
+      alignItems: "center",
+      padding: theme.spacing(2),
+      borderBottom: "1px solid rgba(0,0,0,0.12)",
+      marginBottom: theme.spacing(1),
+      "&:last-child": {
+        borderBottom: "none",
+      },
+      "&:hover": {
+        backgroundColor: "rgba(0,0,0,0.02)",
+      },
+    },
+
+    content: {
+      flex: 1,
+      overflowY: "auto",
+      marginTop: theme.spacing(2),
+      marginBottom: theme.spacing(2),
+      maxHeight: "calc(100vh - 400px)", // Adjust based on your header/footer height
+      padding: theme.spacing(1),
+      "&::-webkit-scrollbar": {
+        width: "6px",
+      },
+      "&::-webkit-scrollbar-thumb": {
+        backgroundColor: "rgba(0,0,0,0.2)",
+        borderRadius: "3px",
+      },
+    },
+
+    checkboxLabel: {
+      flex: "1 1 auto",
+      marginRight: theme.spacing(2),
+      "& .MuiFormControlLabel-label": {
+        fontSize: "0.95rem",
+        color: "rgba(0,0,0,0.87)",
+      },
+    },
+
+    checkbox: {
+      padding: theme.spacing(0.5),
+      color: "#ccc",
+      "&.Mui-checked": {
+        color: "#EB8367",
+      },
+      "& .MuiSvgIcon-root": {
+        fontSize: "1.2rem",
+      },
+    },
+
+    select: {
+      minWidth: 120,
+      "& .MuiSelect-select": {
+        padding: theme.spacing(1),
+        fontSize: "0.9rem",
+        backgroundColor: "transparent",
+        border: "1px solid rgba(0,0,0,0.12)",
+        borderRadius: "4px",
+      },
+      "& .MuiSelect-icon": {
+        color: "rgba(0,0,0,0.54)",
+      },
+      "&:before, &:after": {
+        display: "none",
+      },
+    },
+
+    diffContainer: {
+      padding: theme.spacing(2),
+      backgroundColor: "rgba(0,0,0,0.02)",
+      borderRadius: theme.spacing(1),
+      marginTop: theme.spacing(2),
+      marginBottom: theme.spacing(2),
+      maxHeight: "calc(100vh - 300px)",
+      overflowY: "auto",
+    },
+
+    diffRow: {
+      padding: theme.spacing(1.5),
+      backgroundColor: "#e6ffed",
+      borderRadius: theme.spacing(0.5),
+      marginBottom: theme.spacing(1),
+      fontFamily: "monospace",
+      fontSize: "0.9rem",
+      "& span": {
+        color: "#22863a",
+      },
+      border: "1px solid rgba(46, 160, 67, 0.2)",
+    },
+
+    // addButton: {
+    //   marginTop: theme.spacing(2),
+    //   backgroundColor: "#FDEDE8",
+    //   color: "#EB8367",
+    //   "&:hover": {
+    //     backgroundColor: "#FCD2C2",
+    //   },
+    //   border: "1px solid #EB8367",
+    //   borderRadius: "4px",
+    //   padding: theme.spacing(1, 3),
+    // },
+  })
+)
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     addButton: {
-      backgroundColor: "#4285f4",
-      color: "#fff",
-      padding: "8px 24px",
-      borderRadius: 20,
-      textTransform: "none",
-      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+      backgroundColor: "#4CAF50",
+      padding: theme.spacing(1),
+      borderRadius: "40%",
+      width: 40,
+      height: 40,
+      minWidth: 40,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      "& path": {
+        fill: "#FFFFFF",
+      },
       "&:hover": {
-        backgroundColor: "#3367d6",
+        backgroundColor: "#45a049",
       },
     },
     addButtonCompact: {
@@ -132,6 +368,8 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
   const [addGroupUser, setAddGroupUser] = useState(false)
   const { t } = useTranslation()
   const classes = useStyles()
+  const sliderclasses = slideStyles()
+  const [open, setOpen] = useState(false)
   const [popover, setPopover] = useState(null)
   const [addParticipantStudy, setAddParticipantStudy] = useState(false)
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
@@ -168,13 +406,39 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
       >
         {t("Add")}
       </Button> */}
-      <Button
-        variant="contained"
-        className={`${classes.addButton} ${!supportsSidebar ? classes.addButtonCompact : ""}`}
-        onClick={(event) => setPopover(event.currentTarget)}
-      >
-        {supportsSidebar ? t("+ Add") : "+"}
-      </Button>
+      <AddIcon
+        className={classes.addButton}
+        onClick={(event) =>
+          //  setPopover(event.currentTarget)
+          setOpen(true)
+        }
+      />
+      <Backdrop open={open} className={sliderclasses.backdrop} onClick={() => setOpen(false)}>
+        <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+          <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
+            <Box className={sliderclasses.icon}>
+              <UserIcon />
+            </Box>
+            <Typography variant="h6">ADD NEW PARTICIPANTS</Typography>
+            <Divider className={sliderclasses.divider} />
+            <Typography variant="body2" paragraph>
+              Participants are <strong>researcher</strong> & <strong>study</strong> specific. Admins should add
+              participants only in special circumstances, if researchers are unable to do so due to technical reasons.
+              (Account locked, Password lost etc.)
+            </Typography>
+            <Divider className={sliderclasses.divider} />
+            <Button
+              className={sliderclasses.button}
+              onClick={() => {
+                setOpen(false)
+                setAddUser(true)
+              }}
+            >
+              Next
+            </Button>
+          </Box>
+        </Slide>
+      </Backdrop>
       <Popover
         classes={{ root: classes.customPopover, paper: classes.customPaper }}
         open={!!popover ? true : false}
@@ -243,6 +507,8 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
         handleNewStudy={handleNewStudyData}
         setParticipants={setParticipants}
         closePopUp={handleClosePopUp}
+        title={props.title}
+        resemail={props.resemail}
       />
       {/* <PatientStudyCreator
         studies={studies}

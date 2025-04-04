@@ -10,7 +10,18 @@ export const handleCopyToClipboard = (text: string, enqueueSnackbar) => {
   navigator.clipboard.writeText(text)
   enqueueSnackbar("Copied to clipboard", { variant: "success", autoHideDuration: 1000 })
 }
+export const formatDate = (date) => {
+  return date ? new Date(date).toLocaleDateString() : "Not available"
+}
+export const formatDate_alph = (date) => {
+  if (!date) return "Not available"
+  const d = new Date(date)
+  const day = String(d.getDate()).padStart(2, "0")
+  const month = d.toLocaleString("en-US", { month: "short" })
+  const year = d.getFullYear()
 
+  return `${day}-${month}-${year}`
+}
 export const getVideoMimeType = (fileType: string | undefined): string => {
   if (!fileType) return "video/mp4"
   if (fileType.startsWith("video/")) return fileType

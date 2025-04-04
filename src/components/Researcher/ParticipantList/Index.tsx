@@ -52,12 +52,32 @@ import Pagination from "../../PaginatedElement"
 import useInterval from "../../useInterval"
 import { useLayoutStyles } from "../../GlobalStyles"
 import ParticipantTableCell from "./ParticipantTableCell"
-import Credentials from "./Credentials"
+// import Credentials from "./Credentials"
 import LAMP from "lamp-core"
 import { useSnackbar } from "notistack"
 import ParticipantTableRow from "./ParticipantTableRow"
 import { Link } from "@material-ui/core"
-import { useQuery } from "../../Utils"
+import { useQuery, formatDate_alph } from "../../Utils"
+import { ModularTable, useModularTableStyles } from "../Studies/Index"
+import { ReactComponent as ArrowDropDownIcon } from "../../../icons/NewIcons/sort-circle-down.svg"
+import { ReactComponent as ArrowDropUpIcon } from "../../../icons/NewIcons/sort-circle-up.svg"
+import ParticipantName from "./ParticipantName"
+import NotificationSettings from "./NotificationSettings"
+import { ReactComponent as ViewIcon } from "../../../icons/NewIcons/overview.svg"
+import { ReactComponent as ViewFilledIcon } from "../../../icons/NewIcons/overview-filled.svg"
+import { ReactComponent as EditIcon } from "../../../icons/NewIcons/text-box-edit.svg"
+import { ReactComponent as EditFilledIcon } from "../../../icons/NewIcons/text-box-edit-filled.svg"
+import { ReactComponent as SuspendIcon } from "../../../icons/NewIcons/stop-circle.svg"
+import { ReactComponent as SuspendFilledIcon } from "../../../icons/NewIcons/stop-circle-filled.svg"
+import { ReactComponent as DeleteIcon } from "../../../icons/NewIcons/trash-xmark.svg"
+import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
+import { ReactComponent as CopyIcon } from "../../../icons/NewIcons/arrow-circle-down.svg"
+import { ReactComponent as CopyFilledIcon } from "../../../icons/NewIcons/arrow-circle-down-filled.svg"
+import Credentials from "../../Credentials"
+import ParticipantDetailsDialog from "./ParticipantDetailsDialog"
+import ConfirmationDialog from "../../ConfirmationDialog"
+import ItemViewHeader from "../SharedStyles/ItemViewHeader"
+import ParticipantDetailItem from "./ParticipantDetailItem"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -197,11 +217,12 @@ function getCurrentLanguageCode(language) {
 }
 
 // dynamic columns type defined here XO
-interface TableColumn {
+export interface TableColumn {
   id: string
   label: string
   value: (participant: any) => string | number
   visible: boolean
+  sortable?: boolean
 }
 
 export function getTimeAgo(language) {
@@ -248,6 +269,30 @@ export default function ParticipantList({
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
 
   const { t } = useTranslation()
+  const [activeButton, setActiveButton] = useState({ id: null, action: null })
+  const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
+  const stats = (study) => {
+    return [
+      {
+        value: study.assessments?.length || 0,
+        label: "ASSESSMENTS",
+        color: "#f2aa85",
+        key: "assessments",
+      },
+      {
+        value: study.activities?.length || 0,
+        label: "ACTIVITIES",
+        color: "#06B0F0",
+        key: "activities",
+      },
+      {
+        value: study.sensors?.length || 0,
+        label: "SENSORS",
+        color: "#75d36d",
+        key: "sensors",
+      },
+    ]
+  }
 
   useInterval(
     () => {
@@ -346,18 +391,20 @@ export default function ParticipantList({
     setLoading(false)
   }
 
-  const handleOpenSuspendDialog = (study) => {
+  const handleOpenSuspendDialog = (study, setActiveButton) => {
     setParticipantToSuspend(study)
     setSuspendDialogOpen(true)
+    setActiveButton({ id: null, action: null })
   }
 
   const handleCloseSuspendDialog = () => {
     setSuspendDialogOpen(false)
     setParticipantToSuspend(null)
   }
-  const handleOpenUnSuspendDialog = (p) => {
+  const handleOpenUnSuspendDialog = (p, setActiveButton) => {
     setParticipantToUnSuspend(p)
     setUnSuspendDialogOpen(true)
+    setActiveButton({ id: null, action: null })
   }
 
   const handleCloseUnSuspendDialog = () => {
@@ -581,93 +628,93 @@ export default function ParticipantList({
   // )
 
   // fw New TableView
-  const TableView = ({ participants, handleChange, selectedParticipants, onParticipantSelect }) => (
-    <Box sx={{ width: "100%", overflow: "hidden" }}>
-      <ColumnSelector columns={columns} setColumns={setColumns} />
-      <TableContainer component={Paper} style={{ maxHeight: 440 }}>
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow>
-              {columns
-                .filter((column) => column.visible)
-                .map((column) => (
-                  <TableCell key={column.id}>{column.label}</TableCell>
-                ))}
-              <TableCell
-                style={{
-                  position: "sticky",
-                  right: 0,
-                  background: "white",
-                  zIndex: 2,
-                }}
-              >
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {participants?.map((participant) => (
-              <TableRow key={participant.id}>
-                {columns
-                  .filter((column) => column.visible)
-                  .map((column) => (
-                    <TableCell key={column.id}>{column.value(participant)}</TableCell>
-                  ))}
-                <TableCell
-                  style={{
-                    position: "sticky",
-                    right: 0,
-                    background: "white",
-                    zIndex: 1,
-                  }}
-                >
-                  <Box display="flex">
-                    <Fab
-                      size="small"
-                      className={classes.btnWhite}
-                      onClick={() => {
-                        console.log(participant)
-                        onParticipantSelect(participant.id)
-                      }}
-                    >
-                      <Icon>visibility</Icon>
-                    </Fab>
-                    <Credentials user={participant} participant={participant.id} />
-                    {props.authType === "admin" && !participant.systemTimestamps?.suspensionTime ? (
-                      <Fab
-                        size="small"
-                        className={classes.btnWhite}
-                        onClick={() => handleOpenSuspendDialog(participant)}
-                      >
-                        {/* <Icon>block</Icon> */}
-                        <Icon> {"block_outline"} </Icon>
-                      </Fab>
-                    ) : null}
-                  </Box>
-                  <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
-                    <DialogTitle>Suspend Study</DialogTitle>
-                    <DialogContent>
-                      <Typography>
-                        Are you sure you want to suspend the study "{participantToSuspend?.name}"?
-                      </Typography>
-                    </DialogContent>
-                    <DialogActions>
-                      <Button onClick={handleCloseSuspendDialog} color="secondary">
-                        Cancel
-                      </Button>
-                      <Button onClick={confirmSuspend} color="primary">
-                        Suspend
-                      </Button>
-                    </DialogActions>
-                  </Dialog>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
-  )
+  // const TableView = ({ participants, handleChange, selectedParticipants, onParticipantSelect }) => (
+  //   <Box sx={{ width: "100%", overflow: "hidden" }}>
+  //     <ColumnSelector columns={columns} setColumns={setColumns} />
+  //     <TableContainer component={Paper} style={{ maxHeight: 440 }}>
+  //       <Table stickyHeader>
+  //         <TableHead>
+  //           <TableRow>
+  //             {columns
+  //               .filter((column) => column.visible)
+  //               .map((column) => (
+  //                 <TableCell key={column.id}>{column.label}</TableCell>
+  //               ))}
+  //             <TableCell
+  //               style={{
+  //                 position: "sticky",
+  //                 right: 0,
+  //                 background: "white",
+  //                 zIndex: 2,
+  //               }}
+  //             >
+  //               Actions
+  //             </TableCell>
+  //           </TableRow>
+  //         </TableHead>
+  //         <TableBody>
+  //           {participants?.map((participant) => (
+  //             <TableRow key={participant.id}>
+  //               {columns
+  //                 .filter((column) => column.visible)
+  //                 .map((column) => (
+  //                   <TableCell key={column.id}>{column.value(participant)}</TableCell>
+  //                 ))}
+  //               <TableCell
+  //                 style={{
+  //                   position: "sticky",
+  //                   right: 0,
+  //                   background: "white",
+  //                   zIndex: 1,
+  //                 }}
+  //               >
+  //                 <Box display="flex">
+  //                   <Fab
+  //                     size="small"
+  //                     className={classes.btnWhite}
+  //                     onClick={() => {
+  //                       console.log(participant)
+  //                       onParticipantSelect(participant.id)
+  //                     }}
+  //                   >
+  //                     <Icon>visibility</Icon>
+  //                   </Fab>
+  //                   <Credentials user={participant} participant={participant.id} />
+  //                   {props.authType === "admin" && !participant.systemTimestamps?.suspensionTime ? (
+  //                     <Fab
+  //                       size="small"
+  //                       className={classes.btnWhite}
+  //                       onClick={() => handleOpenSuspendDialog(participant)}
+  //                     >
+  //                       {/* <Icon>block</Icon> */}
+  //                       <Icon> {"block_outline"} </Icon>
+  //                     </Fab>
+  //                   ) : null}
+  //                 </Box>
+  //                 <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
+  //                   <DialogTitle>Suspend Study</DialogTitle>
+  //                   <DialogContent>
+  //                     <Typography>
+  //                       Are you sure you want to suspend the study "{participantToSuspend?.name}"?
+  //                     </Typography>
+  //                   </DialogContent>
+  //                   <DialogActions>
+  //                     <Button onClick={handleCloseSuspendDialog} color="secondary">
+  //                       Cancel
+  //                     </Button>
+  //                     <Button onClick={confirmSuspend} color="primary">
+  //                       Suspend
+  //                     </Button>
+  //                   </DialogActions>
+  //                 </Dialog>
+  //               </TableCell>
+  //             </TableRow>
+  //           ))}
+  //         </TableBody>
+  //       </Table>
+  //     </TableContainer>
+  //   </Box>
+  // )
 
   const [selectAll, setSelectAll] = useState(false)
   const handleSelectAllClick = (event) => {
@@ -678,6 +725,42 @@ export default function ParticipantList({
       setSelectedParticipants([])
       setSelectAll(false)
     }
+  }
+  const [viewingParticipant, setViewingParticipant] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [triggerSave, setTriggerSave] = useState(false)
+
+  const handleViewParticipant = (participant) => {
+    setViewingParticipant(participant)
+    setIsEditing(false)
+    setTriggerSave(false)
+  }
+
+  const handleCloseViewParticipant = () => {
+    setViewingParticipant(null)
+    setIsEditing(false)
+    setTriggerSave(false)
+    setActiveButton({ id: null, action: null })
+  }
+
+  const handleEditParticipant = () => {
+    if (isEditing) {
+      setIsEditing(false)
+    } else {
+      setIsEditing(true)
+      setTriggerSave(false)
+    }
+  }
+
+  const handleSaveParticipant = () => {
+    setTriggerSave(true)
+  }
+
+  const handleSaveComplete = (updatedParticipant) => {
+    setViewingParticipant(updatedParticipant)
+    setIsEditing(false)
+    setTriggerSave(false)
+    searchParticipants()
   }
 
   // huzzing login status every 30 seconds bcoz why not
@@ -705,96 +788,303 @@ export default function ParticipantList({
     return () => clearInterval(statusInterval)
   }, [participants])
 
-  // new table view wit each user entry handled separately in own module
-  const TableView_rows = ({ participants, handleChange, selectedParticipants, onParticipantSelect, ...props }) => (
-    <Box sx={{ width: "100%", overflow: "hidden" }}>
-      <ColumnSelector columns={columns} setColumns={setColumns} />
-      <TableContainer component={Paper} style={{ maxHeight: 440 }}>
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  indeterminate={
-                    selectedParticipants.length > 0 && selectedParticipants.length < paginatedParticipants.length
-                  }
-                  checked={selectAll}
-                  onChange={handleSelectAllClick}
-                  className={classes.checkboxActive}
-                />
-              </TableCell>
-              {columns
-                .filter((column) => column.visible)
-                .map((column) => (
-                  <TableCell key={column.id}>{column.label}</TableCell>
-                ))}
-              <TableCell
-                style={{
-                  position: "sticky",
-                  right: 0,
-                  background: "white",
-                  zIndex: 2,
-                }}
-              >
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {participants?.map((participant) => (
-              <ParticipantTableRow
-                key={participant.id}
-                participant={participant}
-                visibleColumns={columns.filter((c) => c.visible)}
-                selectedParticipants={selectedParticipants}
-                handleChange={handleChange}
-                onParticipantSelect={onParticipantSelect}
-                researcherId={researcherId}
-                authType={props.authType}
-                notificationColumn={notificationColumn}
-                onSuspend={handleOpenSuspendDialog}
-                onUnSuspend={handleOpenUnSuspendDialog}
-                onParticipantUpdate={handleUpdateParticipant}
-                formatDate={formatDate}
-                setParticipants={setParticipants}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
-  )
+  const TableView_Mod = () => {
+    const [sortConfig, setSortConfig] = useState({ field: "index", direction: "asc" })
+    const [selectedRows, setSelectedRows] = useState([])
+    const classes = useModularTableStyles()
+    const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+    const [selectedParticipant, setSelectedParticipant] = useState(null)
+    const [confirmationDialog, setConfirmationDialog] = useState(false)
 
-  // const TableView_comp = ({ participants, columns, ...props }) => (
-  //   <TableContainer component={Paper}>
-  //     <Table stickyHeader>
-  //       <TableHead>
-  //         <TableRow>
-  //           <TableCell padding="checkbox">
-  //             <Checkbox /* ... header checkbox logic ... */ />
-  //           </TableCell>
-  //           {columns
-  //             .filter(column => column.visible)
-  //             .map(column => (
-  //               <TableCell key={column.id}>{column.label}</TableCell>
-  //             ))}
-  //           <TableCell className={classes.actionCell}>Actions</TableCell>
-  //         </TableRow>
-  //       </TableHead>
-  //       <TableBody>
-  //         {participants?.map((participant) => (
-  //           <ParticipantTableCell
-  //             key={participant.id}
-  //             participant={participant}
-  //             visibleColumns={columns.filter(c => c.visible)}
-  //             useStyles={useStyles}
-  //             {...props}
-  //           />
-  //         ))}
-  //       </TableBody>
-  //     </Table>
-  //   </TableContainer>
-  // );
+    const handleEditClick = (participant) => {
+      setSelectedParticipant(participant)
+      setDetailsDialogOpen(true)
+      setActiveButton({ id: participant.id, action: "edit" })
+    }
+
+    const handleDeleteClick = (participant) => {
+      setSelectedParticipant(participant)
+      setConfirmationDialog(true)
+      setActiveButton({ id: participant.id, action: "delete" })
+    }
+
+    const handleDelete = async (status) => {
+      if (status === "Yes") {
+        try {
+          await LAMP.Participant.delete(selectedParticipant.id)
+          await Service.delete("participants", [selectedParticipant.id])
+          await Service.updateCount("studies", selectedParticipant.study_id, "participant_count", 1, 1)
+          enqueueSnackbar(t("Participant deleted successfully"), { variant: "success" })
+          searchParticipants()
+        } catch (error) {
+          console.error("Error deleting participant:", error)
+          enqueueSnackbar(t("Failed to delete participant"), { variant: "error" })
+        }
+      }
+      setConfirmationDialog(false)
+      setActiveButton({ id: null, action: null })
+    }
+    const renderCellContent = (column, row) => {
+      if (column.id === "username") {
+        return (
+          <ParticipantName
+            participant={row}
+            updateParticipant={(nameVal) => {
+              setParticipants((prevParticipants) =>
+                prevParticipants.map((p) => (p.id === row.id ? { ...p, name: nameVal } : p))
+              )
+            }}
+            openSettings={false}
+          />
+        )
+      } else if (column.id === "isLoggedIn") {
+        return (
+          <Typography
+            variant="body2"
+            style={{
+              color: row.isLoggedIn ? "#2e7d32" : "#c62828",
+              fontWeight: 500,
+            }}
+          >
+            {row.isLoggedIn ? "Online" : "Offline"}
+          </Typography>
+        )
+      } else {
+        return column.value(row)
+      }
+    }
+
+    const originalIndexMap = useMemo(() => {
+      return (participants || []).reduce((acc, participant, index) => {
+        acc[participant.id] = index
+        return acc
+      }, {})
+    }, [participants])
+
+    const sortedData = useMemo(() => {
+      if (!participants) return []
+
+      const sortableData = [...participants]
+      if (sortConfig.field === "index") {
+        sortableData.sort((a, b) => {
+          const aIndex = originalIndexMap[a.id]
+          const bIndex = originalIndexMap[b.id]
+          return sortConfig.direction === "asc" ? aIndex - bIndex : bIndex - aIndex
+        })
+      } else if (sortConfig.field) {
+        sortableData.sort((a, b) => {
+          const aValue = a[sortConfig.field] || ""
+          const bValue = b[sortConfig.field] || ""
+
+          if (typeof aValue === "string" && typeof bValue === "string") {
+            return sortConfig.direction === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+          }
+
+          return sortConfig.direction === "asc" ? (aValue > bValue ? 1 : -1) : bValue > aValue ? 1 : -1
+        })
+      }
+      return sortableData
+    }, [participants, sortConfig, originalIndexMap])
+
+    const actions = (participant) => {
+      const pStudy = studies.filter((study) => study.id === participant.study_id)[0]
+
+      return (
+        <Box display="flex" alignItems="center" style={{ gap: 8 }}>
+          {/* <Box component="span" className={classes.actionIcon}>
+            {notificationColumn && <NotificationSettings participant={participant} />}
+          </Box> */}
+          <Box component="span" className={classes.actionIcon}>
+            {activeButton.id === participant.id && activeButton.action === "view" ? (
+              <ViewFilledIcon
+                className="active"
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "view" })
+                  onParticipantSelect(participant.id)
+                  setActiveButton({ id: null, action: null })
+                }}
+              />
+            ) : (
+              <ViewIcon
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "view" })
+                  onParticipantSelect(participant.id)
+                  setActiveButton({ id: null, action: null })
+                }}
+              />
+            )}
+          </Box>
+          <Box component="span" className={classes.actionIcon}>
+            {activeButton.id === participant.id && activeButton.action === "edit" ? (
+              <EditFilledIcon className="active" onClick={() => handleEditClick(participant)} />
+            ) : (
+              <EditIcon onClick={() => handleEditClick(participant)} />
+            )}
+          </Box>
+          <Box component="span" className={classes.actionIcon}>
+            <Credentials user={participant} />
+          </Box>
+          <Box component="span" className={classes.actionIcon}>
+            {!participant.systemTimestamps?.suspensionTime ? (
+              activeButton.id === participant.id && activeButton.action === "suspend" ? (
+                <SuspendFilledIcon
+                  className="active"
+                  onClick={() => {
+                    setActiveButton({ id: participant.id, action: "suspend" })
+                    handleOpenSuspendDialog(participant, setActiveButton)
+                  }}
+                />
+              ) : (
+                <SuspendIcon
+                  onClick={() => {
+                    setActiveButton({ id: participant.id, action: "suspend" })
+                    handleOpenSuspendDialog(participant, setActiveButton)
+                  }}
+                />
+              )
+            ) : activeButton.id === participant.id && activeButton.action === "suspend" ? (
+              <SuspendFilledIcon
+                className="active"
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "suspend" })
+                  handleOpenUnSuspendDialog(participant, setActiveButton)
+                }}
+              />
+            ) : (
+              <SuspendIcon
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "suspend" })
+                  handleOpenUnSuspendDialog(participant, setActiveButton)
+                }}
+              />
+            )}
+          </Box>
+          <Box component="span" className={classes.actionIcon}>
+            {activeButton.id === participant.id && activeButton.action === "delete" ? (
+              <DeleteFilledIcon className="active" onClick={() => handleDeleteClick(participant)} />
+            ) : (
+              <DeleteIcon onClick={() => handleDeleteClick(participant)} />
+            )}
+          </Box>
+          <Box component="span" className={classes.actionIcon}>
+            {activeButton.id === participant.id && activeButton.action === "settings" ? (
+              <CopyFilledIcon
+                className="active"
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "settings" })
+                  window.location.href = `/#/researcher/${researcherId}/participant/${participant?.id}/settings`
+                }}
+              />
+            ) : (
+              <CopyIcon
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "settings" })
+                  window.location.href = `/#/researcher/${researcherId}/participant/${participant?.id}/settings`
+                }}
+              />
+            )}
+          </Box>
+        </Box>
+      )
+    }
+
+    return (
+      <>
+        <ModularTable
+          data={sortedData || participants || []}
+          columns={columns.filter((col) => col.visible).map((col) => ({ ...col, sortable: true }))}
+          actions={actions}
+          selectable={true}
+          selectedRows={selectedRows}
+          onSelectRow={(id) => {
+            setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+          }}
+          onSelectAll={() => {
+            setSelectedRows((prev) => (prev.length === participants.length ? [] : participants.map((p) => p.id)))
+          }}
+          sortConfig={sortConfig}
+          onSort={(field) => {
+            setSortConfig({
+              field,
+              direction: sortConfig.field === field && sortConfig.direction === "asc" ? "desc" : "asc",
+            })
+          }}
+          indexmap={originalIndexMap}
+          renderCell={renderCellContent}
+        />
+
+        <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
+          <DialogTitle>Suspend Participant</DialogTitle>
+          <DialogContent>
+            <Typography>Are you sure you want to suspend the participant "{participantToSuspend?.name}"?</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseSuspendDialog} color="secondary">
+              Cancel
+            </Button>
+            <Button onClick={confirmSuspend} color="primary">
+              Suspend
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={unsuspendDialogOpen} onClose={handleCloseUnSuspendDialog}>
+          <DialogTitle>Removal of Participant from Suspension</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to undo suspension of the participant "{participantToUnSuspend?.name}"?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseUnSuspendDialog} color="secondary">
+              Cancel
+            </Button>
+            <Button onClick={confirmUnSuspend} color="primary">
+              Undo Suspension
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {selectedParticipant && (
+          <>
+            <ParticipantDetailsDialog
+              participant={selectedParticipant}
+              open={detailsDialogOpen}
+              onClose={() => {
+                setDetailsDialogOpen(false)
+                setSelectedParticipant(null)
+                setActiveButton({ id: null, action: null })
+              }}
+              onSave={async (updatedParticipant) => {
+                try {
+                  await handleUpdateParticipant(selectedParticipant.id, updatedParticipant)
+                  setDetailsDialogOpen(false)
+                  setSelectedParticipant(null)
+                  setActiveButton({ id: null, action: null })
+                } catch (error) {
+                  console.error("Error updating participant:", error)
+                }
+              }}
+              formatDate={formatDate}
+              researcherId={researcherId}
+              pStudy={studies.find((s) => s.id === selectedParticipant.study_id)}
+            />
+
+            <ConfirmationDialog
+              open={confirmationDialog}
+              onClose={() => {
+                setConfirmationDialog(false)
+                setSelectedParticipant(null)
+                setActiveButton({ id: null, action: null })
+              }}
+              confirmAction={handleDelete}
+              confirmationMsg={t("Are you sure you want to delete this Participant?")}
+            />
+          </>
+        )}
+      </>
+    )
+  }
 
   useEffect(() => {
     if (filterParam) {
@@ -809,111 +1099,159 @@ export default function ParticipantList({
       <Backdrop className={classes.backdrop} open={loading || participants === null}>
         <CircularProgress color="inherit" />
       </Backdrop>
-      <Header
-        studies={studies}
-        researcherId={researcherId}
-        selectedParticipants={selectedParticipants}
-        searchData={handleSearchData}
-        selectedStudies={selected}
-        setSelectedStudies={setSelectedStudies}
-        setParticipants={searchParticipants}
-        setData={getAllStudies}
-        mode={mode}
-        setOrder={setOrder}
-        order={order}
-        title={props.ptitle}
-        authType={props.authType}
-        onLogout={props.onLogout}
-        onViewModechanged={setViewMode}
-        viewMode={viewMode}
-      />
+      {viewingParticipant ? (
+        <ItemViewHeader
+          ItemTitle="Participant"
+          ItemName={`${viewingParticipant.firstName} ${viewingParticipant.lastName}`}
+          searchData={handleSearchData}
+          authType={props.authType}
+          onEdit={handleEditParticipant}
+          onSave={() => {
+            if (isEditing) {
+              handleSaveParticipant()
+            }
+          }}
+          onPrevious={() => {
+            const currentIndex = participants.findIndex((p) => p.id === viewingParticipant.id)
+            if (currentIndex > 0) {
+              setViewingParticipant(participants[currentIndex - 1])
+            }
+          }}
+          onNext={() => {
+            const currentIndex = participants.findIndex((p) => p.id === viewingParticipant.id)
+            if (currentIndex < participants.length - 1) {
+              setViewingParticipant(participants[currentIndex + 1])
+            }
+          }}
+          onClose={handleCloseViewParticipant}
+        />
+      ) : (
+        <Header
+          studies={studies}
+          researcherId={researcherId}
+          selectedParticipants={selectedParticipants}
+          searchData={handleSearchData}
+          selectedStudies={selected}
+          setSelectedStudies={setSelectedStudies}
+          setParticipants={searchParticipants}
+          setData={getAllStudies}
+          mode={mode}
+          setOrder={setOrder}
+          order={order}
+          title={props.ptitle}
+          authType={props.authType}
+          onLogout={props.onLogout}
+          onViewModechanged={setViewMode}
+          viewMode={viewMode}
+          VisibleColumns={columns}
+          setVisibleColumns={setColumns}
+          resemail={props.resemail}
+          refresh={searchParticipants}
+        />
+      )}
       <Box
         className={layoutClasses.tableContainer + " " + (!supportsSidebar ? layoutClasses.tableContainerMobile : "")}
+        style={{ overflowX: "hidden" }}
       >
-        {!!participants && participants.length > 0 ? (
+        {viewingParticipant ? (
+          <ParticipantDetailItem
+            participant={viewingParticipant}
+            isEditing={isEditing}
+            onSave={handleSaveComplete}
+            studies={studies}
+            triggerSave={triggerSave}
+            stats={stats}
+          />
+        ) : (
           <>
-            {viewMode === "grid" ? (
-              // <Grid container spacing={3}>
-              <Grid container spacing={3} xs={12}>
-                {paginatedParticipants.map((eachParticipant, index) => (
-                  <Grid item xs={12} sm={12} md={6} lg={4} key={eachParticipant.id}>
-                    <ParticipantListItem
-                      participant={eachParticipant}
-                      onParticipantSelect={onParticipantSelect}
-                      studies={studies}
-                      notificationColumn={notificationColumn}
-                      handleSelectionChange={handleChange}
-                      selectedParticipants={selectedParticipants}
-                      researcherId={researcherId}
-                      onParticipantUpdate={handleUpdateParticipant}
-                      formatDate={formatDate}
-                      onSuspend={handleOpenSuspendDialog}
-                      onUnSuspend={handleOpenUnSuspendDialog}
+            {!!participants && participants.length > 0 ? (
+              <>
+                {viewMode === "grid" ? (
+                  // <Grid container spacing={3}>
+                  <Grid container spacing={3} xs={12}>
+                    {paginatedParticipants.map((eachParticipant, index) => (
+                      <Grid item xs={12} sm={12} md={6} lg={4} key={eachParticipant.id}>
+                        <ParticipantListItem
+                          participant={eachParticipant}
+                          onParticipantSelect={onParticipantSelect}
+                          studies={studies}
+                          notificationColumn={notificationColumn}
+                          handleSelectionChange={handleChange}
+                          selectedParticipants={selectedParticipants}
+                          researcherId={researcherId}
+                          onViewParticipant={handleViewParticipant}
+                          onParticipantUpdate={handleUpdateParticipant}
+                          formatDate={formatDate}
+                          onSuspend={handleOpenSuspendDialog}
+                          onUnSuspend={handleOpenUnSuspendDialog}
+                        />
+                      </Grid>
+                    ))}
+                    <Pagination
+                      data={participants}
+                      updatePage={handleChangePage}
+                      rowPerPage={[5, 10, 20, 40, 60, 80]}
+                      currentPage={page}
+                      currentRowCount={rowCount}
                     />
                   </Grid>
-                ))}
-              </Grid>
+                ) : (
+                  // <TableView
+                  //   participants={paginatedParticipants}
+                  //   handleChange={handleChange}
+                  //   selectedParticipants={selectedParticipants}
+                  //   onParticipantSelect={onParticipantSelect}
+                  // />
+                  <TableView_Mod />
+                  // <TableView_rows
+                  //   participants={paginatedParticipants}
+                  //   handleChange={handleChange}
+                  //   selectedParticipants={selectedParticipants}
+                  //   onParticipantSelect={onParticipantSelect}
+                  // />
+                )}
+                <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
+                  <DialogTitle>Suspend Participant</DialogTitle>
+                  <DialogContent>
+                    <Typography>
+                      Are you sure you want to suspend the participant "{participantToSuspend?.name}"?
+                    </Typography>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button onClick={handleCloseSuspendDialog} color="secondary">
+                      Cancel
+                    </Button>
+                    <Button onClick={confirmSuspend} color="primary">
+                      Suspend
+                    </Button>
+                  </DialogActions>
+                </Dialog>
+                <Dialog open={unsuspendDialogOpen} onClose={handleCloseUnSuspendDialog}>
+                  <DialogTitle>Removal of Participant from Suspension</DialogTitle>
+                  <DialogContent>
+                    <Typography>
+                      Are you sure you want to undo suspension of the participant "{participantToUnSuspend?.name}"?
+                    </Typography>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button onClick={handleCloseUnSuspendDialog} color="secondary">
+                      Cancel
+                    </Button>
+                    <Button onClick={confirmUnSuspend} color="primary">
+                      Undo Suspension
+                    </Button>
+                  </DialogActions>
+                </Dialog>
+              </>
             ) : (
-              // <TableView
-              //   participants={paginatedParticipants}
-              //   handleChange={handleChange}
-              //   selectedParticipants={selectedParticipants}
-              //   onParticipantSelect={onParticipantSelect}
-              // />
-              <TableView_rows
-                participants={paginatedParticipants}
-                handleChange={handleChange}
-                selectedParticipants={selectedParticipants}
-                onParticipantSelect={onParticipantSelect}
-              />
+              <Box className={classes.norecordsmain}>
+                <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
+                  <Icon>info</Icon>
+                  {`${t("No Records Found")}`}
+                </Box>
+              </Box>
             )}
-            <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
-              <DialogTitle>Suspend Participant</DialogTitle>
-              <DialogContent>
-                <Typography>
-                  Are you sure you want to suspend the participant "{participantToSuspend?.name}"?
-                </Typography>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleCloseSuspendDialog} color="secondary">
-                  Cancel
-                </Button>
-                <Button onClick={confirmSuspend} color="primary">
-                  Suspend
-                </Button>
-              </DialogActions>
-            </Dialog>
-            <Dialog open={unsuspendDialogOpen} onClose={handleCloseUnSuspendDialog}>
-              <DialogTitle>Removal of Participant from Suspension</DialogTitle>
-              <DialogContent>
-                <Typography>
-                  Are you sure you want to undo suspension of the participant "{participantToUnSuspend?.name}"?
-                </Typography>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleCloseUnSuspendDialog} color="secondary">
-                  Cancel
-                </Button>
-                <Button onClick={confirmUnSuspend} color="primary">
-                  Undo Suspension
-                </Button>
-              </DialogActions>
-            </Dialog>
-            <Pagination
-              data={participants}
-              updatePage={handleChangePage}
-              rowPerPage={[2, 5, 10, 20, 40, 60, 80]}
-              currentPage={page}
-              currentRowCount={rowCount}
-            />
           </>
-        ) : (
-          <Box className={classes.norecordsmain}>
-            <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
-              <Icon>info</Icon>
-              {`${t("No Records Found")}`}
-            </Box>
-          </Box>
         )}
       </Box>
     </React.Fragment>

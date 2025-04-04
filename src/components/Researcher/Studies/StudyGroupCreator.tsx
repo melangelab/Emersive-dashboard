@@ -16,12 +16,16 @@ import {
   CircularProgress,
   Typography,
   makeStyles,
+  Slide,
+  Divider,
 } from "@material-ui/core"
 import { useSnackbar } from "notistack"
 import LAMP, { Study } from "lamp-core"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
 import { fetchPostData, fetchResult } from "../SaveResearcherData"
+import { slideStyles } from "../ParticipantList/AddButton"
+import { ReactComponent as UserIcon } from "../../../icons/NewIcons/users.svg"
 
 const useStyles = makeStyles((theme) => ({
   dataQuality: {
@@ -53,12 +57,21 @@ const useStyles = makeStyles((theme) => ({
   checkboxActive: { color: "#7599FF !important" },
 }))
 
-export default function StudyGroupCreator({ studies, researcherId, handleNewStudy, closePopUp, ...props }: any) {
+export default function StudyGroupCreator({
+  studies,
+  researcherId,
+  handleNewStudy,
+  closePopUp,
+  open,
+  onClose,
+  ...props
+}: any) {
   const [studyName, setStudyName] = useState("")
   const [loading, setLoading] = useState(false)
   const { enqueueSnackbar } = useSnackbar()
   const { t } = useTranslation()
   const classes = useStyles()
+  const sliderclasses = slideStyles()
   const [duplicateCnt, setCount] = useState(0)
   const [groupName, setGroupName] = useState("")
   const [duplicateStudyName, setDuplicateStudyName] = useState<any>("")
@@ -86,18 +99,31 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
   //   setGroupName("")
   //   setCount(0)
   // }
+  // useEffect(() => {
+  //   console.log("chnaging studies on groupnaem", studies)
+  //   let duplicateCount = 0
+  //   if (!(typeof studyName === "undefined" || (typeof studyName !== "undefined" && studyName?.trim() === ""))) {
+  //     studies.forEach((study) => {
+  //       duplicateCount += study.gname?.some((gn) => gn?.trim().toLowerCase() === groupName?.trim().toLowerCase())
+  //         ? 1
+  //         : 0
+  //     })
+  //   }
+  //   setCount(duplicateCount)
+  // }, [groupName])
+
   useEffect(() => {
-    console.log("chnaging studies on groupnaem", studies)
     let duplicateCount = 0
-    if (!(typeof studyName === "undefined" || (typeof studyName !== "undefined" && studyName?.trim() === ""))) {
-      studies.forEach((study) => {
-        duplicateCount += study.gname?.some((gn) => gn?.trim().toLowerCase() === groupName?.trim().toLowerCase())
+    if (groupName.trim() !== "" && studyName) {
+      const selectedStudy = studies.find((study) => study.id === studyName)
+      if (selectedStudy && selectedStudy.gname) {
+        duplicateCount = selectedStudy.gname.some((gn) => gn?.trim().toLowerCase() === groupName.trim().toLowerCase())
           ? 1
           : 0
-      })
+      }
     }
     setCount(duplicateCount)
-  }, [groupName])
+  }, [groupName, studies, studyName])
 
   const createGroup = async (sName: string, groupName: string) => {
     setLoading(true)
@@ -154,6 +180,7 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
         setCount(0)
         handleNewStudy(updatedStudy)
         console.log("checl after habndle", updatedStudies, studies)
+        onClose()
         closePopUp(3)
       } catch (error) {
         enqueueSnackbar(
@@ -205,92 +232,84 @@ export default function StudyGroupCreator({ studies, researcherId, handleNewStud
     //   setLoading(false)
     // })
   }
+  const handleClose = () => {
+    setStudyName("")
+    setGroupName("")
+    setDuplicateStudyName("")
+    setCount(0)
+    onClose()
+    closePopUp(3)
+  }
 
   return (
-    <Dialog
-      {...props}
-      onClose={() => {
-        setStudyName("")
-        setGroupName("")
-        setDuplicateStudyName("")
-        setCount(0)
-        closePopUp(3)
-      }}
-    >
-      <DialogTitle id="alert-dialog-slide-title" disableTypography>
-        <Typography variant="h6">{`${t("Create a new group")}`}</Typography>
-        <IconButton aria-label="close" className={classes.closeButton} onClick={props.onClose as any}>
+    <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+      <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
+        <IconButton aria-label="close" className={classes.closeButton} onClick={handleClose}>
           <Icon>close</Icon>
         </IconButton>
-      </DialogTitle>
-      <DialogContent>
-        <Box mb={2}>
-          <TextField
-            error={!validate()}
-            label={t("Group Name")}
-            fullWidth
-            variant="outlined"
-            value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
-            helperText={
-              duplicateCnt > 0
-                ? `${t("Unique group name required")}`
-                : !validate()
-                ? `${t("Please enter group name.")}`
-                : ""
-            }
-          />
+        <Box className={sliderclasses.icon}>
+          <UserIcon />
         </Box>
-        <Box>
-          <TextField
-            select
-            autoFocus
-            fullWidth
-            variant="outlined"
-            label={`${t("Select Study")}`}
-            value={studyName}
-            onChange={(e) => {
-              // const { id, name } = JSON.parse(e.target.value) // Parse JSON to get id and name
-              // setDuplicateStudyName(name)
-              setStudyName(e.target.value)
-            }}
-            inputProps={{ maxLength: 80 }}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {(studies || []).map((study) => (
-              <MenuItem
-                key={study.id}
-                value={study.id}
-                // value={JSON.stringify({ id: study.id, name: study.name })}
-              >
-                {study.name}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button
-          onClick={() => {
-            setStudyName("")
-            setGroupName("")
-            setDuplicateStudyName("")
-            setCount(0)
-            closePopUp(3)
+        <Typography variant="h6" className={sliderclasses.headings}>{`${t("Create a new group")}`}</Typography>
+        <TextField
+          select
+          className={sliderclasses.field}
+          autoFocus
+          fullWidth
+          variant="outlined"
+          label={`${t("Select Study")}`}
+          value={studyName}
+          onChange={(e) => {
+            // const { id, name } = JSON.parse(e.target.value) // Parse JSON to get id and name
+            // setDuplicateStudyName(name)
+            setStudyName(e.target.value)
           }}
-          color="primary"
+          inputProps={{ maxLength: 80 }}
         >
-          {t("Cancel")}
-        </Button>
-        <Button onClick={() => createGroup(studyName, groupName)} color="primary" disabled={!studyName || loading}>
-          {loading ? <CircularProgress size={24} /> : t("Confirm")}
-        </Button>
-      </DialogActions>
-      <Backdrop className={classes.backdrop} open={loading}>
+          <MenuItem value="">
+            <em>None</em>
+          </MenuItem>
+          {(studies || []).map((study) => (
+            <MenuItem key={study.id} value={study.id}>
+              {study.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        <Divider className={sliderclasses.divider} />
+        <TextField
+          className={sliderclasses.field}
+          error={!validate()}
+          label={t("Group Name")}
+          fullWidth
+          variant="outlined"
+          value={groupName}
+          onChange={(e) => setGroupName(e.target.value)}
+          helperText={
+            duplicateCnt > 0
+              ? `${t("Unique group name required")}`
+              : !validate()
+              ? `${t("Please enter group name.")}`
+              : ""
+          }
+        />
+        <Box display="flex" justifyContent="flex-start" style={{ gap: 8 }} mt={2}>
+          <Button onClick={handleClose} color="primary" className={sliderclasses.button}>
+            {t("Cancel")}
+          </Button>
+          <Button
+            onClick={() => createGroup(studyName, groupName)}
+            color="primary"
+            variant="contained"
+            className={sliderclasses.submitbutton}
+            disabled={!studyName || !validate() || loading}
+          >
+            {loading ? <CircularProgress size={24} /> : t("Confirm")}
+          </Button>
+        </Box>
+        {/* <Backdrop className={classes.backdrop} open={loading}>
         <CircularProgress color="inherit" />
-      </Backdrop>
-    </Dialog>
+      </Backdrop> */}
+      </Box>
+    </Slide>
   )
 }

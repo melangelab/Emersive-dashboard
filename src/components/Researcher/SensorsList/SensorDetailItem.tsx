@@ -1,0 +1,517 @@
+import React, { useState, useEffect } from "react"
+import {
+  Typography,
+  makeStyles,
+  Theme,
+  createStyles,
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from "@material-ui/core"
+import { useTranslation } from "react-i18next"
+import { useSnackbar } from "notistack"
+import LAMP from "lamp-core"
+import { Service } from "../../DBService/DBService"
+import ViewItems, { FieldConfig, TabConfig } from "./ViewItems"
+import EditIcon from "@material-ui/icons/Edit"
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    tableContainer: {
+      maxHeight: "300px",
+      overflow: "auto",
+      border: "1px solid rgba(224, 224, 224, 1)",
+      borderRadius: 4,
+    },
+    table: {
+      minWidth: 300,
+    },
+    tableCell: {
+      fontSize: "0.875rem",
+      padding: "8px 16px",
+    },
+    tableHeader: {
+      fontWeight: 600,
+      backgroundColor: "#f5f5f5",
+    },
+    codeBlock: {
+      maxHeight: "300px",
+      overflow: "auto",
+      marginTop: theme.spacing(1),
+      padding: theme.spacing(2),
+      backgroundColor: "#f5f5f5",
+      borderRadius: 4,
+      fontFamily: "monospace",
+      fontSize: "0.875rem",
+    },
+    developerInfoContainer: {
+      marginTop: theme.spacing(1),
+    },
+    developerInfoItem: {
+      marginBottom: theme.spacing(1.5),
+    },
+    infoLabel: {
+      fontWeight: 600,
+      display: "inline-block",
+      width: "80px",
+      fontSize: "0.875rem",
+    },
+    infoValue: {
+      display: "inline-block",
+      fontSize: "0.875rem",
+    },
+    rootContainer: {
+      height: "100%",
+      width: "100%",
+      display: "flex",
+      flexDirection: "column",
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+  })
+)
+
+interface DeveloperInfo {
+  version?: string
+  versionNumber?: string
+  userIp?: string
+  sourceUrl?: string
+  browser?: string
+  device?: string
+  user?: string
+  status?: string
+  submittedOn?: string
+}
+
+interface SensorDetailItemProps {
+  sensor: any
+  isEditing: boolean
+  onSave: (updatedSensor: any) => void
+  studies: Array<any>
+  triggerSave?: boolean
+}
+
+const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, onSave, studies, triggerSave }) => {
+  const classes = useStyles()
+  const { t } = useTranslation()
+  const { enqueueSnackbar } = useSnackbar()
+  const [loading, setLoading] = useState(false)
+
+  // Add state for developer info editing
+  const [isDeveloperInfoEditing, setIsDeveloperInfoEditing] = useState(false)
+
+  // Form state
+  const [editedValues, setEditedValues] = useState<{
+    name: string
+    description: string
+    spec: string
+    group: string
+    developer_info: DeveloperInfo
+  }>({
+    name: "",
+    description: "",
+    spec: "",
+    group: "",
+    developer_info: {},
+  })
+
+  // Initialize form data
+  useEffect(() => {
+    setEditedValues({
+      name: sensor?.name || "",
+      description: sensor?.description || "",
+      spec: sensor?.spec || "",
+      group: sensor?.group || "",
+      developer_info: sensor?.developer_info || {},
+    })
+
+    // Load saved developer info from LAMP
+    if (sensor?.id) {
+      LAMP.Type.getAttachment(sensor.id, "emersive.sensor.developer_info")
+        .then((res: any) => {
+          if (res.error === undefined && res.data) {
+            // Update the developer_info in the state
+            setEditedValues((prevValues) => ({
+              ...prevValues,
+              developer_info: res.data,
+            }))
+            console.log("Loaded developer info:", res.data)
+          }
+        })
+        .catch((err) => {
+          console.error("Error loading developer info:", err)
+          enqueueSnackbar(`Failed to load developer info: ${err.message}`, { variant: "error" })
+        })
+    }
+  }, [sensor])
+
+  // Effect to handle save trigger from header
+  useEffect(() => {
+    if (triggerSave) {
+      if (isEditing) {
+        handleSave()
+      }
+      if (isDeveloperInfoEditing) {
+        handleSaveDeveloperInfo()
+      }
+    }
+  }, [triggerSave])
+  const fetchUserIp = async () => {
+    try {
+      const response = await fetch("https://api64.ipify.org?format=json")
+      const data = await response.json()
+      return data.ip
+    } catch (error) {
+      console.error("Error fetching IP:", error)
+      return "Unavailable"
+    }
+  }
+  const handleSaveDeveloperInfo = async () => {
+    setLoading(true)
+    try {
+      // Only save source URL from user edits, other fields are auto-generated
+      const currentDate = new Date().toISOString()
+      const userip = await fetchUserIp()
+      const developerInfo = {
+        ...editedValues.developer_info,
+        userIp: userip, // Keep existing or default
+        browser: navigator.userAgent
+          ? navigator.userAgent.match(/chrome|firefox|safari|edge|opera/i)?.[0] || "Chrome"
+          : "Chrome",
+        device:
+          navigator.userAgent && /windows/i.test(navigator.userAgent)
+            ? "Windows"
+            : navigator.userAgent && /mac/i.test(navigator.userAgent)
+            ? "Mac OS"
+            : navigator.userAgent && /android/i.test(navigator.userAgent)
+            ? "Android"
+            : navigator.userAgent && /iphone|ipad/i.test(navigator.userAgent)
+            ? "iOS"
+            : "Windows",
+        submittedOn: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(
+          new Date().getDate()
+        ).padStart(2, "0")} ${String(new Date().getHours()).padStart(2, "0")}:${String(
+          new Date().getMinutes()
+        ).padStart(2, "0")}:${String(new Date().getSeconds()).padStart(2, "0")}`,
+      }
+
+      // Save developer info as an attachment
+      await LAMP.Type.setAttachment(sensor.id, "me", "emersive.sensor.developer_info", developerInfo)
+
+      await Service.updateMultipleKeys(
+        "sensors",
+        {
+          sensors: [
+            {
+              id: sensor.id,
+              developer_info: developerInfo,
+            },
+          ],
+        },
+        ["developer_info"],
+        "id"
+      )
+
+      // Update the local state
+      setEditedValues((prev) => ({
+        ...prev,
+        developer_info: developerInfo,
+      }))
+
+      enqueueSnackbar(t("Successfully updated developer info."), {
+        variant: "success",
+      })
+
+      setIsDeveloperInfoEditing(false)
+    } catch (error) {
+      console.error("Error updating developer info:", error)
+      enqueueSnackbar(t("An error occurred while updating the developer info."), {
+        variant: "error",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChangeStatus = async (newStatus) => {
+    setLoading(true)
+    try {
+      const developerInfo = {
+        ...editedValues.developer_info,
+        status: newStatus || "Read",
+      }
+
+      // Save developer info with updated status
+      await LAMP.Type.setAttachment(sensor.id, "me", "emersive.sensor.developer_info", developerInfo)
+
+      await Service.updateMultipleKeys(
+        "sensors",
+        {
+          sensors: [
+            {
+              id: sensor.id,
+              developer_info: developerInfo,
+            },
+          ],
+        },
+        ["developer_info"],
+        "id"
+      )
+
+      // Update the local state
+      setEditedValues((prev) => ({
+        ...prev,
+        developer_info: developerInfo,
+      }))
+
+      enqueueSnackbar(t("Status updated successfully."), {
+        variant: "success",
+      })
+    } catch (error) {
+      console.error("Error updating status:", error)
+      enqueueSnackbar(t("An error occurred while updating the status."), {
+        variant: "error",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    setLoading(true)
+    try {
+      const result = await LAMP.Sensor.update(sensor.id, {
+        name: editedValues.name.trim(),
+        spec: editedValues.spec,
+        description: editedValues.description,
+        group: editedValues.group,
+      } as any)
+
+      // Save developer info as an attachment
+      await LAMP.Type.setAttachment(sensor.id, "me", "emersive.sensor.developer_info", editedValues.developer_info)
+
+      await Service.updateMultipleKeys(
+        "sensors",
+        {
+          sensors: [
+            {
+              id: sensor.id,
+              name: editedValues.name.trim(),
+              spec: editedValues.spec,
+              description: editedValues.description,
+              group: editedValues.group,
+              developer_info: editedValues.developer_info,
+            },
+          ],
+        },
+        ["name", "spec", "description", "group", "developer_info"],
+        "id"
+      )
+
+      enqueueSnackbar(t("Successfully updated sensor."), {
+        variant: "success",
+      })
+
+      onSave({
+        ...sensor,
+        name: editedValues.name.trim(),
+        spec: editedValues.spec,
+        description: editedValues.description,
+        group: editedValues.group,
+        developer_info: editedValues.developer_info,
+      })
+    } catch (error) {
+      console.error("Error updating sensor:", error)
+      enqueueSnackbar(t("An error occurred while updating the sensor."), {
+        variant: "error",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Define fields for the ViewItems component
+  const fields: FieldConfig[] = [
+    {
+      id: "name",
+      label: t("Name"),
+      value: sensor?.name || "",
+      editable: true,
+    },
+    {
+      id: "description",
+      label: t("Description"),
+      value: sensor?.description || "",
+      editable: true,
+      type: "multiline",
+    },
+    {
+      id: "group",
+      label: t("Group Name"),
+      value: sensor?.group || "",
+      editable: true,
+    },
+    {
+      id: "study_name",
+      label: t("Study Name"),
+      value: sensor?.study_name || "",
+      editable: false,
+    },
+    {
+      id: "id",
+      label: t("Sensor ID"),
+      value: sensor?.id || "",
+      editable: false,
+    },
+    {
+      id: "spec",
+      label: t("Sensor Type"),
+      value: sensor?.spec || "",
+      editable: false,
+    },
+  ]
+
+  // Create tab content for settings
+  const SettingsContent = () => (
+    <Box>
+      <Box className={classes.codeBlock}>
+        <pre>{JSON.stringify(sensor?.settings || {}, null, 2)}</pre>
+      </Box>
+    </Box>
+  )
+
+  // Create tab content for status in users
+  const ParticipantsContent = () => (
+    <Box>
+      <Box className={classes.tableContainer}>
+        <Table size="small" className={classes.table} stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell className={`${classes.tableCell} ${classes.tableHeader}`}>{t("Participant ID")}</TableCell>
+              <TableCell className={`${classes.tableCell} ${classes.tableHeader}`}>{t("Last Logged At")}</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sensor?.statusInUsers && sensor.statusInUsers.length > 0 ? (
+              sensor.statusInUsers.map((user, index) => (
+                <TableRow key={index}>
+                  <TableCell className={classes.tableCell}>{user.participant_id}</TableCell>
+                  <TableCell className={classes.tableCell}>
+                    {user.lastLoggedAt ? new Date(user.lastLoggedAt).toLocaleString() : "Never"}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={2} align="center">
+                  {t("No participants")}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Box>
+    </Box>
+  )
+
+  // Create tab content for studies
+  const StudiesContent = () => (
+    <Box>
+      <Box className={classes.tableContainer}>
+        <Table size="small" className={classes.table} stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell className={`${classes.tableCell} ${classes.tableHeader}`}>{t("Study Name")}</TableCell>
+              <TableCell className={`${classes.tableCell} ${classes.tableHeader}`}>{t("Groups")}</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sensor?.studies && sensor.studies.length > 0 ? (
+              sensor.studies.map((study, index) => (
+                <TableRow key={index}>
+                  <TableCell className={classes.tableCell}>{study.name}</TableCell>
+                  <TableCell className={classes.tableCell}>{(study.groups || []).join(", ") || "-"}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={2} align="center">
+                  {t("No studies")}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Box>
+    </Box>
+  )
+
+  // Create submission info for the Developer tab
+  const getSubmissionInfo = () => {
+    // Ensure developer_info has default values to prevent TypeScript errors
+    const developerInfo: DeveloperInfo = {
+      version: editedValues.developer_info?.version || "1.0",
+      versionNumber: editedValues.developer_info?.versionNumber || "0",
+      userIp: editedValues.developer_info?.userIp || "NA",
+      sourceUrl: editedValues.developer_info?.sourceUrl || "NA",
+      browser: editedValues.developer_info?.browser || "NA",
+      device: editedValues.developer_info?.device || "NA",
+      user: editedValues.developer_info?.user || "NA",
+      status: editedValues.developer_info?.status || "Read",
+      submittedOn: editedValues.developer_info?.submittedOn || "NA",
+    }
+
+    return {
+      ...developerInfo,
+      onChangeStatus: () => {
+        const newStatus = developerInfo.status === "Read" ? "Active" : "Read"
+        handleChangeStatus(newStatus)
+      },
+      isEditing: isDeveloperInfoEditing,
+      onEdit: () => setIsDeveloperInfoEditing(true),
+      onSave: handleSaveDeveloperInfo,
+      // Let the component know which fields are editable
+      editableFields: ["sourceUrl", "user"],
+    }
+  }
+
+  return (
+    <div className={classes.rootContainer}>
+      <ViewItems
+        fields={fields}
+        tabs={[
+          {
+            id: "settings",
+            label: t("Settings"),
+            content: <SettingsContent />,
+          },
+          {
+            id: "participants",
+            label: t("Participants"),
+            content: <ParticipantsContent />,
+          },
+          {
+            id: "studies",
+            label: t("Studies"),
+            content: <StudiesContent />,
+          },
+        ]}
+        isEditing={isEditing}
+        onSave={handleSave}
+        onEdit={() => console.log("Edit clicked")}
+        editedValues={editedValues}
+        setEditedValues={setEditedValues}
+        loading={loading}
+        submissionInfo={getSubmissionInfo()}
+      />
+    </div>
+  )
+}
+
+export default SensorDetailItem

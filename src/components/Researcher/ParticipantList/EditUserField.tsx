@@ -64,8 +64,8 @@ export default function EditUserField({
       .then((res) => setAlias((oldValue.current = alias)))
       .then((res) => {
         Service.update("participants", { participants: [{ id: participant.id, name: alias }] }, "name", "id")
-        updateName(alias.trim() === "" ? participant.id : alias.trim())
-        if (alias.trim() === "")
+        updateName(alias?.trim() === "" ? participant.id : alias?.trim())
+        if (alias?.trim() === "")
           enqueueSnackbar(`${t("Removed participantId's alias.", { participantId: participant.id })}`, {
             variant: "success",
           })

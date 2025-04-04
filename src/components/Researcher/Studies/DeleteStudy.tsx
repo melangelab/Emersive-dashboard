@@ -15,7 +15,8 @@ import { useSnackbar } from "notistack"
 import LAMP from "lamp-core"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
-
+import { ReactComponent as DeleteIcon } from "../../../icons/NewIcons/trash-xmark.svg"
+import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     disabledButton: {
@@ -37,10 +38,30 @@ const useStyles = makeStyles((theme: Theme) =>
 
       "&:hover": { color: "#5680f9", background: "#fff", boxShadow: "0px 3px 5px rgba(0, 0, 0, 0.20)" },
     },
+    actionIcon: {
+      width: 24,
+      height: 24,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      "& path": {
+        fill: "rgba(0, 0, 0, 0.4)",
+        transition: "fill 0.3s ease",
+      },
+      "&:hover path": {
+        fill: "#06B0F0",
+      },
+      "&.selected path": {
+        fill: "#4F95DA",
+      },
+      "&.active path": {
+        fill: "#215F9A",
+      },
+    },
   })
 )
 
 export default function DeleteStudy({ study, deletedStudy, researcherId, ...props }) {
+  if (!study) return
   const { enqueueSnackbar } = useSnackbar()
   const classes = useStyles()
   const { t } = useTranslation()
@@ -72,12 +93,13 @@ export default function DeleteStudy({ study, deletedStudy, researcherId, ...prop
   }
 
   const handleCloseDeleteStudy = () => {
+    props.setActiveButton?.({ id: null, action: null })
     setOpenDialogDeleteStudy(false)
   }
 
   return (
     <React.Fragment>
-      <Box display="flex" alignItems="center" pl={1}>
+      {/* <Box display="flex" alignItems="center" pl={1}>
         <Fab
           size="small"
           color="primary"
@@ -90,11 +112,32 @@ export default function DeleteStudy({ study, deletedStudy, researcherId, ...prop
         >
           <Icon>delete_outline</Icon>
         </Fab>
-      </Box>
+      </Box> */}
+      {props.activeButton?.id === study.id && props.activeButton?.action === "delete" && props.viewMode === "grid" ? (
+        <DeleteFilledIcon
+          className={`${classes.actionIcon} active`}
+          onClick={() => {
+            props.setActiveButton?.({ id: study.id, action: "delete" })
+            setOpenDialogDeleteStudy(true)
+            setStudyIdForDelete(study.id)
+          }}
+        />
+      ) : (
+        <DeleteIcon
+          className={`${classes.actionIcon} ${
+            props.activeButton?.id === study.id && props.activeButton?.action === "delete" ? "active" : ""
+          }`}
+          onClick={() => {
+            props.setActiveButton?.({ id: study.id, action: "delete" })
+            setOpenDialogDeleteStudy(true)
+            setStudyIdForDelete(study.id)
+          }}
+        />
+      )}
 
       <Dialog
-        open={openDialogDeleteStudy}
-        onClose={handleCloseDeleteStudy}
+        open={props.open || openDialogDeleteStudy}
+        onClose={props.onClose || handleCloseDeleteStudy}
         scroll="paper"
         aria-labelledby="alert-dialog-slide-title"
         aria-describedby="alert-dialog-slide-description"
@@ -112,7 +155,7 @@ export default function DeleteStudy({ study, deletedStudy, researcherId, ...prop
 
               <Button
                 onClick={() => {
-                  handleCloseDeleteStudy()
+                  props.onClose?.() || handleCloseDeleteStudy()
                 }}
               >
                 {`${t("Cancel")}`}

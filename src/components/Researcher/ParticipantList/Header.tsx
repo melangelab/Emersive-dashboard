@@ -21,6 +21,7 @@ import {
   Icon,
   useMediaQuery,
   useTheme,
+  ListItemText,
 } from "@material-ui/core"
 import StudyFilter from "../ParticipantList/StudyFilter"
 import DeleteParticipant from "./DeleteParticipant"
@@ -32,8 +33,18 @@ import ToggleFeed from "./ToggeFeed"
 import { FilterList as FilterListIcon } from "@material-ui/icons"
 import { CredentialManager } from "../../CredentialManager"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
-import LogoImage from "../../../icons/logo.png"
+import { ReactComponent as Logo } from "../../../icons/Logo.svg"
 import { useLayoutStyles } from "../../GlobalStyles"
+import { ReactComponent as RefreshIcon } from "../../../icons/NewIcons/rotate-reverse.svg"
+import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
+import { ReactComponent as GridViewIcon } from "../../../icons/NewIcons/objects-column.svg"
+import { ReactComponent as TableViewIcon } from "../../../icons/NewIcons/table-list.svg"
+import { ReactComponent as GridViewFilledIcon } from "../../../icons/NewIcons/objects-column-filled.svg"
+import { ReactComponent as TableViewFilledIcon } from "../../../icons/NewIcons/table-list-filled.svg"
+import { ReactComponent as ColumnsIcon } from "../../../icons/NewIcons/columns-3.svg"
+import { ReactComponent as FilterIcon } from "../../../icons/NewIcons/filters.svg"
+import { ReactComponent as PrintIcon } from "../../../icons/NewIcons/print.svg"
+import { ReactComponent as DownloadIcon } from "../../../icons/NewIcons/progress-download.svg"
 
 function Profile({ title, authType }) {
   return (
@@ -154,6 +165,35 @@ const useStyles = makeStyles((theme: Theme) =>
       marginRight: "-50vw",
     },
     optionsSub: { width: 1030, maxWidth: "80%", margin: "0 auto", padding: "10px 0" },
+    logo: {
+      width: theme.spacing(5), // Scales dynamically (5 * 8px = 40px)
+      height: theme.spacing(5),
+      borderRadius: "50%",
+      marginLeft: "4px",
+    },
+    actionIcon: {
+      width: 40,
+      height: 40,
+      minWidth: 40,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      padding: theme.spacing(0.5),
+      borderRadius: "25%",
+      "& path": {
+        fill: "rgba(0, 0, 0, 0.4)",
+      },
+      "&.active path": {
+        fill: "#06B0F0",
+      },
+      "&:hover": {
+        backgroundColor: "rgba(0, 0, 0, 0.04)",
+        "& path": {
+          fill: "#06B0F0",
+        },
+      },
+      marginLeft: theme.spacing(1),
+      marginRight: theme.spacing(1),
+    },
   })
 )
 
@@ -182,6 +222,7 @@ export default function Header({
   const layoutClasses = useLayoutStyles()
 
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
+  const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement | SVGElement>(null)
 
   const handleShowFilterStudies = (status) => {
     setShowFilterStudies(status)
@@ -194,20 +235,50 @@ export default function Header({
         <Box flexGrow={1} pt={1}> */}
         <Box className={headerclasses.header}>
           <Box className={headerclasses.titleSection}>
-            {/* <Box className={headerclasses.logo}>
-              <img src={LogoImage} alt="Logo" />
-            </Box> */}
+            {supportsSidebar ? (
+              <Box className={headerclasses.logo}>
+                <Logo className={classes.logo} />
+              </Box>
+            ) : null}
             {props.authType === "admin" && (
               <IconButton
                 className={headerclasses.backButton}
                 onClick={() => {
-                  window.location.href = `/#/researcher`
+                  window.location.href = `/admin`
                 }}
               >
                 <Icon>arrow_back</Icon>
               </IconButton>
             )}
-            {/* <Typography variant="h5">{`${t("Users")}`}</Typography> */}
+            <Typography variant="h5">{`${t("Participants")}`}</Typography>
+          </Box>
+          {/* <Box> */}
+          {/* <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}> */}
+          <Box className={headerclasses.actionGroup}>
+            <SearchBox searchData={searchData} />
+            <RefreshIcon className={classes.actionIcon} onClick={() => props.refresh?.() || window.location.reload()} />
+            {props.viewMode === "grid" ? (
+              <GridViewFilledIcon
+                className={`${classes.actionIcon} ${props.viewMode === "grid" ? "active" : ""}`}
+                onClick={() => props.onViewModechanged("grid")}
+              />
+            ) : (
+              <GridViewIcon
+                className={`${classes.actionIcon} active`}
+                onClick={() => props.onViewModechanged("grid")}
+              />
+            )}
+            {props.viewMode === "table" ? (
+              <TableViewFilledIcon
+                className={`${classes.actionIcon} ${props.viewMode === "table" ? "active" : ""}`}
+                onClick={() => props.onViewModechanged("table")}
+              />
+            ) : (
+              <TableViewIcon
+                className={`${classes.actionIcon} active`}
+                onClick={() => props.onViewModechanged("table")}
+              />
+            )}
             <AddButton
               researcherId={researcherId}
               studies={studies}
@@ -215,20 +286,19 @@ export default function Header({
               setSelectedStudies={setSelectedStudies}
               setData={setData}
               mode={mode}
+              title={props.title}
+              resemail={props.resemail}
             />
-          </Box>
-          {/* <Box> */}
-          {/* <div style={{ display: "flex", flexDirection: "row", gap: "10px" }}> */}
-          <Box className={headerclasses.actionGroup}>
-            <SearchBox searchData={searchData} />
-            <Button
-              variant="outlined"
-              className={headerclasses.togglebtn}
-              startIcon={<Icon>{props.viewMode === "grid" ? "view_list" : "grid_view"}</Icon>}
-              onClick={() => props.onViewModechanged(props.viewMode === "grid" ? "table" : "grid")}
-            >
-              {supportsSidebar ? (props.viewMode === "grid" ? "Table View" : "Grid View") : null}
-            </Button>
+            {props.viewMode === "table" && (
+              <>
+                <ColumnsIcon
+                  className={classes.actionIcon}
+                  onClick={(event) => setColumnMenuAnchor(event.currentTarget)}
+                />
+                <PrintIcon className={classes.actionIcon} />
+                <DownloadIcon className={classes.actionIcon} />
+              </>
+            )}
             <StudyFilter setShowFilterStudies={handleShowFilterStudies} setOrder={setOrder} order={order} />
             <Box
               className={headerclasses.profileSection}
@@ -356,6 +426,92 @@ export default function Header({
             <CredentialManager id={researcherId} />
           </DialogContent>
         </Dialog>
+        <Menu
+          anchorEl={columnMenuAnchor}
+          open={Boolean(columnMenuAnchor)}
+          onClose={() => setColumnMenuAnchor(null)}
+          keepMounted
+          elevation={3}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "left",
+          }}
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "left",
+          }}
+          getContentAnchorEl={null}
+          PaperProps={{
+            style: {
+              maxHeight: "300px",
+              width: "250px",
+              marginTop: "8px",
+            },
+          }}
+        >
+          <div
+            style={{
+              position: "sticky",
+              top: 0,
+              backgroundColor: "white",
+              borderBottom: "1px solid rgb(229, 231, 235)",
+              padding: "0.5rem",
+              display: "flex",
+              justifyContent: "space-between",
+              zIndex: 50,
+            }}
+          >
+            <Button
+              size="small"
+              onClick={() => {
+                props.setVisibleColumns?.(props.VisibleColumns?.map((col) => ({ ...col, visible: true })))
+              }}
+              color="primary"
+              style={{ textTransform: "none", fontSize: "0.875rem" }}
+            >
+              {t("Select All")}
+            </Button>
+            <Button
+              size="small"
+              onClick={() => {
+                props.setVisibleColumns?.(
+                  props.VisibleColumns?.map((col, index) => ({
+                    ...col,
+                    visible: index === 0,
+                  }))
+                )
+              }}
+              color="primary"
+              style={{ textTransform: "none", fontSize: "0.875rem" }}
+            >
+              {t("Deselect All")}
+            </Button>
+          </div>
+          <div style={{ padding: "0.5rem", overflowY: "auto" }}>
+            {props.VisibleColumns?.map((column) => (
+              <MenuItem
+                key={column.id}
+                onClick={() => {
+                  props.setVisibleColumns?.(
+                    props.VisibleColumns?.map((col) => (col.id === column.id ? { ...col, visible: !col.visible } : col))
+                  )
+                }}
+              >
+                <Checkbox
+                  checked={column.visible}
+                  onChange={() => {
+                    props.setVisibleColumns?.(
+                      props.VisibleColumns?.map((col) =>
+                        col.id === column.id ? { ...col, visible: !col.visible } : col
+                      )
+                    )
+                  }}
+                />
+                <ListItemText primary={column.label} />
+              </MenuItem>
+            ))}
+          </div>
+        </Menu>
       </Box>
     </div>
   )

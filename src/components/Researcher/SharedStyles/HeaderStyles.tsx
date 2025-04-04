@@ -70,6 +70,10 @@ export const useHeaderStyles = makeStyles((theme: Theme) => ({
       fontSize: "0.875rem",
     },
   },
+  disabledIcon: {
+    opacity: 0.5,
+    pointerEvents: "none",
+  },
   customPaper: {
     maxWidth: 380,
     maxHeight: 600,
@@ -198,4 +202,27 @@ export const useHeaderStyles = makeStyles((theme: Theme) => ({
     "&:focus": { background: "#ECF4FF !important" },
   },
   chiplabel: { whiteSpace: "break-spaces" },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    minWidth: 40,
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    padding: theme.spacing(0.5),
+    borderRadius: "25%",
+    "& path": {
+      fill: "rgba(0, 0, 0, 0.4)",
+    },
+    "&.active path": {
+      fill: "#06B0F0",
+    },
+    "&:hover": {
+      backgroundColor: "rgba(0, 0, 0, 0.04)",
+      "& path": {
+        fill: "#06B0F0",
+      },
+    },
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(1),
+  },
 }))

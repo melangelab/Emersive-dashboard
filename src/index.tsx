@@ -70,7 +70,7 @@ LAMP.addEventListener("LOGOUT", ({ detail }) => {
 ReactDOM.render(<App />, root)
 serviceWorker.register({
   onUpdate: (registration) => {
-    //alert('Updating to the latest available version of mindLAMP.')
+    //alert('Updating to the latest available version of Emersive.')
     if (registration && registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" })
     window.location.reload()
   },

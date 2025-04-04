@@ -106,6 +106,7 @@ export default function ParticipantDetailsDialog({
   onSave,
   formatDate,
   researcherId,
+  pStudy,
   ...props
 }) {
   const classes = useStyles()
@@ -113,7 +114,6 @@ export default function ParticipantDetailsDialog({
   const [isEditing, setIsEditing] = useState(false)
   const { enqueueSnackbar } = useSnackbar()
   const [merror, setMError] = useState(false)
-
   const handleFormChange = (field, value) => {
     if (field === "userAge") {
       const age = parseInt(value, 10)
@@ -406,7 +406,7 @@ export default function ParticipantDetailsDialog({
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="subtitle2">Study Name</Typography>
-                <Typography>{participant.study_name}</Typography>
+                <Typography>{pStudy.name}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="subtitle2">Study Investigator</Typography>
@@ -414,11 +414,11 @@ export default function ParticipantDetailsDialog({
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="subtitle2">Study Mobile</Typography>
-                <Typography>{researcherId}</Typography>
+                <Typography>{pStudy["mobile"]}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="subtitle2">Study Email</Typography>
-                <Typography>{researcherId}</Typography>
+                <Typography>{pStudy.email}</Typography>
               </Grid>
             </Grid>
           </Grid>

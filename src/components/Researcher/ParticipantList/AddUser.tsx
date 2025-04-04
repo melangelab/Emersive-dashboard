@@ -15,6 +15,9 @@ import {
   makeStyles,
   Theme,
   createStyles,
+  Slide,
+  Divider,
+  Backdrop,
 } from "@material-ui/core"
 
 import { useSnackbar } from "notistack"
@@ -22,6 +25,8 @@ import LAMP, { Participant } from "lamp-core"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
 import NewPatientDetail from "./NewPatientDetail"
+import { slideStyles } from "./AddButton"
+import { ReactComponent as UserIcon } from "../../../icons/NewIcons/users.svg"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -65,6 +70,8 @@ export default function AddUser({
   setParticipants,
   handleNewStudy,
   closePopUp,
+  open,
+  resemail,
   ...props
 }: {
   researcherId: any
@@ -72,8 +79,11 @@ export default function AddUser({
   setParticipants?: Function
   handleNewStudy: Function
   closePopUp: Function
+  open: any
+  resemail: any
 } & DialogProps) {
   const classes = useStyles()
+  const sliderclasses = slideStyles()
   const [selectedStudy, setSelectedStudy] = useState("")
   const [selectedGroup, setSelectedGroup] = useState("")
   const [showErrorMsg, setShowErrorMsg] = useState(true)
@@ -81,7 +91,12 @@ export default function AddUser({
   const { enqueueSnackbar } = useSnackbar()
   const { t } = useTranslation()
   const [newId, setNewId] = useState(null)
-
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [mobile, setMobile] = useState("")
+  const [notes, setNotes] = useState("")
+  const [confirmationOpen, setConfirmationOpen] = useState(false)
   const validate = (element) => {
     return !(typeof element === "undefined" || (typeof element !== "undefined" && element?.trim() === ""))
   }
@@ -198,7 +213,7 @@ export default function AddUser({
     }
     setSelectedStudy("")
     closePopUp(2)
-    props.onClose as any
+    // props.onClose as any
   }
 
   const createNewStudy = () => {
@@ -236,7 +251,7 @@ export default function AddUser({
     }
     setSelectedStudy("")
     closePopUp(2)
-    props.onClose as any
+    // props.onClose as any
   }
 
   const handleEnter = () => {
@@ -245,67 +260,56 @@ export default function AddUser({
     setShowErrorMsg(true)
   }
 
+  const handleAddParticipant = async () => {
+    createNewStudy()
+    enqueueSnackbar("Participant added successfully!", { variant: "success" })
+    setConfirmationOpen(true)
+  }
+
   return (
     <React.Fragment>
-      <Dialog
-        {...props}
-        onEnter={handleEnter}
-        scroll="paper"
-        aria-labelledby="alert-dialog-slide-title"
-        aria-describedby="alert-dialog-slide-description"
-        classes={{ paper: classes.addNewDialog }}
-      >
-        <DialogTitle id="alert-dialog-slide-title" disableTypography>
-          <Typography variant="h6">{`${t("Create a new user")}`}</Typography>
-          <IconButton
-            aria-label="close"
-            className={classes.closeButton}
-            onClick={props.onClose as any}
-            disabled={!!studyBtnClicked ? true : false}
-          >
-            <Icon>close</Icon>
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers={false} classes={{ root: classes.activityContent }}>
-          <Box mt={2} mb={3}>
-            <Typography variant="body2">{`${t("Choose the Study you want to save this participant.")}`}</Typography>
+      <Backdrop className={sliderclasses.backdrop} open={open} onClick={props.onClose as any} />
+      <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+        <Box className={sliderclasses.slidePanel}>
+          <Box className={sliderclasses.icon}>
+            <UserIcon />
           </Box>
+          <Typography variant="h6" className={sliderclasses.headings}>
+            ADD NEW PARTICIPANTS
+          </Typography>
+          <Divider className={sliderclasses.divider} />
           <TextField
-            error={!validate(selectedStudy)}
-            select
-            autoFocus
+            label="Researcher :"
             fullWidth
-            variant="outlined"
-            label={`${t("Study")}`}
+            disabled
+            margin="normal"
+            value={props.title || researcherId}
+            onChange={(e) => {}}
+            className={sliderclasses.field}
+          />
+          <TextField
+            label="Select Study"
+            fullWidth
+            margin="normal"
+            select
             value={selectedStudy}
-            onChange={handleChangeStudy}
-            helperText={!validate(selectedStudy) ? `${t("Please select the Study")}` : ""}
+            onChange={(e) => setSelectedStudy(e.target.value)}
+            className={sliderclasses.field}
           >
-            {(studies || []).map((study) => (
+            {studies.map((study) => (
               <MenuItem key={study.id} value={study.id}>
                 {study.name}
               </MenuItem>
             ))}
           </TextField>
-          {/* {!showErrorMsg && !selectedStudy && (
-            <Box mt={1}>
-              <Typography className={classes.errorMsg}>{`${t("Select a Study to create a participant.")}`}</Typography>
-            </Box>
-          )} */}
-          <Box mt={2} mb={3}>
-            <Typography variant="body2">{`${t("Choose the Group you want to save this participant.")}`}</Typography>
-          </Box>
           <TextField
-            error={!validate(selectedGroup)}
-            select
-            autoFocus
+            label="Select Group"
             fullWidth
-            variant="outlined"
-            label={`${t("Group")}`}
+            margin="normal"
+            select
             value={selectedGroup}
-            onChange={handleChangeGroup}
-            disabled={!selectedStudy}
-            helperText={!validate(selectedGroup) && !showErrorMsg ? `${t("Please select the Group")}` : ""}
+            onChange={(e) => setSelectedGroup(e.target.value)}
+            className={sliderclasses.field}
           >
             {((selectedStudy && studies.find((study) => study.id === selectedStudy)?.gname) || []).map(
               (groupName, index) => (
@@ -315,39 +319,90 @@ export default function AddUser({
               )
             )}
           </TextField>
-          {showErrorMsg && (
-            <Box mt={1}>
-              <Typography className={classes.errorMsg}>{`${t(
-                "Select a Study first for choosing groups."
-              )}`}</Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Box textAlign="right" width={1} mt={3} mb={3} mx={3}>
-            <Button
-              color="primary"
-              onClick={() => {
-                closePopUp(2)
-              }}
-            >
-              {`${t("Cancel")}`}
-            </Button>
-            <Button
-              //onClick={() => addParticipant()}
-              onClick={() => {
-                createNewStudy()
-              }}
-              color="primary"
-              autoFocus
-              //disabled={!!studyBtnClicked ? true : false}
-              disabled={!validate(selectedStudy)}
-            >
-              {`${t("Save")}`}
-            </Button>
+          <Typography variant="h6" className={sliderclasses.headings}>
+            PARTICIPANT DETAILS
+          </Typography>
+          <Divider className={sliderclasses.divider} />
+          <TextField
+            label="First Name"
+            fullWidth
+            margin="normal"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className={sliderclasses.field}
+          />
+          <TextField
+            label="Last Name"
+            fullWidth
+            margin="normal"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            className={sliderclasses.field}
+          />
+          <TextField
+            label="Email"
+            fullWidth
+            margin="normal"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={sliderclasses.field}
+          />
+          <TextField
+            label="Mobile Number"
+            fullWidth
+            margin="normal"
+            value={mobile}
+            onChange={(e) => setMobile(e.target.value)}
+            className={sliderclasses.field}
+          />
+          <TextField
+            label="Notes"
+            fullWidth
+            margin="normal"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className={sliderclasses.field}
+          />
+          <Button className={sliderclasses.button} onClick={handleAddParticipant}>
+            Add
+          </Button>
+        </Box>
+      </Slide>
+      <Slide direction="left" in={confirmationOpen} mountOnEnter unmountOnExit>
+        <Box className={sliderclasses.slidePanel}>
+          <Box className={sliderclasses.icon}>
+            <UserIcon />
           </Box>
-        </DialogActions>
-      </Dialog>
+          <Typography variant="h6">ADD NEW PARTICIPANTS</Typography>
+          <Divider />
+          <Typography variant="body2" paragraph>
+            New participant -{" "}
+            <strong>
+              {firstName} {lastName}
+            </strong>{" "}
+            - has been successfully added to the study{" "}
+            <strong>
+              {selectedStudy}, Group {selectedGroup}
+            </strong>
+            . An account creation link has been successfully sent to the email - <a href={`mailto:${email}`}>{email}</a>
+            .
+          </Typography>
+          <Typography variant="body2" paragraph>
+            A copy has also been successfully sent to the researcher{" "}
+            <strong>{props.title || "Unknown Researcher"}</strong> at <a href={`mailto:${resemail}`}>{resemail}</a>.
+          </Typography>
+          <Divider />
+          <Button
+            className={sliderclasses.button}
+            onClick={() => {
+              setConfirmationOpen(false)
+              props.onClose
+            }}
+          >
+            Exit
+          </Button>
+        </Box>
+      </Slide>
       {!!newId && <NewPatientDetail id={newId} />}
     </React.Fragment>
   )

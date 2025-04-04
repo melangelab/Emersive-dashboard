@@ -15,11 +15,17 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Box,
+  Typography,
+  CircularProgress,
 } from "@material-ui/core"
 import { useTranslation } from "react-i18next"
 import { useSnackbar } from "notistack"
 import LAMP from "lamp-core"
 import { Service } from "../../DBService/DBService"
+import { useModularTableStyles } from "../Studies/Index"
+import { ReactComponent as CopyFilledIcon } from "../../../icons/NewIcons/arrow-circle-down-filled.svg"
+import { ReactComponent as CopyIcon } from "../../../icons/NewIcons/arrow-circle-down.svg"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -42,8 +48,16 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-export default function DuplicateActivity({ activity, studies, researcherId, ...props }) {
+export default function DuplicateActivity({
+  activity,
+  studies,
+  researcherId,
+  activeButton,
+  setActiveButton,
+  ...props
+}) {
   const classes = useStyles()
+  const mtstyles = useModularTableStyles()
   const { t } = useTranslation()
   const { enqueueSnackbar } = useSnackbar()
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -98,29 +112,70 @@ export default function DuplicateActivity({ activity, studies, researcherId, ...
 
   return (
     <>
-      <Fab size="small" className={classes.btnWhite} onClick={() => setDialogOpen(true)}>
-        <Icon>content_copy</Icon>
-      </Fab>
-
+      {activeButton.id === activity.id && activeButton.action === "copy" ? (
+        <CopyFilledIcon
+          className={`${mtstyles.actionIcon} active`}
+          onClick={() => {
+            setActiveButton({ id: activity.id, action: "copy" })
+            setDialogOpen(true)
+          }}
+        />
+      ) : (
+        <CopyIcon
+          className={mtstyles.actionIcon}
+          onClick={() => {
+            setActiveButton({ id: activity.id, action: "copy" })
+            setDialogOpen(true)
+          }}
+        />
+      )}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-        <DialogTitle>{t("Duplicate Community Activity")}</DialogTitle>
+        <DialogTitle>
+          <Box display="flex" alignItems="center">
+            <Icon style={{ marginRight: 8 }}>content_copy</Icon>
+            {t("Duplicate Community Activity")}
+          </Box>
+        </DialogTitle>
         <DialogContent>
-          <FormControl className={classes.formControl}>
-            <InputLabel>{t("Select Study")}</InputLabel>
-            <Select value={selectedStudy} onChange={(e) => setSelectedStudy(e.target.value as string)}>
-              {studies.map((study) => (
-                <MenuItem key={study.id} value={study.id}>
-                  {study.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Typography variant="body1" gutterBottom>
+            {t("You're about to make a copy of")}: <b>{activity.name}</b>
+          </Typography>
+          <Typography variant="body2" color="textSecondary" gutterBottom>
+            {t("This will create a new activity in your selected study, which you can then customize.")}
+          </Typography>
+          <Box mt={3}>
+            <FormControl className={classes.formControl}>
+              <InputLabel>{t("Select Destination Study")}</InputLabel>
+              <Select value={selectedStudy} onChange={(e) => setSelectedStudy(e.target.value as string)}>
+                {studies.map((study) => (
+                  <MenuItem key={study.id} value={study.id}>
+                    {study.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} color="secondary">
+          <Button
+            onClick={() => {
+              setActiveButton({ id: null, action: null })
+              setDialogOpen(false)
+            }}
+            color="secondary"
+          >
             {t("Cancel")}
           </Button>
-          <Button onClick={handleDuplicate} color="primary" disabled={loading}>
+          <Button
+            onClick={() => {
+              setActiveButton({ id: null, action: null })
+              handleDuplicate()
+            }}
+            color="primary"
+            variant="contained"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Icon>content_copy</Icon>}
+          >
             {loading ? t("Duplicating...") : t("Duplicate")}
           </Button>
         </DialogActions>

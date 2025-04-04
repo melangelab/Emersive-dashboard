@@ -34,9 +34,122 @@ import UpdateActivity from "./UpdateActivity"
 import ConfirmationDialog from "../../ConfirmationDialog"
 import { Service } from "../../DBService/DBService"
 import VersionHistoryDialog from "./VersionHistoryDialog"
+import { ReactComponent as ViewIcon } from "../../../icons/NewIcons/overview.svg"
+import { ReactComponent as ViewFilledIcon } from "../../../icons/NewIcons/overview-filled.svg"
+import { ReactComponent as CopyFilledIcon } from "../../../icons/NewIcons/arrow-circle-down-filled.svg"
+import { ReactComponent as CopyIcon } from "../../../icons/NewIcons/arrow-circle-down.svg"
+import { ReactComponent as DeleteIcon } from "../../../icons/NewIcons/trash-xmark.svg"
+import { ReactComponent as EditIcon } from "../../../icons/NewIcons/text-box-edit.svg"
+import { ReactComponent as EditFilledIcon } from "../../../icons/NewIcons/text-box-edit-filled.svg"
+import { ReactComponent as HistoryIcon } from "../../../icons/NewIcons/version-history.svg"
+import { ReactComponent as HistoryFilledIcon } from "../../../icons/NewIcons/version-history.svg"
+import { ReactComponent as ShareCommunityIcon } from "../../../icons/NewIcons/refer.svg"
+import { ReactComponent as ShareCommunityFilledIcon } from "../../../icons/NewIcons/refer-filled.svg"
+import { ReactComponent as RemoveCommunityIcon } from "../../../icons/NewIcons/user-xmark.svg"
+import { ReactComponent as RemoveCommunityFilledIcon } from "../../../icons/NewIcons/user-xmark-filled.svg"
+import { ReactComponent as VersionThisIcon } from "../../../icons/NewIcons/code-merge.svg"
+import { ReactComponent as VersionThisFilledIcon } from "../../../icons/NewIcons/code-merge-filled.svg"
+import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
+
+import { studycardStyles } from "../Studies/Index"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
+    row: {
+      "&:hover": {
+        backgroundColor: "rgba(0, 0, 0, 0.04)",
+        "& $actionButtons": {
+          opacity: 1,
+        },
+      },
+    },
+    actionCell: {
+      position: "sticky",
+      right: 0,
+      backgroundColor: "#fff",
+      boxShadow: "-2px 0px 4px rgba(0, 0, 0, 0.1)",
+      gap: theme.spacing(1),
+      zIndex: 2,
+      minWidth: 160,
+      "&::before": {
+        content: '""',
+        position: "absolute",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: "1px",
+        backgroundColor: "rgba(224, 224, 224,1)",
+      },
+    },
+    actionButtons: {
+      display: "flex",
+      gap: theme.spacing(1),
+      opacity: 0.4,
+      transition: "opacity 0.2s ease",
+      "& svg": {
+        width: 24,
+        height: 24,
+        opacity: 0.4,
+        transition: "all 0.3s ease",
+        "& path": {
+          fill: "rgba(0, 0, 0, 0.8)",
+        },
+        "&:hover": {
+          opacity: 1,
+          "& path": {
+            fill: "#06B0F0",
+          },
+        },
+      },
+      "& button": {
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        color: "#FFFFFF",
+        "&:hover": {
+          backgroundColor: "#06B0F0",
+        },
+        "&.selected": {
+          backgroundColor: "#4F95DA",
+        },
+      },
+      justifyContent: "flex-start",
+    },
+
+    cell: {
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      maxWidth: 400,
+    },
+    versionBadge: {
+      display: "inline-flex",
+      padding: theme.spacing(0.5, 1),
+      borderRadius: theme.spacing(0.5),
+      backgroundColor: "#FDEDE8",
+      color: "#EB8367",
+      alignItems: "center",
+      gap: theme.spacing(0.5),
+      fontWeight: 500,
+    },
+    studyCell: {
+      cursor: "pointer",
+      "&:hover .studyId": {
+        display: "block",
+      },
+      maxWidth: 400,
+      // minWidth:250,
+      whiteSpace: "normal",
+      // wordBreak: "break-word",
+      // overflowWrap: "break-word",
+    },
+    studyId: {
+      display: "none",
+      position: "absolute",
+      backgroundColor: "#fff",
+      padding: theme.spacing(1),
+      borderRadius: 4,
+      boxShadow: theme.shadows[2],
+      zIndex: 3,
+    },
     btnWhite: {
       background: "#fff",
       borderRadius: "40px",
@@ -52,21 +165,10 @@ const useStyles = makeStyles((theme: Theme) =>
         boxShadow: "0px 3px 5px rgba(0, 0, 0, 0.20)",
       },
     },
-    actionCell: {
-      position: "sticky",
-      right: 0,
-      background: "white",
-      zIndex: 1,
-      padding: theme.spacing(1),
-    },
-    versionBadge: {
-      display: "inline-flex",
-      padding: theme.spacing(0.5, 1),
-      borderRadius: theme.spacing(0.5),
-      backgroundColor: "#e3f2fd",
-      color: "#1976d2",
-      alignItems: "center",
-      gap: theme.spacing(0.5),
+    idCell: {
+      fontWeight: 500,
+      color: "#215F9A", // Active Color
+      cursor: "pointer",
     },
     scoreBox: {
       padding: theme.spacing(1),
@@ -76,10 +178,22 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     checkboxActive: {
       color: "#7599FF !important",
+      padding: theme.spacing(0.5),
+      // color: "#ccc",
+      "&.Mui-checked": {
+        color: "#7599FF",
+      },
+      "& .MuiSvgIcon-root": {
+        borderRadius: "4px",
+        width: "18px",
+        height: "18px",
+      },
     },
     copyableCell: {
       cursor: "copy",
       position: "relative",
+      fontWeight: 500,
+      color: "#215F9A", // Active Color
       "&:hover": {
         backgroundColor: "rgba(0, 0, 0, 0.04)",
       },
@@ -100,35 +214,9 @@ const useStyles = makeStyles((theme: Theme) =>
         opacity: 1,
       },
     },
-    studyCell: {
-      cursor: "copy",
-      position: "relative",
-      display: "inline-block",
-      "&:hover": {
-        backgroundColor: "rgba(0, 0, 0, 0.04)",
-      },
-      "&:hover .studyId": {
-        display: "block",
-      },
-    },
     studyName: {
       position: "relative",
       zIndex: 1,
-    },
-    studyId: {
-      display: "none",
-      position: "absolute",
-      top: "100%",
-      left: 0,
-      right: 0,
-      backgroundColor: "#fff",
-      padding: theme.spacing(1),
-      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-      borderRadius: theme.shape.borderRadius,
-      fontSize: "0.75rem",
-      color: theme.palette.text.secondary,
-      zIndex: 2,
-      marginTop: "4px",
     },
     versionItem: {
       padding: theme.spacing(2),
@@ -173,17 +261,21 @@ const useStyles = makeStyles((theme: Theme) =>
       },
     },
     communityRow: {
-      backgroundColor: "#F0F7FF !important",
+      backgroundColor: "#F0F7FF !important", // Light blue background for community rows
+    },
+    activeIcon: {
+      color: "#EB8367 !important", // Primary Color for active icons
     },
     communityBadge: {
       display: "inline-flex",
       padding: theme.spacing(0.5, 1),
       borderRadius: theme.spacing(0.5),
-      backgroundColor: "#7599FF",
+      backgroundColor: "#4F95DA", // Selected Color matching the design
       color: "white",
       alignItems: "center",
       gap: theme.spacing(0.5),
       marginLeft: theme.spacing(1),
+      fontSize: "0.75rem",
     },
   })
 )
@@ -206,6 +298,7 @@ interface ScoreInterpretationSchema {
 
 export default function ActivityTableRow({
   activity,
+  index,
   visibleColumns,
   selectedActivities,
   handleChange,
@@ -214,6 +307,8 @@ export default function ActivityTableRow({
   onActivityUpdate,
   activities,
   setActivities,
+  parentClasses,
+  onViewActivity,
   ...props
 }) {
   const classes = useStyles()
@@ -231,6 +326,8 @@ export default function ActivityTableRow({
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false)
   const [selectedStudyForDuplicate, setSelectedStudyForDuplicate] = useState("")
   const [duplicateLoading, setDuplicateLoading] = useState(false)
+  const [activeButton, setActiveButton] = useState({ id: null, action: null })
+  const activitycardclasses = studycardStyles()
 
   const handlePreviewVersion = async (version) => {
     try {
@@ -241,14 +338,21 @@ export default function ActivityTableRow({
       enqueueSnackbar(t("Failed to preview version"), { variant: "error" })
     }
   }
-  const handleVersioning = async () => {
+  const handleVersioning = async (status) => {
     try {
-      const updatedActivity = { ...activity, versionThis: true }
-      await onActivityUpdate(activity.id, updatedActivity)
-      enqueueSnackbar(t("Successfully versioned the activity."), { variant: "success", autoHideDuration: 2000 })
+      if (status === "Yes") {
+        const updatedActivity = { ...activity, versionThis: true }
+        await onActivityUpdate(activity.id, updatedActivity)
+        enqueueSnackbar(t("Successfully versioned the activity."), { variant: "success", autoHideDuration: 2000 })
+      } else {
+        setConfirmationVersionDialog(false)
+      }
     } catch {
       enqueueSnackbar(t("Error in versioning the activity."), { variant: "error", autoHideDuration: 2000 })
       console.log(`Activity ID ${activity.id} failed for versioning ${activity}`)
+    } finally {
+      setConfirmationVersionDialog(false)
+      setActiveButton({ id: null, action: null })
     }
   }
   const handleRestoreVersion = async (version) => {
@@ -265,6 +369,9 @@ export default function ActivityTableRow({
     } catch (error) {
       console.error("Error restoring version:", error)
       enqueueSnackbar(t("Failed to restore version"), { variant: "error" })
+    } finally {
+      setVersionHistoryOpen(false)
+      setActiveButton({ id: null, action: null })
     }
   }
 
@@ -277,10 +384,6 @@ export default function ActivityTableRow({
     handleChange(activity, event.target.checked)
   }
 
-  // const formatDate = (date) => {
-  //   return date ? new Date(date).toLocaleDateString() : 'Not available'
-  // }
-
   const confirmShareActivity = async (val: string) => {
     try {
       // TODO : make this activity discoverable to other researchers i.e. set a flag on activities for communitybuild
@@ -292,6 +395,7 @@ export default function ActivityTableRow({
         }
         await onActivityUpdate(activity.id, updatedActivity)
         setShareDialogOpen(false)
+        setActiveButton({ id: null, action: null })
         enqueueSnackbar(t("Activity published in community successfully"), {
           variant: "success",
           autoHideDuration: 1000,
@@ -300,6 +404,9 @@ export default function ActivityTableRow({
     } catch (error) {
       console.error("Error sharing activity:", error)
       enqueueSnackbar(t("Failed to publish activity in community."), { variant: "error" })
+    } finally {
+      setShareDialogOpen(false)
+      setActiveButton({ id: null, action: null })
     }
   }
   const handleShareActivity = async () => {
@@ -336,8 +443,11 @@ export default function ActivityTableRow({
         console.error("Error deleting activity:", error)
         enqueueSnackbar(t("Failed to delete activity"), { variant: "error" })
       }
+    } else {
+      setConfirmationDialog(false)
     }
     setConfirmationDialog(false)
+    setActiveButton({ id: null, action: null })
   }
 
   const handleDuplicateActivity = async () => {
@@ -380,26 +490,99 @@ export default function ActivityTableRow({
       enqueueSnackbar(t("Failed to duplicate activity"), { variant: "error" })
     } finally {
       setDuplicateLoading(false)
+      setActiveButton({ id: null, action: null })
     }
+  }
+  const getCellContent = (column) => {
+    if (column.id === "index") {
+      return index
+    }
+
+    const value = column.value(activity)
+    if (column.id === "id") {
+      return (
+        <Box
+          className={classes.copyableCell}
+          onClick={() => {
+            window.navigator?.clipboard?.writeText?.(activity.id)
+            enqueueSnackbar("ID copied to clipboard", {
+              variant: "success",
+              autoHideDuration: 1000,
+            })
+          }}
+        >
+          {activity.id}
+        </Box>
+      )
+    }
+    if (column.id === "study") {
+      return (
+        <Box
+          className={classes.studyCell}
+          onClick={() => {
+            window.navigator?.clipboard?.writeText?.(activity.study_id)
+            enqueueSnackbar("Study ID copied to clipboard", {
+              variant: "success",
+              autoHideDuration: 1000,
+            })
+          }}
+        >
+          {/* <Typography > */}
+          {activity.study_name || "No Study Name"}
+          {/* </Typography> */}
+          {/* <Box className={classes.studyId}>{`ID: ${activity.study_id}`}</Box> */}
+        </Box>
+      )
+    }
+
+    if (column.id === "version") {
+      return (
+        <Box className={classes.versionBadge}>
+          <Icon fontSize="small">flag</Icon>
+          {activity.currentVersion?.name || "v1.0"}
+        </Box>
+      )
+    }
+
+    if (column.id === "scoreInterpretation") {
+      return (
+        <Box className={classes.scoreBox}>
+          {Object.entries(activity.scoreInterpretation || {}).map(([key, schema]) => (
+            <Typography key={key} variant="body2">
+              {key}: {(schema as ScoreInterpretationSchema).ranges.length} ranges
+            </Typography>
+          ))}
+        </Box>
+      )
+    }
+    return value
   }
 
   return (
     <>
       <TableRow
-        hover
-        role="checkbox"
-        aria-checked={checked}
-        selected={checked}
-        className={activity.shareTocommunity ? classes.communityRow : ""}
+        className={classes.row}
+        // hover
+        // role="checkbox"
+        // aria-checked={checked}
+        // selected={checked}
+        // className={activity.shareTocommunity ? classes.communityRow : ""}
       >
         <TableCell padding="checkbox">
-          {!activity.isCommunityActivity && (
-            <Checkbox checked={checked} onChange={handleCheckChange} className={classes.checkboxActive} />
-          )}
-          {activity.isCommunityActivity && <Box className={classes.communityBadge}>{t("Community")}</Box>}
+          <Checkbox checked={checked} onChange={handleCheckChange} className={classes.checkboxActive} />
         </TableCell>
-
         {visibleColumns.map((column) => (
+          <TableCell
+            key={column.id}
+            className={classes.cell}
+            style={{
+              backgroundColor: "inherit",
+            }}
+          >
+            {getCellContent(column)}
+          </TableCell>
+        ))}
+        {/* {visibleColumns.map((column) => (
           <TableCell key={column.id}>
             {column.id === "id" ? (
               <Box
@@ -431,7 +614,7 @@ export default function ActivityTableRow({
             ) : column.id === "version" ? (
               <Box className={classes.versionBadge}>
                 <Icon fontSize="small">flag</Icon>
-                {activity.currentVersion?.name || "v1"}
+                {activity.currentVersion?.name || "v1.0"}
               </Box>
             ) : column.id === "scoreInterpretation" ? (
               <Box className={classes.scoreBox}>
@@ -445,16 +628,80 @@ export default function ActivityTableRow({
               column.value(activity)
             )}
           </TableCell>
-        ))}
+        ))} */}
 
         <TableCell className={classes.actionCell}>
-          <Box display="flex" style={{ gap: 8 }}>
+          <Box
+            className={classes.actionButtons}
+            // display="flex" style={{ gap: 8 }}
+          >
             {activity.isCommunityActivity ? (
-              <Fab size="small" className={classes.btnWhite} onClick={() => setDuplicateDialogOpen(true)}>
-                <Icon>content_copy</Icon>
-              </Fab>
+              <>
+                {activeButton.id === activity.id && activeButton.action === "view" ? (
+                  <ViewFilledIcon
+                    className={`${activitycardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "view" })
+                      // setDetailsDialogOpen(true)
+                      onViewActivity(activity)
+                    }}
+                  />
+                ) : (
+                  <ViewIcon
+                    className={activitycardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "view" })
+                      // setDetailsDialogOpen(true)
+                      onViewActivity(activity)
+                    }}
+                  />
+                )}
+                {activeButton.id === activity.id && activeButton.action === "copy" ? (
+                  <CopyFilledIcon
+                    className={`${activitycardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "copy" })
+                      setDuplicateDialogOpen(true)
+                    }}
+                  />
+                ) : (
+                  <CopyIcon
+                    className={activitycardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "copy" })
+                      setDuplicateDialogOpen(true)
+                    }}
+                  />
+                )}
+              </>
             ) : (
               <>
+                {activeButton.id === activity.id && activeButton.action === "view" ? (
+                  <ViewFilledIcon
+                    className={`${activitycardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "view" })
+                      // setDetailsDialogOpen(true)
+                      onViewActivity(activity)
+                    }}
+                  />
+                ) : (
+                  <ViewIcon
+                    className={activitycardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "view" })
+                      // setDetailsDialogOpen(true)
+                      onViewActivity(activity)
+                    }}
+                  />
+                )}
+                <ScheduleActivity
+                  activity={activity}
+                  setActivities={setActivities}
+                  activities={activities}
+                  activeButton={activeButton}
+                  setActiveButton={setActiveButton}
+                />
                 <UpdateActivity
                   activity={activity}
                   activities={activities}
@@ -463,23 +710,92 @@ export default function ActivityTableRow({
                   profile={0}
                   researcherId={researcherId}
                 />
-                <ScheduleActivity activity={activity} setActivities={setActivities} activities={activities} />
-                <Fab size="small" className={classes.btnWhite} onClick={() => setDetailsDialogOpen(true)}>
-                  <Icon>app_registration</Icon>
-                </Fab>
-                <Fab size="small" className={classes.btnWhite} onClick={() => setVersionHistoryOpen(true)}>
-                  <Icon>history</Icon>
-                </Fab>
-                <Fab size="small" className={classes.btnWhite} onClick={() => setShareDialogOpen(true)}>
-                  <Icon>{!activity.shareTocommunity ? "share" : "remove_circle"}</Icon>
-                </Fab>
-                <Fab size="small" className={classes.btnWhite} onClick={() => setConfirmationVersionDialog(true)}>
-                  <Icon>loupe</Icon>
-                  {/* <Icon>save_alt</Icon> */}
-                </Fab>
-                <Fab size="small" className={classes.btnWhite} onClick={() => setConfirmationDialog(true)}>
-                  <Icon>delete</Icon>
-                </Fab>
+                {activeButton.id === activity.id && activeButton.action === "history" ? (
+                  <HistoryFilledIcon
+                    className={`${activitycardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "history" })
+                      setVersionHistoryOpen(true)
+                    }}
+                  />
+                ) : (
+                  <HistoryIcon
+                    className={activitycardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "history" })
+                      setVersionHistoryOpen(true)
+                    }}
+                  />
+                )}
+                {activeButton.id === activity.id && activeButton.action === "share" ? (
+                  !activity.shareTocommunity ? (
+                    <ShareCommunityFilledIcon
+                      className={`${activitycardclasses.actionIcon} active`}
+                      onClick={() => {
+                        setActiveButton({ id: activity.id, action: "history" })
+                        setShareDialogOpen(true)
+                      }}
+                    />
+                  ) : (
+                    <RemoveCommunityFilledIcon
+                      className={`${activitycardclasses.actionIcon} active`}
+                      onClick={() => {
+                        setActiveButton({ id: activity.id, action: "share" })
+                        setShareDialogOpen(true)
+                      }}
+                    />
+                  )
+                ) : activity.shareTocommunity ? (
+                  <RemoveCommunityIcon
+                    className={`${activitycardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "share" })
+                      setShareDialogOpen(true)
+                    }}
+                  />
+                ) : (
+                  <ShareCommunityIcon
+                    className={activitycardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "share" })
+                      setShareDialogOpen(true)
+                    }}
+                  />
+                )}
+                {activeButton.id === activity.id && activeButton.action === "version" ? (
+                  <VersionThisFilledIcon
+                    className={`${activitycardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "version" })
+                      setConfirmationVersionDialog(true)
+                    }}
+                  />
+                ) : (
+                  <VersionThisIcon
+                    className={activitycardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "version" })
+                      setConfirmationVersionDialog(true)
+                    }}
+                  />
+                )}
+                {activeButton.id === activity.id && activeButton.action === "delete" ? (
+                  <DeleteFilledIcon
+                    className={`${activitycardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "delete" })
+                      setConfirmationDialog(true)
+                    }}
+                  />
+                ) : (
+                  <DeleteIcon
+                    className={activitycardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "delete" })
+                      setConfirmationDialog(true)
+                    }}
+                  />
+                )}
               </>
             )}
           </Box>
@@ -487,38 +803,61 @@ export default function ActivityTableRow({
       </TableRow>
       <ConfirmationDialog
         open={confirmationVersionDialog}
-        onClose={() => setConfirmationVersionDialog(false)}
+        onClose={() => {
+          setConfirmationVersionDialog(false)
+          setActiveButton({ id: null, action: null })
+        }}
         confirmAction={handleVersioning}
         confirmationMsg={t("Are you sure you want to version this Activity?")}
       />
       <ConfirmationDialog
         open={confirmationDialog}
-        onClose={() => setConfirmationDialog(false)}
+        onClose={() => {
+          setConfirmationDialog(false)
+          setActiveButton({ id: null, action: null })
+        }}
         confirmAction={handleDeleteActivity}
         confirmationMsg={t("Are you sure you want to delete this Activity?")}
       />
       <ActivityDetailsDialog
         activity={activity}
         open={detailsDialogOpen}
-        onClose={() => setDetailsDialogOpen(false)}
+        onClose={() => {
+          setDetailsDialogOpen(false)
+          setActiveButton({ id: null, action: null })
+        }}
         onSave={async (updatedActivity) => {
           try {
             await onActivityUpdate(activity.id, updatedActivity)
             setDetailsDialogOpen(false)
           } catch (error) {
             console.error("Error updating activity:", error)
+          } finally {
+            setDetailsDialogOpen(false)
+            setActiveButton({ id: null, action: null })
           }
         }}
       />
       <VersionHistoryDialog
         open={versionHistoryOpen}
-        onClose={() => setVersionHistoryOpen(false)}
+        onClose={() => {
+          setVersionHistoryOpen(false)
+          setActiveButton({ id: null, action: null })
+        }}
         activity={activity}
         formatDate={props.formatDate}
         onPreviewVersion={handlePreviewVersion}
         onRestoreVersion={handleRestoreVersion}
       />
-      <Dialog open={duplicateDialogOpen} onClose={() => setDuplicateDialogOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={duplicateDialogOpen}
+        onClose={() => {
+          setDuplicateDialogOpen(false)
+          setActiveButton({ id: null, action: null })
+        }}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>
           <Box display="flex" alignItems="center">
             <Icon style={{ marginRight: 8 }}>content_copy</Icon>
@@ -550,7 +889,13 @@ export default function ActivityTableRow({
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDuplicateDialogOpen(false)} color="secondary">
+          <Button
+            onClick={() => {
+              setDuplicateDialogOpen(false)
+              setActiveButton({ id: null, action: null })
+            }}
+            color="secondary"
+          >
             {t("Cancel")}
           </Button>
           <Button
@@ -564,62 +909,6 @@ export default function ActivityTableRow({
           </Button>
         </DialogActions>
       </Dialog>
-      {/* <Dialog open={versionHistoryOpen} onClose={() => setVersionHistoryOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-        <Box display="flex" alignItems="center">
-          <Icon style={{ marginRight: 8 }}>history</Icon>
-          {t("Version History")}
-        </Box>
-        </DialogTitle>
-        <DialogContent>
-          {activity.versionHistorybuild?.map((version, index) => (
-            <Paper key={version.id} className={classes.versionItem} elevation={0}>
-              <Box className={classes.versionInfo}>
-                <Box className={classes.versionFlag}>
-                  <Icon fontSize="small" style={{ marginRight: 4 }}>flag</Icon>
-                  {`v${index + 1}`}
-                </Box>
-                <Box>
-                  <Typography variant="subtitle1">
-                    {version.name}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    {props.formatDate(version.date)} {version.time}
-                  </Typography>
-                </Box>
-              </Box>
-              <Box className={classes.versionActions}>
-                <Fab
-                  size="small"
-                  className={classes.btnVersion}
-                  onClick={() => handlePreviewVersion(version)}
-                  title={t("Preview Version")}
-                >
-                  <Icon fontSize="small">visibility</Icon>
-                </Fab>
-                <Fab
-                  size="small"
-                  className={classes.btnVersion}
-                  onClick={() => handleRestoreVersion(version)}
-                  title={t("Restore Version")}
-                >
-                  <Icon fontSize="small">restore_page</Icon>
-                </Fab>
-              </Box>
-            </Paper>
-          ))}
-          {!activity.versionHistorybuild?.length && (
-            <Typography color="textSecondary" align="center">
-              {t("No version history available")}
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setVersionHistoryOpen(false)} color="primary">
-            {t("Close")}
-          </Button>
-        </DialogActions>
-      </Dialog> */}
       <ConfirmationDialog
         confirmAction={confirmShareActivity}
         confirmationMsg={
@@ -628,42 +917,21 @@ export default function ActivityTableRow({
             : "Are you sure you want to remove this Activity from Community"
         }
         open={shareDialogOpen}
-        onClose={() => setShareDialogOpen(false)}
-      ></ConfirmationDialog>
-      <Dialog open={false} onClose={() => setShareDialogOpen(false)}>
-        <DialogTitle>{t("Share Activity")}</DialogTitle>
-        <DialogContent>
-          {studies.map(
-            (study) =>
-              study.id != activity.study_id && (
-                <Box key={study.id} display="flex" alignItems="center" my={1}>
-                  <Checkbox
-                    checked={selectedStudies.includes(study.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedStudies([...selectedStudies, study.id])
-                      } else {
-                        setSelectedStudies(selectedStudies.filter((id) => id !== study.id))
-                      }
-                    }}
-                    className={classes.checkboxActive}
-                  />
-                  <Typography>{study.name}</Typography>
-                </Box>
-              )
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShareDialogOpen(false)} color="secondary">
-            {t("Cancel")}
-          </Button>
-          <Button onClick={handleShareActivity} color="primary">
-            {t("Share")}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onClose={() => {
+          setShareDialogOpen(false)
+          setActiveButton({ id: null, action: null })
+        }}
+      />
       {/* add gamecreator.tsx function here todo */}
-      <Dialog open={previewDialogOpen} onClose={() => setPreviewDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={previewDialogOpen}
+        onClose={() => {
+          setPreviewDialogOpen(false)
+          setActiveButton({ id: null, action: null })
+        }}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>
           <Box display="flex" alignItems="center">
             <Icon style={{ marginRight: 8 }}>visibility</Icon>
@@ -694,13 +962,20 @@ export default function ActivityTableRow({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPreviewDialogOpen(false)} color="secondary">
+          <Button
+            onClick={() => {
+              setPreviewDialogOpen(false)
+              setActiveButton({ id: null, action: null })
+            }}
+            color="secondary"
+          >
             {t("Close")}
           </Button>
           <Button
             onClick={() => {
               handleRestoreVersion(selectedVersion)
               setPreviewDialogOpen(false)
+              setActiveButton({ id: null, action: null })
             }}
             color="primary"
           >

@@ -15,7 +15,14 @@ import {
   createStyles,
   Checkbox,
   Link,
+  Paper,
+  Divider,
+  Grid,
 } from "@material-ui/core"
+import LAMP from "lamp-core"
+import { useSnackbar } from "notistack"
+import { useTranslation } from "react-i18next"
+import { Service } from "../../DBService/DBService"
 // Local Imports
 import ParticipantName from "./ParticipantName"
 import Passive from "./PassiveBubble"
@@ -23,6 +30,24 @@ import Active from "./ActiveBubble"
 import NotificationSettings from "./NotificationSettings"
 import Credentials from "../../Credentials"
 import ParticipantDetailsDialog from "./ParticipantDetailsDialog"
+import { studycardStyles } from "../Studies/Index"
+import { ReactComponent as DeletedIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
+import { ReactComponent as SuspendedIcon } from "../../../icons/NewIcons/stop-circle-filled.svg"
+import { ReactComponent as LoggedInIcon } from "../../../icons/NewIcons/circle.svg"
+import { ReactComponent as SuspendIcon } from "../../../icons/NewIcons/stop-circle.svg"
+import { ReactComponent as UserAddFilledIcon } from "../../../icons/NewIcons/user-add-filled.svg"
+import { ReactComponent as SuspendFilledIcon } from "../../../icons/NewIcons/stop-circle-filled.svg"
+import { ReactComponent as ViewIcon } from "../../../icons/NewIcons/overview.svg"
+import { ReactComponent as ViewFilledIcon } from "../../../icons/NewIcons/overview-filled.svg"
+import { ReactComponent as CopyFilledIcon } from "../../../icons/NewIcons/arrow-circle-down-filled.svg"
+import { ReactComponent as CopyIcon } from "../../../icons/NewIcons/arrow-circle-down.svg"
+import { ReactComponent as DeleteIcon } from "../../../icons/NewIcons/trash-xmark.svg"
+import { ReactComponent as EditIcon } from "../../../icons/NewIcons/text-box-edit.svg"
+import { ReactComponent as EditFilledIcon } from "../../../icons/NewIcons/text-box-edit-filled.svg"
+import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
+import ConfirmationDialog from "../../ConfirmationDialog"
+import { ReactComponent as VisualiseIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
+import { ReactComponent as VisualiseFilledIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -97,14 +122,79 @@ export default function ParticipantListItem({
   handleSelectionChange,
   selectedParticipants,
   researcherId,
+  onViewParticipant,
   ...props
 }) {
   const classes = useStyles()
   const [checked, setChecked] = React.useState(
     selectedParticipants.filter((d) => d.id === participant.id).length > 0 ? true : false
   )
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+  const participantcardclasses = studycardStyles()
+  const { enqueueSnackbar } = useSnackbar()
+  const { t } = useTranslation()
+  const [confirmationDialog, setConfirmationDialog] = useState(false)
   const [user, setName] = useState(participant)
   const [openSettings, setOpenSettings] = useState(false)
+  const pStudy = studies.filter((study) => study.id === participant.study_id)[0]
+  const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
+  const [activeButton, setActiveButton] = useState({ id: null, action: null })
+  const stats = (participant, study) => {
+    return [
+      {
+        value: participant.assessments?.length || study.assessments?.length || 0,
+        label: "ASSESSMENTS",
+        color: "#f2aa85",
+        key: "assessments",
+      },
+      {
+        value: participant.activities?.length || study.activities?.length || 0,
+        label: "ACTIVITIES",
+        color: "#06B0F0",
+        key: "activities",
+      },
+      {
+        value: participant.sensors?.length || study.sensors?.length || 0,
+        label: "SENSORS",
+        color: "#75d36d",
+        key: "sensors",
+      },
+    ]
+  }
+  const renderStudyTabContent = (selectedTab, study, participantcardclasses, studySubvs?) => {
+    let items = []
+
+    switch (selectedTab.tab) {
+      case "assessments":
+        items = study.activities?.filter((a) => a.category?.includes("assess")) || []
+        break
+      case "activities":
+        items = study.activities || []
+        break
+      case "sensors":
+        items = study.sensors || []
+        break
+      default:
+        return null
+    }
+    console.log(items, "items")
+    return (
+      <Box className={participantcardclasses.groupList}>
+        {items.length === 0 ? (
+          <Typography className={participantcardclasses.groupName}>
+            {`No ${selectedTab.tab} present at this moment.`}
+          </Typography>
+        ) : (
+          items.map((item, index) => (
+            <Box key={index} className={participantcardclasses.groupItem}>
+              <Typography className={participantcardclasses.groupName}>{item.name}</Typography>
+              <Typography className={participantcardclasses.groupDesc}>{item.spec}</Typography>
+            </Box>
+          ))
+        )}
+      </Box>
+    )
+  }
 
   const handleChange = (participant, event: React.ChangeEvent<HTMLInputElement>) => {
     setChecked(event.target.checked)
@@ -120,96 +210,264 @@ export default function ParticipantListItem({
   }, [user])
 
   useEffect(() => {}, [])
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+
+  const handleDelete = async (status) => {
+    if (status === "Yes") {
+      try {
+        await LAMP.Participant.delete(participant.id)
+        await Service.delete("participants", [participant.id])
+        await Service.updateCount("studies", participant.study_id, "participant_count", 1, 1)
+        // await props.searchActivities()
+        enqueueSnackbar(t("Participant deleted successfully"), { variant: "success" })
+      } catch (error) {
+        console.error("Error deleting participant:", error)
+        enqueueSnackbar(t("Failed to delete participant"), { variant: "error" })
+      }
+    } else {
+      setConfirmationDialog(false)
+    }
+    setConfirmationDialog(false)
+    setActiveButton({ id: null, action: null })
+  }
 
   return (
-    <Card className={classes.cardMain}>
-      <Box display="flex" p={1}>
-        <Box>
+    <Paper className={participantcardclasses.dhrCard} elevation={3}>
+      <Box display={"flex"} flexDirection={"column"}>
+        <Box display={"flex"} flexDirection={"row"}>
           <Checkbox
             checked={checked}
             onChange={(event) => handleChange(participant, event)}
             classes={{ checked: classes.checkboxActive }}
             inputProps={{ "aria-label": "primary checkbox" }}
           />
+          <Box flexGrow={1}>
+            <Typography className={participantcardclasses.cardTitle}>
+              {participant.lastName || participant.firstName
+                ? participant.firstName + " " + participant.lastName
+                : "No Name provided."}
+            </Typography>
+            <ParticipantName participant={user} updateParticipant={updateParticipant} openSettings={openSettings} />
+          </Box>
+          <div className={participantcardclasses.stateChip}>
+            {participant.isLoggedIn && <LoggedInIcon className="activeIcon" />}
+            {participant.systemTimestamps?.deletedAt && <DeletedIcon />}
+            {participant.systemTimestamps?.suspensionTime && <SuspendedIcon />}
+          </div>
         </Box>
-        <Box flexGrow={1}>
-          <CardHeader
-            title={
-              <ParticipantName participant={user} updateParticipant={updateParticipant} openSettings={openSettings} />
-            }
-            subheader={
-              <React.Fragment>
-                <Typography variant="overline">{participant.study_name}</Typography>
-                <Typography variant="overline">{" , "}</Typography>
-                <Typography variant="overline">{participant.group_name || "Not enrolled in any Group"}</Typography>
-              </React.Fragment>
-            }
-            className={classes.participantHeader}
-          />
-          <CardContent className={classes.participantSub}>
-            <Passive participant={participant} />
-            <Active participant={participant} />
-          </CardContent>
-        </Box>
-        <Box>
-          <CardActions>
-            {!!notificationColumn && <NotificationSettings participant={participant} />}
-            <Credentials user={participant} />
-            <Link
-              href={`/#/researcher/${researcherId}/participant/${participant?.id}/settings`}
-              underline="none"
-              className={classes.settingslink}
-            >
-              <Icon>settings</Icon>
-            </Link>
-            <Fab
-              size="small"
-              classes={{ root: classes.btnWhite }}
+        <Divider className={participantcardclasses.titleDivider} />
+        <Grid container className={participantcardclasses.statsGrid}>
+          {stats(participant, pStudy).map((stat) => (
+            <Grid
+              item
+              xs={3}
+              key={stat.key}
+              className={`${participantcardclasses.statItem} ${
+                selectedTab.id === participant.id && selectedTab.tab === stat.key ? "selected" : ""
+              }`}
               onClick={() => {
-                onParticipantSelect(participant.id)
+                selectedTab.id === participant.id && selectedTab.tab === stat.key
+                  ? setSelectedTab({ id: null, tab: null })
+                  : setSelectedTab({ id: participant.id, tab: stat.key })
               }}
             >
-              <Icon>arrow_forward</Icon>
-            </Fab>
-            {!participant.systemTimestamps?.suspensionTime && (
-              <Fab size="small" className={classes.btnWhite} onClick={() => props.onSuspend(participant)}>
-                <Icon>block</Icon>
-              </Fab>
-            )}
-            {participant.systemTimestamps?.suspensionTime && (
-              <Fab size="small" className={classes.btnWhite} onClick={() => props.onUnSuspend(participant)}>
-                <Icon>library_add</Icon>
-              </Fab>
-            )}
-
-            <Fab
-              size="small"
-              className={classes.btnWhite}
+              <Typography className={participantcardclasses.statNumber} style={{ color: stat.color }}>
+                {stat.value}
+              </Typography>
+              <Typography className={participantcardclasses.statLabel}>{stat.label}</Typography>
+            </Grid>
+          ))}
+        </Grid>
+        {selectedTab.id === participant.id && <Divider className={participantcardclasses.titleDivider} />}
+        {selectedTab.id === participant.id &&
+          renderStudyTabContent(selectedTab, pStudy, participantcardclasses, participant)}
+        <Divider className={participantcardclasses.titleDivider} />
+        <Typography className={participantcardclasses.cardSubtitle}>
+          {`RESEARCHER - `}
+          <strong>{`${researcherId || "No Researcher found; this is unusual."}`}</strong>
+        </Typography>
+        <Typography className={participantcardclasses.cardSubtitle}>
+          {`STUDY: `}
+          <strong>{`${participant.study_name || "Not enrolled in any Study - this is unsual."}`}</strong>
+        </Typography>
+        <Typography className={participantcardclasses.cardSubtitle}>
+          {`GROUP: `}
+          <strong>{`${participant.group_name || "Not enrolled in any Group"}`}</strong>
+        </Typography>
+        <Box display={"flex"} flexDirection={"row"}>
+          <Passive participant={participant} />
+          <Active participant={participant} />
+        </Box>
+        <Box className={participantcardclasses.actionButtons}>
+          {!!notificationColumn && <NotificationSettings participant={participant} />}
+          {activeButton.id === participant.id && activeButton.action === "view" ? (
+            <ViewFilledIcon
+              className={`${participantcardclasses.actionIcon} active`}
               onClick={() => {
+                setActiveButton({ id: participant.id, action: "view" })
+                onViewParticipant(participant)
+                // onParticipantSelect(participant.id)
+                setActiveButton({ id: null, action: null })
+              }}
+            />
+          ) : (
+            <ViewIcon
+              className={`${participantcardclasses.actionIcon} ${
+                activeButton.id === participant.id && activeButton.action === "view" ? "active" : ""
+              }`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "view" })
+                onViewParticipant(participant)
+                // onParticipantSelect(participant.id)
+                setActiveButton({ id: null, action: null })
+              }}
+            />
+          )}
+          {activeButton.id === participant.id && activeButton.action === "enter" ? (
+            <VisualiseFilledIcon
+              className={`${participantcardclasses.actionIcon} active`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "enter" })
+                onParticipantSelect(participant.id)
+                setActiveButton({ id: null, action: null })
+              }}
+            />
+          ) : (
+            <VisualiseIcon
+              className={`${participantcardclasses.actionIcon} ${
+                activeButton.id === participant.id && activeButton.action === "enter" ? "active" : ""
+              }`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "enter" })
+                onParticipantSelect(participant.id)
+                setActiveButton({ id: null, action: null })
+              }}
+            />
+          )}
+          {activeButton.id === participant.id && activeButton.action === "edit" ? (
+            <EditFilledIcon
+              className={`${participantcardclasses.actionIcon} active`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "edit" })
                 setDetailsDialogOpen(true)
               }}
-            >
-              <Icon>app_registration</Icon>
-            </Fab>
-          </CardActions>
+            />
+          ) : (
+            <EditIcon
+              className={`${participantcardclasses.actionIcon} ${
+                activeButton.id === participant.id && activeButton.action === "edit" ? "active" : ""
+              }`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "edit" })
+                setDetailsDialogOpen(true)
+              }}
+            />
+          )}
+          <Credentials user={participant} activeButton={activeButton} setActiveButton={setActiveButton} />
+          {!participant.systemTimestamps?.suspensionTime ? (
+            activeButton.id === participant.id && activeButton.action === "suspend" ? (
+              <SuspendFilledIcon
+                className={`${participantcardclasses.actionIcon} active`}
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "suspend" })
+                  props.onSuspend(participant, setActiveButton)
+                }}
+              />
+            ) : (
+              <SuspendIcon
+                className={participantcardclasses.actionIcon}
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "suspend" })
+                  props.onSuspend(participant, setActiveButton)
+                }}
+              />
+            )
+          ) : activeButton.id === participant.id && activeButton.action === "suspend" ? (
+            <SuspendFilledIcon
+              className={`${participantcardclasses.actionIcon} active`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "suspend" })
+                props.onUnSuspend(participant, setActiveButton)
+              }}
+            />
+          ) : (
+            <SuspendIcon
+              className={participantcardclasses.actionIcon}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "suspend" })
+                props.onUnSuspend(participant, setActiveButton)
+              }}
+            />
+          )}
+
+          {activeButton.id === participant.id && activeButton.action === "delete" ? (
+            <DeleteFilledIcon
+              className={`${participantcardclasses.actionIcon} active`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "delete" })
+                setConfirmationDialog(true)
+              }}
+            />
+          ) : (
+            <DeleteIcon
+              className={participantcardclasses.actionIcon}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "delete" })
+                setConfirmationDialog(true)
+              }}
+            />
+          )}
+          {activeButton.id === participant.id && activeButton.action === "settings" ? (
+            <CopyFilledIcon
+              className={`${participantcardclasses.actionIcon} active`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "settings" })
+                window.location.href = `/#/researcher/${researcherId}/participant/${participant?.id}/settings`
+              }}
+            />
+          ) : (
+            <CopyIcon
+              className={`${participantcardclasses.actionIcon} ${
+                activeButton.id === participant.id && activeButton.action === "settings" ? "active" : ""
+              }`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "settings" })
+                window.location.href = `/#/researcher/${researcherId}/participant/${participant?.id}/settings`
+              }}
+            />
+          )}
         </Box>
         <ParticipantDetailsDialog
           participant={participant}
           open={detailsDialogOpen}
-          onClose={() => setDetailsDialogOpen(false)}
+          onClose={() => {
+            setDetailsDialogOpen(false)
+            setActiveButton({ id: null, action: null })
+          }}
           onSave={async (updatedParticipant) => {
             try {
               await props.onParticipantUpdate(participant.id, updatedParticipant)
               setDetailsDialogOpen(false)
             } catch (error) {
               console.error("Error updating participant:", error)
+            } finally {
+              setDetailsDialogOpen(false)
+              setActiveButton({ id: null, action: null })
             }
           }}
           formatDate={props.formatDate}
           researcherId={researcherId}
+          pStudy={pStudy}
+        />
+        <ConfirmationDialog
+          open={confirmationDialog}
+          onClose={() => {
+            setConfirmationDialog(false)
+            setActiveButton({ id: null, action: null })
+          }}
+          confirmAction={handleDelete}
+          confirmationMsg={t("Are you sure you want to delete this Participant?")}
         />
       </Box>
-    </Card>
+    </Paper>
   )
 }

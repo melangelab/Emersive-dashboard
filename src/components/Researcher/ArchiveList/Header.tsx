@@ -24,7 +24,7 @@ import SearchBox from "../../SearchBox"
 import { useTranslation } from "react-i18next"
 import { CredentialManager } from "../../CredentialManager"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
-import LogoImage from "../../../icons/logo.png"
+import { ReactComponent as Logo } from "../../../icons/Logo.svg"
 import { useLayoutStyles } from "../../GlobalStyles"
 import LAMP from "lamp-core"
 
@@ -49,6 +49,14 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     optionsSub: { width: 1030, maxWidth: "80%", margin: "0 auto", padding: "10px 0" },
     showFeed: { marginTop: "10px" },
+    logo: {
+      width: theme.spacing(5), // Scales dynamically (5 * 8px = 40px)
+      height: theme.spacing(5),
+      borderRadius: "50%",
+      // backgroundColor: "#f1f3f4",
+      marginLeft: "4px",
+      // marginRight: theme.spacing(3),
+    },
   })
 )
 
@@ -91,13 +99,13 @@ export default function Header({
       <Box className={layoutClasses.header}>
         <Box className={headerclasses.titleSection}>
           <Box className={headerclasses.logo}>
-            <img src={LogoImage} alt="Logo" />
+            <Logo className={classes.logo} />
           </Box>
           {props.authType === "admin" && (
             <IconButton
               className={headerclasses.backButton}
               onClick={() => {
-                window.location.href = `/#/researcher`
+                window.location.href = `/admin`
               }}
             >
               <Icon>arrow_back</Icon>

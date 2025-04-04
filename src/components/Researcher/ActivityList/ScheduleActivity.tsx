@@ -3,6 +3,10 @@ import { Box, IconButton, Icon, Fab, Dialog, DialogContent, makeStyles, Theme, c
 import { useTranslation } from "react-i18next"
 import ActivityScheduler from "./ActivityScheduler"
 import PercentageSettings from "./PercentageSettings"
+import { studycardStyles, useModularTableStyles } from "../Studies/Index"
+import { ReactComponent as CalendarIcon } from "../../../icons/NewIcons/calendar-clock.svg"
+import { ReactComponent as CalendarFilledIcon } from "../../../icons/NewIcons/calendar-clock-filled.svg"
+
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     btnWhite: {
@@ -38,11 +42,13 @@ const useStyles = makeStyles((theme: Theme) =>
 )
 export default function ScheduleActivity({ activity, activities, setActivities, ...props }) {
   const classes = useStyles()
+  const activitycardclasses = studycardStyles()
+  const mtstyles = useModularTableStyles()
   const { t, i18n } = useTranslation()
   const [showScheduler, setShowScheduler] = useState(false)
   return (
     <span>
-      <Fab
+      {/* <Fab
         size="small"
         color="primary"
         classes={{ root: classes.btnWhite }}
@@ -51,7 +57,25 @@ export default function ScheduleActivity({ activity, activities, setActivities, 
         }}
       >
         <Icon>calendar_today</Icon>
-      </Fab>
+      </Fab> */}
+      {props.activeButton?.id === activity.id && props.activeButton?.action === "schedule" ? (
+        <CalendarFilledIcon
+          className={`${mtstyles.actionIcon} active`}
+          onClick={(event) => {
+            props.setActiveButton?.({ id: activity.id, action: "schedule" })
+            setShowScheduler(true)
+          }}
+        />
+      ) : (
+        <CalendarIcon
+          className={mtstyles.actionIcon}
+          onClick={(event) => {
+            props.setActiveButton?.({ id: activity.id, action: "schedule" })
+            setShowScheduler(true)
+          }}
+        />
+      )}
+
       <Dialog
         fullWidth
         maxWidth="md"
@@ -62,7 +86,12 @@ export default function ScheduleActivity({ activity, activities, setActivities, 
       >
         <DialogContent>
           <Box textAlign="right">
-            <IconButton onClick={() => setShowScheduler(false)}>
+            <IconButton
+              onClick={() => {
+                props.setActiveButton?.({ id: null, action: null })
+                setShowScheduler(false)
+              }}
+            >
               <Icon>close</Icon>
             </IconButton>
           </Box>
