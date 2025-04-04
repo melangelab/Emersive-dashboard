@@ -23,6 +23,9 @@ import {
   Theme,
   createStyles,
   withStyles,
+  Slide,
+  Icon,
+  Divider,
 } from "@material-ui/core"
 
 import { useSnackbar } from "notistack"
@@ -35,8 +38,9 @@ import SnackMessage from "../../SnackMessage"
 
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
+import { ReactComponent as SensorIcon } from "../../../icons/NewIcons/sensor-on-filled.svg"
+import { slideStyles } from "../ParticipantList/AddButton"
 
-import Header from "./Header"
 const _qrLink = (credID, password) =>
   window.location.href.split("#")[0] +
   "#/?a=" +
@@ -92,6 +96,12 @@ const useStyles = makeStyles((theme) =>
       boxShadow: "none",
       backgroundColor: "rgba(0, 0, 0, 0.12)",
     },
+    closeButton: {
+      position: "absolute",
+      right: theme.spacing(1),
+      top: theme.spacing(1),
+      color: theme.palette.grey[500],
+    },
   })
 )
 
@@ -128,6 +138,8 @@ export default function SensorDialog({
   addOrUpdateSensor,
   allSensors,
   settingsInfo,
+  open,
+  onclose,
   ...props
 }: {
   sensor?: Sensors
@@ -137,8 +149,11 @@ export default function SensorDialog({
   addOrUpdateSensor?: Function
   allSensors?: Array<any>
   settingsInfo?: SettingsInfo
+  open: any
+  onclose: Function
 } & DialogProps) {
   const classes = useStyles()
+  const sliderclasses = slideStyles()
   const [selectedStudy, setSelectedStudy] = useState(sensor ? sensor.study_id : studyId ?? "")
   const { enqueueSnackbar } = useSnackbar()
   const { t } = useTranslation()
@@ -151,7 +166,9 @@ export default function SensorDialog({
   const [oldSensorName, setOldSensorName] = useState(sensor ? sensor.name : "")
   const [allSensorData, setAllSensorData] = useState([])
   const [groups, setGroups] = useState(null)
-  const [selectedGroup, setSelectedGroup] = useState("")
+  const [selectedGroup, setSelectedGroup] = useState(sensor ? sensor.group : "")
+  const [confirmationOpen, setConfirmationOpen] = useState(false)
+  const [createdSensor, setCreatedSensor] = useState(null)
 
   useEffect(() => {
     LAMP.SensorSpec.all().then((res) => {
@@ -176,7 +193,7 @@ export default function SensorDialog({
       setSensorName(sensor ? sensor.name : "")
       setSensorSpec(sensor ? sensor.spec : null)
     }
-  }, [props.open])
+  }, [open])
 
   useEffect(() => {
     let duplicateCount = 0
@@ -254,6 +271,12 @@ export default function SensorDialog({
         })
         setLoading(false)
         addOrUpdateSensor()
+        setCreatedSensor({
+          name: sensorName.trim(),
+          spec: sensorSpec,
+          study: studies.find((s) => s.id === selectedStudy)?.name,
+        })
+        setConfirmationOpen(true)
       })
       .catch((e) => {
         enqueueSnackbar(`${t("An error occured while updating the sensor.")}`, {
@@ -303,6 +326,12 @@ export default function SensorDialog({
           })
           setLoading(false)
           addOrUpdateSensor()
+          setCreatedSensor({
+            name: sensorName.trim(),
+            spec: sensorSpec,
+            study: studies.find((s) => s.id === selectedStudy)?.name,
+          })
+          setConfirmationOpen(true)
         })
       })
       .catch((e) => {
@@ -312,124 +341,180 @@ export default function SensorDialog({
         setLoading(false)
       })
   }
+  const handleClose = () => {
+    onclose()
+  }
+
+  const handleConfirmationClose = () => {
+    setConfirmationOpen(false)
+    onclose()
+    addOrUpdateSensor()
+  }
 
   return (
-    <Dialog {...props} classes={{ paper: classes.popWidth }} aria-labelledby="simple-dialog-title">
-      <div>
-        <Backdrop className={classes.backdrop} open={loading}>
-          <CircularProgress color="inherit" />
-        </Backdrop>
-        <Typography className={classes.dialogTitle}>
-          {selectedSensor ? `${t("Update Sensor")}` : `${t("Add Sensor")}`}
-        </Typography>
-        <Box mt={4}>
-          <TextField
-            error={typeof selectedStudy == "undefined" || selectedStudy === null || selectedStudy === ""}
-            id="filled-select-currency"
-            select
-            label={`${t("Study")}`}
-            value={selectedStudy}
-            //disabled={!!studyId ? true : false}
-            disabled={!!sensor ? true : false}
-            onChange={(e) => {
-              setSelectedStudy(e.target.value)
-            }}
-            helperText={
-              typeof selectedStudy == "undefined" || selectedStudy === null || selectedStudy === ""
-                ? `${t("Please select the study")}.`
-                : ""
-            }
-            variant="filled"
-          >
-            {(studies || []).map((option) => (
-              <MenuItem key={option.id} value={option.id} data-selected-study-name={t(option.name)}>
-                {t(option.name)}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Box>
-        <Box mt={4}>
-          <TextField
-            error={typeof selectedStudy == "undefined" || selectedStudy === null || selectedStudy === ""}
-            id="filled-select-currency"
-            select
-            label={`${t("Group")}`}
-            value={selectedGroup}
-            //disabled={!!studyId ? true : false}
-            disabled={!!sensor ? true : false}
-            onChange={(e) => {
-              setSelectedGroup(e.target.value)
-            }}
-            helperText={
-              typeof selectedStudy == "undefined" || selectedStudy === null || selectedStudy === ""
-                ? `${t("Please select the group")}.`
-                : ""
-            }
-            variant="filled"
-          >
-            {(groups || []).map((option, idx) => (
-              <MenuItem key={idx} value={option} data-selected-study-name={t(option)}>
-                {t(option)}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Box>
-        <Box mt={4}>
-          <TextField
-            error={
-              duplicateCnt > 0 || typeof sensorName == "undefined" || sensorName === null || sensorName.trim() === ""
-                ? true
-                : false
-            }
-            value={sensorName}
-            variant="filled"
-            label={`${t("Name")}`}
-            onChange={(event) => setSensorName(event.target.value)}
-            placeholder={`${t("Name")}`}
-            helperText={
-              duplicateCnt > 0
-                ? `${t("Unique name required.")}`
-                : typeof sensorName == "undefined" || sensorName === null || sensorName.trim() === ""
-                ? `${t("Please enter name.")}`
-                : ""
-            }
-          />
-        </Box>
-        <Box mt={4}>
-          <TextField
-            error={typeof sensorSpec == "undefined" || sensorSpec === null || sensorSpec === "" ? true : false}
-            id="filled-select-currency"
-            select
-            label={`${t("Sensor spec")}`}
-            value={`${t(sensorSpec)}`}
-            onChange={(e) => {
-              setSensorSpec(e.target.value)
-            }}
-            helperText={
-              typeof sensorSpec == "undefined" || sensorSpec === null || sensorSpec === ""
-                ? `${t("Please select the sensor spec.")}`
-                : ""
-            }
-            variant="filled"
-          >
-            {!!sensorSpecs &&
-              sensorSpecs.map((option) => (
-                <MenuItem key={option.id} value={option.id}>
-                  {t(option.id.replace("lamp.", ""))}
+    <>
+      <Slide direction="left" in={open && !confirmationOpen} mountOnEnter unmountOnExit>
+        <Box
+          className={`${sliderclasses.slidePanel} ${sliderclasses.TabSlidePanel}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <IconButton aria-label="close" className={classes.closeButton} onClick={handleClose as any}>
+            <Icon>close</Icon>
+          </IconButton>
+          <Box className={sliderclasses.icon}>
+            <SensorIcon />
+          </Box>
+          <Typography variant="h6" className={sliderclasses.headings}>
+            {selectedSensor ? t("Update Sensor") : t("Add Sensor")}
+          </Typography>
+          <Divider className={sliderclasses.divider} />
+          <Box mt={4}>
+            <TextField
+              error={typeof selectedStudy == "undefined" || selectedStudy === null || selectedStudy === ""}
+              id="filled-select-currency"
+              select
+              label={`${t("Study")}`}
+              value={selectedStudy}
+              //disabled={!!studyId ? true : false}
+              disabled={!!sensor ? true : false}
+              onChange={(e) => {
+                setSelectedStudy(e.target.value)
+              }}
+              helperText={
+                typeof selectedStudy == "undefined" || selectedStudy === null || selectedStudy === ""
+                  ? `${t("Please select the study")}.`
+                  : ""
+              }
+              variant="filled"
+              className={sliderclasses.field}
+            >
+              {(studies || []).map((option) => (
+                <MenuItem key={option.id} value={option.id} data-selected-study-name={t(option.name)}>
+                  {t(option.name)}
                 </MenuItem>
               ))}
-          </TextField>
+            </TextField>
+          </Box>
+          <Box mt={4}>
+            <TextField
+              error={typeof selectedStudy == "undefined" || selectedStudy === null || selectedStudy === ""}
+              id="filled-select-currency"
+              select
+              label={`${t("Group")}`}
+              value={selectedGroup}
+              //disabled={!!studyId ? true : false}
+              disabled={!!sensor ? true : false}
+              onChange={(e) => {
+                setSelectedGroup(e.target.value)
+              }}
+              helperText={
+                typeof selectedStudy == "undefined" || selectedStudy === null || selectedStudy === ""
+                  ? `${t("Please select the group")}.`
+                  : ""
+              }
+              variant="filled"
+              className={sliderclasses.field}
+            >
+              {(groups || []).map((option, idx) => (
+                <MenuItem key={idx} value={option} data-selected-study-name={t(option)}>
+                  {t(option)}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+          <Box mt={4}>
+            <TextField
+              error={
+                duplicateCnt > 0 || typeof sensorName == "undefined" || sensorName === null || sensorName.trim() === ""
+                  ? true
+                  : false
+              }
+              value={sensorName}
+              variant="filled"
+              label={`${t("Name")}`}
+              onChange={(event) => setSensorName(event.target.value)}
+              placeholder={`${t("Name")}`}
+              helperText={
+                duplicateCnt > 0
+                  ? `${t("Unique name required.")}`
+                  : typeof sensorName == "undefined" || sensorName === null || sensorName.trim() === ""
+                  ? `${t("Please enter name.")}`
+                  : ""
+              }
+              className={sliderclasses.field}
+            />
+          </Box>
+          <Box mt={4}>
+            <TextField
+              error={typeof sensorSpec == "undefined" || sensorSpec === null || sensorSpec === "" ? true : false}
+              id="filled-select-currency"
+              select
+              label={`${t("Sensor spec")}`}
+              value={`${t(sensorSpec)}`}
+              onChange={(e) => {
+                setSensorSpec(e.target.value)
+              }}
+              helperText={
+                typeof sensorSpec == "undefined" || sensorSpec === null || sensorSpec === ""
+                  ? `${t("Please select the sensor spec.")}`
+                  : ""
+              }
+              variant="filled"
+              className={sliderclasses.field}
+            >
+              {!!sensorSpecs &&
+                sensorSpecs.map((option) => (
+                  <MenuItem key={option.id} value={option.id}>
+                    {t(option.id.replace("lamp.", ""))}
+                  </MenuItem>
+                ))}
+            </TextField>
+          </Box>
+          <Divider className={sliderclasses.divider} />
+          <Box textAlign="center" mt={2}>
+            <Button
+              onClick={() => (selectedSensor ? updateSensor() : saveSensor())}
+              disabled={!validate()}
+              className={!validate() ? classes.disabled + " " + sliderclasses.button : sliderclasses.button}
+            >
+              {selectedSensor ? t("Update") : t("Add")}
+            </Button>
+          </Box>
         </Box>
-        <Box textAlign="center" mt={2}>
-          <Button
-            onClick={() => (selectedSensor ? updateSensor() : saveSensor())}
-            disabled={!validate()}
-            className={!validate() ? classes.disabled + " " + classes.PopupButton : classes.PopupButton}
-          >
-            <Typography className={classes.buttonText}>{selectedSensor ? `${t("Update")}` : `${t("Add")}`}</Typography>
+      </Slide>
+      <Slide direction="left" in={confirmationOpen} mountOnEnter unmountOnExit>
+        <Box className={`${sliderclasses.slidePanel} ${sliderclasses.TabSlidePanel}`}>
+          <Box className={sliderclasses.icon}>
+            <SensorIcon />
+          </Box>
+          <Typography variant="h6">{selectedSensor ? t("Sensor Updated") : t("Sensor Added")}</Typography>
+          <Divider className={sliderclasses.divider} />
+
+          <Typography variant="body2" paragraph>
+            {selectedSensor ? t("Sensor has been successfully updated") : t("New sensor has been successfully created")}
+          </Typography>
+
+          <Typography variant="body2" paragraph>
+            <strong>{t("Name")}:</strong> {createdSensor?.name}
+          </Typography>
+
+          <Typography variant="body2" paragraph>
+            <strong>{t("Spec")}:</strong> {createdSensor?.spec}
+          </Typography>
+
+          <Typography variant="body2" paragraph>
+            <strong>{t("Study")}:</strong> {createdSensor?.study}
+          </Typography>
+          <Divider className={sliderclasses.divider} />
+          <Button className={sliderclasses.button} onClick={handleConfirmationClose}>
+            {t("Close")}
           </Button>
         </Box>
-      </div>
-    </Dialog>
+      </Slide>
+
+      <Backdrop className={classes.backdrop} open={loading}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
+    </>
   )
 }

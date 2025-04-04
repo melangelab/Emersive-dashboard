@@ -69,7 +69,7 @@ export default function ActivityHeader({
   const [showFeed, setShowFeed] = useState(
     typeof details?.showFeed !== "undefined" && details?.showFeed !== null ? details?.showFeed : true
   )
-  const [groupId, setGroupId] = useState(!!value ? value.group_id : props.group_id)
+  const [groupId, setGroupId] = useState(!!value ? value.group_id : null)
 
   useEffect(() => {
     onChange({
@@ -161,7 +161,7 @@ export default function ActivityHeader({
               id="filled-select-currency"
               select
               label={`${t("Group")}`}
-              value={studyId}
+              value={groupId}
               onChange={(e) => {
                 setGroupId(e.target.value)
               }}
@@ -171,11 +171,12 @@ export default function ActivityHeader({
                   : ""
               }
               variant="filled"
-              disabled={!!value ? true : false}
+              disabled={!studyId}
+              // disabled={!!value ? true : false}
             >
-              {(props.groups || []).map((option) => (
-                <MenuItem key={option.id} value={option.id}>
-                  {t(option.name)}
+              {(studies.find((s) => s.id === studyId)?.gname || []).map((option) => (
+                <MenuItem key={option} value={option}>
+                  {t(option)}
                 </MenuItem>
               ))}
             </TextField>

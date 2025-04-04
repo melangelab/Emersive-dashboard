@@ -3,12 +3,51 @@ import { Box, MenuItem, Fab, Icon, makeStyles, Theme, createStyles } from "@mate
 import { CredentialManager } from "./CredentialManager"
 import ResponsiveDialog from "./ResponsiveDialog"
 import { useTranslation } from "react-i18next"
+import { ReactComponent as PasswordIcon } from "../icons/NewIcons/password-lock.svg"
+import { ReactComponent as PasswordFilledIcon } from "../icons/NewIcons/password-lock-filled.svg"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     backdrop: {
       zIndex: 111111,
       color: "#fff",
+    },
+    actionIcon: {
+      width: 24,
+      height: 24,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      opacity: 0.4,
+      "& path": {
+        fill: "#000000",
+      },
+      "&:hover": {
+        opacity: 1,
+        "& path": {
+          fill: "#06B0F0",
+        },
+      },
+      "&.selected": {
+        opacity: 1,
+        "& path": {
+          fill: "#4F95DA",
+        },
+      },
+      "&.active": {
+        opacity: 1,
+        "& path": {
+          fill: "#215F9A",
+        },
+      },
+      "&:hover path": {
+        fill: "#06B0F0",
+      },
+      "&.selected path": {
+        fill: "#4F95DA",
+      },
+      "&.active path": {
+        fill: "#215F9A",
+      },
     },
     btnWhite: {
       background: "#fff",
@@ -30,10 +69,31 @@ export default function Credentials({ user, ...props }) {
   const { t } = useTranslation()
   return (
     <Box>
-      <Fab size="small" classes={{ root: classes.btnWhite }} onClick={() => setOpenPasswordReset(user.id)}>
-        <Icon>vpn_key</Icon>
-      </Fab>
-      <ResponsiveDialog transient open={!!openPasswordReset} onClose={() => setOpenPasswordReset(undefined)}>
+      {props.activeButton?.id === user.id && props.activeButton?.action === "credentials" ? (
+        <PasswordFilledIcon
+          className={`${classes.actionIcon} active`}
+          onClick={() => {
+            props.setActiveButton?.({ id: user.id, action: "credentials" })
+            setOpenPasswordReset(user.id)
+          }}
+        />
+      ) : (
+        <PasswordIcon
+          className={classes.actionIcon}
+          onClick={() => {
+            props.setActiveButton?.({ id: user.id, action: "credentials" })
+            setOpenPasswordReset(user.id)
+          }}
+        />
+      )}
+      <ResponsiveDialog
+        transient
+        open={!!openPasswordReset}
+        onClose={() => {
+          setOpenPasswordReset(undefined)
+          props.setActiveButton?.({ id: null, action: null })
+        }}
+      >
         <CredentialManager style={{ margin: 16 }} id={openPasswordReset} />
       </ResponsiveDialog>
     </Box>

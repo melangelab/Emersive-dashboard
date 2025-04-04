@@ -75,6 +75,7 @@
     "react-oauth": "^0.0.1",
     "react-router-dom": "^5.2.1",
     "react-vega": "^7.5.1",
+    "recharts": "^2.15.1",
     "remark-emoji": "^3.0.2",
     "remark-gfm": "^3.0.1",
     "rjsf-autosuggest": "^0.0.1",

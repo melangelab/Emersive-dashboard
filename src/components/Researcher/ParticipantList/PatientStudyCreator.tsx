@@ -7,16 +7,15 @@ import {
   Icon,
   TextField,
   MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Checkbox,
   DialogProps,
   Backdrop,
   CircularProgress,
   Typography,
   makeStyles,
+  Slide,
+  Divider,
+  Chip,
 } from "@material-ui/core"
 import { useSnackbar } from "notistack"
 import LAMP, { Study } from "lamp-core"
@@ -25,6 +24,9 @@ import { Service } from "../../DBService/DBService"
 import { fetchPostData, fetchResult } from "../SaveResearcherData"
 import { updateActivityData, addActivity } from "../ActivityList/ActivityMethods"
 import NewPatientDetail from "./NewPatientDetail"
+import { slideStyles } from "./AddButton"
+import { ReactComponent as UserIcon } from "../../../icons/NewIcons/users.svg"
+import { StudyPurpose, StudyState } from "./StudyCreator"
 
 const useStyles = makeStyles((theme) => ({
   dataQuality: {
@@ -47,6 +49,9 @@ const useStyles = makeStyles((theme) => ({
       minWidth: 400,
     },
   },
+  chip: {
+    margin: theme.spacing(0.5),
+  },
   closeButton: {
     position: "absolute",
     right: theme.spacing(1),
@@ -61,16 +66,27 @@ export default function PatientStudyCreator({
   researcherId,
   handleNewStudy,
   closePopUp,
+  resins,
+  open,
+  onclose,
+  activeModal,
+  setActiveModal,
+  setSlideOpen,
   ...props
 }: {
   studies: any
   researcherId: string
   handleNewStudy: Function
   closePopUp: Function
+  resins: string
+  open: any
+  onclose: Function
+  activeModal?: string
+  setActiveModal?: Function
+  setSlideOpen?: Function
 } & DialogProps) {
-  const [studyName, setStudyName] = useState("")
-  const [groupName, setGroupName] = useState("")
   const classes = useStyles()
+  const sliderclasses = slideStyles()
   const [duplicateCnt, setDuplicateCnt] = useState(0)
   const [gduplicateCnt, setGDuplicateCnt] = useState(0)
   const { t, i18n } = useTranslation()
@@ -79,9 +95,42 @@ export default function PatientStudyCreator({
   const [createPatient, setCreatePatient] = useState(false)
   const [loading, setLoading] = useState(false)
   const [newId, setNewId] = useState(null)
+  const [studyDetails, setStudyDetails] = useState({
+    name: "",
+    purpose: StudyPurpose.P,
+    piInstitution: resins || "",
+    collaboratingInstitutions: [],
+    hasFunding: false,
+    hasEthicsPermission: false,
+    state: StudyState.DEV,
+    description: "",
+  })
+  const [groupNames, setGroupNames] = useState<string[]>([])
+  const [currentGroupName, setCurrentGroupName] = useState("")
+  const [studyCreated, setStudyCreated] = useState(false)
 
-  const validate = (name, dcount) => {
-    return !(dcount > 0 || typeof name === "undefined" || (typeof name !== "undefined" && name?.trim() === ""))
+  const validateGroupNames = () => {
+    const uniqueGroupNames = new Set(groupNames)
+    return uniqueGroupNames.size === groupNames.length && groupNames.length > 0
+  }
+
+  const handleAddGroupName = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && currentGroupName.trim()) {
+      const trimmedGroupName = currentGroupName.trim()
+      if (!groupNames.includes(trimmedGroupName)) {
+        setGroupNames([...groupNames, trimmedGroupName])
+        setCurrentGroupName("")
+      } else {
+        enqueueSnackbar(t("Group name must be unique"), { variant: "error" })
+      }
+    }
+  }
+  const handleRemoveGroupName = (groupToRemove: string) => {
+    setGroupNames(groupNames.filter((group) => group !== groupToRemove))
+  }
+
+  const validate = (names: string[], count: number) => {
+    return !(count > 0 || names.length === 0 || names.some((name) => !name?.trim()))
   }
 
   const saveStudyData = async (result, type) => {
@@ -92,14 +141,20 @@ export default function PatientStudyCreator({
 
   useEffect(() => {
     let duplicateCount = 0
-    if (!(typeof studyName === "undefined" || (typeof studyName !== "undefined" && studyName?.trim() === ""))) {
-      duplicateCount = studies.filter((study) => study.name?.trim().toLowerCase() === studyName?.trim().toLowerCase())
-        .length
+    if (
+      !(
+        typeof studyDetails === "undefined" ||
+        (typeof studyDetails !== "undefined" && studyDetails.name?.trim() === "")
+      )
+    ) {
+      duplicateCount = studies?.filter(
+        (study) => study.name?.trim().toLowerCase() === studyDetails.name?.trim().toLowerCase()
+      ).length
     }
     setDuplicateCnt(duplicateCount)
-  }, [studyName])
+  }, [studyDetails])
 
-  const createNewStudy = (groupName, studyName) => {
+  const createNewStudy = (groupNames, studyName) => {
     let lampAuthId = LAMP.Auth._auth.id
     if (
       LAMP.Auth._type === "researcher" &&
@@ -107,7 +162,7 @@ export default function PatientStudyCreator({
     ) {
       createDemoStudy(studyName)
     } else {
-      createStudy(studyName, groupName)
+      createStudy(studyName, groupNames)
       // createStudy("Group : " + groupName + " , Study : "+ studyName)
     }
   }
@@ -203,7 +258,7 @@ export default function PatientStudyCreator({
     localStorage.setItem("studies_" + authId, JSON.stringify(studiesSelected))
   }
 
-  const createStudy = async (studyName: string, groupName?: string) => {
+  const createStudy = async (studyName: string, groupNames?: string) => {
     setLoading(true)
     let authId = researcherId
     let authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
@@ -218,7 +273,9 @@ export default function PatientStudyCreator({
       if (duplicateStudyName) {
         Service.getDataByKey("studies", duplicateStudyName, "id").then((studyAllData: any) => {
           let gnameArray = Array.isArray(studyAllData[0]?.gname) ? [...studyAllData[0].gname] : []
-          if (groupName) gnameArray.push(groupName)
+          if (groupNames && groupNames.length > 0) {
+            gnameArray.push(...groupNames)
+          }
           let newStudyData = {
             id: studyData.data,
             name: studyName,
@@ -268,7 +325,7 @@ export default function PatientStudyCreator({
         let newStudyData = {
           id: studyData.data,
           name: studyName,
-          gname: groupName ? [groupName] : [],
+          gname: groupNames || [],
           participant_count: 0,
           activity_count: 0,
           sensor_count: 0,
@@ -321,90 +378,164 @@ export default function PatientStudyCreator({
         console.log("error updating group to newly created study", error)
       })
 
-    closePopUp(1)
+    setStudyCreated(true)
+    // handleClose()
   }
 
-  const handleEnter = () => {
-    setStudyName("")
-    setGroupName("")
+  const handleClose = () => {
     setDuplicateStudyName("")
     setCreatePatient(false)
+    props.onClose as any
+    closePopUp(1)
+    setLoading(false)
+    setGroupNames([])
+    setStudyDetails({
+      name: "",
+      purpose: StudyPurpose.P,
+      piInstitution: resins || "",
+      collaboratingInstitutions: [],
+      hasFunding: false,
+      hasEthicsPermission: false,
+      state: StudyState.DEV,
+      description: "",
+    })
+    setStudyCreated(false)
+    onclose()
+    closePopUp(1)
+    // if (setActiveModal) {
+    //   setActiveModal('none')
+    // }
+    // if (setSlideOpen) {
+    //   setSlideOpen(false)
+    // }
+  }
+  const validateStudyDetails = () => {
+    return (
+      studyDetails.name?.trim() !== "" &&
+      studyDetails.piInstitution.trim() !== "" &&
+      groupNames.length > 0 &&
+      duplicateCnt === 0
+    )
   }
 
   return (
     <React.Fragment>
-      <Dialog
-        {...props}
-        onEnter={handleEnter}
-        scroll="paper"
-        aria-labelledby="alert-dialog-slide-title"
-        aria-describedby="alert-dialog-slide-description"
-        classes={{ paper: classes.addNewDialog }}
-      >
-        <Backdrop className={classes.backdrop} open={loading}>
-          <CircularProgress color="inherit" />
-        </Backdrop>
-        <DialogTitle id="alert-dialog-slide-title" disableTypography>
-          <Typography variant="h6">{`${t("Create a new group")}`}</Typography>
-          <IconButton
-            aria-label="close"
-            className={classes.closeButton}
-            onClick={() => {
-              closePopUp(1)
-              setStudyName("")
-              setGroupName("")
-              setDuplicateStudyName("")
-              setCreatePatient(false)
-            }}
-          >
-            <Icon>close</Icon>
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers={false} classes={{ root: classes.activityContent }}>
-          <Box mb={2}>
+      {!studyCreated ? (
+        <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+          <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
+            <IconButton aria-label="close" className={classes.closeButton} onClick={handleClose as any}>
+              <Icon>close</Icon>
+            </IconButton>
+            <Box className={sliderclasses.icon}>
+              <UserIcon />
+            </Box>
+            <Typography variant="h6">{`${t("Create a new Study. ")}`}</Typography>
             <TextField
-              error={!validate(groupName, gduplicateCnt)}
-              autoFocus
-              fullWidth
-              variant="outlined"
-              label={`${t("Group Name")}`}
-              value={groupName}
-              onChange={(e) => {
-                setGroupName(e.target.value)
-              }}
-              inputProps={{ maxLength: 80 }}
-              helperText={
-                duplicateCnt > 0
-                  ? `${t("Unique group name required")}`
-                  : !validate(groupName, gduplicateCnt)
-                  ? `${t("Please enter group name.")}`
-                  : ""
-              }
-            />
-          </Box>
-          <Box mb={2}>
-            <TextField
-              error={!validate(studyName, duplicateCnt)}
+              className={sliderclasses.field}
+              error={!validate([studyDetails.name], duplicateCnt)}
               autoFocus
               fullWidth
               variant="outlined"
               label={`${t("Study Name")}`}
-              value={studyName}
+              value={studyDetails.name}
               onChange={(e) => {
-                setStudyName(e.target.value)
+                // setStudyName(e.target.value)
+                setStudyDetails((prev) => ({ ...prev, name: e.target.value }))
               }}
               inputProps={{ maxLength: 80 }}
               helperText={
                 duplicateCnt > 0
                   ? `${t("Unique Study name required")}`
-                  : !validate(studyName, duplicateCnt)
+                  : !validate([studyDetails.name], duplicateCnt)
                   ? `${t("Please enter new Study name.")}`
                   : ""
               }
             />
-          </Box>
-          <Box>
+            <Divider className={sliderclasses.divider} />
             <TextField
+              className={sliderclasses.field}
+              error={!validate(groupNames, gduplicateCnt)}
+              fullWidth
+              variant="outlined"
+              label={`${t("Group Name")}`}
+              value={currentGroupName}
+              onChange={(e) => {
+                setCurrentGroupName(e.target.value)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && currentGroupName.trim()) {
+                  // Prevent duplicate group names
+                  if (!groupNames.includes(currentGroupName.trim())) {
+                    setGroupNames([...groupNames, currentGroupName.trim()])
+                    setCurrentGroupName("")
+                  } else {
+                    enqueueSnackbar(t("Group name must be unique"), { variant: "error" })
+                  }
+                }
+              }}
+              inputProps={{ maxLength: 80 }}
+              helperText={
+                !validate(groupNames, gduplicateCnt)
+                  ? `${t("Please enter group name.")}`
+                  : t("Press Enter to add group name")
+              }
+            />
+            <Box display="flex" flexWrap="wrap">
+              {groupNames.map((group, index) => (
+                <Chip
+                  key={index}
+                  label={group}
+                  onDelete={() => {
+                    const newGroupNames = [...groupNames]
+                    newGroupNames.splice(index, 1)
+                    setGroupNames(newGroupNames)
+                  }}
+                  className={classes.chip}
+                />
+              ))}
+            </Box>
+            <Divider className={sliderclasses.divider} />
+            <TextField
+              fullWidth
+              className={sliderclasses.field}
+              required
+              select
+              variant="outlined"
+              label={t("Study Purpose")}
+              value={studyDetails.purpose}
+              onChange={(e) => setStudyDetails((prev) => ({ ...prev, purpose: e.target.value as StudyPurpose }))}
+            >
+              <MenuItem value={StudyPurpose.P}>{t("Practice")}</MenuItem>
+              <MenuItem value={StudyPurpose.S}>{t("Support")}</MenuItem>
+              <MenuItem value={StudyPurpose.R}>{t("Research")}</MenuItem>
+              <MenuItem value={StudyPurpose.O}>{t("Other")}</MenuItem>
+            </TextField>
+            <Divider className={sliderclasses.divider} />
+            <TextField
+              className={sliderclasses.field}
+              error={!studyDetails.piInstitution?.trim()}
+              required
+              fullWidth
+              variant="outlined"
+              label={t("PI Institution")}
+              value={studyDetails.piInstitution}
+              onChange={(e) => setStudyDetails((prev) => ({ ...prev, piInstitution: e.target.value }))}
+              helperText={!studyDetails.piInstitution?.trim() && t("PI Institution is required")}
+            />
+            <Divider className={sliderclasses.divider} />
+            <TextField
+              className={sliderclasses.field}
+              fullWidth
+              multiline
+              rows={3}
+              variant="outlined"
+              label={t("Description")}
+              value={studyDetails.description}
+              onChange={(e) => setStudyDetails((prev) => ({ ...prev, description: e.target.value }))}
+            />
+            <Divider className={sliderclasses.divider} />
+            <TextField
+              className={sliderclasses.field}
               select
               autoFocus
               fullWidth
@@ -425,46 +556,151 @@ export default function PatientStudyCreator({
                 </MenuItem>
               ))}
             </TextField>
+            <Box ml={-1}>
+              <Checkbox
+                checked={createPatient}
+                onChange={(event) => {
+                  setCreatePatient(event.target.checked)
+                }}
+                classes={{ checked: classes.checkboxActive }}
+                inputProps={{ "aria-label": "primary checkbox" }}
+              />
+              {`${t("Create a new user under this group")}`}
+            </Box>
+            {!!createPatient && (
+              <Typography variant="caption">{`${t("Group name and user name will be same.")}`}</Typography>
+            )}
+            <Box display="flex" justifyContent="flex-start" style={{ gap: 8 }} mt={2}>
+              <Button color="primary" onClick={handleClose} className={sliderclasses.button}>
+                {`${t("Cancel")}`}
+              </Button>
+              <Button
+                onClick={() => {
+                  createNewStudy(groupNames, studyDetails.name)
+                }}
+                color="primary"
+                className={sliderclasses.submitbutton}
+                autoFocus
+                disabled={
+                  !validate(groupNames, gduplicateCnt) ||
+                  !validate([studyDetails.name], duplicateCnt) ||
+                  !validateStudyDetails()
+                }
+              >
+                {loading ? <CircularProgress size={24} /> : `${t("Confirm")}`}
+              </Button>
+            </Box>
           </Box>
-          <Box ml={-1}>
-            <Checkbox
-              checked={createPatient}
-              onChange={(event) => {
-                setCreatePatient(event.target.checked)
-              }}
-              classes={{ checked: classes.checkboxActive }}
-              inputProps={{ "aria-label": "primary checkbox" }}
-            />
-            {`${t("Create a new user under this group")}`}
-          </Box>
-          {!!createPatient && (
-            <Typography variant="caption">{`${t("Group name and user name will be same.")}`}</Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Box textAlign="right" width={1} mt={1} mb={3} mx={3}>
+        </Slide>
+      ) : (
+        <Slide direction="left" in={studyCreated} mountOnEnter unmountOnExit>
+          <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
+            <IconButton aria-label="close" className={classes.closeButton} onClick={handleClose}>
+              <Icon>close</Icon>
+            </IconButton>
+            <Box className={sliderclasses.icon}>
+              <UserIcon />
+            </Box>
+            <Typography variant="h5" className={sliderclasses.headings}>
+              {t("New Study Created")}
+            </Typography>
+            <Divider className={sliderclasses.divider}></Divider>
+            <Box p={2}>
+              <Typography variant="h6" gutterBottom>
+                {studyDetails.name}
+              </Typography>
+
+              <Box my={2}>
+                <Typography variant="subtitle1" color="textSecondary">
+                  {t("Study Details")}
+                </Typography>
+                <Divider light />
+
+                <Box display="flex" justifyContent="space-between" my={1}>
+                  <Typography variant="body2" color="textPrimary">
+                    {t("Purpose")}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {(() => {
+                      switch (studyDetails.purpose) {
+                        case StudyPurpose.P:
+                          return t("Practice")
+                        case StudyPurpose.S:
+                          return t("Support")
+                        case StudyPurpose.R:
+                          return t("Research")
+                        case StudyPurpose.O:
+                          return t("Other")
+                        default:
+                          return studyDetails.purpose
+                      }
+                    })()}
+                  </Typography>
+                </Box>
+
+                <Box display="flex" justifyContent="space-between" my={1}>
+                  <Typography variant="body2" color="textPrimary">
+                    {t("PI Institution")}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {studyDetails.piInstitution}
+                  </Typography>
+                </Box>
+
+                <Box display="flex" justifyContent="space-between" my={1}>
+                  <Typography variant="body2" color="textPrimary">
+                    {t("Study State")}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {(() => {
+                      switch (studyDetails.state) {
+                        case StudyState.DEV:
+                          return t("Development")
+                        case StudyState.PROD:
+                          return t("Production")
+                        case StudyState.COMP:
+                          return t("Complete")
+                        default:
+                          return studyDetails.state
+                      }
+                    })()}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box my={2}>
+                <Typography variant="subtitle1" color="textSecondary">
+                  {t("Groups")}
+                </Typography>
+                <Divider light />
+                {groupNames.map((group, index) => (
+                  <Chip key={index} label={group} variant="outlined" style={{ margin: "4px" }} />
+                ))}
+              </Box>
+              {studyDetails.description && (
+                <Box my={2}>
+                  <Typography variant="subtitle1" color="textSecondary">
+                    {t("Description")}
+                  </Typography>
+                  <Divider light />
+                  <Typography variant="body2" color="textSecondary">
+                    {studyDetails.description}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
             <Button
+              variant="contained"
               color="primary"
-              onClick={() => {
-                closePopUp(1)
-                setCreatePatient(false)
-              }}
+              onClick={handleClose}
+              className={sliderclasses.submitbutton}
+              style={{ marginTop: 16 }}
             >
-              {`${t("Cancel")}`}
-            </Button>
-            <Button
-              onClick={() => {
-                createNewStudy(groupName, studyName)
-              }}
-              color="primary"
-              autoFocus
-              disabled={!validate(groupName, gduplicateCnt) && !validate(studyName, duplicateCnt)}
-            >
-              {`${t("Confirm")}`}
+              {t("Exit")}
             </Button>
           </Box>
-        </DialogActions>
-      </Dialog>
+        </Slide>
+      )}
       {!!newId && <NewPatientDetail id={newId} />}
     </React.Fragment>
   )

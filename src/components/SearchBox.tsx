@@ -76,7 +76,7 @@ export default function Header({ searchData, ...props }: { searchData: Function 
           <Icon>search</Icon>
         </div>
         <InputBase
-          placeholder={isExpanded ? `${t("Search")}` + "…" : ""}
+          placeholder={isExpanded ? `${t("Search by name")}` + "…" : ""}
           classes={{
             root: classes.inputBase,
             input: classes.inputInput,

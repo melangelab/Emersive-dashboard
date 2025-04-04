@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next"
 import ConfirmationDialog from "../../ConfirmationDialog"
 import SensorDialog from "./SensorDialog"
 import { Service } from "../../DBService/DBService"
-import { Box, Icon, Fab, makeStyles, Theme, createStyles } from "@material-ui/core"
+import { Box, Icon, Fab, makeStyles, Theme, createStyles, Backdrop } from "@material-ui/core"
 import LAMP from "lamp-core"
+import { slideStyles } from "../ParticipantList/AddButton"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -81,6 +82,7 @@ export default function UpdateSensor({
     }
     setConfirmationDialog(0)
   }
+  const sliderclasses = slideStyles()
 
   return (
     <Box>
@@ -105,9 +107,10 @@ export default function UpdateSensor({
             : null
         }
       />
+      <Backdrop className={sliderclasses.backdrop} open={sensorDialog} onClick={(e) => setSensorDialog(false)} />
       <SensorDialog
         sensor={sensor}
-        onClose={() => setSensorDialog(false)}
+        onclose={() => setSensorDialog(false)}
         studies={studies}
         open={sensorDialog}
         type="edit"

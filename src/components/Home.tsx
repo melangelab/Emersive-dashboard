@@ -2,7 +2,7 @@ import React from "react"
 import { Typography, Button, Link, makeStyles, createStyles, Grid, Theme } from "@material-ui/core"
 import { Link as Linkref } from "react-router-dom"
 import { ReactComponent as Logo } from "../icons/Logo.svg"
-import { ReactComponent as Logotext } from "../icons/mindLAMP.svg"
+import { ReactComponent as Logotext } from "../icons/Emersive.svg"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({

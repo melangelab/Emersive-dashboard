@@ -13,12 +13,15 @@ import {
   Button,
   useMediaQuery,
   useTheme,
+  Divider,
 } from "@material-ui/core"
 import LAMP, { Researcher } from "lamp-core"
 import { useSnackbar } from "notistack"
 import { useTranslation } from "react-i18next"
 import AddIcon from "@material-ui/icons/Add"
 import EditIcon from "@material-ui/icons/Edit"
+
+import { ReactComponent as ResearcherIconFilled } from "../../icons/NewIcons/crown.svg"
 
 enum UserStatus {
   ACTIVE = "ACTIVE",
@@ -99,9 +102,11 @@ export default function AddUpdateResearcher({
     username: researcher?.username ?? "",
     address: researcher?.address ?? "",
     adminNote: researcher?.adminNote ?? "",
-    password: "",
-    confirmPassword: "",
+    // password: "",
+    // confirmPassword: "",
   })
+
+  const [researcherCreated, setResearcherCreated] = useState(undefined)
 
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
 
@@ -111,6 +116,8 @@ export default function AddUpdateResearcher({
       [field]: field === "mobile" ? Number(event.target.value) : event.target.value,
     })
   }
+
+  console.log("in the add update researcher")
 
   // const _checkCredential = async(email) =>{
   //   await LAMP.Credential.list()
@@ -144,16 +151,31 @@ export default function AddUpdateResearcher({
         if (!!resultR.error) {
           return resultR.error
         }
+        setResearcherCreated(researcherObj)
+        const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        const params = new URLSearchParams({
+          token: resultR.data.token,
+          email: researcherObj.email,
+          userType: "researcher",
+        }).toString()
 
-        // If the researcher creation is successful, create the credential
-        const researcherId = resultR.data // Assuming the backend returns the ID
+        const response = await fetch(`${baseURL}/send-password-email?${params}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic " + authString,
+          },
+        })
 
-        let result = (await LAMP.Credential.create(researcherId, formData.email, formData.password, fullName)) as any
-        if (result.error) {
-          return result.error
+        if (response.ok) {
+          const result = await response.json()
+          console.log("✅ Email sent successfully:", result.message)
+        } else {
+          const errorData = await response.json() // Get error details
+          console.error("❌ Failed to send email:", errorData.message)
         }
       }
-      handleSuccess()
     } catch (error) {
       enqueueSnackbar(t("Failed to create a new investigator."), { variant: "error" })
     }
@@ -170,6 +192,7 @@ export default function AddUpdateResearcher({
     enqueueSnackbar(researcher ? t("Successfully updated investigator.") : t("Successfully created investigator."), {
       variant: "success",
     })
+    refreshResearchers()
     setOpen(false)
   }
 
@@ -183,8 +206,8 @@ export default function AddUpdateResearcher({
       username: researcher?.username ?? "",
       adminNote: researcher?.adminNote ?? "",
       address: researcher?.address ?? "",
-      password: researcher?.password ?? "",
-      confirmPassword: researcher?.confirmPassword ?? "",
+      // password: researcher?.password ?? "",
+      // confirmPassword: researcher?.confirmPassword ?? "",
     })
   }
 
@@ -200,117 +223,155 @@ export default function AddUpdateResearcher({
           <Icon>edit</Icon>
         </Fab>
       ) : (
-        <Button
-          variant="contained"
-          className={`${classes.addButton} ${!supportsSidebar ? classes.addButtonCompact : ""}`}
-          onClick={() => setOpen(true)}
-        >
-          {supportsSidebar ? t("+ Add") : "+"}
-        </Button>
+        <Fab className="add-fab-btn">
+          <AddIcon onClick={() => setOpen(true)} />
+        </Fab>
       )}
 
-      <Dialog open={open} onClose={handleClose}>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        PaperProps={{
+          style: {
+            position: "absolute",
+            top: "8.5%",
+            left: "64%",
+            margin: "0px",
+            height: "91.4vh",
+            // display:"flex",
+            // flexDirection:"column",
+            // flex:1
+            // transform: 'translateX(-50%)',
+          },
+        }}
+        // style={{margin:0}}
+        BackdropProps={{
+          style: {
+            backgroundColor: "rgba(0, 0, 0, 0.1)", // Adjust the alpha value for transparency
+          },
+        }}
+      >
         <DialogContent className={classes.dialogContent}>
-          <TextField
-            margin="dense"
-            label={t("First Name")}
-            fullWidth
-            value={formData.firstName}
-            onChange={handleInputChange("firstName")}
-            required
-          />
-          <TextField
-            margin="dense"
-            label={t("Last Name")}
-            fullWidth
-            value={formData.lastName}
-            onChange={handleInputChange("lastName")}
-            required
-          />
-          <TextField
-            margin="dense"
-            label={t("Email")}
-            type="email"
-            fullWidth
-            value={formData.email}
-            onChange={handleInputChange("email")}
-            required
-          />
-          <TextField
-            margin="dense"
-            label={t("Mobile")}
-            type="number"
-            fullWidth
-            value={formData.mobile}
-            onChange={handleInputChange("mobile")}
-          />
-          <TextField
-            margin="dense"
-            label={t("Institution")}
-            fullWidth
-            value={formData.institution}
-            onChange={handleInputChange("institution")}
-          />
-          <TextField
-            margin="dense"
-            label={t("Username")}
-            fullWidth
-            value={formData.username}
-            onChange={handleInputChange("username")}
-            required
-          />
-          <TextField
-            margin="dense"
-            label={t("Password")}
-            type="password"
-            fullWidth
-            value={formData.password}
-            onChange={handleInputChange("password")}
-            required
-          />
-          <TextField
-            margin="dense"
-            label={t("Confirm Password")}
-            type="password"
-            fullWidth
-            value={formData.confirmPassword}
-            onChange={handleInputChange("confirmPassword")}
-            required
-            error={formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword}
-            helperText={
-              formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword
-                ? t("Passwords do not match")
-                : ""
-            }
-          />
-          <TextField
-            margin="dense"
-            label={t("Address")}
-            fullWidth
-            value={formData.address}
-            onChange={handleInputChange("address")}
-          />
-          <TextField
-            margin="dense"
-            label={t("Admin Note")}
-            fullWidth
-            multiline
-            rows={4}
-            value={formData.adminNote}
-            onChange={handleInputChange("adminNote")}
-          />
+          <div className="add-researcher-header">
+            <div className="add-researcher-icon">
+              <ResearcherIconFilled />
+            </div>
+            <p>ADD NEW RESEARCHER</p>
+          </div>
+
+          {!researcherCreated ? (
+            <>
+              <TextField
+                margin="dense"
+                label={t("First Name")}
+                fullWidth
+                value={formData.firstName}
+                onChange={handleInputChange("firstName")}
+                required
+              />
+              <TextField
+                margin="dense"
+                label={t("Last Name")}
+                fullWidth
+                value={formData.lastName}
+                onChange={handleInputChange("lastName")}
+                required
+              />
+              <TextField
+                margin="dense"
+                label={t("Email")}
+                type="email"
+                fullWidth
+                value={formData.email}
+                onChange={handleInputChange("email")}
+                required
+              />
+              <TextField
+                margin="dense"
+                label={t("Mobile")}
+                type="number"
+                fullWidth
+                value={formData.mobile}
+                onChange={handleInputChange("mobile")}
+              />
+              <TextField
+                margin="dense"
+                label={t("Institution")}
+                fullWidth
+                value={formData.institution}
+                onChange={handleInputChange("institution")}
+              />
+              <TextField
+                margin="dense"
+                label={t("Username")}
+                fullWidth
+                value={formData.username}
+                onChange={handleInputChange("username")}
+                required
+              />
+              <TextField
+                margin="dense"
+                label={t("Address")}
+                fullWidth
+                value={formData.address}
+                onChange={handleInputChange("address")}
+              />
+              <TextField
+                margin="dense"
+                label={t("Admin Note")}
+                fullWidth
+                multiline
+                rows={4}
+                value={formData.adminNote}
+                onChange={handleInputChange("adminNote")}
+              />
+            </>
+          ) : (
+            <>
+              <Divider />
+              <p style={{ padding: "20px", whiteSpace: "pre-line" }}>
+                New Researcher - {researcherCreated?.firstName} {researcherCreated?.lastName} - has been successfully
+                added.
+                {"\n"}A set password mail has been successfully sent to the email -{researcherCreated?.email}.{"\n"}The
+                link will expire after 1 hour.
+              </p>
+              <Divider />
+            </>
+          )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} color="primary">
-            {t("Cancel")}
-          </Button>
-          <Button
-            onClick={addResearcher}
-            color="primary"
-            disabled={!formData.firstName.trim() || !formData.lastName.trim()}
-          >
-            {researcher ? t("Update") : t("Add")}
-          </Button>
+        <DialogActions style={{ justifyContent: "flex-start", padding: "8px 24px", marginTop: 0 }}>
+          {!researcherCreated ? (
+            <>
+              <Button onClick={handleClose} color="primary">
+                {t("Cancel")}
+              </Button>
+              <Button
+                onClick={addResearcher}
+                color="primary"
+                disabled={!formData.firstName.trim() || !formData.lastName.trim()}
+              >
+                {researcher ? t("Update") : t("Add")}
+              </Button>
+            </>
+          ) : (
+            <button
+              onClick={handleSuccess}
+              style={{
+                backgroundColor: "#FEE2D4",
+                color: "#C06E3C",
+                border: "none",
+                borderRadius: "12px",
+                padding: "10px 24px",
+                fontSize: "16px",
+                fontWeight: "500",
+                cursor: "pointer",
+                boxShadow: "none",
+                textTransform: "uppercase",
+              }}
+            >
+              EXIT
+            </button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

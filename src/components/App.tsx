@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
 import { HashRouter, Route, Redirect, Switch, useLocation } from "react-router-dom"
-import { CssBaseline, Button, ThemeProvider, colors, Container } from "@material-ui/core"
+import { CssBaseline, Button, ThemeProvider, colors, Container, Typography, Paper } from "@material-ui/core"
 import { MuiPickersUtilsProvider } from "@material-ui/pickers"
 import { createTheme } from "@material-ui/core/styles"
 import { SnackbarProvider, useSnackbar } from "notistack"
@@ -10,6 +10,7 @@ import DateFnsUtils from "@date-io/date-fns"
 import LAMP, { Participant as ParticipantLamp } from "lamp-core"
 import Login from "./Login"
 import Messages from "./Messages"
+
 import Root from "./Admin/Index"
 import Researcher from "./Researcher/Index"
 import Participant from "./Participant"
@@ -27,6 +28,8 @@ import TwoFA from "./TwoFA"
 import NavigationBar from "./NavigationBar"
 import GlobalHeader from "./GlobalHeader"
 import HeaderBar from "./HeaderBar"
+import SetPassword from "./SetPassword"
+import { identity } from "vega"
 
 function ErrorFallback({ error }) {
   const [trace, setTrace] = useState([])
@@ -65,7 +68,7 @@ function ErrorFallback({ error }) {
         <code>{`${t("An unexpected error occured. Please try again.")}`}</code>
         <br />
         {/* <code>
-          mindLAMP Version: `v${process.env.REACT_APP_GIT_NUM} (${process.env.REACT_APP_GIT_SHA})`
+          Emersive Version: `v${process.env.REACT_APP_GIT_NUM} (${process.env.REACT_APP_GIT_SHA})`
         </code> */}
         <br />
         <a style={{ fontSize: "16px" }} href="javascript:void(0)" onClick={() => window.location.reload()}>
@@ -131,46 +134,97 @@ function AppRouter({ ...props }) {
   const { t } = useTranslation()
   const serverAddressFro2FA = ["api-staging.lamp.digital", "api.lamp.digital"]
 
+  // useEffect(() => {
+  //   let query = window.location.hash.split("?")
+  //   if (!!query && query.length > 1) {
+  //     let src = Object.fromEntries(new URLSearchParams(query[1]))["src"]
+  //     if (typeof src === "string" && src.length > 0) {
+  //       enqueueSnackbar(`${t("You're using the src server to log into Emersive.", { src: src })}`, { variant: "info" })
+  //     }
+  //     let values = Object.fromEntries(new URLSearchParams(query[1]))
+  //     if (!!values["mode"]) {
+  //       refreshPage()
+  //       return
+  //     }
+  //     let a = Object.fromEntries(new URLSearchParams(query[1]))["a"]
+  //     if (a === undefined) window.location.href = "/#/"
+  //     let x = atob(a).split(":")
+  //     //
+  //     reset({
+  //       id: x[0],
+  //       password: x[1],
+  //       serverAddress:
+  //         x.length > 2 && typeof x[2] !== "undefined"
+  //           ? x[2] + (x.length > 3 && typeof x[3] !== "undefined" ? ":" + x[3] : "")
+  //           : "api.lamp.digital",
+  //     }).then((x) => {
+  //       window.location.href = query[0]
+  //     })
+  //   } else if (!state.identity) {
+  //     refreshPage()
+  //   }
+  //   document.addEventListener("visibilitychange", function logData() {
+  //     if (document.visibilityState === "hidden") {
+  //       sensorEventUpdate(null, (LAMP.Auth._me as any)?.id, null)
+  //     } else {
+  //       let hrefloc = window.location.href.split("/")[window.location.href.split("/").length - 1]
+  //       hrefloc.split("?").length > 1
+  //         ? sensorEventUpdate(state.activeTab, (LAMP.Auth._me as any)?.id, hrefloc.split("?")[0])
+  //         : sensorEventUpdate(hrefloc.split("?")[0], (LAMP.Auth._me as any)?.id, null)
+  //     }
+  //   })
+  //   window.addEventListener("beforeinstallprompt", (e) => setDeferredPrompt(e))
+  // }, [])
+
   useEffect(() => {
-    let query = window.location.hash.split("?")
-    if (!!query && query.length > 1) {
-      let src = Object.fromEntries(new URLSearchParams(query[1]))["src"]
-      if (typeof src === "string" && src.length > 0) {
-        enqueueSnackbar(`${t("You're using the src server to log into mindLAMP.", { src: src })}`, { variant: "info" })
-      }
-      let values = Object.fromEntries(new URLSearchParams(query[1]))
-      if (!!values["mode"]) {
-        refreshPage()
+    try {
+      if (window.location.hash.includes("/set-password") || window.location.hash.includes("/reset-password")) {
         return
       }
-      let a = Object.fromEntries(new URLSearchParams(query[1]))["a"]
-      if (a === undefined) window.location.href = "/#/"
-      let x = atob(a).split(":")
-      //
-      reset({
-        id: x[0],
-        password: x[1],
-        serverAddress:
-          x.length > 2 && typeof x[2] !== "undefined"
-            ? x[2] + (x.length > 3 && typeof x[3] !== "undefined" ? ":" + x[3] : "")
-            : "api.lamp.digital",
-      }).then((x) => {
-        window.location.href = query[0]
-      })
-    } else if (!state.identity) {
-      refreshPage()
-    }
-    document.addEventListener("visibilitychange", function logData() {
-      if (document.visibilityState === "hidden") {
-        sensorEventUpdate(null, (LAMP.Auth._me as any)?.id, null)
-      } else {
-        let hrefloc = window.location.href.split("/")[window.location.href.split("/").length - 1]
-        hrefloc.split("?").length > 1
-          ? sensorEventUpdate(state.activeTab, (LAMP.Auth._me as any)?.id, hrefloc.split("?")[0])
-          : sensorEventUpdate(hrefloc.split("?")[0], (LAMP.Auth._me as any)?.id, null)
+      let query = window.location.hash.split("?")
+      if (!!query && query.length > 1) {
+        let src = Object.fromEntries(new URLSearchParams(query[1]))["src"]
+        if (typeof src === "string" && src.length > 0) {
+          enqueueSnackbar(`${t("You're using the src server to log into Emersive.", { src: src })}`, {
+            variant: "info",
+          })
+        }
+        let values = Object.fromEntries(new URLSearchParams(query[1]))
+        if (!!values["mode"]) {
+          refreshPage()
+          return
+        }
+        let a = Object.fromEntries(new URLSearchParams(query[1]))["a"]
+        if (a === undefined) {
+          window.location.href = "/#/"
+          return
+        }
+
+        try {
+          let x = atob(a).split(":")
+          reset({
+            id: x[0],
+            password: x[1],
+            serverAddress:
+              x.length > 2 && typeof x[2] !== "undefined"
+                ? x[2] + (x.length > 3 && typeof x[3] !== "undefined" ? ":" + x[3] : "")
+                : "api.lamp.digital",
+          }).then((x) => {
+            window.location.href = query[0]
+          })
+        } catch (e) {
+          console.error("Failed to decode parameters:", e)
+          enqueueSnackbar(`${t("Invalid URL parameters")}`, { variant: "error" })
+          window.location.href = "/#/"
+        }
+      } else if (!state.identity) {
+        refreshPage()
       }
-    })
-    window.addEventListener("beforeinstallprompt", (e) => setDeferredPrompt(e))
+    } catch (error) {
+      console.error("Error processing URL:", error)
+      enqueueSnackbar(`${t("An error occurred while processing the URL")}`, { variant: "error" })
+      window.location.href = "/#/"
+    }
   }, [])
 
   const refreshPage = () => {
@@ -217,7 +271,7 @@ function AppRouter({ ...props }) {
 
   useEffect(() => {
     if (!deferredPrompt) return
-    enqueueSnackbar(`${t("Add mindLAMP to your home screen?")}`, {
+    enqueueSnackbar(`${t("Add Emersive to your home screen?")}`, {
       variant: "info",
       persist: true,
       action: (key) => (
@@ -234,6 +288,9 @@ function AppRouter({ ...props }) {
   }, [deferredPrompt])
 
   useEffect(() => {
+    if (window.location.hash.includes("/set-password")) {
+      return
+    }
     closeSnackbar("admin")
     if (!showDemoMessage) closeSnackbar("demo")
     let status = false
@@ -407,11 +464,11 @@ function AppRouter({ ...props }) {
     deferredPrompt.prompt()
     deferredPrompt.userChoice.then((c) => {
       if (c.outcome === "accepted") {
-        enqueueSnackbar(`${t("mindLAMP will be installed on your device.")}`, {
+        enqueueSnackbar(`${t("Emersive will be installed on your device.")}`, {
           variant: "info",
         })
       } else {
-        enqueueSnackbar(`${t("mindLAMP will not be installed on your device.")}`, {
+        enqueueSnackbar(`${t("Emersive will not be installed on your device.")}`, {
           variant: "warning",
         })
       }
@@ -434,11 +491,201 @@ function AppRouter({ ...props }) {
     <Switch>
       <Route
         exact
+        path="/set-password"
+        render={(props) => {
+          console.log("Rendering set-password route") // Debug log
+
+          // Prevent default auth check redirect
+          if (window.location.hash.includes("/set-password")) {
+            const getParamsFromHash = () => {
+              try {
+                const hash = window.location.hash
+                console.log("Processing hash:", hash) // Debug log
+
+                if (hash.includes("?")) {
+                  const queryPart = hash.split("?")[1]
+                  const params = new URLSearchParams(queryPart)
+                  const userType = params.get("user-type") // Extract userType
+                  const token = params.get("token") // Extract token
+                  console.log("Found userType:", userType) // Debug log
+                  console.log("Found token:", token) // Debug log
+                  return { userType, token }
+                }
+                return null
+              } catch (error) {
+                console.error("Error extracting token:", error)
+                return null
+              }
+            }
+
+            const { userType, token } = getParamsFromHash()
+
+            // Don't redirect if we're on set-password route
+            return (
+              <React.Fragment>
+                <PageTitle>{`Emersive | ${t("Set Password")}`}</PageTitle>
+                {token ? (
+                  <SetPassword
+                    token={token}
+                    userType={userType}
+                    onComplete={() => {
+                      Service.deleteUserDB()
+                      Service.deleteDB()
+                      window.location.href = "/#/"
+                    }}
+                    title="Set Password"
+                  />
+                ) : (
+                  <Container
+                    maxWidth="sm"
+                    style={{
+                      height: "100vh",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Paper
+                      elevation={3}
+                      style={{
+                        padding: "2rem",
+                        textAlign: "center",
+                        width: "100%",
+                      }}
+                    >
+                      <Typography variant="h6" gutterBottom>
+                        {t("Invalid or missing token. Please check your link.")}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => {
+                          window.location.href = "/#/"
+                        }}
+                        style={{ marginTop: "1rem" }}
+                      >
+                        {t("Go to Login")}
+                      </Button>
+                    </Paper>
+                  </Container>
+                )}
+              </React.Fragment>
+            )
+          }
+
+          // Regular route handling for other routes
+          return !state.identity ? (
+            <Login
+              setIdentity={async (identity) => await reset(identity)}
+              lastDomain={state.lastDomain}
+              onComplete={() => props.history.replace("/")}
+            />
+          ) : null
+        }}
+      />
+
+      <Route
+        exact
+        path="/reset-password"
+        render={(props) => {
+          console.log("Rendering reset-password route") // Debug log
+
+          // Prevent default auth check redirect
+          if (window.location.hash.includes("/reset-password")) {
+            const getParamsFromHash = () => {
+              try {
+                const hash = window.location.hash
+                console.log("Processing hash:", hash) // Debug log
+
+                if (hash.includes("?")) {
+                  const queryPart = hash.split("?")[1]
+                  const params = new URLSearchParams(queryPart)
+                  const userType = params.get("user-type") // Extract userType
+                  const token = params.get("token") // Extract token
+                  console.log("Found userType:", userType) // Debug log
+                  console.log("Found token:", token) // Debug log
+                  return { userType, token }
+                }
+                return null
+              } catch (error) {
+                console.error("Error extracting token:", error)
+                return null
+              }
+            }
+
+            const { userType, token } = getParamsFromHash()
+
+            // Don't redirect if we're on set-password route
+            return (
+              <React.Fragment>
+                <PageTitle>{`Emersive | ${t("Reset Password")}`}</PageTitle>
+                {token ? (
+                  <SetPassword
+                    token={token}
+                    userType={userType}
+                    onComplete={() => {
+                      Service.deleteUserDB()
+                      Service.deleteDB()
+                      window.location.href = "/#/"
+                    }}
+                    title="Reset Password"
+                  />
+                ) : (
+                  <Container
+                    maxWidth="sm"
+                    style={{
+                      height: "100vh",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Paper
+                      elevation={3}
+                      style={{
+                        padding: "2rem",
+                        textAlign: "center",
+                        width: "100%",
+                      }}
+                    >
+                      <Typography variant="h6" gutterBottom>
+                        {t("Invalid or missing token. Please check your link.")}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => {
+                          window.location.href = "/#/"
+                        }}
+                        style={{ marginTop: "1rem" }}
+                      >
+                        {t("Go to Login")}
+                      </Button>
+                    </Paper>
+                  </Container>
+                )}
+              </React.Fragment>
+            )
+          }
+
+          // Regular route handling for other routes
+          return !state.identity ? (
+            <Login
+              setIdentity={async (identity) => await reset(identity)}
+              lastDomain={state.lastDomain}
+              onComplete={() => props.history.replace("/")}
+            />
+          ) : null
+        }}
+      />
+
+      <Route
+        exact
         path="/participant/:id/messages"
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -447,7 +694,7 @@ function AppRouter({ ...props }) {
             </React.Fragment>
           ) : (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Messages")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Messages")}`}</PageTitle>
               <Messages
                 style={{ margin: "0px -16px -16px -16px" }}
                 refresh={true}
@@ -465,7 +712,7 @@ function AppRouter({ ...props }) {
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -476,7 +723,7 @@ function AppRouter({ ...props }) {
             <Redirect to="/participant/me/assess" />
           ) : (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("2FA")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("2FA")}`}</PageTitle>
               <TwoFA
                 onLogout={() => reset()}
                 onComplete={() => {
@@ -496,7 +743,7 @@ function AppRouter({ ...props }) {
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {t("Login")}</PageTitle>
+              <PageTitle>Emersive | {t("Login")}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -522,7 +769,7 @@ function AppRouter({ ...props }) {
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -533,7 +780,7 @@ function AppRouter({ ...props }) {
               typeof state.auth?.serverAddress === "undefined") &&
             JSON.parse(localStorage.getItem("verified"))?.value === false ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("2FA")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("2FA")}`}</PageTitle>
               <TwoFA
                 onLogout={() => reset()}
                 onComplete={() => {
@@ -556,7 +803,7 @@ function AppRouter({ ...props }) {
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -567,7 +814,7 @@ function AppRouter({ ...props }) {
               typeof state.auth?.serverAddress === "undefined") &&
             JSON.parse(localStorage.getItem("verified"))?.value === false ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("2FA")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("2FA")}`}</PageTitle>
               <TwoFA
                 onLogout={() => reset()}
                 onComplete={() => {
@@ -591,7 +838,7 @@ function AppRouter({ ...props }) {
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -602,7 +849,7 @@ function AppRouter({ ...props }) {
               typeof state.auth?.serverAddress === "undefined") &&
             JSON.parse(localStorage.getItem("verified"))?.value === false ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("2FA")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("2FA")}`}</PageTitle>
               <TwoFA
                 onLogout={() => reset()}
                 onComplete={() => {
@@ -625,7 +872,7 @@ function AppRouter({ ...props }) {
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -636,7 +883,7 @@ function AppRouter({ ...props }) {
               typeof state.auth?.serverAddress === "undefined") &&
             JSON.parse(localStorage.getItem("verified"))?.value === false ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("2FA")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("2FA")}`}</PageTitle>
               <TwoFA
                 onLogout={() => reset()}
                 onComplete={() => {
@@ -661,7 +908,7 @@ function AppRouter({ ...props }) {
           !(window.location.hash.split("?").length > 1 && !state.identity) ? (
             !state.identity ? (
               <React.Fragment>
-                <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+                <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
                 <Login
                   setIdentity={async (identity) => await reset(identity)}
                   lastDomain={state.lastDomain}
@@ -673,7 +920,7 @@ function AppRouter({ ...props }) {
               JSON.parse(localStorage.getItem("verified"))?.value === false &&
               state.authType !== "participant" ? (
               <React.Fragment>
-                <PageTitle>mindLAMP | {`${t("2FA")}`}</PageTitle>
+                <PageTitle>Emersive | {`${t("2FA")}`}</PageTitle>
                 <TwoFA
                   onLogout={() => reset()}
                   onComplete={() => {
@@ -684,7 +931,7 @@ function AppRouter({ ...props }) {
                 />
               </React.Fragment>
             ) : state.authType === "admin" ? (
-              <Redirect to="/researcher" />
+              <Redirect to="/admin/researchers" />
             ) : state.authType === "researcher" ? (
               <Redirect to="/researcher/me/studies" />
             ) : (
@@ -696,14 +943,13 @@ function AppRouter({ ...props }) {
         }
       />
 
-      {/* Route authenticated routes. */}
       <Route
-        exact
-        path="/researcher"
+        // exact
+        path="/admin"
         render={(props) =>
           !state.identity || state.authType !== "admin" ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -714,7 +960,54 @@ function AppRouter({ ...props }) {
               typeof state.auth?.serverAddress === "undefined") &&
             JSON.parse(localStorage.getItem("verified"))?.value === false ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("2FA")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("2FA")}`}</PageTitle>
+              <TwoFA
+                onLogout={() => reset()}
+                onComplete={() => {
+                  state.authType === "admin"
+                    ? props.history.replace("/researcher")
+                    : props.history.replace("/researcher/me/users")
+                }}
+              />
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <PageTitle>{`${t("Administrator")}`}</PageTitle>
+              <Root
+                {...props}
+                updateStore={updateStore}
+                adminType={state.adminType}
+                authType={state.authType}
+                goBack={props.history.goBack}
+                onLogout={() => reset()}
+                setIdentity={async (identity) => await reset(identity)}
+                // onComplete={() => props.history.replace(`/researcher/me/users`)}
+                // onComplete={() => props.history.replace("/researcher/me/studies")}
+              />
+            </React.Fragment>
+          )
+        }
+      />
+
+      {/* Route authenticated routes. */}
+      <Route
+        exact
+        path="/researcher"
+        render={(props) =>
+          !state.identity || state.authType !== "admin" ? (
+            <React.Fragment>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
+              <Login
+                setIdentity={async (identity) => await reset(identity)}
+                lastDomain={state.lastDomain}
+                onComplete={() => props.history.replace("/")}
+              />
+            </React.Fragment>
+          ) : (serverAddressFro2FA.includes(state.auth?.serverAddress) ||
+              typeof state.auth?.serverAddress === "undefined") &&
+            JSON.parse(localStorage.getItem("verified"))?.value === false ? (
+            <React.Fragment>
+              <PageTitle>Emersive | {`${t("2FA")}`}</PageTitle>
               <TwoFA
                 onLogout={() => reset()}
                 onComplete={() => {
@@ -739,6 +1032,7 @@ function AppRouter({ ...props }) {
                 goBack={props.history.goBack}
                 onLogout={() => reset()}
               > */}
+              {/* {let temp:any = LAMP.Auth._me; let temp2 = temp.} */}
               <Root
                 {...props}
                 updateStore={updateStore}
@@ -746,19 +1040,23 @@ function AppRouter({ ...props }) {
                 authType={state.authType}
                 goBack={props.history.goBack}
                 onLogout={() => reset()}
+                setIdentity={async (identity) => await reset(identity)}
+                // onComplete={() => props.history.replace(`/researcher/me/users`)}
+                // onComplete={() => props.history.replace(`/researcher/{me}/studies`)}
               />
               {/* </NavigationLayout> */}
             </React.Fragment>
           )
         }
       />
+
       <Route
         exact
         path="/researcher/:id/:tab"
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -769,7 +1067,7 @@ function AppRouter({ ...props }) {
               typeof state.auth?.serverAddress === "undefined") &&
             JSON.parse(localStorage.getItem("verified"))?.value === false ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("2FA")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("2FA")}`}</PageTitle>
               <TwoFA
                 onLogout={() => reset()}
                 onComplete={() => {
@@ -853,7 +1151,7 @@ function AppRouter({ ...props }) {
         render={(props) =>
           !state.identity || (state.authType !== "admin" && state.authType !== "researcher") ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -864,7 +1162,7 @@ function AppRouter({ ...props }) {
               typeof state.auth?.serverAddress === "undefined") &&
             JSON.parse(localStorage.getItem("verified"))?.value === false ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("2FA")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("2FA")}`}</PageTitle>
               <TwoFA
                 onLogout={() => reset()}
                 onComplete={() => {
@@ -903,7 +1201,7 @@ function AppRouter({ ...props }) {
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -945,7 +1243,7 @@ function AppRouter({ ...props }) {
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -973,7 +1271,7 @@ function AppRouter({ ...props }) {
         render={(props) =>
           !state.identity ? (
             <React.Fragment>
-              <PageTitle>mindLAMP | {`${t("Login")}`}</PageTitle>
+              <PageTitle>Emersive | {`${t("Login")}`}</PageTitle>
               <Login
                 setIdentity={async (identity) => await reset(identity)}
                 lastDomain={state.lastDomain}
@@ -990,6 +1288,39 @@ function AppRouter({ ...props }) {
           )
         }
       />
+
+      {/* <Route
+  exact
+  path="/set-password"
+  render={(props) => {
+    // Get token from URL search params
+    const query = new URLSearchParams(props.location.search);
+    const token = query.get("token");
+
+    // Check hash params if token not found in search params
+    const hashParams = window.location.hash.includes("?") 
+      ? new URLSearchParams(window.location.hash.split("?")[1])
+      : null;
+    const hashToken = hashParams ? hashParams.get("token") : null;
+
+    const finalToken = token || hashToken;
+
+    return finalToken ? (
+      <React.Fragment>
+        <PageTitle>{`Emersive | ${t("Set Password")}`}</PageTitle>
+        <SetPassword 
+          token={finalToken} 
+          onComplete={() => props.history.replace("/")} 
+        />
+      </React.Fragment>
+    ) : (
+      <React.Fragment>
+        <PageTitle>{`Emersive | ${t("Invalid Token")}`}</PageTitle>
+        <div>{t("Invalid or missing token. Please check your link.")}</div>
+      </React.Fragment>
+    );
+  }}
+/> */}
     </Switch>
   )
 }

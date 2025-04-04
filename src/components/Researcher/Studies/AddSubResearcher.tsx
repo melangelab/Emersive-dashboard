@@ -16,13 +16,18 @@ import {
   Checkbox,
   FormControlLabel,
   Typography,
+  Backdrop,
+  Slide,
+  Divider,
 } from "@material-ui/core"
 import { useSnackbar } from "notistack"
 import LAMP from "lamp-core"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
 import { fetchPostData } from "../SaveResearcherData"
-import PersonAddIcon from "@mui/icons-material/PersonAdd"
+import { ReactComponent as SRAddIcon } from "../../../icons/NewIcons/users-alt.svg"
+import { ReactComponent as SRAddFilledIcon } from "../../../icons/NewIcons/users-alt-filled.svg"
+import { slideStyles } from "../ParticipantList/AddButton"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -45,19 +50,43 @@ const useStyles = makeStyles((theme: Theme) =>
 
       "&:hover": { color: "#5680f9", background: "#fff", boxShadow: "0px 3px 5px rgba(0, 0, 0, 0.20)" },
     },
+    actionIcon: {
+      width: 24,
+      height: 24,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      "& path": {
+        fill: "rgba(0, 0, 0, 0.4)",
+        transition: "fill 0.3s ease",
+      },
+      "&:hover path": {
+        fill: "#06B0F0",
+      },
+      "&.selected path": {
+        fill: "#4F95DA",
+      },
+      "&.active path": {
+        fill: "#215F9A",
+      },
+    },
+    field: {
+      marginBottom: theme.spacing(2),
+    },
   })
 )
 
-export default function AddSubResearcher({ study, upatedDataStudy, researcherId, ...props }) {
+export default function AddSubResearcher({ study, upatedDataStudy, researcherId, open, onclose, ...props }) {
   const { enqueueSnackbar } = useSnackbar()
   const classes = useStyles()
+  const sliderclasses = slideStyles()
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   //   const [openDialogDeleteStudy, setOpenDialogDeleteStudy] = useState(false)
   const [studyIdForAddingSR, setStudyIdForAddingSR] = useState("")
   const [availableResearchers, setAvailableResearchers] = useState<any[]>([])
   const [selectedResearchers, setSelectedResearchers] = useState<{ [id: string]: { accessScope: number } }>({})
-  const [openDialog, setOpenDialog] = useState(false)
+  const [confirmationOpen, setConfirmationOpen] = useState(false)
+  const [changes, setChanges] = useState([])
 
   // useEffect(() => {
   //   const fetchResearchers = async () => {
@@ -112,8 +141,10 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
     try {
       let response = await fetchPostData(authString, studyId, "addsubresearcher", "study", "PUT", bodyData)
       console.log("Sub-researcher added successfully:", response)
+      return response
     } catch (error) {
       console.error("Failed to add sub-researcher:", error)
+      return null
     }
   }
 
@@ -129,14 +160,29 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
       [id]: { ...prev[id], accessScope: scope },
     }))
   }
-  const handleAddResearchers = async () => {
+  const getAccessLevelLabel = (scope) => {
+    switch (scope) {
+      case 1:
+        return "View"
+      case 2:
+        return "Edit"
+      case 4:
+        return "All"
+      default:
+        return "Unknown"
+    }
+  }
+
+  const handleConfirmChanges = async () => {
     for (const [researcherId, value] of Object.entries(selectedResearchers)) {
       if (value && value.accessScope) {
-        await addSubResearcher(study.id, researcherId, value.accessScope)
+        const currentStudy = await addSubResearcher(study.id, researcherId, value.accessScope)
         const updatedStudy = {
           ...study,
+          ...currentStudy?.["data"],
           timestamps: {
             ...study.timestamps,
+            ...currentStudy?.["data"]?.timestamps,
             sharedAt: new Date(),
           },
         }
@@ -144,83 +190,150 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
       }
     }
     enqueueSnackbar(t("Sub-researchers added successfully."), { variant: "success" })
-    setOpenDialog(false)
+    setConfirmationOpen(false)
+    onclose()
   }
 
-  const handleCloseStudy = () => {
-    setOpenDialog(false)
+  const handleAddResearchers = async () => {
+    const changesArray = []
+    for (const [researcherId, value] of Object.entries(selectedResearchers)) {
+      if (value && value.accessScope) {
+        const researcher = availableResearchers.find((r) => r.id === researcherId)
+        changesArray.push({
+          researcher: researcher.name,
+          accessLevel: getAccessLevelLabel(value.accessScope),
+          action: "added",
+        })
+      }
+    }
+    setChanges(changesArray)
+    setConfirmationOpen(true)
   }
 
   return (
     <React.Fragment>
-      <Box display="flex" alignItems="center" pl={1}>
-        <Fab
-          size="small"
-          color="primary"
-          disabled={study.id > 1 ? true : false}
-          classes={{ root: classes.btnWhite, disabled: classes.disabledButton }}
-          onClick={() => {
-            setStudyIdForAddingSR(study.id)
-            setOpenDialog(true)
-          }}
-        >
-          <PersonAddIcon style={{ fontSize: "1.25rem" }} />
-        </Fab>
-      </Box>
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseStudy}
-        scroll="paper"
-        aria-labelledby="alert-dialog-slide-title"
-        aria-describedby="alert-dialog-slide-description"
-        classes={{ paper: classes.manageStudyDialog }}
+      {/* {props.activeButton?.id === study.id && props.activeButton?.action === 'share' ? (
+      <SRAddFilledIcon 
+        className={`${classes.actionIcon} active`}
+        style={{ fontSize: "1.25rem" }} 
+        onClick={() => { props.setActiveButton?.({ id: study.id, action: "share" }); setStudyIdForAddingSR(study.id)
+        setOpenDialog(true) }}
+          />
+      ) : (
+      <SRAddIcon 
+      style={{ fontSize: "1.25rem" }} onClick={() => { props.setActiveButton?.({ id: study.id, action: "share" }); setStudyIdForAddingSR(study.id)
+      setOpenDialog(true) }}
+      className={`${classes.actionIcon} ${
+            props.activeButton?.id === study.id && props.activeButton?.action === 'share' ? 'active' : ''
+          }`}
+      />
+        )} */}
+      <Backdrop
+        className={sliderclasses.backdrop}
+        style={{ backgroundColor: "transparent" }}
+        open={open}
+        onClick={onclose}
       >
-        <DialogTitle>{t("Add Sub-Researchers to Study")}</DialogTitle>
-        <DialogContent dividers>
-          {loading ? (
-            <Typography>{t("Loading available researchers...")}</Typography>
-          ) : availableResearchers.length === 0 ? (
-            <Typography>{t("No researchers available.")}</Typography>
-          ) : (
-            availableResearchers.map((researcher) => (
-              <Box display="flex" alignItems="center" key={researcher.id} mb={2}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={!!selectedResearchers[researcher.id]}
-                      onChange={(e) => handleSelect(researcher.id, e.target.checked)}
-                    />
-                  }
-                  label={researcher.name || t("Unknown Researcher")}
-                />
-                {selectedResearchers[researcher.id] && (
-                  <Select
-                    value={selectedResearchers[researcher.id].accessScope}
-                    onChange={(e) => handleAccessScopeChange(researcher.id, e.target.value)}
-                    style={{ marginLeft: "16px", minWidth: "120px" }}
-                  >
-                    <MenuItem value={1}>{t("View")}</MenuItem>
-                    <MenuItem value={2}>{t("Edit")}</MenuItem>
-                    <MenuItem value={4}>{t("All")}</MenuItem>
-                  </Select>
-                )}
-              </Box>
-            ))
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleAddResearchers} color="primary">
-            {t("Add")}
-          </Button>
-          <Button
-            onClick={() => {
-              setOpenDialog(false)
-            }}
+        <Slide direction="left" in={open && !confirmationOpen} mountOnEnter unmountOnExit>
+          <Box
+            className={`${sliderclasses.slidePanel} ${sliderclasses.TabSlidePanel}`}
+            onClick={(e) => e.stopPropagation()}
           >
-            {t("Cancel")}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <Box className={sliderclasses.icon}>
+              <SRAddFilledIcon />
+            </Box>
+            <Typography variant="h6">ADD SUB-RESEARCHERS</Typography>
+            <Divider className={sliderclasses.divider} />
+            <Box className={sliderclasses.content}>
+              {loading ? (
+                <Typography>{t("Loading available researchers...")}</Typography>
+              ) : availableResearchers.length === 0 ? (
+                <Typography>{t("No researchers available.")}</Typography>
+              ) : (
+                availableResearchers.map((researcher) => (
+                  <Box key={researcher.id} className={sliderclasses.researcherRow}>
+                    <FormControlLabel
+                      className={sliderclasses.checkboxLabel}
+                      control={
+                        <Checkbox
+                          checked={!!selectedResearchers[researcher.id]}
+                          onChange={(e) => handleSelect(researcher.id, e.target.checked)}
+                          className={sliderclasses.checkbox}
+                        />
+                      }
+                      label={researcher.name || t("Unknown Researcher")}
+                    />
+                    {selectedResearchers[researcher.id] && (
+                      <Select
+                        value={selectedResearchers[researcher.id].accessScope}
+                        onChange={(e) => handleAccessScopeChange(researcher.id, e.target.value)}
+                        className={sliderclasses.select}
+                      >
+                        <MenuItem value={1}>{t("View")}</MenuItem>
+                        <MenuItem value={2}>{t("Edit")}</MenuItem>
+                        <MenuItem value={4}>{t("All")}</MenuItem>
+                      </Select>
+                    )}
+                  </Box>
+                ))
+              )}
+            </Box>
+            <Box display="flex" justifyContent="flex-start" style={{ gap: 8 }} mt={2}>
+              <Button className={sliderclasses.button} onClick={onclose} color="primary">
+                {t("Cancel")}
+              </Button>
+              <Button
+                className={sliderclasses.submitbutton}
+                onClick={handleAddResearchers}
+                color="primary"
+                variant="contained"
+                disabled={Object.keys(selectedResearchers).length === 0}
+              >
+                {t("Review Changes")}
+              </Button>
+            </Box>
+          </Box>
+        </Slide>
+        <Slide direction="left" in={confirmationOpen} mountOnEnter unmountOnExit>
+          <Box
+            className={`${sliderclasses.slidePanel} ${sliderclasses.TabSlidePanel}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Box className={sliderclasses.icon}>
+              <SRAddFilledIcon />
+            </Box>
+            <Typography variant="h6" className={sliderclasses.headings}>
+              CONFIRM CHANGES
+            </Typography>
+            <Divider className={sliderclasses.divider} />
+
+            <Box className={sliderclasses.diffContainer}>
+              <Typography variant="subtitle1" gutterBottom>
+                The following changes will be applied:
+              </Typography>
+
+              {changes.map((change, index) => (
+                <Box key={index} className={sliderclasses.diffRow} bgcolor="#e6ffed" p={2} borderRadius={1} mb={1}>
+                  <Typography variant="body2" style={{ fontFamily: "monospace" }}>
+                    <span style={{ color: "#22863a" }}>
+                      + Adding {change.researcher} with {change.accessLevel} access
+                    </span>
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+
+            <Box className={sliderclasses.buttonContainer}>
+              <Button className={sliderclasses.button} onClick={() => setConfirmationOpen(false)}>
+                {t("Back")}
+              </Button>
+              <Button className={sliderclasses.submitbutton} onClick={handleConfirmChanges}>
+                {t("Confirm")}
+              </Button>
+            </Box>
+          </Box>
+        </Slide>
+      </Backdrop>
     </React.Fragment>
   )
 }

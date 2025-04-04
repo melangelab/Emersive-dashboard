@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import {
   Box,
   Icon,
@@ -32,6 +32,13 @@ import {
   TableHead,
   useMediaQuery,
   useTheme,
+  IconButton,
+  Tabs,
+  Tab,
+  Chip,
+  Checkbox,
+  ListItemText,
+  Tooltip,
 } from "@material-ui/core"
 import Header from "./Header"
 import { useTranslation } from "react-i18next"
@@ -44,6 +51,537 @@ import { useLayoutStyles } from "../../GlobalStyles"
 import LAMP from "lamp-core"
 import { useSnackbar } from "notistack"
 import StudyDetailsDialog from "./StudyDetailsDialog"
+import { ReactComponent as UserAddIcon } from "../../../icons/NewIcons/user-add.svg"
+import { ReactComponent as ViewIcon } from "../../../icons/NewIcons/overview.svg"
+import { ReactComponent as CopyIcon } from "../../../icons/NewIcons/copy.svg"
+import { ReactComponent as SuspendIcon } from "../../../icons/NewIcons/stop-circle.svg"
+import { ReactComponent as DeleteIcon } from "../../../icons/NewIcons/trash-xmark.svg"
+import { ReactComponent as UserAddFilledIcon } from "../../../icons/NewIcons/user-add-filled.svg"
+import { ReactComponent as CopyFilledIcon } from "../../../icons/NewIcons/copy-filled.svg"
+import { ReactComponent as SuspendFilledIcon } from "../../../icons/NewIcons/stop-circle-filled.svg"
+import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
+import { ReactComponent as DeletedIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
+import { ReactComponent as SuspendedIcon } from "../../../icons/NewIcons/stop-circle-filled.svg"
+import { formatDate_alph } from "../../Utils"
+import { ReactComponent as SRAddIcon } from "../../../icons/NewIcons/users-alt.svg"
+import { ReactComponent as SRAddFilledIcon } from "../../../icons/NewIcons/users-alt-filled.svg"
+import { ReactComponent as ArrowDropDownIcon } from "../../../icons/NewIcons/sort-circle-down.svg"
+import { ReactComponent as ArrowDropUpIcon } from "../../../icons/NewIcons/sort-circle-up.svg"
+// import { ReactComponent as SRAddFilledIcon } from "../../../icons/NewIcons/users-alt-filled.svg";
+
+import AddParticipantToStudy from "./AddParticipantToStudy"
+import { useTableStyles } from "../ActivityList/Index"
+
+export const studycardStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    dhrCard: {
+      backgroundColor: "white",
+      border: "1px solid #ededec",
+      borderRadius: theme.spacing(2),
+      padding: theme.spacing(2),
+      boxShadow: theme.shadows[1],
+      marginBottom: theme.spacing(6), // Add more bottom margin for action buttons
+      position: "relative", // For positioning action buttons
+      "&:hover $actionButton": {
+        backgroundColor: "#2196F3",
+        color: "white",
+      },
+      transition: "box-shadow 0.3s ease",
+      "&:hover": {
+        boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.5)",
+      },
+      "&:focus": {
+        boxShadow: "0px 3px 8px rgba(0, 0, 0, 0.5)",
+      },
+      "&:hover $actionButtons": {
+        opacity: 1,
+      },
+    },
+    activeIcon: {
+      "& svg": {
+        width: 20,
+        height: 20,
+        "& path": {
+          fill: "#ffc002",
+        },
+      },
+    },
+    titleDivider: {
+      margin: `${theme.spacing(1)}px -${theme.spacing(2)}px ${theme.spacing(2)}px -${theme.spacing(2)}px`,
+    },
+    cardTitle: {
+      // fontWeight: 'bold',
+      marginBottom: theme.spacing(1),
+      fontSize: "1.25rem",
+      fontWeight: 500,
+    },
+    cardSubtitle: {
+      // color: theme.palette.text.secondary,
+      // fontSize: '0.8rem',
+      marginBottom: theme.spacing(1),
+      fontSize: "0.875rem",
+      color: "rgba(0, 0, 0, 0.6)",
+    },
+    cardMetadata: {
+      fontSize: "0.75rem",
+      color: "#06B0F0",
+      marginBottom: theme.spacing(2),
+      // fontSize: '0.8rem',
+      // marginBottom: theme.spacing(2),
+      // color: theme.palette.text.secondary,
+    },
+    statsGrid: {
+      display: "flex",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing(2),
+    },
+    statItem: {
+      textAlign: "center",
+      cursor: "pointer",
+      padding: theme.spacing(1),
+      borderRadius: theme.spacing(1),
+      // '&:hover': {
+      //   backgroundColor: '#FDEDE8',
+      // },
+      "&.selected": {
+        backgroundColor: "rgba(253, 237, 232, 0.3)", // '#FDEDE8',
+      },
+    },
+    statNumber: {
+      fontSize: "2rem",
+      fontWeight: 500,
+      lineHeight: 1,
+    },
+    statLabel: {
+      fontSize: "0.75rem",
+      color: "rgba(0, 0, 0, 0.6)",
+      marginTop: theme.spacing(0.5),
+    },
+    groupsSection: {
+      marginTop: theme.spacing(2),
+    },
+    groupItem: {
+      padding: theme.spacing(1.5),
+      borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
+      "&:last-child": {
+        borderBottom: "none",
+      },
+    },
+    groupName: {
+      fontSize: "0.875rem",
+      fontWeight: 500,
+    },
+    groupDesc: {
+      fontSize: "0.75rem",
+      color: "rgba(0, 0, 0, 0.6)",
+    },
+    groupCount: {
+      fontSize: "0.875rem",
+      color: "#215F9A",
+    },
+    groupitem: {
+      fontSize: "0.75rem",
+      color: "rgba(0, 0, 0, 0.6)",
+    },
+
+    cardStatsContainer: {
+      display: "flex",
+      justifyContent: "space-between",
+      textAlign: "center",
+    },
+    cardStatNumber: {
+      fontSize: "1.5rem",
+      fontWeight: "bold",
+    },
+    cardStatLabel: {
+      fontSize: "0.7rem",
+      color: theme.palette.text.secondary,
+    },
+    groupColor: { color: "#E91E63" },
+    assessmentColor: { color: "#2196F3" },
+    activityColor: { color: "#4CAF50" },
+    sensorColor: { color: "#9C27B0" },
+    actionButtonsContainer: {
+      position: "absolute",
+      bottom: -45,
+      left: "50%",
+      transform: "translateX(-50%)",
+      display: "flex",
+      justifyContent: "center",
+      gap: theme.spacing(1),
+      zIndex: 1,
+    },
+    actionButton: {
+      // backgroundColor: '#06B0F0',
+      // color: '#06B0F0',
+      padding: theme.spacing(1),
+      borderRadius: "4px",
+      // '&:hover': {
+      //   backgroundColor: '#215F9A',
+      //   color: 'white',
+      // },
+      "&:selected": {
+        backgroundColor: "#4F95DA",
+        color: "white",
+      },
+      width: 32,
+      height: 32,
+      minWidth: "unset",
+      transition: "background-color 0.3s, color 0.3s",
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
+      color: "#FFFFFF",
+      "&:hover": {
+        backgroundColor: "#06B0F0",
+        color: "#FFFFFF",
+      },
+      "&.selected": {
+        backgroundColor: "#4F95DA",
+        color: "#FFFFFF",
+      },
+      "&.active": {
+        backgroundColor: "#215F9A",
+        color: "#FFFFFF",
+      },
+    },
+    actionButtons: {
+      position: "absolute",
+      bottom: -45,
+      left: "50%",
+      transform: "translateX(-50%)",
+      display: "flex",
+      gap: theme.spacing(1),
+      "& button": {
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        color: "#FFFFFF",
+        "&:hover": {
+          backgroundColor: "#06B0F0",
+        },
+        "&.selected": {
+          backgroundColor: "#4F95DA",
+        },
+      },
+      zIndex: 1,
+    },
+    tabContainer: {
+      marginTop: theme.spacing(2),
+    },
+    tabPanel: {
+      padding: theme.spacing(2, 0),
+      maxHeight: 200,
+      overflowY: "auto",
+    },
+    stateChip: {
+      display: "flex",
+      alignItems: "center",
+      gap: theme.spacing(1),
+      justifyContent: "flex-end",
+      "& svg": {
+        width: 20,
+        height: 20,
+        "& path": {
+          fill: "#EB8367",
+        },
+      },
+      "& .activeIcon path": {
+        fill: "#ffc002 !important",
+      },
+    },
+    stateIndicator: {
+      padding: "4px 12px",
+      borderRadius: "16px",
+      fontSize: "0.75rem",
+      textTransform: "capitalize",
+      height: "auto",
+      backgroundColor: "#06B0F0",
+      color: "white",
+      "&.production": {
+        backgroundColor: "#EB8367",
+      },
+    },
+    groupList: {
+      maxHeight: "200px",
+      overflowY: "auto",
+      marginTop: theme.spacing(2),
+      "&::-webkit-scrollbar": {
+        width: "4px",
+      },
+      "&::-webkit-scrollbar-track": {
+        background: "#f1f1f1",
+      },
+      "&::-webkit-scrollbar-thumb": {
+        background: "#888",
+      },
+    },
+    actionIcon: {
+      width: 24,
+      height: 24,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      opacity: 0.4,
+      "& path": {
+        fill: "#000000",
+      },
+      "&:hover": {
+        opacity: 1,
+        "& path": {
+          fill: "#06B0F0",
+        },
+      },
+      "&.selected": {
+        opacity: 1,
+        "& path": {
+          fill: "#4F95DA",
+        },
+      },
+      "&.active": {
+        opacity: 1,
+        "& path": {
+          fill: "#215F9A",
+        },
+      },
+      "&:hover path": {
+        fill: "#06B0F0",
+      },
+      "&.selected path": {
+        fill: "#4F95DA",
+      },
+      "&.active path": {
+        fill: "#215F9A",
+      },
+    },
+  })
+)
+
+// modular table components defined here
+export interface TableColumn {
+  id: string
+  label: string
+  value: (row: any) => string | number | React.ReactNode
+  visible: boolean
+  sortable?: boolean
+}
+
+export const useModularTableStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    tableRoot: {
+      height: "100%",
+      minHeight: "calc(100vh - 200px)",
+      "& .MuiTableContainer-root": {
+        minHeight: "calc(100vh - 250px)",
+      },
+      "& .MuiTable-root": {
+        tableLayout: "fixed",
+        borderCollapse: "separate",
+        borderSpacing: 0,
+      },
+      "& .MuiTableCell-head": {
+        backgroundColor: "#fff",
+        fontWeight: 600,
+        position: "relative",
+        borderBottom: "1px solid #e0e0e0",
+        padding: "16px 8px",
+        "&.sortable": {
+          cursor: "pointer",
+          userSelect: "none",
+          "&:hover .sortIcon": {
+            opacity: 1,
+          },
+        },
+      },
+      "& .MuiTableRow-root": {
+        borderBottom: "1px solid #f0f0f0",
+      },
+      "& .MuiTableCell-body": {
+        padding: theme.spacing(1.5),
+        color: "#333",
+        borderBottom: "1px solid #f0f0f0",
+        "&.checkbox": {
+          width: 48,
+          padding: theme.spacing(0, 1),
+        },
+        whiteSpace: "normal",
+        wordBreak: "break-word",
+        overflowWrap: "break-word",
+      },
+      "& .actionCell": {
+        position: "sticky",
+        right: 0,
+        backgroundColor: "#fff",
+        zIndex: 2,
+        boxShadow: "-2px 0px 4px rgba(0, 0, 0, 0.1)",
+      },
+    },
+    sortButton: {
+      // marginLeft: theme.spacing(0.5),
+      // display: 'inline-flex',
+      "& svg": {
+        // fontSize: '5rem',
+        opacity: 0.6,
+        fill: "black",
+        width: 15,
+        height: 15,
+      },
+    },
+    indexCell: {
+      width: "40px",
+      color: "#5d93f4",
+      textAlign: "center",
+      fontWeight: "normal",
+    },
+    checkbox: {
+      padding: theme.spacing(0.5),
+      color: "#ccc",
+      "&.Mui-checked": {
+        color: "#7599FF",
+      },
+      "& .MuiSvgIcon-root": {
+        borderRadius: "4px",
+        width: "18px",
+        height: "18px",
+      },
+    },
+    categoryHeader: {
+      backgroundColor: "#FFF",
+      padding: theme.spacing(1, 2),
+      "& .MuiTypography-root": {
+        fontWeight: 500,
+        color: "rgba(0, 0, 0, 0.87)",
+      },
+    },
+    scrollShadow: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: 20,
+      background: "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)",
+      pointerEvents: "none",
+      zIndex: 12,
+    },
+    headerCell: {
+      backgroundColor: "#fff",
+      color: theme.palette.text.primary,
+      fontWeight: 500,
+      position: "sticky",
+      top: 0,
+      zIndex: 10,
+      "&.sticky-left": {
+        left: 0,
+        zIndex: 11,
+      },
+      "&.sticky-right": {
+        right: 0,
+        zIndex: 11,
+      },
+    },
+    actionCell: {
+      position: "sticky",
+      right: 0,
+      backgroundColor: "#fff",
+      zIndex: 2,
+      boxShadow: "-2px 0px 4px rgba(0, 0, 0, 0.1)",
+      gap: theme.spacing(1),
+    },
+    actionButtons: {
+      display: "flex",
+      // gap: theme.spacing(1),
+      justifyContent: "flex-start",
+      // opacity: 0,
+      // transition: 'opacity 0.2s',
+      "& svg": {
+        width: 24,
+        height: 24,
+        opacity: 0.4,
+        transition: "all 0.3s ease",
+        "& path": {
+          fill: "rgba(0, 0, 0, 0.8)",
+        },
+        "&:hover": {
+          opacity: 1,
+          "& path": {
+            fill: "#06B0F0",
+          },
+        },
+      },
+    },
+    rowHover: {
+      "&:hover": {
+        backgroundColor: "#f5f5f5",
+        "& $actionButtons svg": {
+          opacity: 1,
+        },
+      },
+    },
+    actionIcon: {
+      width: 24,
+      height: 24,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      opacity: 0.4,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      "& path": {
+        fill: "#000", //  'rgba(0, 0, 0, 0.4)',
+      },
+      "&:hover": {
+        opacity: 1,
+        "& path": {
+          fill: "#06B0F0",
+        },
+      },
+      "&.selected": {
+        opacity: 1,
+        "& path": {
+          fill: "#4F95DA",
+        },
+      },
+      "&.active": {
+        opacity: 1,
+        "& path": {
+          fill: "#215F9A",
+        },
+      },
+    },
+    disabledIconContainer: {
+      opacity: "0.4",
+      cursor: "not-allowed",
+    },
+    disabledIcon: {
+      pointerEvents: "none",
+      opacity: "0.4",
+    },
+    headerContent: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    columnSelector: {
+      marginBottom: theme.spacing(2),
+      minWidth: 100,
+    },
+    columnHeader: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      width: "100%",
+    },
+    columnTitle: {
+      display: "flex",
+      alignItems: "center",
+    },
+    rowNumber: {
+      color: "#6c757d",
+      fontWeight: 500,
+      textAlign: "center",
+    },
+    headerAction: {
+      display: "flex",
+      alignItems: "center",
+    },
+    manageStudyDialog: { maxWidth: 700 },
+  })
+)
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -102,7 +640,7 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     backdrop: {
       zIndex: 111111,
-      color: "#fff",
+      color: "rgba(255, 255, 255, 0.4)",
     },
     studyMain: {
       background: "#E0E0E0",
@@ -157,11 +695,133 @@ const useStyles = makeStyles((theme: Theme) =>
     actionButtons: {
       display: "flex",
       justifyContent: "flex-end",
-      gap: theme.spacing(1),
+      // gap: theme.spacing(1),
       marginTop: theme.spacing(2),
     },
+    manageStudyDialog: { maxWidth: 700 },
   })
 )
+
+export const ModularTable = ({
+  data,
+  columns,
+  actions,
+  selectable = true,
+  selectedRows = [],
+  onSelectRow,
+  onSelectAll,
+  sortConfig,
+  onSort,
+  indexmap,
+  ...props
+}) => {
+  const classes = useModularTableStyles()
+  const [hoveredRow, setHoveredRow] = useState(null)
+  const tabclasses = useTableStyles()
+
+  return (
+    <TableContainer component={Paper} className={tabclasses.tableRoot}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            {selectable && (
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={selectedRows.length === data.length}
+                  indeterminate={selectedRows.length > 0 && selectedRows.length < data.length}
+                  onChange={onSelectAll}
+                  className={classes.checkbox}
+                />
+              </TableCell>
+            )}
+            <TableCell className={classes.indexCell}>
+              <div className={classes.headerContent}>
+                <span>#</span>
+                <IconButton
+                  size="small"
+                  className={classes.sortButton}
+                  onClick={() => onSort?.("index")} // Enable sorting by index
+                >
+                  {sortConfig?.field === "index" ? (
+                    sortConfig.direction === "asc" ? (
+                      <ArrowDropUpIcon />
+                    ) : (
+                      <ArrowDropDownIcon />
+                    )
+                  ) : (
+                    <ArrowDropDownIcon />
+                  )}
+                </IconButton>
+              </div>
+            </TableCell>
+            {columns
+              .filter((column) => column.visible)
+              .map((column) => (
+                <TableCell
+                  key={column.id}
+                  className={column.sortable ? "sortable" : ""}
+                  onClick={() => column.sortable && onSort?.(column.id)}
+                >
+                  <div className={classes.headerContent}>
+                    <span>{column.label}</span>
+                    {column.sortable && (
+                      <IconButton size="small" className={classes.sortButton} onClick={() => onSort?.(column.id)}>
+                        {sortConfig?.field === column.id ? (
+                          sortConfig.direction === "asc" ? (
+                            <ArrowDropUpIcon />
+                          ) : (
+                            <ArrowDropDownIcon />
+                          )
+                        ) : (
+                          <ArrowDropDownIcon />
+                        )}
+                      </IconButton>
+                    )}
+                  </div>
+                </TableCell>
+              ))}
+            <TableCell className={classes.actionCell}>Actions</TableCell>
+            {/* <TableCell className={classes.actionCell}>Actions</TableCell> */}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {data.map((row, index) => (
+            <TableRow
+              key={row.id}
+              className={classes.rowHover}
+              onMouseEnter={() => setHoveredRow(row.id)}
+              onMouseLeave={() => setHoveredRow(null)}
+            >
+              {selectable && (
+                <TableCell padding="checkbox" className="checkbox">
+                  <Checkbox
+                    checked={selectedRows.includes(row.id)}
+                    onChange={() => onSelectRow?.(row.id)}
+                    className={classes.checkbox}
+                  />
+                </TableCell>
+              )}
+              <TableCell className={classes.indexCell}>{indexmap[row.id] + 1}</TableCell>
+              {columns
+                .filter((column) => column.visible)
+                .map((column) => (
+                  <TableCell key={`${row.id}-${column.id}`}>
+                    {props.renderCell ? props.renderCell(column, row) : column.value(row)}
+                  </TableCell>
+                ))}
+              <TableCell className={classes.actionCell}>
+                <Box className={classes.actionButtons}>
+                  {actions(row)}
+                  {/* {hoveredRow === row.id && actions(row)} */}
+                </Box>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  )
+}
 
 export default function StudiesList({
   title,
@@ -175,6 +835,7 @@ export default function StudiesList({
   ...props
 }) {
   const classes = useStyles()
+  const studycardclasses = studycardStyles()
   const { t } = useTranslation()
   const [search, setSearch] = useState(null)
   const [allStudies, setAllStudies] = useState(null)
@@ -197,7 +858,10 @@ export default function StudiesList({
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
   const [studyToSuspend, setStudyToSuspend] = useState(null)
   const [viewMode, setViewMode] = useState("grid")
-
+  const [CopyDialogOpen, setCopyDialogOpen] = useState(false)
+  const [studyToCopy, setStudyToCopy] = useState(null)
+  const [openAPTS, setOpenAPTS] = useState(false)
+  const [openASR, setOpenASR] = useState(false)
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
 
   const handleOpenSuspendDialog = (study) => {
@@ -210,6 +874,16 @@ export default function StudiesList({
     setStudyToSuspend(null)
   }
 
+  const handleOpenCopyDialog = (study) => {
+    setStudyToCopy(study)
+    setCopyDialogOpen(true)
+  }
+
+  const handleCloseCopyDialog = () => {
+    setCopyDialogOpen(false)
+    setStudyToCopy(null)
+    setActiveButton({ id: null, action: "null" })
+  }
   const confirmSuspend = () => {
     if (studyToSuspend) {
       const updatedStudy = {
@@ -224,6 +898,12 @@ export default function StudiesList({
     }
   }
 
+  const confirmCopy = () => {
+    if (studyToCopy) {
+      // fetchpostdata study clone here
+      handleCloseCopyDialog()
+    }
+  }
   const suspend = (studyid, study) => {
     const updatedStudy = {
       ...study,
@@ -267,7 +947,9 @@ export default function StudiesList({
               "state",
               "piInstitution",
               "collaboratingInstitutions",
+              "sub_researchers",
               "timestamps",
+              "adminNote",
             ],
             "id"
           )
@@ -291,6 +973,8 @@ export default function StudiesList({
         "piInstitution",
         "collaboratingInstitutions",
         "timestamps",
+        "sub_researchers",
+        "adminNote",
       ]
       await Service.updateMultipleKeys("studies", { studies: [{ id: studyId, ...updatedStudy }] }, fieldlist, "id")
       await getAllStudies()
@@ -341,6 +1025,54 @@ export default function StudiesList({
   //     enqueueSnackbar(t("Failed to update study: ") + err.message, { variant: "error" })
   //   }
   // }
+  const [activeButton, setActiveButton] = useState({ id: null, action: null })
+  const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
+  const stats = (study) => {
+    return [
+      {
+        value: study.gname?.length || 0,
+        label: "GROUPS",
+        color: "#ca74c8",
+        key: "groups",
+      },
+      {
+        value: study.assessments?.length || 0,
+        label: "ASSESSMENTS",
+        color: "#06B0F0",
+        key: "assessments",
+      },
+      {
+        value: study.activities?.length || 0,
+        label: "ACTIVITIES",
+        color: "#06B0F0",
+        key: "activities",
+      },
+      {
+        value: study.sensors?.length || 0,
+        label: "SENSORS",
+        color: "#75d36d",
+        key: "sensors",
+      },
+    ]
+  }
+
+  const getGroupDetails = (study) => {
+    const allParticipantsCount = study.participants?.length || 0
+
+    const groups = [
+      {
+        name: "All Groups Combined",
+        desc: "All Patients included in study",
+        count: allParticipantsCount,
+      },
+      ...(study.gname?.map((groupName, index) => ({
+        name: `Group ${index + 1}: ${groupName}`,
+        desc: index === 0 ? "Control Group" : "Study Group",
+        count: Math.floor(allParticipantsCount / (study.gname.length || 1)),
+      })) || []),
+    ]
+    return groups
+  }
 
   useInterval(
     () => {
@@ -397,285 +1129,356 @@ export default function StudiesList({
     return date ? new Date(date).toLocaleDateString() : "Not available"
   }
 
-  const TableView = () => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Study Name</TableCell>
-            <TableCell>Description</TableCell>
-            <TableCell>Purpose</TableCell>
-            <TableCell>State</TableCell>
-            <TableCell>Participants</TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {allStudies?.map((study) => (
-            <TableRow key={study.id}>
-              <TableCell>{study.name}</TableCell>
-              <TableCell>{study.description || "-"}</TableCell>
-              <TableCell>{study.purpose}</TableCell>
-              <TableCell>{study.state}</TableCell>
-              <TableCell>{study.participants?.length || 0}</TableCell>
-              <TableCell>
-                <Box display="flex">
-                  <Fab size="small" className={classes.btnWhite} onClick={() => toggleStudyDetails(study.id)}>
-                    <Icon>visibility</Icon>
-                  </Fab>
-                  <AddSubResearcher
-                    study={study}
-                    upatedDataStudy={handleUpdatedStudyObject}
-                    researcherId={researcherId}
-                    handleShareUpdate={handleUpdateStudy}
-                  />
-                  {props.authType === "admin" && (
-                    <>
-                      <DeleteStudy study={study} deletedStudy={handleDeletedStudy} researcherId={researcherId} />
-                      <Fab size="small" className={classes.btnWhite} onClick={() => handleOpenSuspendDialog(study)}>
-                        <Icon>block_outline</Icon>
-                      </Fab>
-                    </>
-                  )}
-                </Box>
-                <StudyDetailsDialog
-                  study={study}
-                  open={expandedStudyId === study.id}
-                  onClose={() => setExpandedStudyId(null)}
-                  onSave={(updatedStudy) => handleUpdateStudy(study.id, updatedStudy)}
-                  // currentFormState={formState[study.id] || study}
-                  // handleFormChange={handleFormChange}
-                  editStudyId={study.id}
-                  formatDate={formatDate}
-                  researcherId={researcherId}
-                />
-                <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
-                  <DialogTitle>Suspend Study</DialogTitle>
-                  <DialogContent>
-                    <Typography>Are you sure you want to suspend the study "{studyToSuspend?.name}"?</Typography>
-                  </DialogContent>
-                  <DialogActions>
-                    <Button onClick={handleCloseSuspendDialog} color="secondary">
-                      Cancel
-                    </Button>
-                    <Button onClick={confirmSuspend} color="primary">
-                      Suspend
-                    </Button>
-                  </DialogActions>
-                </Dialog>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  )
-  const renderStudyDetails = (study) => {
-    const currentFormState = formState[study.id] || study
-    return (
-      <Paper className={classes.studyDetailsContainer}>
-        <Grid container spacing={3}>
-          {/* Basic Information */}
-          <Grid item xs={12}>
-            <Typography variant="h6" className={classes.sectionTitle}>
-              Study Information
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField fullWidth label="Study ID" value={study.id} disabled />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Study Name"
-                  value={currentFormState.name || ""}
-                  disabled={editStudyId !== study.id}
-                  onChange={(e) => handleFormChange(study, "name", e.target.value)}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Description"
-                  value={currentFormState.description || ""}
-                  disabled={editStudyId !== study.id}
-                  onChange={(e) => handleFormChange(study, "description", e.target.value)}
-                />
-              </Grid>
-            </Grid>
-          </Grid>
+  const [columns, setColumns] = useState<TableColumn[]>([
+    { id: "name", label: "Study Name", value: (s) => s.name, visible: true, sortable: true },
+    { id: "description", label: "Description", value: (s) => s.description || "-", visible: true, sortable: true },
+    { id: "email", label: "Email", value: (s) => s.email, visible: true, sortable: true },
+    { id: "mobile", label: "Phone/Mobile", value: (s) => s.mobile, visible: true, sortable: true },
+    { id: "state", label: "State", value: (s) => s.state, visible: true, sortable: true },
+  ])
 
-          {/* Study Configuration */}
-          <Grid item xs={12}>
-            <Typography variant="h6" className={classes.sectionTitle}>
-              Study Configuration
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Study Purpose</InputLabel>
-                  <Select
-                    value={currentFormState.purpose || ""}
-                    disabled={editStudyId !== study.id}
-                    onChange={(e) => handleFormChange(study, "purpose", e.target.value)}
-                  >
-                    <MenuItem value="practice">Practice</MenuItem>
-                    <MenuItem value="support">Support</MenuItem>
-                    <MenuItem value="research">Research</MenuItem>
-                    <MenuItem value="other">Other</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              {currentFormState.purpose === "research" && (
-                <Grid item xs={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Study Type</InputLabel>
-                    <Select
-                      value={currentFormState.studyType || ""}
-                      disabled={editStudyId !== study.id}
-                      onChange={(e) => handleFormChange(study, "studyType", e.target.value)}
-                    >
-                      <MenuItem value="DE">Descriptive</MenuItem>
-                      <MenuItem value="CC">Case Control</MenuItem>
-                      <MenuItem value="CO">Cohort</MenuItem>
-                      <MenuItem value="OB">Observational</MenuItem>
-                      <MenuItem value="RCT">RCTs</MenuItem>
-                      <MenuItem value="OC">Other Clinical trials</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              )}
-            </Grid>
-          </Grid>
+  const [openAddResearcherDialog, setOpenAddResearcherDialog] = useState(false)
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
+  const [selectedStudyForDialog, setSelectedStudyForDialog] = useState(null)
+  const [dialogType, setDialogType] = useState(null)
 
-          {/* Funding & Ethics */}
-          <Grid item xs={12}>
-            <Typography variant="h6" className={classes.sectionTitle}>
-              Funding & Ethics
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                {/* <FormControl component="fieldset">
-                <Typography>Has Funding</Typography>
-                <Switch
-                  checked={currentFormState.hasFunding || false}
-                  disabled={editStudyId !== study.id}
-                  onChange={(e) => handleFormChange(study, 'hasFunding', e.target.checked)}
-                />
-              </FormControl> */}
-                <ButtonGroup>
-                  <Button
-                    variant={currentFormState.hasFunding ? "contained" : "outlined"}
-                    onClick={() => handleFormChange(study, "hasFunding", true)}
-                    disabled={editStudyId !== study.id}
-                  >
-                    Yes
-                  </Button>
-                  <Button
-                    variant={!currentFormState.hasFunding ? "contained" : "outlined"}
-                    onClick={() => handleFormChange(study, "hasFunding", false)}
-                    disabled={editStudyId !== study.id}
-                  >
-                    No
-                  </Button>
-                </ButtonGroup>
-              </Grid>
-              {currentFormState.hasFunding && (
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Funding Agency"
-                    value={currentFormState.fundingAgency || ""}
-                    disabled={editStudyId !== study.id}
-                    onChange={(e) => handleFormChange(study, "fundingAgency", e.target.value)}
-                  />
-                </Grid>
-              )}
-              <Grid item xs={12}>
-                <FormControl component="fieldset">
-                  <Typography>Ethics Permission</Typography>
-                  <Switch
-                    checked={currentFormState.hasEthicsPermission || false}
-                    disabled={editStudyId !== study.id}
-                    onChange={(e) => handleFormChange(study, "hasEthicsPermission", e.target.checked)}
-                  />
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Grid>
+  const handleOpenDialog = (study, type) => {
+    setSelectedStudyForDialog(study)
+    setDialogType(type)
+  }
 
-          {/* Study Status & Statistics */}
-          <Grid item xs={12}>
-            <Typography variant="h6" className={classes.sectionTitle}>
-              Study Status & Statistics
-            </Typography>
-            <Box className={classes.statsContainer}>
-              <Grid container spacing={2}>
-                <Grid item xs={4}>
-                  <Typography variant="subtitle2">State</Typography>
-                  <Typography>{study.state}</Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <Typography variant="subtitle2">Participants</Typography>
-                  <Typography>{study.participants?.length || 0}</Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <Typography variant="subtitle2">Activities</Typography>
-                  <Typography>{study.activities?.length || 0}</Typography>
-                </Grid>
-              </Grid>
-            </Box>
-          </Grid>
+  useEffect(() => {
+    console.log(selectedStudyForDialog, dialogType)
+    if (selectedStudyForDialog && dialogType) {
+      if (dialogType === "delete") {
+        setOpenDeleteDialog(true)
+      } else if (dialogType === "addResearcher") {
+        setOpenAddResearcherDialog(true)
+      }
+    }
+  }, [selectedStudyForDialog, dialogType])
 
-          {/* Timestamps */}
-          <Grid item xs={12}>
-            <Typography variant="h6" className={classes.sectionTitle}>
-              Important Dates
-            </Typography>
-            <Grid container spacing={2}>
-              {study.timestamps &&
-                Object.entries(study.timestamps).map(([key, value]) => (
-                  <Grid item xs={6} key={key}>
-                    <Typography variant="subtitle2">
-                      {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
-                    </Typography>
-                    <Typography>{formatDate(value)}</Typography>
-                  </Grid>
-                ))}
-              <Grid item xs={6} key={"createdat"}>
-                <Typography variant="subtitle2"> Created at </Typography>
-                <Typography>{formatDate(study.timestamp)} </Typography>
-              </Grid>
-            </Grid>
-          </Grid>
-        </Grid>
+  const handleCloseDialog = () => {
+    console.log("closed")
+    setOpenDeleteDialog(false)
+    setOpenAddResearcherDialog(false)
+    setSelectedStudyForDialog(null)
+    setDialogType(null)
+    setActiveButton({ id: null, action: null })
+  }
 
-        {/* Action Buttons */}
-        <Box className={classes.actionButtons}>
-          {editStudyId == study.id ? (
-            <>
-              <Button variant="contained" color="primary" onClick={() => handleUpdateStudy(study.id, currentFormState)}>
-                Save Changes
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setFormState((prev) => ({ ...prev, [study.id]: undefined }))
-                  editStudyDetails(study.id)
-                }}
-              >
-                Cancel
-              </Button>
-            </>
+  const handleParticipantAdded = (newParticipant) => {
+    // Optional: Perform any actions after participant is added
+    enqueueSnackbar("Participant added successfully", { variant: "success" })
+    // Optionally refresh studies or participants
+    getAllStudies()
+    setSelectedStudyForDialog(null)
+    setActiveButton({ id: null, action: null })
+  }
+  const originalIndexMap = useMemo(() => {
+    return (allStudies || []).reduce((acc, study, index) => {
+      acc[study.id] = index
+      return acc
+    }, {})
+  }, [allStudies])
+
+  const TableView_Mod = () => {
+    const [sortConfig, setSortConfig] = useState({ field: "name", direction: "desc" })
+    const [selectedRows, setSelectedRows] = useState([])
+    const classes = useModularTableStyles()
+    const currentStudy = expandedStudyId ? allStudies?.find((s) => s.id === expandedStudyId) : null
+
+    const sortedData = useMemo(() => {
+      if (!allStudies) return []
+
+      const sortableData = [...allStudies]
+      if (sortConfig.field === "index") {
+        sortableData.sort((a, b) => {
+          const aIndex = originalIndexMap[a.id]
+          const bIndex = originalIndexMap[b.id]
+          return sortConfig.direction === "asc" ? aIndex - bIndex : bIndex - aIndex
+        })
+      } else if (sortConfig.field) {
+        sortableData.sort((a, b) => {
+          const aValue = a[sortConfig.field] || ""
+          const bValue = b[sortConfig.field] || ""
+
+          if (typeof aValue === "string" && typeof bValue === "string") {
+            return sortConfig.direction === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+          }
+
+          return sortConfig.direction === "asc" ? (aValue > bValue ? 1 : -1) : bValue > aValue ? 1 : -1
+        })
+      }
+      return sortableData
+    }, [allStudies, sortConfig, originalIndexMap])
+
+    const actions = (study) => (
+      <Box display="flex" alignItems="center" style={{ gap: 8 }}>
+        <Box component="span" className={classes.actionIcon}>
+          {expandedStudyId === study.id ? (
+            <ViewIcon
+              className="selected"
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "view" })
+                toggleStudyDetails(study.id)
+              }}
+            />
           ) : (
-            <Button variant="contained" color="primary" onClick={() => editStudyDetails(study.id)}>
-              Edit Study
-            </Button>
+            <ViewIcon
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "view" })
+                toggleStudyDetails(study.id)
+              }}
+            />
           )}
         </Box>
-      </Paper>
+
+        <Box component="span" className={classes.actionIcon}>
+          {activeButton.id === study.id && activeButton.action === "copy" ? (
+            <CopyFilledIcon
+              className="active"
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "copy" })
+                handleOpenCopyDialog(study)
+              }}
+            />
+          ) : (
+            <CopyIcon
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "copy" })
+                handleOpenCopyDialog(study)
+              }}
+            />
+          )}
+        </Box>
+
+        {props.authType === "admin" && (
+          <Box component="span" className={classes.actionIcon}>
+            {studyToSuspend?.id === study.id ? (
+              <SuspendFilledIcon
+                className="selected"
+                onClick={() => {
+                  setActiveButton({ id: study.id, action: "suspend" })
+                  handleOpenSuspendDialog(study)
+                }}
+              />
+            ) : (
+              <SuspendIcon
+                onClick={() => {
+                  setActiveButton({ id: study.id, action: "suspend" })
+                  handleOpenSuspendDialog(study)
+                }}
+              />
+            )}
+          </Box>
+        )}
+
+        {props.authType === "admin" && (
+          <Box component="span" className={classes.actionIcon}>
+            {/* <DeleteStudy 
+              study={study} 
+              deletedStudy={handleDeletedStudy} 
+              researcherId={researcherId}
+              setActiveButton={setActiveButton}
+            /> */}
+            <DeleteIcon
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "delete" })
+                handleOpenDialog(study, "delete")
+              }}
+            />
+          </Box>
+        )}
+
+        <Box component="span" className={classes.actionIcon}>
+          {/* <AddSubResearcher
+            study={study}
+            upatedDataStudy={handleUpdatedStudyObject}
+            researcherId={researcherId}
+            handleShareUpdate={(studyid, updatedStudy) => handleUpdateStudy(studyid, updatedStudy)}
+            setActiveButton={setActiveButton}
+            activeButton={activeButton}
+          /> */}
+          {props.activeButton?.id === study.id && props.activeButton?.action === "share" ? (
+            <SRAddFilledIcon
+              className="active"
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "share" })
+                handleOpenDialog(study, "addResearcher")
+              }}
+            />
+          ) : (
+            <SRAddIcon
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "share" })
+                handleOpenDialog(study, "addResearcher")
+              }}
+            />
+          )}
+        </Box>
+        <Box component="span" className={classes.actionIcon}>
+          {props.activeButton?.id === study.id && props.activeButton?.action === "add_participant" ? (
+            <UserAddFilledIcon
+              className="active"
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "add_participant" })
+                setSelectedStudyForDialog(study)
+                setOpenAPTS(true)
+              }}
+            />
+          ) : (
+            <UserAddIcon
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "add_participant" })
+                setSelectedStudyForDialog(study)
+                setOpenAPTS(true)
+              }}
+            />
+          )}
+        </Box>
+      </Box>
+    )
+
+    return (
+      <>
+        <ModularTable
+          data={sortedData || allStudies || []}
+          columns={columns.filter((col) => col.visible)}
+          actions={actions}
+          selectable={true}
+          selectedRows={selectedRows}
+          onSelectRow={(id) => {
+            setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+          }}
+          onSelectAll={() => {
+            setSelectedRows((prev) => (prev.length === allStudies.length ? [] : allStudies.map((s) => s.id)))
+          }}
+          sortConfig={sortConfig}
+          onSort={(field) => {
+            setSortConfig({
+              field,
+              direction: sortConfig.field === field && sortConfig.direction === "asc" ? "desc" : "asc",
+            })
+          }}
+          indexmap={originalIndexMap}
+        />
+        {selectedStudyForDialog && (
+          <DeleteStudy
+            study={selectedStudyForDialog}
+            deletedStudy={handleDeletedStudy}
+            researcherId={researcherId}
+            setActiveButton={setActiveButton}
+            open={openDeleteDialog}
+            onClose={handleCloseDialog}
+            // open={dialogType=="delete"}
+            // onClose={() => {
+            //   setOpenDeleteDialog(false);
+            //   setSelectedStudyForDialog(null);
+            //   setActiveButton({ id: null, action: null });
+            // }}
+            viewMode={viewMode}
+          />
+        )}
+        {selectedStudyForDialog && (
+          <AddSubResearcher
+            study={selectedStudyForDialog}
+            upatedDataStudy={handleUpdatedStudyObject}
+            researcherId={researcherId}
+            handleShareUpdate={(studyid, updatedStudy) => handleUpdateStudy(studyid, updatedStudy)}
+            setActiveButton={setActiveButton}
+            activeButton={activeButton}
+            open={openASR}
+            onclose={() => {
+              setOpenASR(false)
+              setActiveButton({ id: null, action: null })
+            }}
+          />
+        )}
+        {selectedStudyForDialog && (
+          <AddParticipantToStudy
+            study={selectedStudyForDialog}
+            researcherId={researcherId}
+            onParticipantAdded={handleParticipantAdded}
+            title={props.ptitle}
+            resemail={props.resemail}
+            open={openAPTS}
+            onclose={() => {
+              setOpenAPTS(false)
+              setActiveButton({ id: null, action: null })
+            }}
+          />
+        )}
+
+        {currentStudy && (
+          <StudyDetailsDialog
+            study={currentStudy}
+            open={!!expandedStudyId}
+            onClose={() => setExpandedStudyId(null)}
+            onSave={(updatedStudy) => handleUpdateStudy(expandedStudyId, updatedStudy)}
+            editStudyId={expandedStudyId}
+            formatDate={formatDate}
+            researcherId={researcherId}
+          />
+        )}
+
+        {/* <StudyDetailsDialog
+          study={expandedStudyId ? allStudies.find(s => s.id === expandedStudyId) : null}
+          open={!!expandedStudyId}
+          onClose={() => setExpandedStudyId(null)}
+          onSave={(updatedStudy) => handleUpdateStudy(expandedStudyId, updatedStudy)}
+          editStudyId={expandedStudyId}
+          formatDate={formatDate}
+          researcherId={researcherId}
+          // study={study}
+          // open={expandedStudyId === study.id}
+          // onClose={() => setExpandedStudyId(null)}
+          // onSave={(updatedStudy) => handleUpdateStudy(study.id, updatedStudy)}
+          // editStudyId={study.id}
+        /> */}
+        <Dialog
+          open={suspendDialogOpen}
+          onClose={handleCloseSuspendDialog}
+          scroll="paper"
+          aria-labelledby="alert-dialog-slide-title"
+          aria-describedby="alert-dialog-slide-description"
+          classes={{ paper: classes.manageStudyDialog }}
+        >
+          <DialogTitle>Suspend Study</DialogTitle>
+          <DialogContent>
+            <Typography>Are you sure you want to suspend the study "{studyToSuspend?.name}"?</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseSuspendDialog} color="secondary">
+              Cancel
+            </Button>
+            <Button onClick={confirmSuspend} color="primary">
+              Suspend
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          open={CopyDialogOpen}
+          onClose={handleCloseCopyDialog}
+          scroll="paper"
+          aria-labelledby="alert-dialog-slide-title"
+          aria-describedby="alert-dialog-slide-description"
+          classes={{ paper: classes.manageStudyDialog }}
+        >
+          <DialogTitle>Copy Study</DialogTitle>
+          <DialogContent>
+            <Typography>Are you sure you want to copy the study "{studyToCopy?.name}"?</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseCopyDialog} color="secondary">
+              Cancel
+            </Button>
+            <Button onClick={confirmCopy} color="primary">
+              Copy
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </>
     )
   }
 
@@ -698,16 +1501,239 @@ export default function StudiesList({
           onViewModechanged={setViewMode}
           viewMode={viewMode}
           resins={props.resins}
+          VisibleColumns={columns}
+          setVisibleColumns={setColumns}
         />
         <Box
           className={layoutClasses.tableContainer + " " + (!supportsSidebar ? layoutClasses.tableContainerMobile : "")}
+          style={{ overflowX: "hidden" }}
         >
           {viewMode === "grid" ? (
             <Grid container spacing={3}>
               {allStudies !== null && (allStudies || []).length > 0 ? (
                 (allStudies || []).map((study) => (
-                  <Grid item lg={6} xs={12} key={study.id}>
-                    <Box display="flex" p={1} className={classes.studyMain}>
+                  <Grid item lg={4} md={6} xs={12} key={study.id}>
+                    <Paper className={studycardclasses.dhrCard} elevation={3}>
+                      <Box display={"flex"} flexDirection={"row"}>
+                        <Box flexGrow={1}>
+                          <Typography className={studycardclasses.cardTitle}>
+                            {study.name || "No Name provided."}
+                          </Typography>
+                        </Box>
+                        <div className={studycardclasses.stateChip}>
+                          {study.timestamps?.deletedAt && <DeletedIcon />}
+                          {study.timestamps?.suspendedAt && <SuspendedIcon />}
+                          {!study.timestamps?.deletedAt && !study.timestamps?.suspendedAt && (
+                            <div
+                              className={`${studycardclasses.stateIndicator} ${
+                                study.state === "production" ? "production" : ""
+                              }`}
+                            >
+                              {study.state}
+                            </div>
+                          )}
+                        </div>
+                      </Box>
+                      <Divider className={studycardclasses.titleDivider} />
+                      <Typography className={studycardclasses.cardSubtitle}>
+                        {`SID ${study.id} - ${study.description || "No Description provided."}`}
+                      </Typography>
+                      <Typography className={studycardclasses.cardMetadata}>
+                        {`Participants: ${study.participants?.length || 0} | Start: ${formatDate_alph(
+                          study.timestamp
+                        )} | Shared: ${study.sub_researchers?.length || 0}`}
+                      </Typography>
+
+                      <Grid container className={studycardclasses.statsGrid}>
+                        {stats(study).map((stat) => (
+                          <Grid
+                            item
+                            xs={3}
+                            key={stat.key}
+                            className={`${studycardclasses.statItem} ${
+                              selectedTab.id === study.id && selectedTab.tab === stat.key ? "selected" : ""
+                            }`}
+                            onClick={() => {
+                              selectedTab.id === study.id && selectedTab.tab === stat.key
+                                ? setSelectedTab({ id: null, tab: null })
+                                : setSelectedTab({ id: study.id, tab: stat.key })
+                            }}
+                          >
+                            <Typography className={studycardclasses.statNumber} style={{ color: stat.color }}>
+                              {stat.value}
+                            </Typography>
+                            <Typography className={studycardclasses.statLabel}>{stat.label}</Typography>
+                          </Grid>
+                        ))}
+                      </Grid>
+                      {selectedTab.id === study.id && <Divider className={studycardclasses.titleDivider} />}
+                      {selectedTab.id === study.id && selectedTab.tab === "groups" && (
+                        <Box className={studycardclasses.groupList}>
+                          {getGroupDetails(study).map((group, index) => (
+                            <Box key={index} className={studycardclasses.groupItem}>
+                              <Box display="flex" justifyContent="space-between" alignItems="center">
+                                <Box>
+                                  <Typography className={studycardclasses.groupName}>{group.name}</Typography>
+                                  <Typography className={studycardclasses.groupDesc}>{group.desc}</Typography>
+                                </Box>
+                                <Typography className={studycardclasses.groupCount}>{group.count}</Typography>
+                                <Typography className={studycardclasses.groupitem}>Participants</Typography>
+                              </Box>
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
+
+                      {selectedTab.id === study.id && selectedTab.tab === "assessments" && (
+                        <Box className={studycardclasses.groupList}>
+                          {study.activities
+                            ?.filter((a) => a.category?.includes("assess"))
+                            .map((assessment, index) => (
+                              <Box key={index} className={studycardclasses.groupItem}>
+                                <Typography className={studycardclasses.groupName}>{assessment.name}</Typography>
+                                <Typography className={studycardclasses.groupDesc}>{assessment.spec}</Typography>
+                              </Box>
+                            ))}
+                        </Box>
+                      )}
+
+                      {selectedTab.id === study.id && selectedTab.tab === "activities" && (
+                        <Box className={studycardclasses.groupList}>
+                          {study.activities?.map((activity, index) => (
+                            <Box key={index} className={studycardclasses.groupItem}>
+                              <Typography className={studycardclasses.groupName}>{activity.name}</Typography>
+                              <Typography className={studycardclasses.groupDesc}>{activity.spec}</Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
+
+                      {selectedTab.id === study.id && selectedTab.tab === "sensors" && (
+                        <Box className={studycardclasses.groupList}>
+                          {study.sensors?.map((sensor, index) => (
+                            <Box key={index} className={studycardclasses.groupItem}>
+                              <Typography className={studycardclasses.groupName}>{sensor.name}</Typography>
+                              <Typography className={studycardclasses.groupDesc}>{sensor.spec}</Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
+
+                      <Box className={studycardclasses.actionButtons}>
+                        {/* <ViewIcon 
+                      className={`${studycardclasses.actionIcon} ${
+                        expandedStudyId === study.id ? 'selected' : ''
+                      }`}
+                      onClick={() => { setActiveButton({ id: study.id, action: 'view' });toggleStudyDetails(study.id)}}
+                    /> */}
+                        {expandedStudyId === study.id ? (
+                          <ViewIcon
+                            className={`${studycardclasses.actionIcon} selected`}
+                            onClick={() => {
+                              setActiveButton({ id: study.id, action: "view" })
+                              toggleStudyDetails(study.id)
+                            }}
+                          />
+                        ) : (
+                          <ViewIcon
+                            className={studycardclasses.actionIcon}
+                            onClick={() => {
+                              setActiveButton({ id: study.id, action: "view" })
+                              toggleStudyDetails(study.id)
+                            }}
+                          />
+                        )}
+                        {activeButton.id === study.id && activeButton.action === "copy" ? (
+                          <CopyFilledIcon
+                            className={`${studycardclasses.actionIcon} active`}
+                            onClick={() => {
+                              setActiveButton({ id: study.id, action: "copy" })
+                              handleOpenCopyDialog(study)
+                            }}
+                          />
+                        ) : (
+                          <CopyIcon
+                            className={`${studycardclasses.actionIcon} ${
+                              activeButton.id === study.id && activeButton.action === "copy" ? "active" : ""
+                            }`}
+                            onClick={() => {
+                              setActiveButton({ id: study.id, action: "copy" })
+                              handleOpenCopyDialog(study)
+                            }}
+                          />
+                        )}
+                        {props.authType === "admin" &&
+                          (studyToSuspend?.id === study.id ? (
+                            <SuspendFilledIcon
+                              className={`${studycardclasses.actionIcon} selected`}
+                              onClick={() => {
+                                setActiveButton({ id: study.id, action: "suspend" })
+                                handleOpenSuspendDialog(study)
+                              }}
+                            />
+                          ) : (
+                            <SuspendIcon
+                              className={`${studycardclasses.actionIcon} ${
+                                studyToSuspend?.id === study.id ? "selected" : ""
+                              }`}
+                              onClick={() => {
+                                setActiveButton({ id: study.id, action: "suspend" })
+                                handleOpenSuspendDialog(study)
+                              }}
+                            />
+                          ))}
+                        {props.authType == "admin" && (
+                          <DeleteStudy
+                            study={study}
+                            deletedStudy={handleDeletedStudy}
+                            researcherId={researcherId}
+                            setActiveButton={setActiveButton}
+                          />
+                        )}
+                        {activeButton.id === study.id && activeButton.action === "share" ? (
+                          <SRAddFilledIcon
+                            className={`${studycardclasses.actionIcon} active`}
+                            onClick={() => {
+                              setActiveButton({ id: study.id, action: "share" })
+                              setSelectedStudyForDialog(study)
+                              setOpenASR(true)
+                            }}
+                          />
+                        ) : (
+                          <SRAddIcon
+                            className={studycardclasses.actionIcon}
+                            onClick={() => {
+                              setActiveButton({ id: study.id, action: "share" })
+                              setSelectedStudyForDialog(study)
+                              setOpenASR(true)
+                            }}
+                          />
+                        )}
+                        {activeButton.id === study.id && activeButton.action === "add_participant" ? (
+                          <UserAddFilledIcon
+                            className={`${studycardclasses.actionIcon} active`}
+                            onClick={() => {
+                              setActiveButton({ id: study.id, action: "add_participant" })
+                              setSelectedStudyForDialog(study)
+                              setOpenAPTS(true)
+                            }}
+                          />
+                        ) : (
+                          <UserAddIcon
+                            className={studycardclasses.actionIcon}
+                            onClick={() => {
+                              setActiveButton({ id: study.id, action: "add_participant" })
+                              setSelectedStudyForDialog(study)
+                              setOpenAPTS(true)
+                            }}
+                          />
+                        )}
+                      </Box>
+                    </Paper>
+                    {/* </Grid>
+ 
+                  <Grid item lg={6} xs={12} key={study.id}> */}
+                    {/* <Box display="flex" p={1} className={classes.studyMain}>
                       <Box flexGrow={1}>
                         <EditStudy
                           study={study}
@@ -731,7 +1757,6 @@ export default function StudiesList({
                           color="primary"
                           classes={{ root: classes.btnWhite }}
                           onClick={() => {
-                            // suspend(study.id, study)
                             handleOpenSuspendDialog(study)
                           }}
                         >
@@ -746,30 +1771,39 @@ export default function StudiesList({
                           toggleStudyDetails(study.id)
                         }}
                       >
-                        <Icon>
-                          {/* {expandedStudyId === study.id ? 'expand_less' : 'expand_more'}  */}
-                          visibility
+                        <Icon> visibility
                         </Icon>
                       </Fab>
-                      {/* <Button
-                        variant="outlined"
-                        onClick={() => toggleStudyDetails(study.id)}
-                        className={classes.btnWhite}
-                        startIcon={
-                          <Icon>
-                            {expandedStudyId === study.id ? 'expand_less' : 'expand_more'}
-                          </Icon>
-                        }        
-                      >
-                    {expandedStudyId === study.id ? 'Hide Details' : 'Show Details'}
-                    </Button> */}
-                    </Box>
-                    {/* {expandedStudyId === study.id && (
-                    <Box px={2} pb={2}>
-                      <Divider style={{ margin: '16px 0' }} />
-                      {renderStudyDetails(study)}
-                    </Box>
-                  )} */}
+                    </Box> */}
+                    {selectedStudyForDialog && (
+                      <AddParticipantToStudy
+                        study={study}
+                        researcherId={researcherId}
+                        onParticipantAdded={handleParticipantAdded}
+                        title={props.ptitle}
+                        resemail={props.resemail}
+                        open={openAPTS}
+                        onclose={() => {
+                          setOpenAPTS(false)
+                          setActiveButton({ id: null, action: null })
+                        }}
+                      />
+                    )}
+                    {selectedStudyForDialog && (
+                      <AddSubResearcher
+                        study={study}
+                        upatedDataStudy={handleUpdatedStudyObject}
+                        researcherId={researcherId}
+                        handleShareUpdate={(studyid, updatedStudy) => handleUpdateStudy(studyid, updatedStudy)}
+                        setActiveButton={setActiveButton}
+                        activeButton={activeButton}
+                        open={openASR}
+                        onclose={() => {
+                          setOpenASR(false)
+                          setActiveButton({ id: null, action: null })
+                        }}
+                      />
+                    )}
                     <StudyDetailsDialog
                       study={study}
                       open={expandedStudyId === study.id}
@@ -781,7 +1815,14 @@ export default function StudiesList({
                       formatDate={formatDate}
                       researcherId={researcherId}
                     />
-                    <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
+                    <Dialog
+                      open={suspendDialogOpen}
+                      onClose={handleCloseSuspendDialog}
+                      scroll="paper"
+                      aria-labelledby="alert-dialog-slide-title"
+                      aria-describedby="alert-dialog-slide-description"
+                      classes={{ paper: classes.manageStudyDialog }}
+                    >
                       <DialogTitle>Suspend Study</DialogTitle>
                       <DialogContent>
                         <Typography>Are you sure you want to suspend the study "{studyToSuspend?.name}"?</Typography>
@@ -792,6 +1833,27 @@ export default function StudiesList({
                         </Button>
                         <Button onClick={confirmSuspend} color="primary">
                           Suspend
+                        </Button>
+                      </DialogActions>
+                    </Dialog>
+                    <Dialog
+                      open={CopyDialogOpen}
+                      onClose={handleCloseCopyDialog}
+                      scroll="paper"
+                      aria-labelledby="alert-dialog-slide-title"
+                      aria-describedby="alert-dialog-slide-description"
+                      classes={{ paper: classes.manageStudyDialog }}
+                    >
+                      <DialogTitle>Copy Study</DialogTitle>
+                      <DialogContent>
+                        <Typography>Are you sure you want to copy the study "{studyToCopy?.name}"?</Typography>
+                      </DialogContent>
+                      <DialogActions>
+                        <Button onClick={handleCloseCopyDialog} color="secondary">
+                          Cancel
+                        </Button>
+                        <Button onClick={confirmCopy} color="primary">
+                          Copy
                         </Button>
                       </DialogActions>
                     </Dialog>
@@ -807,7 +1869,8 @@ export default function StudiesList({
               )}
             </Grid>
           ) : (
-            <TableView />
+            // <TableView />
+            <TableView_Mod />
           )}
         </Box>
       </Box>

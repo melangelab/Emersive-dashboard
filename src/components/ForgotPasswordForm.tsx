@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Fab, Box, TextField, IconButton } from "@material-ui/core"
+import { Fab, Box, TextField, IconButton, Select, MenuItem } from "@material-ui/core"
 import { useSnackbar } from "notistack"
 import ArrowBackIcon from "@material-ui/icons/ArrowBack"
 import { useTranslation } from "react-i18next"
@@ -10,6 +10,9 @@ export default function ForgotPasswordForm({ onBack }) {
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const { enqueueSnackbar } = useSnackbar()
+  const [userType, setUserType] = useState(null)
+
+  const userOptions = { admin: "Admin", researcher: "Researcher", participant: "Participant" }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -18,11 +21,12 @@ export default function ForgotPasswordForm({ onBack }) {
     console.log("****URL FINAL****", `${process.env.REACT_APP_NODE_SERVER_URL}/auth/forgot-password`)
 
     try {
-      await axios.post(`${process.env.REACT_APP_NODE_SERVER_URL}/auth/forgot-password`, { email })
+      await axios.post(`${process.env.REACT_APP_NODE_SERVER_URL}/auth/forgot-password-mail`, { email, userType })
       enqueueSnackbar(t("Password reset link has been sent to your email"), { variant: "success" })
       onBack()
     } catch (error) {
-      const errorMessage = error.response?.data?.message || t("Failed to send reset link. Please try again.")
+      console.log("TTTT", error, error.response?.data?.error)
+      const errorMessage = error.response?.data?.error || t("Failed to send reset link. Please try again.")
       enqueueSnackbar(errorMessage, { variant: "error" })
     } finally {
       setLoading(false)
@@ -30,7 +34,7 @@ export default function ForgotPasswordForm({ onBack }) {
   }
 
   return (
-    <div style={{ width: "100%", minWidth: "420px" }}>
+    <div className="forgot-password-container">
       <div style={{ position: "relative", width: "100%", display: "flex", flexDirection: "column" }}>
         <IconButton onClick={onBack} style={{ position: "absolute", left: -24, top: -24 }}>
           <ArrowBackIcon />
@@ -73,6 +77,25 @@ export default function ForgotPasswordForm({ onBack }) {
                 disabled: loading,
               }}
             />
+
+            <Select
+              required
+              labelId="select-label"
+              value={userType || ""}
+              onChange={(e) => setUserType(e.target.value)}
+              style={{ width: "100%", borderRadius: "10px", padding: "10px", marginTop: "10px" }}
+              displayEmpty // ✅ This makes the placeholder visible
+            >
+              <MenuItem value="" disabled>
+                Select an option
+              </MenuItem>
+
+              {Object.entries(userOptions).map(([key, label]) => (
+                <MenuItem key={key} value={key}>
+                  {label}
+                </MenuItem>
+              ))}
+            </Select>
 
             <Box textAlign="center" width={1} mt={4}>
               <Box className="buttonNav" width={1} textAlign="center">

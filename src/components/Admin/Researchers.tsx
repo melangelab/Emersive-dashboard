@@ -9,9 +9,13 @@ import { MuiThemeProvider, makeStyles, Theme, createStyles } from "@material-ui/
 import locale_lang from "../../locale_map.json"
 import Pagination from "../PaginatedElement"
 import ResearcherRow from "./ResearcherRow"
-import Header from "./Header"
+import ResearcherHeader from "./ResearcherHeader"
+import ViewResearcherHeader from "../ViewElementHeader"
+import ViewElement from "../ViewElement"
 import { useLayoutStyles } from "../GlobalStyles"
 import DynamicTable from "./DynamicTable"
+
+import "./admin.css"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -225,7 +229,12 @@ export default function Researchers({ history, updateStore, adminType, authType,
   const [connectionStatus, setConnectionStatus] = useState("connecting")
   const [error, setError] = useState(null)
 
+  const [crrViewResearcher, setCrrViewResearcher] = useState({ researcher: null, idx: null })
+  const [actionOnViewResearcher, setActionOnViewResearcher] = useState(null)
+  const [isEditing4View, setIsEditing4View] = useState(false)
+
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
+  console.log("reached researcher")
 
   const columns = {
     id: "ID",
@@ -234,9 +243,9 @@ export default function Researchers({ history, updateStore, adminType, authType,
     username: "Username",
     email: "Email",
     mobile: "Mobile",
+    loggedIn: "Logged In",
     institution: "Institution",
     adminNote: "Admin Note",
-    loggedIn: "Logged In",
     noProjectAccess: "No of Projects Access",
     address: "Address",
     studies: "Studies",
@@ -245,6 +254,18 @@ export default function Researchers({ history, updateStore, adminType, authType,
     "timestamps.lastLoginAt": "Time of last login",
     "timestamps.lastActivityAt": "Time of last activity",
     "timestamps.suspendedAt": "Time of suspension",
+    actions: "Actions",
+  }
+
+  const visible_columns = {
+    id: "ID",
+    firstName: "First Name",
+    lastName: "last Name",
+    username: "Username",
+    email: "Email",
+    mobile: "Mobile",
+    loggedIn: "Logged In",
+    actions: "Actions",
   }
 
   const editable_columns = [
@@ -257,6 +278,9 @@ export default function Researchers({ history, updateStore, adminType, authType,
     "adminNote",
     "address",
   ]
+
+  const originalColumnKeys = Object.keys(columns)
+  const [selectedColumns, setSelectedColumns] = useState<string[]>(Object.keys(visible_columns))
 
   const getSelectedLanguage = () => {
     const matched_codes = Object.keys(locale_lang).filter((code) => code.startsWith(navigator.language))
@@ -362,6 +386,12 @@ export default function Researchers({ history, updateStore, adminType, authType,
     i18n.changeLanguage(language)
   }, [])
 
+  useEffect(() => {
+    if (researchers.length > 0) {
+      setCrrViewResearcher((prev) => ({ ...prev, researcher: researchers[crrViewResearcher.idx] }))
+    }
+  }, [crrViewResearcher.idx])
+
   const handleChangePage = (page: number, rowCount: number) => {
     setPage(page)
     setRowCount(rowCount)
@@ -370,44 +400,102 @@ export default function Researchers({ history, updateStore, adminType, authType,
 
   const handleRowClick = (researcher: Researcher) => {
     console.log("Researcher clicked:", researcher)
-    // Handle row click
+  }
+
+  const handleResearchersUpdate = (updatedResearchers) => {
+    setResearchers((prevResearchers) => {
+      // Create a copy of the current researchers array
+      const newResearchers = [...prevResearchers]
+
+      // Update each researcher that was changed
+      updatedResearchers.forEach((updatedResearcher) => {
+        const index = newResearchers.findIndex((r) => r.id === updatedResearcher.id)
+        if (index !== -1) {
+          newResearchers[index] = updatedResearcher
+        }
+      })
+
+      return newResearchers
+    })
   }
 
   return (
     <React.Fragment>
-      <Header
-        researchers={researchers}
-        searchData={(data) => setSearch(data)}
-        refreshResearchers={refreshResearchers}
-        adminType={adminType}
-        authType={authType}
-        title={
-          adminType === "admin"
-            ? "Administrator"
-            : adminType === "practice_lead"
-            ? "Practice Lead"
-            : "User Administrator"
-        }
-        onLogout={onLogout}
-      />
-      <Box
-        className={layoutClasses.tableContainer + " " + (!supportsSidebar ? layoutClasses.tableContainerMobile : "")}
-      >
-        {/* <Box className="fixed top-24 left-36 w-10/12 rounded-lg bg-white shadow-sm p-0 z-20"> */}
-        <DynamicTable
-          columns={columns}
-          editable_columns={editable_columns}
-          data={researchers}
-          onRowClick={handleRowClick}
-          emptyStateMessage="No researchers found"
-          isLoading={isLoading}
-          className="shadow-sm"
-          adminType={adminType}
-          history={history}
-          refreshResearchers={refreshResearchers}
-          updateStore={updateStore}
-        />
-      </Box>
+      {!crrViewResearcher.researcher ? (
+        <>
+          <ResearcherHeader
+            elements={researchers}
+            searchData={(data) => setSearch(data)}
+            refreshElements={refreshResearchers}
+            adminType={adminType}
+            authType={authType}
+            title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+            // title={
+            //   adminType === "admin"
+            //     ? "Administrator"
+            //     : adminType === "practice_lead"
+            //       ? "Practice Lead"
+            //       : "User Administrator"
+            // }
+            onLogout={onLogout}
+            columns={columns}
+            originalColumnKeys={originalColumnKeys}
+            selectedColumns={selectedColumns}
+            setSelectedColumns={setSelectedColumns}
+          />
+          <div className="table-container">
+            <DynamicTable
+              researchers={researchers}
+              columns={columns}
+              editable_columns={editable_columns}
+              data={researchers}
+              onRowClick={handleRowClick}
+              emptyStateMessage="No researchers found"
+              isLoading={isLoading}
+              className="shadow-sm"
+              adminType={adminType}
+              history={history}
+              originalColumnKeys={originalColumnKeys}
+              selectedColumns={selectedColumns}
+              setSelectedColumns={setSelectedColumns}
+              refreshResearchers={refreshResearchers}
+              updateStore={updateStore}
+              changeElement={setCrrViewResearcher}
+              onResearchersUpdate={handleResearchersUpdate}
+            />
+          </div>
+        </>
+      ) : (
+        <React.Fragment>
+          <ViewResearcherHeader
+            length={researchers.length}
+            elementType={"Researchers"}
+            element={crrViewResearcher}
+            changeElement={setCrrViewResearcher}
+            actionOnViewElement={actionOnViewResearcher}
+            searchData={(data) => setSearch(data)}
+            title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+            authType={authType}
+            setActionOnViewElement={setActionOnViewResearcher}
+            isEditing={isEditing4View}
+            setIsEditing={setIsEditing4View}
+          />
+          <div className="view-element-container">
+            <ViewElement
+              elementType={"researchers"}
+              element={crrViewResearcher.researcher}
+              changeElement={setCrrViewResearcher}
+              columns={columns}
+              editableColumns={editable_columns}
+              actionOnViewElement={actionOnViewResearcher}
+              setActionOnViewElement={setActionOnViewResearcher}
+              isEditing={isEditing4View}
+              setIsEditing={setIsEditing4View}
+            />
+          </div>
+        </React.Fragment>
+      )}
+
       {/* <Box className={layoutClasses.tableContainer}>
         <Grid container >
           {researchers.length > 0 ? (

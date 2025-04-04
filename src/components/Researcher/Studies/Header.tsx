@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useRef, useState } from "react"
 import {
   Box,
   Button,
@@ -21,17 +21,34 @@ import {
   IconButton,
   useMediaQuery,
   useTheme,
+  Checkbox,
+  ListItemText,
+  Backdrop,
+  Slide,
+  Divider,
 } from "@material-ui/core"
 import { useTranslation } from "react-i18next"
 import PatientStudyCreator from "../ParticipantList/PatientStudyCreator"
 import SearchBox from "../../SearchBox"
 import StudyCreator from "../ParticipantList/StudyCreator"
 import StudyGroupCreator from "./StudyGroupCreator"
-import { Add as AddIcon, FilterList as FilterListIcon, Search as SearchIcon } from "@material-ui/icons"
 import { CredentialManager } from "../../CredentialManager"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
-import LogoImage from "../../../icons/logo.png"
+import { ReactComponent as Logo } from "../../../icons/Logo.svg"
 import { useLayoutStyles } from "../../GlobalStyles"
+import { ReactComponent as RefreshIcon } from "../../../icons/NewIcons/rotate-reverse.svg"
+import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
+import { ReactComponent as GridViewIcon } from "../../../icons/NewIcons/objects-column.svg"
+import { ReactComponent as TableViewIcon } from "../../../icons/NewIcons/table-list.svg"
+import { ReactComponent as GridViewFilledIcon } from "../../../icons/NewIcons/objects-column-filled.svg"
+import { ReactComponent as TableViewFilledIcon } from "../../../icons/NewIcons/table-list-filled.svg"
+import { ReactComponent as ColumnsIcon } from "../../../icons/NewIcons/columns-3.svg"
+import { ReactComponent as FilterIcon } from "../../../icons/NewIcons/filters.svg"
+import { ReactComponent as FilterFilledIcon } from "../../../icons/NewIcons/filters-filled.svg"
+import { ReactComponent as PrintIcon } from "../../../icons/NewIcons/print.svg"
+import { ReactComponent as DownloadIcon } from "../../../icons/NewIcons/progress-download.svg"
+import { slideStyles } from "../ParticipantList/AddButton"
+import { ReactComponent as UserIcon } from "../../../icons/NewIcons/users.svg"
 
 function Profile({ title, authType }) {
   return (
@@ -111,7 +128,7 @@ const useStyles = makeStyles((theme: Theme) =>
       padding: "8px", // Avoids excessive shrinking
       boxSizing: "border-box", // Ensures padding doesn’t affect width
     },
-    addButton: {
+    addbutton: {
       backgroundColor: "#4285f4",
       color: "#fff",
       padding: "8px 24px",
@@ -239,6 +256,54 @@ const useStyles = makeStyles((theme: Theme) =>
       color: "#7599FF",
       "&:hover": { color: "#5680f9", background: "#fff", boxShadow: "0px 3px 5px rgba(0, 0, 0, 0.20)" },
     },
+    logo: {
+      width: theme.spacing(5), // Scales dynamically (5 * 8px = 40px)
+      height: theme.spacing(5),
+      borderRadius: "50%",
+      marginLeft: "4px",
+    },
+    actionIcon: {
+      width: 40,
+      height: 40,
+      minWidth: 40,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      padding: theme.spacing(0.5),
+      borderRadius: "25%",
+      "& path": {
+        fill: "rgba(0, 0, 0, 0.4)",
+      },
+      "&.active path": {
+        fill: "#06B0F0",
+      },
+      "&:hover": {
+        backgroundColor: "rgba(0, 0, 0, 0.04)",
+        "& path": {
+          fill: "#06B0F0",
+        },
+      },
+      marginLeft: theme.spacing(1),
+      marginRight: theme.spacing(1),
+    },
+    addButton: {
+      backgroundColor: "#4CAF50",
+      padding: theme.spacing(1),
+      borderRadius: "40%",
+      width: 40,
+      height: 40,
+      minWidth: 40,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      "& path": {
+        fill: "#FFFFFF",
+      },
+      "&:hover": {
+        backgroundColor: "#45a049",
+      },
+    },
   })
 )
 
@@ -252,6 +317,7 @@ export default function Header({
   ...props
 }) {
   const classes = useStyles()
+  const sliderclasses = slideStyles()
   const { t } = useTranslation()
   const [popover, setPopover] = useState(null)
   const [addParticipantStudy, setAddParticipantStudy] = useState(false)
@@ -261,88 +327,148 @@ export default function Header({
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [passwordChange, setPasswordChange] = useState(false)
   const headerclasses = useHeaderStyles()
-
   const layoutClasses = useLayoutStyles()
-
+  const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement | SVGElement>(null)
   const handleNewStudyData = (data) => {
     setParticipants()
     newStudyObj(data)
     updatedDataStudy(data)
   }
   const roles = ["Administrator", "User Administrator", "Practice Lead"]
-
+  const [slideOpen, setSlideOpen] = useState(false)
+  const [activeModal, setActiveModal] = useState<"none" | "study" | "group" | "participant">("none")
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
 
   // const handleClosePopUp = (data) => {
   //   if (data === 1) {
   //     setAddParticipantStudy(false)
+  //   } else if (data === 2) {
+  //     setAddStudy(false)
+  //   } else {
+  //     setAddGroup(false)
   //   }
   // }
   const handleClosePopUp = (data) => {
+    if (activeModal === "none") {
+      setSlideOpen(false)
+    }
     if (data === 1) {
       setAddParticipantStudy(false)
+      setActiveModal("none")
     } else if (data === 2) {
       setAddStudy(false)
+      setActiveModal("none")
     } else {
       setAddGroup(false)
+      setActiveModal("none")
+    }
+  }
+
+  const handleSlideOpen = (type: "study" | "group" | "participant") => {
+    setSlideOpen(true)
+    setActiveModal(type)
+
+    switch (type) {
+      case "study":
+        setAddStudy(true)
+        break
+      case "group":
+        setAddGroup(true)
+        break
+      case "participant":
+        setAddParticipantStudy(true)
+        break
+    }
+    console.log("handleSlideOpen - clicked with", type)
+  }
+  const handleBackdropClick = () => {
+    if (activeModal === "none") {
+      setSlideOpen(false)
     }
   }
 
   return (
     <div className={layoutClasses.fixedContentContainer}>
       <Box className={layoutClasses.header}>
-        <Box className={headerclasses.titleSection}>
-          {/* <Box className={headerclasses.logo}>
-            <img src={LogoImage} alt="Logo" />
-          </Box> */}
-          {props.authType === "admin" && (
-            <IconButton
-              size="medium"
-              className={headerclasses.backButton}
-              onClick={() => {
-                window.location.href = `/#/researcher`
-              }}
+        <Box className={headerclasses.header}>
+          <Box className={headerclasses.titleSection}>
+            {supportsSidebar ? (
+              <Box className={headerclasses.logo}>
+                <Logo className={classes.logo} />
+              </Box>
+            ) : null}
+            {props.authType === "admin" && (
+              <IconButton
+                size="medium"
+                className={headerclasses.backButton}
+                onClick={() => {
+                  window.location.href = `/`
+                }}
+              >
+                <Icon>arrow_back</Icon>
+              </IconButton>
+            )}
+            <Typography variant="h5">{`${t("Studies")}`}</Typography>
+          </Box>
+          <Box className={headerclasses.actionGroup}>
+            <SearchBox searchData={searchData} />
+            <RefreshIcon className={classes.actionIcon} onClick={() => window.location.reload()} />
+            {props.viewMode === "grid" ? (
+              <GridViewFilledIcon
+                className={`${classes.actionIcon} ${props.viewMode === "grid" ? "active" : ""}`}
+                onClick={() => props.onViewModechanged("grid")}
+              />
+            ) : (
+              <GridViewIcon
+                className={`${classes.actionIcon} active`}
+                onClick={() => props.onViewModechanged("grid")}
+              />
+            )}
+            {props.viewMode === "table" ? (
+              <TableViewFilledIcon
+                className={`${classes.actionIcon} ${props.viewMode === "table" ? "active" : ""}`}
+                onClick={() => props.onViewModechanged("table")}
+              />
+            ) : (
+              <TableViewIcon
+                className={`${classes.actionIcon} active`}
+                onClick={() => props.onViewModechanged("table")}
+              />
+            )}
+            <AddIcon
+              className={classes.addButton}
+              onClick={(event) =>
+                // setPopover(event.currentTarget)
+                setSlideOpen(true)
+              }
+            />
+            {props.viewMode === "table" && (
+              <>
+                <ColumnsIcon
+                  className={classes.actionIcon}
+                  onClick={(event) => setColumnMenuAnchor(event.currentTarget)}
+                />
+                <FilterIcon
+                  className={classes.actionIcon}
+                  // onClick={(event) => setPopover(event.currentTarget)}
+                />
+                <PrintIcon
+                  className={classes.actionIcon}
+                  // onClick={(event) => setPopover(event.currentTarget)}
+                />
+                <DownloadIcon
+                  className={classes.actionIcon}
+                  // onClick={(event) => setPopover(event.currentTarget)}
+                />
+              </>
+            )}
+            <Box
+              className={headerclasses.profileSection}
+              onClick={(event) => setShowCustomizeMenu(event.currentTarget)}
             >
-              <Icon>arrow_back</Icon>
-            </IconButton>
-          )}
-          {/* <Typography variant="h5">{`${t("Studies")}`}</Typography> */}
-          <Button
-            variant="contained"
-            className={`${classes.addButton} ${!supportsSidebar ? classes.addButtonCompact : ""}`}
-            onClick={(event) => setPopover(event.currentTarget)}
-          >
-            {supportsSidebar ? t("+ Add") : "+"}
-          </Button>
-        </Box>
-        <Box className={headerclasses.actionGroup}>
-          <SearchBox searchData={searchData} />
-          {/* <Button
-            variant="contained"
-            className={headerclasses.filterButton}
-            startIcon={<FilterListIcon />}
-          >
-            {t("Filter")}
-          </Button> */}
-          <Button
-            variant="outlined"
-            className={headerclasses.togglebtn}
-            startIcon={<Icon>{props.viewMode === "grid" ? "view_list" : "grid_view"}</Icon>}
-            onClick={() => props.onViewModechanged(props.viewMode === "grid" ? "table" : "grid")}
-            style={{ display: "flex", justifyContent: "center", alignItems: "center" }}
-          >
-            {supportsSidebar ? (props.viewMode === "grid" ? "Table View" : "Grid View") : null}
-          </Button>
-          {/* <Button
-            variant="contained"
-            className={`${classes.filterButton} ${!supportsSidebar ? classes.filterButtonCompact : ""}`}
-            startIcon={<FilterListIcon />}
-          >
-            {supportsSidebar ? "Filter" : null}
-          </Button> */}
-          <Box className={headerclasses.profileSection} onClick={(event) => setShowCustomizeMenu(event.currentTarget)}>
-            <Avatar className={headerclasses.avatar}>{props.title?.charAt(0) || "U"}</Avatar>
-            {supportsSidebar ? <Profile title={props.title} authType={props.authType} /> : null}
+              <Avatar className={headerclasses.avatar}>{props.title?.charAt(0) || "U"}</Avatar>
+              {supportsSidebar ? <Profile title={props.title} authType={props.authType} /> : null}
+            </Box>
           </Box>
         </Box>
       </Box>
@@ -356,6 +482,119 @@ export default function Header({
             <Icon>add</Icon> <span className={classes.addText}>{`${t("Add")}`}</span>
           </Fab>
         </Box> */}
+      <Menu
+        anchorEl={columnMenuAnchor}
+        open={Boolean(columnMenuAnchor)}
+        onClose={() => setColumnMenuAnchor(null)}
+        keepMounted
+        elevation={3}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "left",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "left",
+        }}
+        getContentAnchorEl={null}
+        PaperProps={{
+          style: {
+            maxHeight: "300px",
+            width: "250px",
+            marginTop: "8px",
+          },
+        }}
+      >
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            backgroundColor: "white",
+            borderBottom: "1px solid rgb(229, 231, 235)",
+            padding: "0.5rem",
+            display: "flex",
+            justifyContent: "space-between",
+            zIndex: 50,
+          }}
+        >
+          <Button
+            size="small"
+            onClick={() => {
+              props.setVisibleColumns?.(props.VisibleColumns?.map((col) => ({ ...col, visible: true })))
+            }}
+            color="primary"
+            style={{ textTransform: "none", fontSize: "0.875rem" }}
+          >
+            {t("Select All")}
+          </Button>
+          <Button
+            size="small"
+            onClick={() => {
+              props.setVisibleColumns?.(
+                props.VisibleColumns?.map((col, index) => ({
+                  ...col,
+                  visible: index === 0,
+                }))
+              )
+            }}
+            color="primary"
+            style={{ textTransform: "none", fontSize: "0.875rem" }}
+          >
+            {t("Deselect All")}
+          </Button>
+        </div>
+        <div style={{ padding: "0.5rem", overflowY: "auto" }}>
+          {props.VisibleColumns?.map((column) => (
+            <MenuItem key={column.id}>
+              <Checkbox
+                checked={column.visible}
+                onChange={() => {
+                  props.setVisibleColumns?.(
+                    props.VisibleColumns?.map((col) => (col.id === column.id ? { ...col, visible: !col.visible } : col))
+                  )
+                }}
+              />
+              <ListItemText primary={column.label} />
+            </MenuItem>
+          ))}
+        </div>
+      </Menu>
+      <Backdrop className={sliderclasses.backdrop} open={slideOpen} onClick={handleBackdropClick} />
+      <Slide direction="left" in={slideOpen} mountOnEnter unmountOnExit>
+        <Box className={sliderclasses.slidePanel}>
+          <Box className={sliderclasses.icon}>
+            <UserIcon />
+          </Box>
+          <Typography variant="h6">ADD NEW STUDY</Typography>
+          <Divider className={sliderclasses.divider} />
+          <Typography variant="body2" paragraph>
+            Studies are <strong>researcher</strong> specific.
+          </Typography>
+          <Divider className={sliderclasses.divider} />
+          <Typography variant="body2" paragraph>
+            Add a new Study under researcher <strong>{props.title}</strong>.
+          </Typography>
+          <Typography variant="body1" paragraph>
+            If you have decided the Groups for the Study by now, proceed with this.
+          </Typography>
+          <Button className={sliderclasses.button} onClick={() => handleSlideOpen("participant")}>
+            Add Study & Group
+          </Button>
+          <Typography variant="body1" paragraph className={sliderclasses.headings}>
+            Or create a Study and add the Groups later.
+          </Typography>
+          <Button className={sliderclasses.button} onClick={() => handleSlideOpen("study")}>
+            Add a Study
+          </Button>
+          <Divider className={sliderclasses.divider} />
+          <Typography variant="body2" paragraph>
+            Add a new Group under an existing Study.
+          </Typography>
+          <Button className={sliderclasses.button} onClick={() => handleSlideOpen("group")}>
+            Add a group
+          </Button>
+        </Box>
+      </Slide>
       <Popover
         classes={{ root: classes.customPopover, paper: classes.customPaper }}
         open={!!popover ? true : false}
@@ -486,27 +725,47 @@ export default function Header({
       <StudyGroupCreator
         studies={studies}
         researcherId={researcherId}
-        onClose={() => setAddGroup(false)}
+        onClose={() => {
+          setAddGroup(false)
+          handleClosePopUp(3)
+        }}
         open={addGroup}
         handleNewStudy={handleNewStudyData}
         closePopUp={handleClosePopUp}
+        resins={props.resins}
+        activeModal={activeModal}
+        setActiveModal={setActiveModal}
+        setSlideOpen={setSlideOpen}
       />
       <StudyCreator
         studies={studies}
         researcherId={researcherId}
         open={addStudy}
-        onClose={() => setAddStudy(false)}
+        onclose={() => {
+          setAddStudy(false)
+          handleClosePopUp(2)
+        }}
         handleNewStudy={handleNewStudyData}
         closePopUp={handleClosePopUp}
         resins={props.resins}
+        activeModal={activeModal}
+        setActiveModal={setActiveModal}
+        setSlideOpen={setSlideOpen}
       />
       <PatientStudyCreator
         studies={studies}
         researcherId={researcherId}
-        onClose={() => setAddParticipantStudy(false)}
+        onclose={() => {
+          setAddParticipantStudy(false)
+          handleClosePopUp(1)
+        }}
         open={addParticipantStudy}
         handleNewStudy={handleNewStudyData}
         closePopUp={handleClosePopUp}
+        resins={props.resins}
+        activeModal={activeModal}
+        setActiveModal={setActiveModal}
+        setSlideOpen={setSlideOpen}
       />
     </div>
   )

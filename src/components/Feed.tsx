@@ -926,7 +926,7 @@ export default function Feed({
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogContent>{`${t("This activity is not yet available in mindLAMP 2.")}`}</DialogContent>
+        <DialogContent>{`${t("This activity is not yet available in Emersive 2.")}`}</DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenNotImplemented(false)} color="primary">
             {`${t("Ok")}`}

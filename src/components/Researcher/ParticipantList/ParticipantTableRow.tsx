@@ -19,6 +19,21 @@ import Credentials from "../../Credentials"
 import ParticipantName from "./ParticipantName"
 import ParticipantDetailsDialog from "./ParticipantDetailsDialog"
 import LAMP from "lamp-core"
+import { ReactComponent as SuspendIcon } from "../../../icons/NewIcons/stop-circle.svg"
+import { ReactComponent as SuspendFilledIcon } from "../../../icons/NewIcons/stop-circle-filled.svg"
+import { ReactComponent as ViewIcon } from "../../../icons/NewIcons/overview.svg"
+import { ReactComponent as ViewFilledIcon } from "../../../icons/NewIcons/overview-filled.svg"
+import { ReactComponent as CopyFilledIcon } from "../../../icons/NewIcons/arrow-circle-down-filled.svg"
+import { ReactComponent as CopyIcon } from "../../../icons/NewIcons/arrow-circle-down.svg"
+import { ReactComponent as DeleteIcon } from "../../../icons/NewIcons/trash-xmark.svg"
+import { ReactComponent as EditIcon } from "../../../icons/NewIcons/text-box-edit.svg"
+import { ReactComponent as EditFilledIcon } from "../../../icons/NewIcons/text-box-edit-filled.svg"
+import { studycardStyles, useModularTableStyles } from "../Studies/Index"
+import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
+import ConfirmationDialog from "../../ConfirmationDialog"
+import { useSnackbar } from "notistack"
+import { useTranslation } from "react-i18next"
+import { Service } from "../../DBService/DBService"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -126,6 +141,7 @@ export default function ParticipantTableRow({
   researcherId,
   notificationColumn,
   authType,
+  pStudy,
   ...props
 }) {
   const classes = useStyles()
@@ -135,16 +151,18 @@ export default function ParticipantTableRow({
     setChecked(event.target.checked)
     handleChange(participant, event.target.checked)
   }
+  const { enqueueSnackbar } = useSnackbar()
+  const { t } = useTranslation()
   useEffect(() => {
     setChecked(selectedParticipants.filter((d) => d.id === participant.id).length > 0)
   }, [selectedParticipants, participant.id])
-
+  const ptablestyles = useModularTableStyles()
   const [user, setName] = useState(participant)
 
   const updateParticipant = (nameVal: string) => {
     setName({ ...user, name: nameVal })
   }
-
+  const [activeButton, setActiveButton] = useState({ id: null, action: null })
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
 
   const SESSION_TIMEOUT = 5 * 60 * 1000 // 5 mins for reference now
@@ -154,7 +172,7 @@ export default function ParticipantTableRow({
     const now = new Date()
     const timeDiff = now.getTime() - lastActivity.getTime()
 
-    // If no activity in last 5 minutes means user logged out
+    // If no participant in last 5 minutes means user logged out
     if (timeDiff > SESSION_TIMEOUT && participant.isLoggedIn) {
       LAMP.Participant.update(participant.id, {
         ...participant,
@@ -176,6 +194,159 @@ export default function ParticipantTableRow({
     }
     return timeDiff <= SESSION_TIMEOUT && participant.isLoggedIn
   }
+  const participantcardclasses = studycardStyles()
+  const [confirmationDialog, setConfirmationDialog] = useState(false)
+  const handleDelete = async (status) => {
+    if (status === "Yes") {
+      try {
+        await LAMP.Participant.delete(participant.id)
+        await Service.delete("participants", [participant.id])
+        await Service.updateCount("studies", participant.study_id, "participant_count", 1, 1)
+        // await props.searchActivities()
+        enqueueSnackbar(t("Participant deleted successfully"), { variant: "success" })
+      } catch (error) {
+        console.error("Error deleting participant:", error)
+        enqueueSnackbar(t("Failed to delete participant"), { variant: "error" })
+      }
+    } else {
+      setConfirmationDialog(false)
+    }
+    setConfirmationDialog(false)
+    setActiveButton({ id: null, action: null })
+  }
+
+  const actions = () => (
+    <Box display="flex" alignItems="center" style={{ gap: 8 }}>
+      <Box component="span" className={ptablestyles.actionIcon}>
+        {notificationColumn && <NotificationSettings participant={participant} />}
+      </Box>
+      <Box component="span" className={ptablestyles.actionIcon}>
+        {activeButton.id === participant.id && activeButton.action === "view" ? (
+          <ViewFilledIcon
+            className={`${participantcardclasses.actionIcon} active`}
+            onClick={() => {
+              setActiveButton({ id: participant.id, action: "view" })
+              onParticipantSelect(participant.id)
+              setActiveButton({ id: null, action: null })
+            }}
+          />
+        ) : (
+          <ViewIcon
+            className={`${participantcardclasses.actionIcon} ${
+              activeButton.id === participant.id && activeButton.action === "view" ? "active" : ""
+            }`}
+            onClick={() => {
+              setActiveButton({ id: participant.id, action: "view" })
+              onParticipantSelect(participant.id)
+              setActiveButton({ id: null, action: null })
+            }}
+          />
+        )}
+      </Box>
+      <Box component="span" className={ptablestyles.actionIcon}>
+        {activeButton.id === participant.id && activeButton.action === "edit" ? (
+          <EditFilledIcon
+            className={`${participantcardclasses.actionIcon} active`}
+            onClick={() => {
+              setActiveButton({ id: participant.id, action: "edit" })
+              setDetailsDialogOpen(true)
+            }}
+          />
+        ) : (
+          <EditIcon
+            className={`${participantcardclasses.actionIcon} ${
+              activeButton.id === participant.id && activeButton.action === "edit" ? "active" : ""
+            }`}
+            onClick={() => {
+              setActiveButton({ id: participant.id, action: "edit" })
+              setDetailsDialogOpen(true)
+            }}
+          />
+        )}
+      </Box>
+      <Box component="span" className={ptablestyles.actionIcon}>
+        <Credentials user={participant} />
+      </Box>
+      {/* {props.authType === "admin" && ( )}*/}
+      <Box component="span" className={ptablestyles.actionIcon}>
+        {!participant.systemTimestamps?.suspensionTime ? (
+          activeButton.id === participant.id && activeButton.action === "suspend" ? (
+            <SuspendFilledIcon
+              className={`${participantcardclasses.actionIcon} active`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "suspend" })
+                props.onSuspend(participant, setActiveButton)
+              }}
+            />
+          ) : (
+            <SuspendIcon
+              className={participantcardclasses.actionIcon}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "suspend" })
+                props.onSuspend(participant, setActiveButton)
+              }}
+            />
+          )
+        ) : activeButton.id === participant.id && activeButton.action === "suspend" ? (
+          <SuspendFilledIcon
+            className={`${participantcardclasses.actionIcon} active`}
+            onClick={() => {
+              setActiveButton({ id: participant.id, action: "suspend" })
+              props.onUnSuspend(participant, setActiveButton)
+            }}
+          />
+        ) : (
+          <SuspendIcon
+            className={participantcardclasses.actionIcon}
+            onClick={() => {
+              setActiveButton({ id: participant.id, action: "suspend" })
+              props.onUnSuspend(participant, setActiveButton)
+            }}
+          />
+        )}
+      </Box>
+      <Box component="span" className={ptablestyles.actionIcon}>
+        {activeButton.id === participant.id && activeButton.action === "delete" ? (
+          <DeleteFilledIcon
+            className={`${participantcardclasses.actionIcon} active`}
+            onClick={() => {
+              setActiveButton({ id: participant.id, action: "delete" })
+              setConfirmationDialog(true)
+            }}
+          />
+        ) : (
+          <DeleteIcon
+            className={participantcardclasses.actionIcon}
+            onClick={() => {
+              setActiveButton({ id: participant.id, action: "delete" })
+              setConfirmationDialog(true)
+            }}
+          />
+        )}
+      </Box>
+      <Box component="span" className={ptablestyles.actionIcon}>
+        {activeButton.id === participant.id && activeButton.action === "settings" ? (
+          <CopyFilledIcon
+            className={`${participantcardclasses.actionIcon} active`}
+            onClick={() => {
+              setActiveButton({ id: participant.id, action: "settings" })
+              window.location.href = `/#/researcher/${researcherId}/participant/${participant?.id}/settings`
+            }}
+          />
+        ) : (
+          <CopyIcon
+            className={`${participantcardclasses.actionIcon} ${
+              activeButton.id === participant.id && activeButton.action === "settings" ? "active" : ""
+            }`}
+            onClick={() => {
+              setActiveButton({ id: participant.id, action: "settings" })
+              window.location.href = `/#/researcher/${researcherId}/participant/${participant?.id}/settings`
+            }}
+          />
+        )}
+      </Box>
+    </Box>
+  )
 
   useEffect(() => {
     setName(user)
@@ -214,42 +385,8 @@ export default function ParticipantTableRow({
           </TableCell>
         ))}
 
-        <TableCell className={classes.actionCell}>
-          <Box display="flex" style={{ gap: 1 }}>
-            {notificationColumn && <NotificationSettings participant={participant} />}
-            <Fab
-              size="small"
-              className={classes.btnWhite}
-              onClick={() => {
-                setDetailsDialogOpen(true)
-              }}
-            >
-              <Icon>app_registration</Icon>
-            </Fab>
-            <Credentials user={participant} />
-            <Fab
-              size="small"
-              className={classes.btnWhite}
-              component={Link}
-              href={`/#/researcher/${researcherId}/participant/${participant.id}/settings`}
-            >
-              <Icon>settings</Icon>
-            </Fab>
-            <Fab size="small" className={classes.btnWhite} onClick={() => onParticipantSelect(participant.id)}>
-              <Icon>preview</Icon>
-            </Fab>
-            {/* authType === "admin" && */}
-            {!participant.systemTimestamps?.suspensionTime && (
-              <Fab size="small" className={classes.btnWhite} onClick={() => props.onSuspend(participant)}>
-                <Icon>block</Icon>
-              </Fab>
-            )}
-            {participant.systemTimestamps?.suspensionTime && (
-              <Fab size="small" className={classes.btnWhite} onClick={() => props.onUnSuspend(participant)}>
-                <Icon>library_add</Icon>
-              </Fab>
-            )}
-          </Box>
+        <TableCell className={ptablestyles.actionCell}>
+          <Box className={ptablestyles.actionButtons}>{actions()}</Box>
         </TableCell>
       </TableRow>
       <ParticipantDetailsDialog
@@ -267,58 +404,17 @@ export default function ParticipantTableRow({
         }}
         formatDate={props.formatDate}
         researcherId={researcherId}
+        pStudy={pStudy}
+      />
+      <ConfirmationDialog
+        open={confirmationDialog}
+        onClose={() => {
+          setConfirmationDialog(false)
+          setActiveButton({ id: null, action: null })
+        }}
+        confirmAction={handleDelete}
+        confirmationMsg={t("Are you sure you want to delete this Participant?")}
       />
     </>
-  )
-  return (
-    <TableRow>
-      <TableCell padding="checkbox">
-        <Checkbox checked={checked} onChange={handleCheckChange} className={classes.checkboxActive} />
-      </TableCell>
-
-      {visibleColumns.map((column) => (
-        <TableCell key={column.id}>
-          {column.id === "name" ? (
-            <ParticipantName
-              participant={participant}
-              updateParticipant={props.updateParticipant}
-              openSettings={openSettings}
-            />
-          ) : (
-            column.value(participant)
-          )}
-        </TableCell>
-      ))}
-
-      <TableCell
-        style={{
-          position: "sticky",
-          right: 0,
-          background: "white",
-          zIndex: 1,
-        }}
-      >
-        <Box display="flex" style={{ gap: 1 }}>
-          {props.notificationColumn && <NotificationSettings participant={participant} />}
-          <Credentials user={participant} />
-          <Fab
-            size="small"
-            className={classes.settingslink}
-            component={Link}
-            href={`/#/researcher/${researcherId}/participant/${participant.id}/settings`}
-          >
-            <Icon>settings</Icon>
-          </Fab>
-          <Fab size="small" className={classes.btnWhite} onClick={() => onParticipantSelect(participant.id)}>
-            <Icon>visibility</Icon>
-          </Fab>
-          {!participant.systemTimestamps?.suspensionTime && (
-            <Fab size="small" className={classes.btnWhite} onClick={() => props.onSuspend(participant)}>
-              <Icon>block</Icon>
-            </Fab>
-          )}
-        </Box>
-      </TableCell>
-    </TableRow>
   )
 }

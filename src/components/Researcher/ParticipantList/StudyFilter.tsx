@@ -3,6 +3,7 @@ import { Box, Fab, Button, Icon, makeStyles, Theme, createStyles, useMediaQuery,
 import { useTranslation } from "react-i18next"
 import { Add as AddIcon, FilterList as FilterListIcon, Search as SearchIcon } from "@material-ui/icons"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
+import { ReactComponent as FilterIcon } from "../../../icons/NewIcons/filters.svg"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -46,6 +47,29 @@ const useStyles = makeStyles((theme: Theme) =>
       padding: "8px", // Avoids excessive shrinking
       boxSizing: "border-box", // Ensures padding doesn’t affect width
     },
+    actionIcon: {
+      width: 40,
+      height: 40,
+      minWidth: 40,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      padding: theme.spacing(0.5),
+      borderRadius: "25%",
+      "& path": {
+        fill: "rgba(0, 0, 0, 0.4)",
+      },
+      "&.active path": {
+        fill: "#06B0F0",
+      },
+      "&:hover": {
+        backgroundColor: "rgba(0, 0, 0, 0.04)",
+        "& path": {
+          fill: "#06B0F0",
+        },
+      },
+      marginLeft: theme.spacing(1),
+      marginRight: theme.spacing(1),
+    },
   })
 )
 
@@ -71,20 +95,12 @@ export default function StudyFilter({ setShowFilterStudies, setOrder, order, ...
     <Box
       className={headerClasses.filterContainer + " " + (!supportsSidebar ? headerClasses.filterContainerBottom : null)}
     >
-      <Button
-        variant="contained"
-        // className={classes.btnFilter + " " + (showFilter === true ? classes.tagFilteredBg : "")}
-        className={`${classes.filterButton} ${!supportsSidebar ? classes.filterButtonCompact : ""}`}
+      <FilterIcon
+        className={classes.actionIcon}
         onClick={() => {
           showFilter === true ? setShowFilter(false) : setShowFilter(true)
         }}
-        startIcon={<FilterListIcon />}
-      >
-        {/* <Icon>filter_alt</Icon> */}
-        {supportsSidebar ? "Filter" : null}
-        {/* <span className={classes.filterText}>{`${t("Filter results")}`}</span>{" "} */}
-        {/* {showFilter === true ? <Icon>arrow_drop_up</Icon> : <Icon>arrow_drop_down</Icon>} */}
-      </Button>
+      />
       <Fab
         variant="extended"
         className={classes.btnFilter + " " + (showFilter === true ? classes.tagFilteredBg : "")}

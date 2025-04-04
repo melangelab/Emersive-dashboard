@@ -13,6 +13,8 @@ import {
   Paper,
 } from "@material-ui/core"
 
+import { Switch, Route, useRouteMatch, Redirect, HashRouter, useLocation } from "react-router-dom"
+
 import LAMP from "lamp-core"
 import { ResponsivePaper } from "../Utils"
 import { useTranslation } from "react-i18next"
@@ -25,6 +27,25 @@ import Researchers from "./Researchers"
 import DataPortal from "../data_portal/DataPortal"
 import NavigationBar from "../NavigationBar"
 import { useLayoutStyles } from "../GlobalStyles"
+import Sidebar from "../Sidebar"
+import Admins from "./Admins"
+
+import { ReactComponent as DashboardIcon } from "../../icons/NewIcons/dashboard-panel.svg"
+import { ReactComponent as DashboardIconFilled } from "../../icons/NewIcons/dashboard-panel-filled.svg"
+import { ReactComponent as ResearcherIcon } from "../../icons/NewIcons/crown-line.svg"
+import { ReactComponent as ResearcherIconFilled } from "../../icons/NewIcons/crown.svg"
+import { ReactComponent as ParticipantsIcon } from "../../icons/NewIcons/users-thin.svg"
+import { ReactComponent as ParticipantsIconFilled } from "../../icons/NewIcons/users.svg"
+import { ReactComponent as DevLabIcon } from "../../icons/NewIcons/tools.svg"
+import { ReactComponent as DevLabIconFilled } from "../../icons/NewIcons/tools-filled.svg"
+import { ReactComponent as AccountIcon } from "../../icons/NewIcons/shield-check.svg"
+import { ReactComponent as AccountIconFilled } from "../../icons/NewIcons/shield-check-filled.svg"
+import { ReactComponent as AdminsIcon } from "../../icons/NewIcons/admin-alt.svg"
+import { ReactComponent as AdminsIconFilled } from "../../icons/NewIcons/admin-alt.svg"
+
+import AdminDashboard from "./AdminDashboard"
+import Participant from "../Participant"
+import Account from "./Account"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -59,7 +80,7 @@ const useStyles = makeStyles((theme: Theme) =>
       alignItems: "center",
       justifyContent: "center",
       minHeight: 80,
-      padding: theme.spacing(2),
+      // padding: theme.spacing(2),
     },
 
     menuItemsBottom: {
@@ -219,15 +240,75 @@ const useStyles = makeStyles((theme: Theme) =>
         cursor: "pointer !important",
       },
     },
+    root: {
+      display: "flex",
+      minHeight: "100vh",
+      width: "100%",
+      padding: "0px",
+    },
+    content: {
+      flexGrow: 1,
+      padding: theme.spacing(3),
+      marginLeft: 240, // Expanded sidebar width
+      width: "calc(100% - 240px)",
+      transition: theme.transitions.create(["margin", "width"], {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+      }),
+    },
+    contentShift: {
+      marginLeft: 64, // Collapsed sidebar width
+      width: "calc(100% - 64px)",
+    },
   })
 )
 
-export default function Root({ updateStore, adminType, authType, goBack, onLogout, ...props }) {
+export default function Root({ updateStore, adminType, authType, goBack, onLogout, setIdentity, ...props }) {
   const { t, i18n } = useTranslation()
   const [currentTab, setCurrentTab] = useState(0)
   const classes = useStyles()
   const layoutClasses = useLayoutStyles()
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
+
+  // const { path } = useRouteMatch(); // This will give us the current base path (/admin)
+  const { path } = useRouteMatch() // This will give us the current base path
+
+  const location = useLocation()
+  console.log("^^$E^#", location)
+  const [activeRoute, setActiveRoute] = useState(() => {
+    const path = location.pathname
+    return path.split("/").pop() || "dashboard"
+  })
+
+  console.log("active route", activeRoute)
+  useEffect(() => {
+    console.log("Current location:", location)
+    console.log("Current path:", path)
+    console.log("Current active route:", activeRoute)
+  }, [location, path, activeRoute])
+  useEffect(() => {
+    console.log("Active Route:", activeRoute)
+    console.log("Current Path:", location.pathname)
+  }, [activeRoute, location])
+
+  const menuItems = [
+    { text: "Dashboard", path: `${path}/dashboard`, icon: <DashboardIcon />, filledIcon: <DashboardIconFilled /> },
+    { text: "Admins", path: `${path}/admins`, icon: <AdminsIcon />, filledIcon: <AdminsIconFilled /> },
+    {
+      text: "Researchers",
+      path: `${path}/researchers`,
+      icon: <ResearcherIcon />,
+      filledIcon: <ResearcherIconFilled />,
+    },
+    {
+      text: "Participants",
+      path: `${path}/participants`,
+      icon: <ParticipantsIcon />,
+      filledIcon: <ParticipantsIconFilled />,
+    },
+    { text: "Dev Lab", path: `${path}/dev-lab`, icon: <DevLabIcon />, filledIcon: <DevLabIconFilled /> },
+    { text: "Account", path: `${path}/account`, icon: <AccountIcon />, filledIcon: <AccountIconFilled /> },
+  ]
 
   const getSelectedLanguage = () => {
     const matched_codes = Object.keys(locale_lang).filter((code) => code.startsWith(navigator.language))
@@ -252,88 +333,97 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
     i18n.changeLanguage(language)
   }, [])
 
+  useEffect(() => {
+    console.log(
+      "Available Routes:",
+      menuItems.map((item) => item.path)
+    )
+    console.log("Current Location:", window.location.hash)
+  }, [menuItems])
+
   return (
-    <Container className={layoutClasses.mainContent}>
-      <Container
-        className={
-          currentTab !== 1
-            ? window.innerWidth >= 1280 && window.innerWidth <= 1350
-              ? layoutClasses.tableContainerWidthPad
-              : layoutClasses.tableContainerWidth
-            : layoutClasses.tableContainerDataPortalWidth
-        }
-      >
-        {/* <ResponsivePaper className={currentTab === 1 ? classes.dataPortalPaper : null} elevation={0}> */}
-        <Box
-          className={`${layoutClasses.drawerContainer} ${!supportsSidebar ? layoutClasses.drawerContainerBottom : ""}`}
-        >
-          <Drawer
-            variant="permanent"
-            classes={{
-              paper:
-                layoutClasses.researcherMenu +
-                " " +
-                layoutClasses.logResearcher +
-                " " +
-                (!supportsSidebar ? layoutClasses.researcherMenuBottom + " " + layoutClasses.logResearcherBottom : ""),
-            }}
-            style={{ marginBottom: "0px" }}
-          >
-            <List
-              component="nav"
-              className={classes.menuOuter + " " + (!supportsSidebar ? classes.menuOuterBottom : "")}
-            >
-              <ListItem
-                className={
-                  classes.menuItems + " " + classes.btnCursor + " " + (!supportsSidebar ? classes.menuItemsBottom : "")
-                }
-                button
-                selected={currentTab === 0}
-                onClick={(event) => setCurrentTab(0)}
-              >
-                <ListItemIcon className={classes.menuIcon}>
-                  <Researcher />
-                </ListItemIcon>
-                <ListItemText primary={`${t("Investigators")}`} />
-              </ListItem>
-              {adminType === "admin" && (
-                <ListItem
-                  className={classes.menuItems + " " + classes.btnCursor}
-                  button
-                  selected={currentTab === 1}
-                  onClick={(event) => setCurrentTab(1)}
-                >
-                  <ListItemIcon className={classes.menuIcon}>
-                    <DataPortalIcon />
-                  </ListItemIcon>
-                  <ListItemText primary={`${t("Data Portal")}`} />
-                </ListItem>
+    <div className={classes.root}>
+      <Container className={layoutClasses.mainContent}>
+        <Sidebar
+          menuItems={menuItems}
+          history={props.history}
+          activeRoute={activeRoute}
+          setActiveRoute={setActiveRoute}
+          onLogout={onLogout}
+          setIdentity={setIdentity}
+        />
+
+        <div className="display-content-container">
+          <Switch>
+            {console.log("Rendering Switch with routes")}
+
+            <Route exact path={path}>
+              <Redirect to={`${path}/dashboard`} />
+            </Route>
+
+            <Route
+              path={`${path}/dashboard`}
+              render={(routeProps) => (
+                <AdminDashboard
+                  history={props.history}
+                  adminType={adminType}
+                  authType={authType}
+                  title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+                />
               )}
-            </List>
-          </Drawer>
-        </Box>
-        {currentTab === 0 && (
-          <Researchers
-            history={props.history}
-            updateStore={updateStore}
-            adminType={adminType}
-            authType={authType}
-            onLogout={onLogout}
-          />
-        )}
-        {currentTab === 1 && (
-          <DataPortal
-            onLogout={null}
-            token={{
-              username: LAMP.Auth._auth.id,
-              password: LAMP.Auth._auth.password,
-              server: LAMP.Auth._auth.serverAddress ? LAMP.Auth._auth.serverAddress : "api.lamp.digital",
-              type: "Administrator",
-              name: "Administrator",
-            }}
-          />
-        )}
+            />
+
+            <Route
+              path={`${path}/researchers`}
+              render={(routeProps) => (
+                <Researchers
+                  {...routeProps}
+                  history={props.history}
+                  updateStore={updateStore}
+                  adminType={adminType}
+                  authType={authType}
+                  onLogout={onLogout}
+                />
+              )}
+            />
+
+            <Route
+              path={`${path}/participants`}
+              render={(routeProps) => <AdminDashboard {...routeProps} {...props} />}
+            />
+
+            <Route path={`${path}/dev-lab`} render={(routeProps) => <AdminDashboard {...routeProps} {...props} />} />
+
+            <Route
+              path={`${path}/admins`}
+              render={(routeProps) => (
+                <Admins
+                  history={props.history}
+                  adminType={adminType}
+                  authType={authType}
+                  title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+                />
+              )}
+            />
+
+            <Route
+              path={`${path}/account`}
+              render={(routeProps) => (
+                <Account
+                  {...routeProps}
+                  {...props}
+                  history={props.history}
+                  updateStore={updateStore}
+                  adminType={adminType}
+                  authType={authType}
+                  onLogout={onLogout}
+                  title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+                />
+              )}
+            />
+          </Switch>
+        </div>
       </Container>
-    </Container>
+    </div>
   )
 }

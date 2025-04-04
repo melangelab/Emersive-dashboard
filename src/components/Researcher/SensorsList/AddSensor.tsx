@@ -1,23 +1,46 @@
 import React, { useState, useEffect } from "react"
-import { Box, Fab, Icon, makeStyles, createStyles, Button, useMediaQuery, useTheme } from "@material-ui/core"
+import {
+  Box,
+  Fab,
+  Icon,
+  makeStyles,
+  createStyles,
+  Button,
+  useMediaQuery,
+  useTheme,
+  Backdrop,
+  Slide,
+  Typography,
+  Divider,
+} from "@material-ui/core"
 import LAMP from "lamp-core"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
 import SensorDialog from "./SensorDialog"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
-import { Add as AddIcon } from "@material-ui/icons"
+import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
+import { slideStyles } from "../ParticipantList/AddButton"
+import { ReactComponent as SensorIcon } from "../../../icons/NewIcons/sensor-on-filled.svg"
 
 const useStyles = makeStyles((theme) =>
   createStyles({
     addButton: {
-      backgroundColor: "#4285f4",
-      color: "#fff",
-      padding: "8px 24px",
-      borderRadius: 20,
-      textTransform: "none",
-      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
+      backgroundColor: "#4CAF50",
+      padding: theme.spacing(1),
+      borderRadius: "40%",
+      width: 40,
+      height: 40,
+      minWidth: 40,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      "& path": {
+        fill: "#FFFFFF",
+      },
       "&:hover": {
-        backgroundColor: "#3367d6",
+        backgroundColor: "#45a049",
       },
     },
     addButtonCompact: {
@@ -95,6 +118,7 @@ export default function AddSensor({
   studyId?: string
   setSensors?: Function
   settingsInfo?: SettingsInfo
+  [key: string]: any
 }) {
   const classes = useStyles()
   const { t } = useTranslation()
@@ -102,8 +126,9 @@ export default function AddSensor({
 
   const [allSensors, setAllSensors] = useState<Array<Object>>([])
   const headerclasses = useHeaderStyles()
-
+  const sliderclasses = slideStyles()
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
+  const [slideOpen, setSlideOpen] = useState(false)
 
   useEffect(() => {
     getAllStudies()
@@ -126,27 +151,50 @@ export default function AddSensor({
 
   return (
     <Box>
-      {/* <Fab variant="extended" color="primary" classes={{ root: classes.btnBlue }} onClick={() => setSensorDialog(true)}>
-        <Icon>add</Icon> <span className={classes.addText}>{`${t("Add")}`}</span>
-      </Fab> */}
       {/* <Button
-        variant="contained"
-        className={headerclasses.addButton}
-        startIcon={<AddIcon />}
-        onClick={(event) => setSensorDialog(true)}
-      >
-        {t("Add")}
-      </Button> */}
-      <Button
         variant="contained"
         className={`${classes.addButton} ${!supportsSidebar ? classes.addButtonCompact : ""}`}
         onClick={(event) => setSensorDialog(true)}
       >
         {supportsSidebar ? t("+ Add") : "+"}
-      </Button>
+      </Button> */}
+      <AddIcon
+        className={classes.addButton}
+        onClick={(event) => {
+          setSlideOpen(true)
+        }}
+      />
+      <Backdrop
+        className={sliderclasses.backdrop}
+        open={slideOpen}
+        onClick={(e) => !sensorDialog && setSlideOpen(false)}
+      />
+      <Slide direction="left" in={slideOpen} mountOnEnter unmountOnExit>
+        <Box className={sliderclasses.slidePanel}>
+          <Box className={sliderclasses.icon}>
+            <SensorIcon />
+          </Box>
+          <Typography variant="h6">ADD NEW SENSOR</Typography>
+          <Divider className={sliderclasses.divider} />
+          <Typography variant="body2" paragraph>
+            Sensors are <strong>study-specific</strong> data collection tools.
+          </Typography>
+          <Divider className={sliderclasses.divider} />
+          <Typography variant="body1" paragraph>
+            Add a new Sensor under researcher <strong>{props.title}</strong>.
+          </Typography>
+          <Typography variant="body2" paragraph>
+            Choose the appropriate sensor type for your study.
+          </Typography>
+          <Divider className={sliderclasses.divider} />
+          <Button className={sliderclasses.button} onClick={() => setSensorDialog(true)}>
+            Next
+          </Button>
+        </Box>
+      </Slide>
       <SensorDialog
         studies={studies}
-        onClose={() => setSensorDialog(false)}
+        onclose={() => setSensorDialog(false)}
         open={sensorDialog}
         type="add"
         studyId={studyId ?? null}

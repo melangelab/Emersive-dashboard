@@ -177,7 +177,7 @@ export default function GroupCreator({
       (items || []).filter((i) => i === null).length > 0 ||
       !data.name ||
       !data.studyID ||
-      !data.name.trim().length
+      !data.name?.trim().length
     )
   }
 

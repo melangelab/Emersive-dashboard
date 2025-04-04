@@ -31,7 +31,9 @@ import { Service } from "./DBService/DBService"
 // Local Imports
 import { ResponsiveMargin } from "./Utils"
 import { ReactComponent as Logo } from "../icons/Logo.svg"
+import { ReactComponent as LineArt } from "../icons/login_line_drawing.svg"
 import { ReactComponent as Logotext } from "../icons/mindLAMP.svg"
+
 import { useTranslation } from "react-i18next"
 import { Autocomplete } from "@mui/material"
 
@@ -196,12 +198,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
     const cachedOptions = localStorage.getItem("cachedOptions")
     let options: SuggestedUrlOption[]
     if (!cachedOptions) {
-      options = [
-        { label: "api.lamp.digital" },
-        { label: "mindlamp-api.pronet.med.yale.edu" },
-        { label: "mindlamp.orygen.org.au" },
-        { label: "mindlamp-qa.dmh.lacounty.gov" },
-      ]
+      options = [{ label: "api.lamp.digital" }]
     } else {
       options = JSON.parse(cachedOptions).filter((o) => typeof o?.label !== "undefined")
     }
@@ -935,9 +932,9 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
             console.log("result afyer update timing", result)
           }
         }
-        process.env.REACT_APP_LATEST_LAMP === "true"
-          ? enqueueSnackbar(`${t("Note: This is the latest version of LAMP.")}`, { variant: "info" })
-          : enqueueSnackbar(`${t("Note: This is NOT the latest version of LAMP")}`, { variant: "info" })
+        // process.env.REACT_APP_LATEST_LAMP === "true"
+        //   ? enqueueSnackbar(`${t("Note: This is the latest version of LAMP.")}`, { variant: "info" })
+        //   : enqueueSnackbar(`${t("Note: This is NOT the latest version of LAMP")}`, { variant: "info" })
         localStorage.setItem(
           "LAMP_user_" + res.identity.id,
           JSON.stringify({
@@ -957,7 +954,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
           variant: "error",
         })
         if (!srcLocked)
-          enqueueSnackbar(`${t("Are you sure you're logging into the right mindLAMP server?")}`, { variant: "info" })
+          enqueueSnackbar(`${t("Are you sure you're logging into the right Emersive server?")}`, { variant: "info" })
         setLoginClick(false)
       })
   }
@@ -971,139 +968,129 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
       <ResponsiveMargin>
         <Grid
           container
-          spacing={2}
+          // spacing={2}
           justifyContent="center"
           alignItems="center"
-          style={{ minHeight: "100vh" }}
-          className="grid-container"
+          style={{ minHeight: "100vh", height: "100vh", width: "100vw" }}
         >
-          <Grid item xs={12} md={6}>
-            <div className="logo-container">
-              <Box className="logo-login">
-                <Logo />
-              </Box>
-              <div className="logo-text">
-                <Logotext />
-                <div className="logo-underline" />
+          {supportsSidebar && (
+            <Grid item xs={12} md={7} className="line-art-container">
+              <div className="line-art-div">
+                <LineArt className="line-art" />
               </div>
+              <span className="platform-name">emersive</span>
+              <span className="platform-desc">MOBILE SENSING RESEARCH</span>
+            </Grid>
+          )}
+          <Grid item xs={12} md={supportsSidebar ? 5 : 12} className="grid-item">
+            <div className="fab-container">
+              <Fab
+                color="primary"
+                aria-label="select language"
+                // onClick={handleOpen}
+                onClick={(event) => setFabMenu(event.currentTarget)} // Open menu on click
+                size="small"
+                // style={{ position: "fixed", top: 16, right: 16 }}
+              >
+                <TranslateIcon />
+              </Fab>
+              <Menu
+                anchorEl={fabMenu} // Position menu relative to Fab
+                open={Boolean(fabMenu)} // Open the menu if fabMenu is set
+                onClose={() => setFabMenu(null)} // Close menu on selection or outside click
+              >
+                {Object.keys(locale_lang).map((key) => {
+                  if (userLanguages.includes(key)) {
+                    return (
+                      <MenuItem
+                        key={key}
+                        value={key}
+                        onClick={() => {
+                          setSelectedLanguage(key) // Set language on click
+                          setFabMenu(null) // Close menu
+                        }}
+                      >
+                        {`${locale_lang[key].native} (${locale_lang[key].english})`}
+                      </MenuItem>
+                    )
+                  }
+                })}
+              </Menu>
+              <Fab
+                size="small"
+                color="primary"
+                aria-label="help"
+                // style={{ position: "fixed", top: 8, right: 8 }}
+                onClick={(event) => setHelpMenu(event.currentTarget)}
+              >
+                {/* <HelpCenterOutlined/> */}
+                <HelpIcon style={{ fontSize: "2.5 rem" }} />
+                {/* <Icon style={{ fontSize: "2rem", color:"#23c433" }}>help</Icon> */}
+              </Fab>
+              <Menu
+                id="simple-menu"
+                anchorEl={helpMenu}
+                keepMounted
+                open={Boolean(helpMenu)}
+                onClose={() => setHelpMenu(undefined)}
+              >
+                <MenuItem
+                  dense
+                  onClick={() => {
+                    setHelpMenu(undefined)
+                    window.open("https://docs.lamp.digital", "_blank")
+                  }}
+                >
+                  <b style={{ color: colors.grey["600"] }}>{`${t("Help & Support")}`}</b>
+                </MenuItem>
+                <MenuItem
+                  dense
+                  onClick={() => {
+                    setHelpMenu(undefined)
+                    window.open("https://community.lamp.digital", "_blank")
+                  }}
+                >
+                  <b style={{ color: colors.grey["600"] }}>LAMP {`${t("Community")}`}</b>
+                </MenuItem>
+                <MenuItem
+                  dense
+                  onClick={() => {
+                    setHelpMenu(undefined)
+                    window.open("mailto:team@digitalpsych.org", "_blank")
+                  }}
+                >
+                  <b style={{ color: colors.grey["600"] }}>{`${t("Contact Us")}`}</b>
+                </MenuItem>
+                <MenuItem
+                  dense
+                  onClick={() => {
+                    setHelpMenu(undefined)
+                    window.open("https://docs.lamp.digital/privacy/", "_blank")
+                  }}
+                >
+                  <b style={{ color: colors.grey["600"] }}>{`${t("Privacy Policy")}`}</b>
+                </MenuItem>
+              </Menu>
             </div>
-          </Grid>
-          <Grid item xs={12} md={6} className="grid-item">
             <div className="card-container">
-              <div className="fab-container">
-                <Fab
-                  color="primary"
-                  aria-label="select language"
-                  // onClick={handleOpen}
-                  onClick={(event) => setFabMenu(event.currentTarget)} // Open menu on click
-                  size="small"
-                  // style={{ position: "fixed", top: 16, right: 16 }}
-                >
-                  <TranslateIcon />
-                </Fab>
-                <Menu
-                  anchorEl={fabMenu} // Position menu relative to Fab
-                  open={Boolean(fabMenu)} // Open the menu if fabMenu is set
-                  onClose={() => setFabMenu(null)} // Close menu on selection or outside click
-                >
-                  {Object.keys(locale_lang).map((key) => {
-                    if (userLanguages.includes(key)) {
-                      return (
-                        <MenuItem
-                          key={key}
-                          value={key}
-                          onClick={() => {
-                            setSelectedLanguage(key) // Set language on click
-                            setFabMenu(null) // Close menu
-                          }}
-                        >
-                          {`${locale_lang[key].native} (${locale_lang[key].english})`}
-                        </MenuItem>
-                      )
-                    }
-                  })}
-                </Menu>
-                <Fab
-                  size="small"
-                  color="primary"
-                  aria-label="help"
-                  // style={{ position: "fixed", top: 8, right: 8 }}
-                  onClick={(event) => setHelpMenu(event.currentTarget)}
-                >
-                  {/* <HelpCenterOutlined/> */}
-                  <HelpIcon style={{ fontSize: "2.5 rem" }} />
-                  {/* <Icon style={{ fontSize: "2rem", color:"#23c433" }}>help</Icon> */}
-                </Fab>
-                <Menu
-                  id="simple-menu"
-                  anchorEl={helpMenu}
-                  keepMounted
-                  open={Boolean(helpMenu)}
-                  onClose={() => setHelpMenu(undefined)}
-                >
-                  <MenuItem
-                    dense
-                    onClick={() => {
-                      setHelpMenu(undefined)
-                      window.open("https://docs.lamp.digital", "_blank")
-                    }}
-                  >
-                    <b style={{ color: colors.grey["600"] }}>{`${t("Help & Support")}`}</b>
-                  </MenuItem>
-                  <MenuItem
-                    dense
-                    onClick={() => {
-                      setHelpMenu(undefined)
-                      window.open("https://community.lamp.digital", "_blank")
-                    }}
-                  >
-                    <b style={{ color: colors.grey["600"] }}>LAMP {`${t("Community")}`}</b>
-                  </MenuItem>
-                  <MenuItem
-                    dense
-                    onClick={() => {
-                      setHelpMenu(undefined)
-                      window.open("mailto:team@digitalpsych.org", "_blank")
-                    }}
-                  >
-                    <b style={{ color: colors.grey["600"] }}>{`${t("Contact Us")}`}</b>
-                  </MenuItem>
-                  <MenuItem
-                    dense
-                    onClick={() => {
-                      setHelpMenu(undefined)
-                      window.open("https://docs.lamp.digital/privacy/", "_blank")
-                    }}
-                  >
-                    <b style={{ color: colors.grey["600"] }}>{`${t("Privacy Policy")}`}</b>
-                  </MenuItem>
-                </Menu>
-              </div>
-
               {showForgotPassword ? (
                 <>
                   <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
                 </>
               ) : (
                 <>
+                  <Logo className="logo-component" />
                   <h1
                     style={{
-                      marginTop: "20px",
+                      margin: "0px",
+                      marginBottom: "20px",
                       alignSelf: "center", // This centers only the h1
+                      fontWeight: "300",
                     }}
                   >
-                    Sign In
+                    Login
                   </h1>
-                  <form
-                    onSubmit={(e) => handleLogin(e)}
-                    style={
-                      {
-                        // width: "100%",
-                        // maxWidth: "100%",         // From loginInner
-                        // margin: "0 auto"       // For horizontal centering
-                      }
-                    }
-                  >
+                  <form onSubmit={(e) => handleLogin(e)}>
                     <Box>
                       <TextField
                         required
@@ -1112,7 +1099,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                         margin="normal"
                         variant="outlined"
                         style={{ width: "100%", height: 50 }}
-                        placeholder={`${t("my.email@address.com")}`}
+                        placeholder={`${t("Email")}`}
                         value={state.id || ""}
                         onChange={handleChange}
                         InputLabelProps={{ shrink: true }}
@@ -1129,28 +1116,35 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                         margin="normal"
                         variant="outlined"
                         style={{ width: "100%", height: 50, marginBottom: 40 }}
-                        placeholder="•••••••••"
+                        placeholder="Password"
                         value={state.password || ""}
                         onChange={handleChange}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault()
+                            handleLogin(event)
+                          }
+                        }}
                         InputProps={{
                           className: "textfield-style",
                           autoCapitalize: "off",
                         }}
                       />
-
-                      <h4
-                        style={{
-                          padding: "0px",
-                          margin: "0px auto 20px",
-                          color: "red",
-                          alignSelf: "center",
-                          textAlign: "center",
-                          cursor: "pointer", // Add this to show it's clickable
-                        }}
-                        onClick={() => setShowForgotPassword(true)}
-                      >
-                        Forgot Password?
-                      </h4>
+                      <div className="forgot-container">
+                        <h4
+                          style={{
+                            padding: "0px",
+                            // margin: "0px auto 20px",
+                            color: "red",
+                            alignSelf: "center",
+                            textAlign: "center",
+                            cursor: "pointer", // Add this to show it's clickable
+                          }}
+                          onClick={() => setShowForgotPassword(true)}
+                        >
+                          Forgot Password?
+                        </h4>
+                      </div>
 
                       <Box className="button-nav" width={1} textAlign="center">
                         <Fab
@@ -1180,27 +1174,20 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
 
                       {/* google login here */}
                       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-                        <div className="divider-container">
-                          <Divider className="divider" />
-                          <Typography variant="body2" className="divider-text">
-                            {t("or")}
-                          </Typography>
-                          <Divider className="divider" />
-                        </div>
-
-                        <div className="googleButton">
+                        <div className="google-button">
                           <GoogleLogin
                             onSuccess={handleGoogleSuccess}
                             onError={handleGoogleError}
-                            shape="rectangular"
                             theme="filled_blue"
-                            text="continue_with"
+                            shape="pill"
+                            text="signin_with"
                             locale={selectedLanguage}
+                            size="large"
                           />
                         </div>
                       </GoogleOAuthProvider>
 
-                      <div className="divider-container">
+                      {/* <div className="divider-container">
                         <Divider className="divider" />
                         <Typography variant="body2" className="divider-text">
                           {t("or")}
@@ -1214,9 +1201,9 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                         disabled={miniOrangeLoading}
                       >
                         {miniOrangeLoading ? t("Loading...") : t("Continue with MiniOrange")}
-                      </button>
+                      </button> */}
 
-                      <Box textAlign="center" width={1} mt={4} mb={4}>
+                      {/* <Box textAlign="center" width={1} mt={4} mb={4}>
                         <Link
                           underline="none"
                           className="link-blue"
@@ -1230,7 +1217,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                           className="link-blue"
                           onClick={(event) => window.open("https://www.digitalpsych.org/studies.html", "_blank")}
                         >
-                          {`${t("Research studies using mindLAMP")}`}
+                          {`${t("Research studies using Emersive")}`}
                         </Link>
                         <Menu
                           keepMounted
@@ -1240,7 +1227,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                           onClose={() => setTryitMenu(undefined)}
                         >
                           <MenuItem disabled divider>
-                            <b>{`${t("Try mindLAMP out as a...")}`}</b>
+                            <b>{`${t("Try Emersive out as a...")}`}</b>
                           </MenuItem>
                           <MenuItem
                             onClick={(event) => {
@@ -1276,7 +1263,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                             {`${t("User")}`}
                           </MenuItem>
                         </Menu>
-                      </Box>
+                      </Box> */}
                     </Box>
                   </form>
                 </>

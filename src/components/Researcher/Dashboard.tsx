@@ -21,10 +21,11 @@ import SensorsList from "./SensorsList/Index"
 import StudiesList from "./Studies/Index"
 import SharedStudiesList from "./Studies/SharedStudy"
 import { ResponsivePaper } from "../Utils"
-import { ReactComponent as Patients } from "../../icons/Patients.svg"
-import { ReactComponent as Activities } from "../../icons/Activities.svg"
-import { ReactComponent as Sensors } from "../../icons/Sensor.svg"
-import { ReactComponent as Studies } from "../../icons/Study.svg"
+import { ReactComponent as Logo } from "../../icons/Logo.svg"
+import { ReactComponent as Patients } from "../../icons/NewIcons/users-thin.svg"
+import { ReactComponent as Activities } from "../../icons/NewIcons/time-fast.svg"
+import { ReactComponent as Sensors } from "../../icons/NewIcons/sensor-on.svg"
+import { ReactComponent as Studies } from "../../icons/NewIcons/flask-gear.svg"
 import { ReactComponent as SharedStudies } from "../../icons/SharedStudy.svg"
 import { ReactComponent as DataPortalIcon } from "../../icons/DataPortal.svg"
 import { useTranslation } from "react-i18next"
@@ -37,6 +38,7 @@ import DeleteSweepIcon from "@material-ui/icons/DeleteSweep"
 import ArchivedView from "./ArchiveList/ArchivedItemsView"
 import ArchivedItemsView from "./ArchiveList/ArchivedItemsView"
 import ArchivedList from "./ArchiveList/Index"
+import { useHeaderStyles } from "./SharedStyles/HeaderStyles"
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     researcherMenu: {
@@ -64,6 +66,17 @@ const useStyles = makeStyles((theme: Theme) =>
       },
     },
     menuIcon: {
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "50px",
+      height: "50px",
+      "& svg": {
+        fill: "#FFFFFF",
+        width: "26px",
+        height: "26px",
+      },
       minWidth: "auto",
       [theme.breakpoints.down("xs")]: {
         top: 5,
@@ -141,6 +154,11 @@ const useStyles = makeStyles((theme: Theme) =>
         borderRight: "#7599FF solid 5px",
       },
     },
+    logo: {
+      // width: theme.spacing(10), // Scales dynamically (5 * 8px = 40px)
+      // height: theme.spacing(10),
+      borderRadius: "50%",
+    },
     btnCursor: {
       "&:hover div": {
         cursor: "pointer !important",
@@ -206,6 +224,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const layoutClasses = useLayoutStyles()
+  const headerclasses = useHeaderStyles()
 
   useInterval(
     () => {
@@ -218,6 +237,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
 
   useEffect(() => {
     LAMP.Researcher.view(researcherId).then(setResearcher)
+    console.log("LAMP.Auth._me.", LAMP.Auth._me, LAMP.Auth._auth)
   }, [])
 
   useEffect(() => {
@@ -346,7 +366,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                     <ListItemIcon className={classes.menuIcon}>
                       <Patients />
                     </ListItemIcon>
-                    <ListItemText primary={`${t("Users")}`} />
+                    <ListItemText primary={`${t("Participants")}`} />
                   </ListItem>
                   {mode === "researcher" && (
                     <ListItem
@@ -404,7 +424,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                       <ListItemText primary={`${t("Archived")}`} />
                     </ListItem>
                   )}
-                  {mode === "researcher" && (
+                  {/* {mode === "researcher" && (
                     <ListItem
                       className={classes.menuItems + " " + classes.btnCursor}
                       button
@@ -416,7 +436,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                       </ListItemIcon>
                       <ListItemText primary={`${t("Data Portal")}`} />
                     </ListItem>
-                  )}
+                  )} */}
                 </List>
               </Drawer>
             </Box>
@@ -437,6 +457,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 ptitle={props.ptitle}
                 goBack={props.goBack}
                 onLogout={props.onLogout}
+                resemail={researcher?.email}
               />
             )}
             {tab === "activities" && (
@@ -519,22 +540,6 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 selectedStudies={selectedStudies}
                 setSelectedStudies={setSelectedStudies}
               />
-              // <ArchivedItemsView
-              //   title={null}
-              //   researcherId={researcherId}
-              //   studies={studies}
-              //   upatedDataStudy={(data) => setUpdatedData(data)}
-              //   deletedDataStudy={(data) => setDeletedData(data)}
-              //   searchData={(data) => setSearch(data)}
-              //   newAdddeStudy={setNewStudy}
-              //   getAllStudies={getAllStudies}
-              //   setOrder={() => setOrder(!order)}
-              //   order={order}
-              //   authType={props.authType}
-              //   ptitle={props.ptitle}
-              //   goBack={props.goBack}
-              //   onLogout={props.onLogout}
-              // />
             )}
             {tab === "portal" && (
               <DataPortal

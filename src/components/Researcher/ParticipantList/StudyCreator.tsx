@@ -16,12 +16,16 @@ import {
   Backdrop,
   CircularProgress,
   makeStyles,
+  Slide,
+  Divider,
 } from "@material-ui/core"
 
 import { useSnackbar } from "notistack"
 import LAMP, { Study } from "lamp-core"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
+import { slideStyles } from "../ParticipantList/AddButton"
+import { ReactComponent as UserIcon } from "../../../icons/NewIcons/users.svg"
 
 const useStyles = makeStyles((theme) => ({
   dataQuality: {
@@ -80,6 +84,11 @@ export default function StudyCreator({
   handleNewStudy,
   closePopUp,
   resins,
+  open,
+  onclose,
+  activeModal,
+  setActiveModal,
+  setSlideOpen,
   ...props
 }: {
   studies: any
@@ -87,6 +96,11 @@ export default function StudyCreator({
   handleNewStudy: Function
   closePopUp: Function
   resins: any
+  open: any
+  onclose: Function
+  activeModal?: string
+  setActiveModal?: Function
+  setSlideOpen?: Function
 } & DialogProps) {
   const [studyName, setStudyName] = useState("")
   const [studyDetails, setStudyDetails] = useState({
@@ -99,17 +113,14 @@ export default function StudyCreator({
     state: StudyState.DEV, // Default - Development
     description: "",
   })
+  console.log("resins", resins)
   const classes = useStyles()
+  const sliderclasses = slideStyles()
   const [duplicateCnt, setCount] = useState(0)
   const { t, i18n } = useTranslation()
   const { enqueueSnackbar } = useSnackbar()
   const [loading, setLoading] = useState(false)
   const validate = () => {
-    // return !(
-    //   duplicateCnt > 0 ||
-    //   typeof studyName === "undefined" ||
-    //   (typeof studyName !== "undefined" && studyName?.trim() === "")
-    // )
     return !(
       duplicateCnt > 0 ||
       !studyDetails.name?.trim() ||
@@ -117,15 +128,24 @@ export default function StudyCreator({
       !studyDetails.piInstitution?.trim()
     )
   }
+  const [studyCreated, setStudyCreated] = useState(false)
+
+  useEffect(() => {
+    setStudyDetails((prev) => ({
+      ...prev,
+      piInstitution: resins || "",
+    }))
+  }, [resins])
 
   useEffect(() => {
     let duplicateCount = 0
-    if (!(typeof studyName === "undefined" || (typeof studyName !== "undefined" && studyName?.trim() === ""))) {
-      duplicateCount = studies.filter((study) => study.name?.trim().toLowerCase() === studyName?.trim().toLowerCase())
-        .length
-    }
+    // if (!(typeof studyName === "undefined" || (typeof studyName !== "undefined" && studyName?.trim() === ""))) {
+    duplicateCount = studies?.filter(
+      (study) => study.name?.trim().toLowerCase() === studyDetails.name?.trim().toLowerCase()
+    ).length
+    // }
     setCount(duplicateCount)
-  }, [studyName])
+  }, [studyName, studyDetails])
 
   const createStudy = async (studyName: string) => {
     setLoading(true)
@@ -160,19 +180,19 @@ export default function StudyCreator({
         })
         studiesData.participant_count = 0
         handleNewStudy(studiesData)
-        closePopUp(2)
-        setStudyName("")
-        setStudyDetails({
-          name: "",
-          purpose: StudyPurpose.P,
-          piInstitution: "",
-          collaboratingInstitutions: [],
-          hasFunding: false,
-          hasEthicsPermission: false,
-          state: StudyState.DEV,
-          description: "",
-        })
+        // setStudyDetails({
+        //   name: "",
+        //   purpose: StudyPurpose.P,
+        //   piInstitution: resins || "",
+        //   collaboratingInstitutions: [],
+        //   hasFunding: false,
+        //   hasEthicsPermission: false,
+        //   state: StudyState.DEV,
+        //   description: "",
+        // })
         setLoading(false)
+        setStudyCreated(true)
+        // handleClose()
       })
       .catch((e) => {
         enqueueSnackbar(`${t("An error occured while creating new study - studyName.", { studyName: studyName })}`, {
@@ -180,6 +200,7 @@ export default function StudyCreator({
         })
         setLoading(false)
       })
+    setLoading(false)
   }
 
   const createNewStudy = (studyName) => {
@@ -212,10 +233,33 @@ export default function StudyCreator({
         variant: "success",
       })
       handleNewStudy(newStudyObj)
-      closePopUp(2)
-      setStudyName("")
-      setLoading(false)
+      handleClose()
     })
+  }
+
+  const handleClose = () => {
+    setStudyName("")
+    setCount(0)
+    setLoading(false)
+    setStudyDetails({
+      name: "",
+      purpose: StudyPurpose.P,
+      piInstitution: resins || "",
+      collaboratingInstitutions: [],
+      hasFunding: false,
+      hasEthicsPermission: false,
+      state: StudyState.DEV,
+      description: "",
+    })
+    setStudyCreated(false)
+    onclose()
+    closePopUp(2)
+    // if (setActiveModal) {
+    //   setActiveModal('none')
+    // }
+    // if (setSlideOpen) {
+    //   setSlideOpen(false)
+    // }
   }
 
   const handleEnter = () => {
@@ -223,137 +267,192 @@ export default function StudyCreator({
   }
 
   return (
-    <Dialog
-      {...props}
-      onEnter={handleEnter}
-      scroll="paper"
-      aria-labelledby="alert-dialog-slide-title"
-      aria-describedby="alert-dialog-slide-description"
-      classes={{ paper: classes.addNewDialog }}
-    >
-      <Backdrop className={classes.backdrop} open={loading}>
-        <CircularProgress color="inherit" />
-      </Backdrop>
-      <DialogTitle id="alert-dialog-slide-title" disableTypography>
-        <Typography variant="h6">{`${t("Add a new study")}`}</Typography>
-        <IconButton
-          aria-label="close"
-          className={classes.closeButton}
-          onClick={() => {
-            setStudyName("")
-            closePopUp(2)
-          }}
-        >
-          <Icon>close</Icon>
-        </IconButton>
-      </DialogTitle>
-      {/* <DialogContent dividers={false} classes={{ root: classes.activityContent }}>
-        <TextField
-          error={!validate()}
-          autoFocus
-          fullWidth
-          variant="outlined"
-          label={`${t("study Name")}`}
-          value={studyName}
-          onChange={(e) => {
-            setStudyName(e.target.value)
-          }}
-          inputProps={{ maxLength: 80 }}
-          helperText={
-            duplicateCnt > 0
-              ? `${t("Unique study name required")}`
-              : !validate()
-              ? `${t("Please enter study name.")}`
-              : ""
-          }
-        />
-      </DialogContent>
-      */}
-      <DialogContent dividers={false} classes={{ root: classes.activityContent }}>
-        <Box mb={2}>
-          <TextField
-            error={!studyDetails.name?.trim()}
-            autoFocus
-            fullWidth
-            variant="outlined"
-            label={t("Study Name")}
-            value={studyDetails.name}
-            onChange={(e) => setStudyDetails((prev) => ({ ...prev, name: e.target.value }))}
-            inputProps={{ maxLength: 80 }}
-            helperText={
-              duplicateCnt > 0
-                ? t("Unique study name required")
-                : !studyDetails.name?.trim()
-                ? t("Please enter study name.")
-                : ""
-            }
-          />
-        </Box>
+    <>
+      {!studyCreated ? (
+        <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+          <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
+            <IconButton aria-label="close" className={classes.closeButton} onClick={handleClose as any}>
+              <Icon>close</Icon>
+            </IconButton>
+            <Box className={sliderclasses.icon}>
+              <UserIcon />
+            </Box>
+            <Typography variant="h6">{`${t("Add a new study")}`}</Typography>
+            <TextField
+              className={sliderclasses.field}
+              error={!studyDetails.name?.trim() || duplicateCnt > 0}
+              autoFocus
+              fullWidth
+              variant="outlined"
+              label={t("Study Name")}
+              value={studyDetails.name}
+              onChange={(e) => setStudyDetails((prev) => ({ ...prev, name: e.target.value }))}
+              inputProps={{ maxLength: 80 }}
+              helperText={
+                duplicateCnt > 0
+                  ? t("Unique study name required")
+                  : !studyDetails.name?.trim()
+                  ? t("Please enter study name.")
+                  : ""
+              }
+            />
+            <Divider className={sliderclasses.divider} />
+            <TextField
+              fullWidth
+              className={sliderclasses.field}
+              required
+              select
+              variant="outlined"
+              label={t("Study Purpose")}
+              value={studyDetails.purpose}
+              onChange={(e) => setStudyDetails((prev) => ({ ...prev, purpose: e.target.value as StudyPurpose }))}
+            >
+              <MenuItem value={StudyPurpose.P}>{t("Practice")}</MenuItem>
+              <MenuItem value={StudyPurpose.S}>{t("Support")}</MenuItem>
+              <MenuItem value={StudyPurpose.R}>{t("Research")}</MenuItem>
+              <MenuItem value={StudyPurpose.O}>{t("Other")}</MenuItem>
+            </TextField>
+            <Divider className={sliderclasses.divider} />
+            <TextField
+              className={sliderclasses.field}
+              error={!studyDetails.piInstitution?.trim()}
+              required
+              fullWidth
+              variant="outlined"
+              label={t("PI Institution")}
+              value={studyDetails.piInstitution}
+              onChange={(e) => setStudyDetails((prev) => ({ ...prev, piInstitution: e.target.value }))}
+              helperText={!studyDetails.piInstitution?.trim() && t("PI Institution is required")}
+            />
+            <Divider className={sliderclasses.divider} />
+            <TextField
+              className={sliderclasses.field}
+              fullWidth
+              multiline
+              rows={3}
+              variant="outlined"
+              label={t("Description")}
+              value={studyDetails.description}
+              onChange={(e) => setStudyDetails((prev) => ({ ...prev, description: e.target.value }))}
+            />
+            <Box display="flex" justifyContent="flex-start" style={{ gap: 8 }} mt={2}>
+              <Button onClick={handleClose} color="primary" className={sliderclasses.button}>
+                {`${t("Cancel")}`}
+              </Button>
+              <Button
+                onClick={() => {
+                  createNewStudy(studyName)
+                }}
+                color="primary"
+                variant="contained"
+                className={sliderclasses.submitbutton}
+                disabled={!validate()}
+              >
+                {loading ? <CircularProgress size={24} /> : t("Save")}
+              </Button>
+            </Box>
+          </Box>
+        </Slide>
+      ) : (
+        <Slide direction="left" in={studyCreated} mountOnEnter unmountOnExit>
+          <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
+            <IconButton aria-label="close" className={classes.closeButton} onClick={handleClose}>
+              <Icon>close</Icon>
+            </IconButton>
+            <Box className={sliderclasses.icon}>
+              <UserIcon />
+            </Box>
+            <Typography variant="h5" className={sliderclasses.headings}>
+              {t("New Study Created")}
+            </Typography>
+            <Divider className={sliderclasses.divider}></Divider>
+            <Box p={2}>
+              <Typography variant="h6" gutterBottom>
+                {studyDetails.name}
+              </Typography>
 
-        <Box mb={2}>
-          <TextField
-            fullWidth
-            required
-            select
-            variant="outlined"
-            label={t("Study Purpose")}
-            value={studyDetails.purpose}
-            onChange={(e) => setStudyDetails((prev) => ({ ...prev, purpose: e.target.value as StudyPurpose }))}
-          >
-            <MenuItem value={StudyPurpose.P}>{t("Practice")}</MenuItem>
-            <MenuItem value={StudyPurpose.S}>{t("Support")}</MenuItem>
-            <MenuItem value={StudyPurpose.R}>{t("Research")}</MenuItem>
-            <MenuItem value={StudyPurpose.O}>{t("Other")}</MenuItem>
-          </TextField>
-        </Box>
+              <Box my={2}>
+                <Typography variant="subtitle1" color="textSecondary">
+                  {t("Study Details")}
+                </Typography>
+                <Divider light />
 
-        <Box mb={2}>
-          <TextField
-            error={!studyDetails.piInstitution?.trim()}
-            required
-            fullWidth
-            variant="outlined"
-            label={t("PI Institution")}
-            value={studyDetails.piInstitution}
-            onChange={(e) => setStudyDetails((prev) => ({ ...prev, piInstitution: e.target.value }))}
-            helperText={!studyDetails.piInstitution?.trim() && t("PI Institution is required")}
-          />
-        </Box>
+                <Box display="flex" justifyContent="space-between" my={1}>
+                  <Typography variant="body2" color="textPrimary">
+                    {t("Purpose")}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {(() => {
+                      switch (studyDetails.purpose) {
+                        case StudyPurpose.P:
+                          return t("Practice")
+                        case StudyPurpose.S:
+                          return t("Support")
+                        case StudyPurpose.R:
+                          return t("Research")
+                        case StudyPurpose.O:
+                          return t("Other")
+                        default:
+                          return studyDetails.purpose
+                      }
+                    })()}
+                  </Typography>
+                </Box>
 
-        <Box mb={2}>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            variant="outlined"
-            label={t("Description")}
-            value={studyDetails.description}
-            onChange={(e) => setStudyDetails((prev) => ({ ...prev, description: e.target.value }))}
-          />
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Box textAlign="right" width={1} mt={3} mb={3} mx={3}>
-          <Button
-            color="primary"
-            onClick={() => {
-              closePopUp(2)
-            }}
-          >
-            {`${t("Cancel")}`}
-          </Button>
-          <Button
-            onClick={() => {
-              createNewStudy(studyName)
-            }}
-            color="primary"
-            autoFocus
-            disabled={!validate()}
-          >
-            {`${t("Save")}`}
-          </Button>
-        </Box>
-      </DialogActions>
-    </Dialog>
+                <Box display="flex" justifyContent="space-between" my={1}>
+                  <Typography variant="body2" color="textPrimary">
+                    {t("PI Institution")}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {studyDetails.piInstitution}
+                  </Typography>
+                </Box>
+
+                <Box display="flex" justifyContent="space-between" my={1}>
+                  <Typography variant="body2" color="textPrimary">
+                    {t("Study State")}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {(() => {
+                      switch (studyDetails.state) {
+                        case StudyState.DEV:
+                          return t("Development")
+                        case StudyState.PROD:
+                          return t("Production")
+                        case StudyState.COMP:
+                          return t("Complete")
+                        default:
+                          return studyDetails.state
+                      }
+                    })()}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {studyDetails.description && (
+                <Box my={2}>
+                  <Typography variant="subtitle1" color="textSecondary">
+                    {t("Description")}
+                  </Typography>
+                  <Divider light />
+                  <Typography variant="body2" color="textSecondary">
+                    {studyDetails.description}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleClose}
+              className={sliderclasses.submitbutton}
+              style={{ marginTop: 16 }}
+            >
+              {t("Exit")}
+            </Button>
+          </Box>
+        </Slide>
+      )}
+    </>
   )
 }

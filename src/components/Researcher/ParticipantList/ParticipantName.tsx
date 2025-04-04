@@ -54,9 +54,9 @@ export default function ParticipantName({ participant, updateParticipant, openSe
             editUserId={editUserId}
             updateName={updateName}
           />
-        ) : aliasName && editUserId === participant.id && aliasName?.trim().length > 0 ? (
+        ) : aliasName && editUserId === participant.id && aliasName?.trim?.().length > 0 ? (
           aliasName
-        ) : name && name?.trim().length > 0 ? (
+        ) : name && name?.trim?.().length > 0 ? (
           name
         ) : (
           participant.id

@@ -16,6 +16,12 @@ import {
   MenuItem,
   Checkbox,
   FormControlLabel,
+  TextField,
+  DialogContent,
+  DialogActions,
+  DialogTitle,
+  Dialog,
+  Typography,
 } from "@material-ui/core"
 import { Theme } from "@material-ui/core/styles"
 import LAMP, { Researcher } from "lamp-core"
@@ -23,6 +29,238 @@ import { useSnackbar } from "notistack"
 import { useTranslation } from "react-i18next"
 import ConfirmationDialog from "../ConfirmationDialog"
 import { ReactComponent as ColumnIcon } from "../../icons/Pictogrammers-Material-Table-filter.svg"
+
+import { ReactComponent as ViewResearcher } from "../../icons/NewIcons/overview.svg"
+import { ReactComponent as Edit } from "../../icons/NewIcons/text-box-edit.svg"
+import { ReactComponent as Save } from "../../icons/NewIcons/floppy-disks.svg"
+import { ReactComponent as PasswordEdit } from "../../icons/NewIcons/password-lock.svg"
+import { ReactComponent as Suspend } from "../../icons/NewIcons/stop-circle.svg"
+import { ReactComponent as UnSuspend } from "../../icons/NewIcons/stop-circle-filled.svg"
+import { ReactComponent as Delete } from "../../icons/NewIcons/trash-xmark.svg"
+import { ReactComponent as VisualizeResearcher } from "../../icons/NewIcons/arrow-left-to-arc.svg"
+
+import "./admin.css"
+import { grey } from "@mui/material/colors"
+import { lightBlue } from "@material-ui/core/colors"
+
+const ActionsDiv = ({
+  row,
+  selectedRow,
+  rowIndex,
+  history,
+  setSelectedRow,
+  activeButton,
+  setActiveButton,
+  setResearcherSelected,
+  ...props
+}) => {
+  // Helper function to determine if this row has the active button
+  const isActiveForThisRow = (buttonType) => activeButton === buttonType && selectedRow === rowIndex
+  const [updatedPassword, setUpdatedPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [passwordError, setPasswordError] = useState("")
+
+  const actionTriggeredRef = React.useRef(false)
+  const { enqueueSnackbar } = useSnackbar()
+
+  // Helper function to determine suspend/unsuspend state
+  const isSuspended = () => {
+    return "status" in row && row.status === "SUSPENDED"
+  }
+
+  const handleActionClick = (buttonType) => {
+    setResearcherSelected(row)
+    setSelectedRow(rowIndex)
+
+    if (buttonType === "arrow_forward") {
+      history.push(`/researcher/${row.id}/studies`)
+    } else if (buttonType === "view") {
+      props.changeElement({ researcher: row, idx: rowIndex })
+    } else if (buttonType === "save") {
+      props.handleSaveEdit()
+    } else if (buttonType === "delete") {
+      props.setConfirmationDialog(6)
+    } else if (["edit", "suspend", "unsuspend"].includes(buttonType)) {
+      // Reset the action triggered flag when changing the active button
+      actionTriggeredRef.current = false
+
+      if (activeButton === buttonType) {
+        setActiveButton(null)
+      } else {
+        setActiveButton(buttonType)
+      }
+    } else if (buttonType === "passwordEdit") {
+      // Open the password reset dialog
+      setShowPasswordDialog(true)
+      setUpdatedPassword("")
+      setConfirmPassword("")
+      setPasswordError("")
+    }
+  }
+
+  const handleSubmitPassword = async () => {
+    try {
+      // Validate passwords
+      if (updatedPassword !== confirmPassword) {
+        setPasswordError("Passwords do not match")
+        return
+      }
+
+      console.log("IN THE UPDATED PASSWORD", confirmPassword)
+
+      try {
+        console.log("Attempting to update credential...")
+        const credlist = await LAMP.Credential.list(props.researcherSelected.id)
+        const response = (await LAMP.Credential.update(props.researcherSelected.id, props.researcherSelected.email, {
+          ...(credlist[0] as any),
+          secret_key: confirmPassword,
+        })) as any
+        console.log("Update response:", response)
+
+        // Check if response contains error
+        if (response && response.error === "404.no-such-credentials") {
+          console.log("Attempting to create new credential...")
+          await LAMP.Credential.create(props.researcherSelected.id, props.researcherSelected.email, confirmPassword)
+          enqueueSnackbar("Successfully created new credential", { variant: "success" })
+        } else {
+          enqueueSnackbar("Successfully updated credential", { variant: "success" })
+        }
+      } catch (updateError) {
+        console.error("Operation error:", updateError)
+        throw updateError
+      }
+
+      setShowPasswordDialog(false)
+    } catch (error) {
+      console.error("Final error:", error)
+      enqueueSnackbar(`Failed to create/update credential: ${error.message || "Unknown error"}`, { variant: "error" })
+    }
+  }
+
+  const handleCloseDialog = () => {
+    setShowPasswordDialog(false)
+    setPasswordError("")
+  }
+
+  useEffect(() => {
+    // Create a local variable to hold the current researcher
+    const currentResearcher = row
+
+    // Only proceed if the action hasn't been triggered yet and we have the right conditions
+    if (!actionTriggeredRef.current) {
+      if (activeButton === "suspend" && rowIndex === selectedRow) {
+        actionTriggeredRef.current = true
+        props.handleSuspension()
+        setActiveButton(null)
+      } else if (activeButton === "unsuspend" && rowIndex === selectedRow) {
+        actionTriggeredRef.current = true
+        props.handleUnSuspension()
+        setActiveButton(null)
+      }
+    }
+
+    // Cleanup function to reset the flag when unmounting or when dependencies change
+    return () => {
+      // Only reset under specific conditions to prevent unwanted re-triggers
+      if (activeButton !== "suspend" && activeButton !== "unsuspend") {
+        actionTriggeredRef.current = false
+      }
+    }
+  }, [activeButton, selectedRow, rowIndex])
+
+  return (
+    <>
+      <div className="table-actions-container">
+        {/* Visualize Researcher */}
+        <div className={`table-actions-icon-container`} onClick={() => handleActionClick("arrow_forward")}>
+          <VisualizeResearcher className="table-actions-icon" style={{ transform: "scaleX(-1)" }} />
+        </div>
+
+        {/* View Researcher */}
+        <div className={`table-actions-icon-container`} onClick={() => handleActionClick("view")}>
+          <ViewResearcher className="table-actions-icon" />
+        </div>
+
+        {/* Edit Researcher */}
+        <div
+          className={`table-actions-icon-container ${isActiveForThisRow("edit") ? "active" : ""}`}
+          onClick={() => handleActionClick("edit")}
+        >
+          <Edit className="table-actions-icon" />
+        </div>
+
+        {/* Save Researcher */}
+        <div
+          className={`table-actions-icon-container ${props.isEditing ? "" : "disabled-icon-container"}`}
+          onClick={() => (props.isEditing ? handleActionClick("save") : null)}
+        >
+          <Save className={`table-actions-icon ${props.isEditing ? "" : "disabled-icon"}`} />
+        </div>
+
+        {/* Password Edit */}
+        <div className="table-actions-icon-container">
+          <PasswordEdit className="table-actions-icon" onClick={() => handleActionClick("passwordEdit")} />
+        </div>
+
+        {/* Suspend/Unsuspend Researcher */}
+        <div
+          className={`table-actions-icon-container `}
+          onClick={() => handleActionClick(isSuspended() ? "unsuspend" : "suspend")}
+        >
+          {isSuspended() ? <UnSuspend className="table-actions-icon" /> : <Suspend className="table-actions-icon" />}
+        </div>
+
+        {/* Delete Researcher */}
+        <div
+          className={`table-actions-icon-container ${isActiveForThisRow("delete") ? "active" : ""}`}
+          onClick={() => handleActionClick("delete")}
+        >
+          <Delete className="table-actions-icon" />
+        </div>
+      </div>
+
+      {/* Password Reset Dialog using Material-UI */}
+      <Dialog open={showPasswordDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
+        <DialogTitle id="form-dialog-title">Reset Researcher Password</DialogTitle>
+        <DialogContent>
+          {passwordError && (
+            <Typography color="error" variant="body2" gutterBottom>
+              {passwordError}
+            </Typography>
+          )}
+          <TextField
+            autoFocus
+            margin="dense"
+            id="new-password"
+            label="New Password"
+            type="password"
+            fullWidth
+            value={updatedPassword}
+            onChange={(e) => setUpdatedPassword(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            id="confirm-password"
+            label="Confirm Password"
+            type="password"
+            fullWidth
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="primary">
+            Close
+          </Button>
+          <Button onClick={handleSubmitPassword} color="primary" variant="contained">
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  )
+}
 
 interface ColumnConfig {
   [key: string]: string
@@ -140,8 +378,14 @@ interface DynamicTableProps {
   adminType?: string
   maxHeight?: string
   history?: any
+  researchers?: Researcher[]
+  originalColumnKeys: string[]
+  selectedColumns: string[]
+  setSelectedColumns: any
   refreshResearchers?: () => void
   updateStore?: () => void
+  changeElement?: (value: any) => void
+  onResearchersUpdate?: (updatedResearchers: ResearcherData[]) => void
 }
 
 const CopyTooltip: React.FC<{ text: string; position: { x: number; y: number } }> = ({ text, position }) => {
@@ -186,23 +430,9 @@ const StatusIndicator = ({ isOnline }) => {
     <div style={circleStyles.container}>
       <svg width="12" height="12" viewBox="0 0 12 12">
         {/* Pulse circle */}
-        <circle
-          cx="6"
-          cy="6"
-          r="6"
-          // style={circleStyles.pulse}
-        />
-        {/* Main status circle */}
+        <circle cx="6" cy="6" r="6" />
         <circle cx="6" cy="6" r="5" style={circleStyles.dot} />
       </svg>
-      {/* <style>
-        {`
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.25; }
-            50% { transform: scale(1.5); opacity: 0.15; }
-          }
-        `}
-      </style> */}
     </div>
   )
 }
@@ -217,14 +447,18 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
   isLoading = false,
   adminType,
   history,
+  originalColumnKeys,
+  selectedColumns,
+  setSelectedColumns,
   refreshResearchers,
   updateStore,
+  changeElement,
+  onResearchersUpdate,
 }) => {
-  const columnKeys = Object.keys(columns)
   const classes = useStyles()
 
-  const [researcher, setResearcher] = useState(null)
-  const [researchers, setResearchers] = useState([])
+  const [researcherSelected, setResearcherSelected] = useState(null)
+  const [researchersSelected, setResearchersSelected] = useState([])
   const [activeButton, setActiveButton] = useState<string | null>(null)
   const [selectedRow, setSelectedRow] = useState<number | null>(null)
   const [selectedRows, setSelectedRows] = useState<number[]>([])
@@ -233,8 +467,6 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
   const [confirmationDialog, setConfirmationDialog] = useState(0)
 
   // Add new state for column selection
-  const originalColumnKeys = Object.keys(columns)
-  const [selectedColumns, setSelectedColumns] = useState<string[]>(columnKeys)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
 
@@ -263,8 +495,9 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
         rowEdits[rowIndex][columnKey] = value
       })
 
-      console.log("HEY THE ROWEDITS", rowEdits)
+      let updatedResearcher
 
+      console.log("HEY THE ROWEDITS", rowEdits)
       // Update each modified row
       for (const [rowIndex, updates] of Object.entries(rowEdits)) {
         const currentResearcher = data[Number(rowIndex)]
@@ -273,7 +506,7 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
           continue
         }
 
-        const updatedResearcher = {
+        updatedResearcher = {
           ...currentResearcher,
           ...(updates as Partial<ResearcherData>),
         } as ResearcherData
@@ -292,7 +525,8 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
       setIsEditing(false)
       setSelectedRow(null)
       setActiveButton(null)
-      refreshResearchers?.()
+      // refreshResearchers?.()
+      onResearchersUpdate([updatedResearcher])
     } catch (error) {
       enqueueSnackbar("Failed to update researcher(s)", { variant: "error" })
     }
@@ -311,35 +545,12 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
       })
   }
 
-  const handleRowSelection = (rowIndex: number, row: any) => {
-    if (!activeButton) {
-      onRowClick?.(row)
-      return
-    }
-
-    if (activeButton === "edit" || activeButton === "arrow_forward") {
-      setSelectedRow(rowIndex)
-      setResearcher(row)
-      if (activeButton === "arrow_forward") {
-        history.push(`/researcher/${row.id}/studies`)
-      }
-    } else if (activeButton === "delete" || activeButton === "suspend") {
-      const updatedSelection = selectedRows.includes(rowIndex)
-        ? selectedRows.filter((i) => i !== rowIndex)
-        : [...selectedRows, rowIndex]
-      setSelectedRows(updatedSelection)
-      setResearchers(updatedSelection.map((index) => data[index]))
-    }
-  }
-
   // Add handleCellClick for copying
   const handleCellClick = (event: React.MouseEvent, value: any, rowIndex: number, row: any) => {
     if (!activeButton && value) {
       event.stopPropagation()
       const textValue = typeof value === "object" ? JSON.stringify(value) : String(value)
       copyToClipboard(textValue, event)
-    } else if (activeButton) {
-      handleRowSelection(rowIndex, row)
     }
   }
 
@@ -373,76 +584,38 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
     )
   }
 
-  const handleColumnMenuOpen = (event) => {
-    const buttonRect = event.currentTarget.getBoundingClientRect()
-    setMenuPosition({
-      top: buttonRect.bottom + window.scrollY,
-      left: buttonRect.left + window.scrollX,
-    })
-    setAnchorEl(event.currentTarget)
-  }
-
-  const handleColumnMenuClose = () => {
-    setAnchorEl(null)
-    setActiveButton(null)
-  }
-
-  const handleColumnToggle = (event, columnKey) => {
-    event.stopPropagation()
-    setSelectedColumns((prev) => {
-      if (event.target.checked) {
-        // Add the column while maintaining original order
-        const newColumns = originalColumnKeys.filter((key) => prev.includes(key) || key === columnKey)
-        return newColumns
-      } else {
-        // Remove the column if it's not the last one
-        if (prev.length > 1) {
-          return prev.filter((key) => key !== columnKey)
-        }
-        return prev
-      }
-    })
-  }
-
-  const handleSelectAllColumns = () => {
-    // Set all columns in their original order
-    setSelectedColumns([...originalColumnKeys])
-  }
-
-  const handleDeselectAllColumns = () => {
-    // Keep only the first column from the original order
-    setSelectedColumns([originalColumnKeys[0]])
-  }
-
   const handleButtonClick = (buttonType: string) => {
     if (activeButton === buttonType) {
       // Deactivate button and clear selections
       setActiveButton(null)
       setSelectedRow(null)
       setSelectedRows([])
-      setResearcher(null)
-      setResearchers([])
+      setResearcherSelected(null)
+      setResearchersSelected([])
     } else {
       // Activate button and clear previous selections
       setActiveButton(buttonType)
       setSelectedRow(null)
       setSelectedRows([])
-      setResearcher(null)
-      setResearchers([])
+      setResearcherSelected(null)
+      setResearchersSelected([])
     }
   }
 
   useEffect(() => {
-    console.log("researchers selected", researchers)
-  }, [researchers])
+    console.log("researchers selected", researchersSelected)
+  }, [researchersSelected])
 
   const confirmAction = async (status) => {
     if (status === "Yes") {
       let successCount = 0
       let failureCount = 0
 
+      const researchersToUpdate = researchersSelected.length > 0 ? researchersSelected : [researcherSelected]
+      let updatedResearchers
+
       // Assuming researchers is an array of researcher objects
-      for (const researcher of researchers) {
+      for (const researcher of researchersToUpdate) {
         try {
           // Get credentials first
           const credentials = await LAMP.Credential.list(researcher.id)
@@ -499,9 +672,14 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
       }
 
       refreshResearchers()
+      // onResearchersUpdate(researchersToUpdate)
       setConfirmationDialog(0)
-      setResearchers([])
+      setResearchersSelected([])
+      setResearcherSelected(null)
       setActiveButton(null)
+    } else {
+      setConfirmationDialog(0)
+      setResearcherSelected(null)
     }
   }
 
@@ -524,7 +702,6 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
         value
       )
     }
-
     return value
   }
 
@@ -543,29 +720,117 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
     return `px-2 py-2 text-center ${wordCount > 3 ? "whitespace-normal" : "whitespace-nowrap"}`
   }
 
-  const handleSuspension = () => {
-    console.log(researchers)
-    let successCount = 0
-    let failureCount = 0
-    for (const researcher of researchers) {
-      try {
-        researcher.status = "SUSPENDED"
-        researcher.timestamps.suspendedAt = new Date().getTime()
-        LAMP.Researcher.update(researcher.id, researcher)
-          .then((result) => {
-            enqueueSnackbar("Update successful:", { variant: "success" })
-            successCount++
-          })
-          .catch((error) => {
-            enqueueSnackbar("Error updating researcher:", { variant: "error" })
-            failureCount++
-          })
-      } catch (error) {
-        enqueueSnackbar("Error updating researcher:", { variant: "error" })
-        failureCount++
+  const updateData = async (updatedResearchers) => {}
+
+  const handleSuspension = async () => {
+    try {
+      console.log("Researcher selected suspended,", researcherSelected)
+
+      const researchersToUpdate = researchersSelected.length > 0 ? researchersSelected : [researcherSelected]
+      let updatedResearchers = []
+      // Create an array of promises for all updates
+      const updatePromises = researchersToUpdate.map(async (researcher) => {
+        try {
+          const updatedResearcher = {
+            ...researcher,
+            status: "SUSPENDED",
+            timestamps: {
+              ...researcher.timestamps,
+              suspendedAt: new Date().getTime(),
+            },
+          }
+
+          await LAMP.Researcher.update(researcher.id, updatedResearcher)
+          updatedResearchers.push(updatedResearcher)
+          return { success: true, id: researcher.id }
+        } catch (error) {
+          console.error(`Error suspending researcher ${researcher.id}:`, error)
+          return { success: false, id: researcher.id, error }
+        }
+      })
+
+      // Wait for all updates to complete
+      const results = await Promise.all(updatePromises)
+      const successCount = results.filter((r) => r.success).length
+      const failureCount = results.filter((r) => !r.success).length
+
+      // Show appropriate notification based on results
+      if (failureCount === 0) {
+        enqueueSnackbar(`Successfully suspended ${successCount} researcher(s)`, { variant: "success" })
+      } else if (successCount > 0) {
+        enqueueSnackbar(`Suspended ${successCount} researcher(s), failed to update ${failureCount}`, {
+          variant: "warning",
+        })
+      } else {
+        enqueueSnackbar("Failed to suspend researchers", { variant: "error" })
       }
+
+      // Reset selections and refresh data
+      setResearchersSelected([])
+      setResearcherSelected(null)
+      setActiveButton(null)
+      setSelectedRow(null)
+      setSelectedRows([])
+      // refreshResearchers();
+      onResearchersUpdate(updatedResearchers)
+    } catch (error) {
+      console.error("Error in handleSuspension:", error)
+      enqueueSnackbar("Error suspending researchers", { variant: "error" })
     }
-    refreshResearchers()
+  }
+
+  const handleUnSuspension = async () => {
+    try {
+      console.log("Researcher selected unsuspected", researcherSelected)
+
+      const researchersToUpdate = researchersSelected.length > 0 ? researchersSelected : [researcherSelected]
+      let updatedResearchers = []
+      // Create an array of promises for all updates
+      const updatePromises = researchersToUpdate.map(async (researcher) => {
+        try {
+          const updatedResearcher = {
+            ...researcher,
+            status: "ACTIVE",
+            // No need to update suspendedAt timestamp when unsuspending
+          }
+
+          await LAMP.Researcher.update(researcher.id, updatedResearcher)
+          updatedResearchers.push(updatedResearcher)
+          return { success: true, id: researcher.id }
+        } catch (error) {
+          console.error(`Error unsuspending researcher ${researcher.id}:`, error)
+          return { success: false, id: researcher.id, error }
+        }
+      })
+
+      // Wait for all updates to complete
+      const results = await Promise.all(updatePromises)
+      const successCount = results.filter((r) => r.success).length
+      const failureCount = results.filter((r) => !r.success).length
+
+      // Show appropriate notification based on results
+      if (failureCount === 0) {
+        enqueueSnackbar(`Successfully unsuspended ${successCount} researcher(s)`, { variant: "success" })
+      } else if (successCount > 0) {
+        enqueueSnackbar(`Unsuspended ${successCount} researcher(s), failed to update ${failureCount}`, {
+          variant: "warning",
+        })
+      } else {
+        enqueueSnackbar("Failed to unsuspend researchers", { variant: "error" })
+      }
+
+      // Reset selections and refresh data
+      setResearchersSelected([])
+      setResearcherSelected(null)
+      setActiveButton(null)
+      setSelectedRow(null)
+      setSelectedRows([])
+      // refreshResearchers();
+      onResearchersUpdate(updatedResearchers)
+    } catch (error) {
+      console.error("Error in handleUnSuspension:", error)
+      enqueueSnackbar("Error unsuspending researchers", { variant: "error" })
+    }
   }
 
   return (
@@ -603,162 +868,13 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
               justifyContent: "space-between",
               gap: "14px", // Adds consistent spacing between all flex items
             }}
-          >
-            <Fab
-              size="small"
-              style={{
-                backgroundColor: "white",
-                ...(activeButton === "view_column" && { backgroundColor: "#e0e0e0" }),
-              }}
-              onClick={handleColumnMenuOpen}
-            >
-              <ColumnIcon width={24} height={24} />
-            </Fab>
-
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleColumnMenuClose}
-              keepMounted
-              elevation={3}
-              anchorReference="anchorPosition"
-              anchorPosition={menuPosition}
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "left",
-              }}
-              PaperProps={{
-                style: {
-                  maxHeight: "300px",
-                  width: "250px",
-                  position: "fixed",
-                },
-              }}
-              style={{
-                position: "fixed",
-              }}
-            >
-              <div
-                style={{
-                  position: "sticky",
-                  top: 0,
-                  backgroundColor: "white",
-                  borderBottom: "1px solid rgb(229, 231, 235)",
-                  padding: "0.5rem",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  zIndex: 50,
-                }}
-              >
-                <Button
-                  size="small"
-                  onClick={handleSelectAllColumns}
-                  color="primary"
-                  style={{ textTransform: "none", fontSize: "0.875rem" }}
-                >
-                  Select All
-                </Button>
-                <Button
-                  size="small"
-                  onClick={handleDeselectAllColumns}
-                  color="primary"
-                  style={{ textTransform: "none", fontSize: "0.875rem" }}
-                >
-                  Deselect All
-                </Button>
-              </div>
-              <div style={{ padding: "0.5rem", overflowY: "auto" }}>
-                {originalColumnKeys.map((key) => (
-                  <MenuItem key={key} style={{ padding: "0.25rem" }}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={selectedColumns.includes(key)}
-                          onChange={(e) => handleColumnToggle(e, key)}
-                          style={{ marginRight: "0.5rem" }}
-                        />
-                      }
-                      label={columns[key]}
-                      style={{ width: "100%" }}
-                    />
-                  </MenuItem>
-                ))}
-              </div>
-            </Menu>
-
-            <Fab
-              size="small"
-              style={{
-                backgroundColor: "white",
-                ...(activeButton === "edit" && { backgroundColor: "#e0e0e0" }),
-              }}
-              onClick={() => handleButtonClick("edit")}
-            >
-              <Icon>edit</Icon>
-            </Fab>
-            <Fab
-              size="small"
-              style={{
-                backgroundColor: "white",
-                ...(activeButton === "delete" && { backgroundColor: "#e0e0e0" }),
-              }}
-              onClick={() => handleButtonClick("delete")}
-            >
-              <Icon>delete</Icon>
-            </Fab>
-            <Fab
-              size="small"
-              style={{
-                backgroundColor: "white",
-                ...(activeButton === "suspend" && { backgroundColor: "#e0e0e0" }),
-              }}
-              onClick={() => handleButtonClick("suspend")}
-            >
-              <Icon>block</Icon>
-            </Fab>
-          </Box>
+          ></Box>
         )}
-        {adminType !== "user_admin" && (
-          <Fab
-            size="small"
-            style={{
-              backgroundColor: "white",
-              ...(activeButton === "arrow_forward" && { backgroundColor: "#e0e0e0" }),
-            }}
-            onClick={() => handleButtonClick("arrow_forward")}
-          >
-            <Icon>arrow_forward</Icon>
-          </Fab>
-        )}
-        {["delete", "suspend"].includes(activeButton) && researchers.length > 0 ? (
+        {/* {["delete", "suspend"].includes(activeButton) && researchersSelected.length > 0 ? (
           <Button onClick={(event) => (activeButton === "delete" ? setConfirmationDialog(6) : handleSuspension())}>
             {activeButton}
           </Button>
-        ) : null}
-        {isEditing && (
-          <div style={{ display: "" }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSaveEdit}
-              style={{ marginLeft: "8px", marginRight: "8px" }}
-            >
-              Save Changes
-            </Button>
-            <Button
-              variant="outlined"
-              color="secondary"
-              onClick={() => {
-                setEditedData({})
-                setIsEditing(false)
-                setSelectedRow(null)
-                setActiveButton(null)
-              }}
-            >
-              Discard Changes
-            </Button>
-          </div>
-        )}
+        ) : null} */}
         <ConfirmationDialog
           confirmationDialog={confirmationDialog}
           open={confirmationDialog > 0}
@@ -771,6 +887,7 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
         style={{
           overflowX: "auto",
           overflowY: "auto",
+          position: "relative",
           flex: 1,
           minHeight: 0,
           marginTop: "14px",
@@ -782,7 +899,7 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
             minWidth: "100%",
             borderCollapse: "separate",
             borderSpacing: 0,
-            tableLayout: "fixed", // Added for better column width handling
+            tableLayout: "fixed",
           }}
         >
           <thead>
@@ -794,28 +911,7 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
                 backgroundColor: "rgb(213 213 213)",
               }}
             >
-              {activeButton && (
-                <th
-                  style={{
-                    padding: "0.75rem 1rem",
-                    textAlign: "left",
-                    fontSize: "0.75rem",
-                    fontWeight: 500,
-                    backgroundColor: "rgb(213 213 213)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    borderBottom: "1px solid rgb(229, 231, 235)",
-                    whiteSpace: "nowrap",
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 11,
-                    minWidth: "80px", // Added minimum width for select column
-                  }}
-                >
-                  Select
-                </th>
-              )}
-              {selectedColumns.map((key) => (
+              {selectedColumns.map((key, index) => (
                 <th
                   key={key}
                   style={{
@@ -823,12 +919,21 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
                     textAlign: "left",
                     fontSize: "0.75rem",
                     fontWeight: 500,
-                    backgroundColor: "rgb(213 213 213)",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
                     borderBottom: "1px solid rgb(229, 231, 235)",
                     whiteSpace: "nowrap",
+                    background:
+                      index === selectedColumns.length - 1
+                        ? "linear-gradient(to right, rgb(213, 212, 212),rgb(183, 183, 183))" // 3D effect for last column
+                        : "rgb(213, 212, 212)", // Same styling for all other columns
+                    boxShadow: index === selectedColumns.length - 1 ? "-3px 0px 5px rgba(0, 0, 0, 0.2)" : "none",
+                    borderLeft: index === selectedColumns.length - 1 ? "3px solid #9e9e9e" : "none",
+                    zIndex: index === selectedColumns.length - 1 ? 2 : "auto",
+                    position: index === selectedColumns.length - 1 ? "sticky" : "static",
+                    right: index === selectedColumns.length - 1 ? 0 : "auto",
                   }}
+                  className={index === selectedColumns.length - 1 ? "sticky-column" : ""}
                 >
                   {formatValue(columns[key], "")}
                 </th>
@@ -842,36 +947,8 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
                 className={`${classes.tableRow} ${
                   selectedRow === rowIndex || selectedRows.includes(rowIndex) ? classes.selectedRow : ""
                 }`}
-                onClick={(e) => handleRowSelection(rowIndex, row)}
               >
-                {activeButton && (
-                  <td
-                    style={{
-                      padding: "0.75rem 1rem",
-                      borderBottom: "1px solid rgb(229, 231, 235)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {activeButton === "edit" || activeButton === "arrow_forward" ? (
-                      <input
-                        type="radio"
-                        checked={selectedRow === rowIndex}
-                        onChange={() => handleRowSelection(rowIndex, row)}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ cursor: "pointer" }}
-                      />
-                    ) : (
-                      <input
-                        type="checkbox"
-                        checked={selectedRows.includes(rowIndex)}
-                        onChange={() => handleRowSelection(rowIndex, row)}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ cursor: "pointer" }}
-                      />
-                    )}
-                  </td>
-                )}
-                {selectedColumns.map((key) => (
+                {selectedColumns.map((key, index) => (
                   <td
                     key={`${rowIndex}-${key}`}
                     style={{
@@ -880,9 +957,44 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
                       color: "rgb(17, 24, 39)",
                       borderBottom: "1px solid rgb(229, 231, 235)",
                       whiteSpace: "nowrap",
+                      background:
+                        index === selectedColumns.length - 1
+                          ? "linear-gradient(to right, #ffffff, #f5f5f5)" // 3D effect for last column
+                          : !Object.keys(row).includes("status") || row.status === "ACTIVE"
+                          ? "white"
+                          : "rgb(243, 243, 243)", // Same design for other columns #e0e0e0
+                      boxShadow: index === selectedColumns.length - 1 ? "-3px 0px 5px rgba(0, 0, 0, 0.2)" : "none",
+                      borderLeft: index === selectedColumns.length - 1 ? "3px solid #bdbdbd" : "none",
+                      zIndex: index === selectedColumns.length - 1 ? 1 : "auto",
+                      position: index === selectedColumns.length - 1 ? "sticky" : "static",
+                      right: index === selectedColumns.length - 1 ? 0 : "auto",
                     }}
+                    className={index === selectedColumns.length - 1 ? "sticky-column" : ""}
                   >
-                    {renderCell(rowIndex, key, getValue(row, key), row)}
+                    {/* {renderCell(rowIndex, key, getValue(row, key), row)} */}
+                    {index === selectedColumns.length - 1 ? (
+                      <ActionsDiv
+                        row={row}
+                        rowIndex={rowIndex}
+                        history={history}
+                        setSelectedRow={setSelectedRow}
+                        selectedRow={selectedRow}
+                        setActiveButton={setActiveButton}
+                        activeButton={activeButton}
+                        researcherSelected={researcherSelected}
+                        setResearcherSelected={setResearcherSelected}
+                        changeElement={changeElement}
+                        isEditing={isEditing}
+                        setIsEditing={setIsEditing}
+                        setEditedData={setEditedData}
+                        handleSaveEdit={handleSaveEdit}
+                        handleSuspension={handleSuspension}
+                        handleUnSuspension={handleUnSuspension}
+                        setConfirmationDialog={setConfirmationDialog}
+                      />
+                    ) : (
+                      renderCell(rowIndex, key, getValue(row, key), row)
+                    )}
                   </td>
                 ))}
               </tr>

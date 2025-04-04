@@ -5,11 +5,16 @@ import { makeStyles, Theme, createStyles } from "@material-ui/core/styles"
 export const useLayoutStyles = makeStyles((theme: Theme) =>
   createStyles({
     mainContent: {
-      backgroundColor: "#E0E0E0",
-      // backgroundColor: "blue",
+      // backgroundColor: "#E0E0E0",
+      backgroundColor: "#F0F0F0",
       maxWidth: "100vw",
       height: "100vh",
-      overflowY: "auto",
+      overflowY: "hidden",
+      overflowX: "hidden",
+      padding: "0px",
+      display: "flex",
+      flexDirection: "row",
+      // position:"relative"
     },
     tableContainerWidth: {
       // backgroundColor: "pink",
@@ -49,23 +54,24 @@ export const useLayoutStyles = makeStyles((theme: Theme) =>
     },
 
     drawerContainer: {
-      height: "100vh",
+      height: "90vh",
       position: "fixed",
-      top: 0,
+      // top: "50px",
       left: 0,
+      bottom: 0,
       backgroundColor: "red",
     },
 
     drawerContainerBottom: {
       height: "120px",
       width: "100vw",
-      top: "87vh",
+      // top: "95vh",
       left: 0,
       backgroundColor: "grey",
     },
 
     researcherMenu: {
-      top: "100px",
+      // top: "100px", todo
       background: "white",
       position: "absolute",
       maxWidth: 120,
@@ -104,6 +110,7 @@ export const useLayoutStyles = makeStyles((theme: Theme) =>
       marginRight: "0px",
     },
     logResearcher: {
+      top: 102,
       height: "calc(100vh - 102.2px)",
       position: "absolute",
       width: 120,
@@ -149,31 +156,6 @@ export const useLayoutStyles = makeStyles((theme: Theme) =>
       marginTop: theme.spacing(1.5),
       zIndex: 101, // Header above everything
     },
-    // tableContainer: {
-    //   position: "fixed",
-    //   top: "100px", // Equivalent to mt={14}
-    //   height: "calc(100vh - 102.2px)",
-    //   left: "140px",
-    //   width: "89%",
-    //   borderRadius: 20,
-    //   paddingTop: "15px",
-    //   paddingLeft: "15px",
-    //   zIndex: 20,
-    //   overflowY: "auto",
-    //   backgroundColor: "white",
-    //   // padding: theme.spacing(0, 2),
-    //   "& div.MuiInput-underline:before": { borderBottom: "0 !important" },
-    //   "& div.MuiInput-underline:after": { borderBottom: "0 !important" },
-    //   "& div.MuiInput-underline": {
-    //     "& span.material-icons": {
-    //       width: '100%',
-    //       fontSize: 27,
-    //       lineHeight: "23PX",
-    //       color: "rgba(0, 0, 0, 0.4)",
-    //     },
-    //     "& button": { display: "none" },
-    //   },
-    // },
 
     tableContainer: {
       position: "fixed",
@@ -183,9 +165,10 @@ export const useLayoutStyles = makeStyles((theme: Theme) =>
       width: "91.5%",
       borderRadius: 20,
       padding: "0 5px 0 5px", // Set top padding to 0
-      zIndex: 50,
+      zIndex: 99,
       overflowY: "auto",
-      backgroundColor: "white",
+      color: "#f9f9f9",
+      backgroundColor: "#f9f9f9",
       // padding: theme.spacing(0, 2),
       "& div.MuiInput-underline:before": { borderBottom: "0 !important" },
       "& div.MuiInput-underline:after": { borderBottom: "0 !important" },

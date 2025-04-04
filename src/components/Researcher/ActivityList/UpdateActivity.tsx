@@ -3,6 +3,10 @@ import { Icon, Fab, makeStyles, Theme, createStyles, Link } from "@material-ui/c
 import { useTranslation } from "react-i18next"
 import ConfirmationDialog from "../../ConfirmationDialog"
 import LAMP from "lamp-core"
+import { studycardStyles, useModularTableStyles } from "../Studies/Index"
+import { ReactComponent as ViewIcon } from "../../../icons/NewIcons/overview.svg"
+import { ReactComponent as EditIcon } from "../../../icons/NewIcons/text-box-edit.svg"
+import { ReactComponent as EditFilledIcon } from "../../../icons/NewIcons/text-box-edit-filled.svg"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -33,7 +37,8 @@ export default function UpdateActivity({
   const { t } = useTranslation()
   const [confirmationDialog, setConfirmationDialog] = useState(0)
   const [participantCount, setParticipantCount] = useState(0)
-
+  const activitycardclasses = studycardStyles()
+  const mtstyles = useModularTableStyles()
   useEffect(() => {
     console.log("inside update activity", activity)
   }, [])
@@ -52,11 +57,12 @@ export default function UpdateActivity({
       window.location.href = `/#/researcher/${researcherId}/activity/${activity.id}`
     }
     setConfirmationDialog(0)
+    props.setActiveButton?.({ id: null, action: null })
   }
 
   return (
     <span>
-      {!!profile ? (
+      {/* {!!profile ? (
         <Fab
           size="small"
           color="primary"
@@ -73,11 +79,36 @@ export default function UpdateActivity({
         <Link href={`/#/researcher/${researcherId}/activity/${activity.id}`} underline="none">
           <Icon>mode_edit</Icon>
         </Link>
+      )} */}
+      {props.activeButton?.id === activity.id && props.activeButton?.action === "edit" ? (
+        <EditFilledIcon
+          className={`${mtstyles.actionIcon} active`}
+          onClick={(event) => {
+            props.setActiveButton?.({ id: activity.id, action: "edit" })
+            participantCount > 1
+              ? setConfirmationDialog(3)
+              : (window.location.href = `/#/researcher/${researcherId}/activity/${activity.id}`)
+          }}
+        />
+      ) : (
+        <EditIcon
+          className={mtstyles.actionIcon}
+          onClick={(event) => {
+            props.setActiveButton?.({ id: activity.id, action: "edit" })
+            participantCount > 1
+              ? setConfirmationDialog(3)
+              : (window.location.href = `/#/researcher/${researcherId}/activity/${activity.id}`)
+          }}
+        />
       )}
+
       <ConfirmationDialog
         confirmationDialog={confirmationDialog}
         open={confirmationDialog > 0 ? true : false}
-        onClose={() => setConfirmationDialog(0)}
+        onClose={() => {
+          setConfirmationDialog(0)
+          props.setActiveButton?.({ id: null, action: null })
+        }}
         confirmAction={confirmAction}
         confirmationMsg={
           !!profile && participantCount > 1
