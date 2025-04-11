@@ -21,6 +21,7 @@ import {
 } from "@material-ui/core"
 import EditIcon from "@material-ui/icons/Edit"
 import { ImageUploader } from "../../ImageUploader"
+import { useTranslation } from "react-i18next"
 
 export const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -223,7 +224,7 @@ export interface FieldConfig {
   value: any
   editable?: boolean
   hide?: boolean
-  type?: "text" | "multiline" | "multiselect" | "select" | "date" | "email" | "phone" | "image"
+  type?: "text" | "multiline" | "multiselect" | "multi-text" | "select" | "date" | "email" | "phone" | "image"
   options?: { value: string; label: string; disabled?: boolean }[]
 }
 
@@ -282,6 +283,8 @@ const ViewItems: React.FC<ViewItemsProps> = ({
 }) => {
   const classes = useStyles()
   const [activeTab, setActiveTab] = useState("developer")
+  const [currentTextValue, setCurrentTextValue] = useState("")
+  const { t } = useTranslation()
 
   const handleValueChange = (field, value) => {
     if ((isEditing || submissionInfo.isEditing) && setEditedValues) {
@@ -446,6 +449,41 @@ const ViewItems: React.FC<ViewItemsProps> = ({
                       disabled={!isEditing}
                     />
                   </Box>
+                ) : field.type === "multi-text" ? (
+                  <Box>
+                    <TextField
+                      className={classes.viewInput}
+                      value={currentTextValue}
+                      onChange={(e) => setCurrentTextValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && currentTextValue.trim()) {
+                          const currentValues = editedValues[field.id] || []
+                          if (!currentValues.includes(currentTextValue.trim())) {
+                            handleValueChange(field.id, [...currentValues, currentTextValue.trim()])
+                            setCurrentTextValue("")
+                          }
+                        }
+                      }}
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      placeholder={t("Press Enter to add")}
+                    />
+                    <Box display="flex" flexWrap="wrap" mt={1}>
+                      {(editedValues[field.id] || []).map((value, index) => (
+                        <Chip
+                          key={index}
+                          label={value}
+                          onDelete={() => {
+                            const newValues = [...(editedValues[field.id] || [])]
+                            newValues.splice(index, 1)
+                            handleValueChange(field.id, newValues)
+                          }}
+                          className={classes.selectedChip}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
                 ) : field.type === "select" ? (
                   <TextField
                     className={classes.viewInput}
@@ -532,6 +570,12 @@ const ViewItems: React.FC<ViewItemsProps> = ({
                     const option = field.options?.find((opt) => opt.value === value)
                     return <Chip key={value} label={option?.label || value} size="small" variant="outlined" />
                   })}
+                </Box>
+              ) : field.type === "multi-text" ? (
+                <Box display="flex" flexWrap="wrap" style={{ gap: 1 }}>
+                  {(field.value || []).map((value: string, index: number) => (
+                    <Chip key={index} label={value} size="small" variant="outlined" className={classes.selectedChip} />
+                  ))}
                 </Box>
               ) : (
                 <Typography className={`${classes.viewValue} ${field.type === "email" ? "email-value" : ""}`}>

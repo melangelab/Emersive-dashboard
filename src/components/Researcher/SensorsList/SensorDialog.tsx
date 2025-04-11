@@ -173,6 +173,7 @@ export default function SensorDialog({
   useEffect(() => {
     LAMP.SensorSpec.all().then((res) => {
       setSensorSpecs(res)
+      console.log("SENSOR SPECS SET", res)
       setSensorSpec(sensor ? sensor.spec : null)
     })
   }, [])
@@ -292,7 +293,7 @@ export default function SensorDialog({
       name: sensorName.trim(),
       spec: sensorSpec,
       group: selectedGroup,
-      settings: settingsInfo[sensorSpec],
+      settings: sensorSpecs.find((sensorElem) => sensorElem.id === sensorSpec)?.settings_schema,
     } as any)
       .then((res: any) => {
         console.log("THE RESULT", res)

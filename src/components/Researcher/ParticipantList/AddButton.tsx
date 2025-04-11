@@ -505,6 +505,7 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
         open={addUser}
         onClose={() => setAddUser(false)}
         handleNewStudy={handleNewStudyData}
+        participants={props.participants}
         setParticipants={setParticipants}
         closePopUp={handleClosePopUp}
         title={props.title}

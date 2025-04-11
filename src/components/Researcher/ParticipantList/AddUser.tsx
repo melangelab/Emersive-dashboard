@@ -67,6 +67,7 @@ const useStyles = makeStyles((theme: Theme) =>
 export default function AddUser({
   researcherId,
   studies,
+  participants,
   setParticipants,
   handleNewStudy,
   closePopUp,
@@ -76,6 +77,7 @@ export default function AddUser({
 }: {
   researcherId: any
   studies: any
+  participants: any
   setParticipants?: Function
   handleNewStudy: Function
   closePopUp: Function
@@ -109,6 +111,16 @@ export default function AddUser({
     setSelectedGroup(event.target.value)
   }
 
+  const resetForm = () => {
+    setSelectedStudy("")
+    setSelectedGroup("")
+    setFirstName("")
+    setLastName("")
+    setEmail("")
+    setMobile("")
+    setNotes("")
+  }
+
   let createStudy = async () => {
     if (selectedStudy === "") {
       setShowErrorMsg(true)
@@ -118,7 +130,8 @@ export default function AddUser({
       let newCount = 1
       let ids = []
       for (let i = 0; i < newCount; i++) {
-        let idData = ((await LAMP.Participant.create(selectedStudy, { study_code: "001" } as any)) as any).data
+        let idData = ((await LAMP.Participant.create(selectedStudy, { study_code: "001", email: email } as any)) as any)
+          .data
         let id = typeof idData === "object" ? idData.id : idData
         let newParticipant: any = {}
         if (typeof idData === "object") {
@@ -126,7 +139,36 @@ export default function AddUser({
         } else {
           newParticipant["id"] = idData
         }
-        if (!!((await LAMP.Credential.create(id, `${id}@lamp.com`, id, "Temporary Login")) as any).error) {
+
+        const duplicates = participants.filter((x) => `${x.emailAddress}` === email)
+
+        if (duplicates.length > 0) {
+          enqueueSnackbar(t("Participant with same email id already exists."), { variant: "error" })
+          resetForm()
+          return
+        }
+
+        const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        const params = new URLSearchParams({
+          token: idData.token,
+          email: email,
+          userType: "participant",
+        }).toString()
+
+        const response: any = await fetch(`${baseURL}/send-password-email?${params}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic " + authString,
+          },
+        })
+
+        // if (!!((await LAMP.Credential.create(id, `${id}@lamp.com`, id, "Temporary Login")) as any).error) {
+        //   enqueueSnackbar(`${t("Could not create credential for id.", { id: id })}`, { variant: "error" })
+        // }
+
+        if (response.error) {
           enqueueSnackbar(`${t("Could not create credential for id.", { id: id })}`, { variant: "error" })
         } else {
           newParticipant.study_id = selectedStudy

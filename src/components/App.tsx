@@ -335,6 +335,82 @@ function AppRouter({ ...props }) {
     }
   }, [state])
 
+  const setIdentity2 = async (
+    identity: { id: string | null; password: string | null; serverAddress: string | undefined } = {
+      id: null,
+      password: null,
+      serverAddress: undefined,
+    }
+  ) => {
+    // LAMP.configuration = {
+    //   base: !!identity.serverAddress ? `https://${identity.serverAddress}` : "https://api.lamp.digital"
+    // }
+
+    const base = !!identity.serverAddress ? `https://${identity.serverAddress}` : "https://api.lamp.digital"
+
+    LAMP.Auth._auth = {
+      id: identity.id,
+      password: identity.password,
+      serverAddress: identity.serverAddress,
+    }
+    // await LAMP.Credential.login(identity.id!, identity.password!);
+    // LAMP.configuration = {
+    //   ...(LAMP.configuration || { base: undefined, headers: undefined }),
+    //   token: LAMP.Credential.configuration!.token
+    // }
+
+    const token = null
+
+    try {
+      // If we aren't clearing the credential, get the "self" identity.
+      if (!!identity.id && !!identity.password) {
+        // Get our 'me' context so we know what object type we are.
+        let typeData
+        try {
+          typeData = await LAMP.Type.parent("me")
+        } catch (e) {}
+        LAMP.Auth._type =
+          typeData.error === "400.context-substitution-failed"
+            ? "admin"
+            : Object.entries(typeData.data).length === 0
+            ? "researcher"
+            : !!typeData.data
+            ? "participant"
+            : null
+
+        // Get our 'me' object now that we figured out our type.
+        LAMP.Auth._me = await (LAMP.Auth._type === "admin"
+          ? { id: identity.id }
+          : LAMP.Auth._type === "researcher"
+          ? LAMP.Researcher.view("me")
+          : LAMP.Participant.view("me"))
+
+        LAMP.dispatchEvent("LOGIN", {
+          // authorizationToken: LAMP.configuration.authorization,
+          authorizationToken: token,
+          identityObject: LAMP.Auth._me,
+          serverAddress: base,
+        })
+      } else {
+        LAMP.dispatchEvent("LOGOUT", {
+          deleteCache: true, // FIXME!
+        })
+      }
+    } catch (err) {
+      // We failed: clear and propogate the authorization.
+      LAMP.Auth._auth = { id: null, password: null, serverAddress: null }
+      // if (!!LAMP.configuration) LAMP.configuration.token = undefined
+
+      // Delete the "self" identity and throw the error we received.
+      LAMP.Auth._me = null
+      LAMP.Auth._type = null
+      throw new Error("invalid id or password")
+    } finally {
+      // Save the authorization in sessionStorage for later.
+      ;(global as any).sessionStorage?.setItem("LAMP._auth", JSON.stringify(LAMP.Auth._auth))
+    }
+  }
+
   let reset = async (identity?: any) => {
     Service.deleteUserDB()
     Service.deleteDB()
@@ -378,12 +454,21 @@ function AppRouter({ ...props }) {
         )
       }
     }
-    await LAMP.Auth.set_identity(identity).catch((e) => {
-      enqueueSnackbar(`${t("Invalid id or password.")}`, {
-        variant: "error",
+    if (!identity?.switchRole) {
+      await LAMP.Auth.set_identity(identity).catch((e) => {
+        enqueueSnackbar(`${t("Invalid id or password.")}`, {
+          variant: "error",
+        })
+        return
       })
-      return
-    })
+    } else {
+      await setIdentity2(identity).catch((e) => {
+        enqueueSnackbar(`${t("Invalid id or password.")}`, {
+          variant: "error",
+        })
+        return
+      })
+    }
     console.log(identity)
     if (!!identity) {
       getAdminType()

@@ -199,6 +199,7 @@ const useStyles = makeStyles((theme: Theme) =>
 
 export default function Header({
   studies,
+  participants,
   researcherId,
   selectedParticipants,
   searchData,
@@ -282,6 +283,7 @@ export default function Header({
             <AddButton
               researcherId={researcherId}
               studies={studies}
+              participants={participants}
               setParticipants={setParticipants}
               setSelectedStudies={setSelectedStudies}
               setData={setData}

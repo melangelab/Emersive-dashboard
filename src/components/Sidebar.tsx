@@ -326,37 +326,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           id: LAMP.Auth._auth.id,
           password: LAMP.Auth._auth.password,
           serverAddress: LAMP.Auth._auth.serverAddress,
+          switchRole: true,
         })
 
         console.log("Identity set result:", res)
-
-        if (res.authType === "participant") {
-          localStorage.setItem("lastTab" + res.identity.id, JSON.stringify(new Date().getTime()))
-
-          await LAMP.SensorEvent.create(res.identity.id, {
-            timestamp: Date.now(),
-            sensor: "lamp.analytics",
-            data: {
-              type: "login",
-              device_type: "Dashboard",
-              user_agent: `LAMP-dashboard/${process.env.REACT_APP_GIT_SHA} ${window.navigator.userAgent}`,
-            },
-          } as any)
-
-          await LAMP.Type.setAttachment(res.identity.id, "me", "lamp.participant.timezone", timezoneVal())
-
-          const part_full = (await LAMP.Participant.view(res.identity.id)) as any
-          const partici = {
-            ...part_full,
-            isLoggedIn: true,
-            systemTimestamps: {
-              ...part_full.systemTimestamps,
-              lastLoginTime: new Date(),
-            },
-          }
-
-          await LAMP.Participant.update(res.identity.id, partici)
-        }
 
         if (res.authType === "researcher") {
           if (res.auth.serverAddress === "demo.lamp.digital") {
@@ -375,20 +348,29 @@ const Sidebar: React.FC<SidebarProps> = ({
             researcherT.loggedIn = true
             await LAMP.Researcher.update(researcherT.id, researcherT)
           }
+          const params = new URLSearchParams({
+            origin: null,
+            access_key: otherRole.email,
+          }).toString()
+
+          const response = await fetch(`${baseURL}/credential-update-origin?${params}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic " + authString,
+            },
+          })
+
+          if (!response.ok) {
+            throw new Error("Failed to update origin")
+          }
         }
 
         await Service.deleteDB()
         await Service.deleteUserDB()
 
         if (otherRole.role === "Researcher") {
-          // history.replace(`/researcher/${otherRole.id}/studies`)
-          // history.replace(`/`)
-          // <Redirect to={`/researcher/${otherRole.id}/studies`} />
-          // setTimeout(() => {
-          //     history.replace(`/researcher/${otherRole.id}/studies`);
-          // }, 500);
           console.log("Auth after switch:", LAMP.Auth._me, LAMP.Auth._auth, LAMP.Auth._type)
-          // window.location.href = `/#/researcher/${otherRole.id}/studies`;
           window.location.replace(`/#/researcher/${otherRole.id}/studies`)
         }
 

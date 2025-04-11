@@ -170,10 +170,10 @@ export default function AddUpdateResearcher({
 
         if (response.ok) {
           const result = await response.json()
-          console.log("✅ Email sent successfully:", result.message)
+          enqueueSnackbar("✅ Email sent successfully:", { variant: "success" })
         } else {
           const errorData = await response.json() // Get error details
-          console.error("❌ Failed to send email:", errorData.message)
+          enqueueSnackbar("❌ Failed to send email:", { variant: "error" })
         }
       }
     } catch (error) {
@@ -192,8 +192,9 @@ export default function AddUpdateResearcher({
     enqueueSnackbar(researcher ? t("Successfully updated investigator.") : t("Successfully created investigator."), {
       variant: "success",
     })
-    refreshResearchers()
     setOpen(false)
+    setResearcherCreated(null)
+    refreshResearchers()
   }
 
   const resetForm = () => {
@@ -333,7 +334,7 @@ export default function AddUpdateResearcher({
                 New Researcher - {researcherCreated?.firstName} {researcherCreated?.lastName} - has been successfully
                 added.
                 {"\n"}A set password mail has been successfully sent to the email -{researcherCreated?.email}.{"\n"}The
-                link will expire after 1 hour.
+                link will expire after 24 hours.
               </p>
               <Divider />
             </>

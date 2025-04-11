@@ -101,6 +101,7 @@ export default function AddUpdateAdmin({
     // password: "",
     // confirmPassword: "",
   })
+  const [infoMsg, setInfoMsg] = useState(null)
 
   const [adminCreated, setAdminCreated] = useState(undefined)
 
@@ -126,6 +127,8 @@ export default function AddUpdateAdmin({
       !!admin ? `${x.emailAddress}` === emailId && x.id !== admin?.id : `${x.emailAddress}` === emailId
     )
 
+    console.log("ADMINS", admins, emailId, duplicates)
+
     if (duplicates.length > 0) {
       enqueueSnackbar(t("Admin with same email id already exists."), { variant: "error" })
       resetForm()
@@ -141,13 +144,11 @@ export default function AddUpdateAdmin({
           lastName: formData.lastName,
           userName: formData.username,
           emailAddress: formData.email,
-          password: null,
           photo: null,
         })
 
-        setAdminCreated(result.data)
-
         console.log("ADMIN CREATED SET JUST NOW AND ITS VALUE, ", result.data, result)
+        setAdminCreated(result.data)
 
         const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
         const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
@@ -166,9 +167,13 @@ export default function AddUpdateAdmin({
         })
 
         if (response.ok) {
-          const result = await response.json()
-          console.log("✅ Email sent successfully:", result.message)
-          // setAdminCreated(null);
+          const result2 = await response.json()
+          console.log("✅ Email sent successfully:", result2.message)
+          if (result2?.result === "Credential Exists") {
+            setInfoMsg(
+              "A researcher already exists for this email ID. You can use the same credentials or reset them through the link sent via email."
+            )
+          }
         } else {
           const errorData = await response.json() // Get error details
           console.error("❌ Failed to send email:", errorData.message)
@@ -191,6 +196,7 @@ export default function AddUpdateAdmin({
       variant: "success",
     })
     refreshAdmins()
+    setAdminCreated(null)
     setOpen(false)
   }
 
@@ -283,8 +289,9 @@ export default function AddUpdateAdmin({
               <p style={{ padding: "20px", whiteSpace: "pre-line" }}>
                 New Admin - {formData?.firstName} {formData?.lastName} - has been successfully added.
                 {"\n"}A set password mail has been successfully sent to the email -{formData?.email}.{"\n"}The link will
-                expire after 1 hour.
+                expire after 24 hours.
               </p>
+              {infoMsg ? <p style={{ padding: "20px", whiteSpace: "pre-line", marginTop: "10px" }}>{infoMsg}</p> : null}
               <Divider />
             </>
           )}

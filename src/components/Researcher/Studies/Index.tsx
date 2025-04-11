@@ -63,6 +63,8 @@ import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/tras
 import { ReactComponent as DeletedIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
 import { ReactComponent as SuspendedIcon } from "../../../icons/NewIcons/stop-circle-filled.svg"
 import { formatDate_alph } from "../../Utils"
+import { ReactComponent as EditIcon } from "../../../icons/NewIcons/text-box-edit.svg"
+import { ReactComponent as EditFilledIcon } from "../../../icons/NewIcons/text-box-edit-filled.svg"
 import { ReactComponent as SRAddIcon } from "../../../icons/NewIcons/users-alt.svg"
 import { ReactComponent as SRAddFilledIcon } from "../../../icons/NewIcons/users-alt-filled.svg"
 import { ReactComponent as ArrowDropDownIcon } from "../../../icons/NewIcons/sort-circle-down.svg"
@@ -71,6 +73,10 @@ import { ReactComponent as ArrowDropUpIcon } from "../../../icons/NewIcons/sort-
 
 import AddParticipantToStudy from "./AddParticipantToStudy"
 import { useTableStyles } from "../ActivityList/Index"
+import ItemViewHeader from "../SharedStyles/ItemViewHeader"
+import StudyDetailItem from "./StudyDetailItem"
+import { ReactComponent as SaveIcon } from "../../../icons/NewIcons/floppy-disks.svg"
+import { ReactComponent as SaveFilledIcon } from "../../../icons/NewIcons/floppy-disks-filled.svg"
 
 export const studycardStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -580,6 +586,29 @@ export const useModularTableStyles = makeStyles((theme: Theme) =>
       alignItems: "center",
     },
     manageStudyDialog: { maxWidth: 700 },
+    cellContent: {
+      whiteSpace: "pre-wrap",
+      maxWidth: 200,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      padding: theme.spacing(1),
+    },
+    editableInput: {
+      width: "100%",
+      padding: theme.spacing(1),
+      border: `1px solid ${theme.palette.primary.main}`,
+      borderRadius: theme.shape.borderRadius,
+      "&:focus": {
+        outline: "none",
+        borderColor: theme.palette.primary.dark,
+      },
+    },
+    editableSelect: {
+      minWidth: 120,
+      "& .MuiSelect-root": {
+        padding: theme.spacing(1),
+      },
+    },
   })
 )
 
@@ -801,7 +830,7 @@ export const ModularTable = ({
                   />
                 </TableCell>
               )}
-              <TableCell className={classes.indexCell}>{indexmap[row.id] + 1}</TableCell>
+              <TableCell className={classes.indexCell}>{indexmap[row.id || row.emailAddress] + 1}</TableCell>
               {columns
                 .filter((column) => column.visible)
                 .map((column) => (
@@ -863,6 +892,9 @@ export default function StudiesList({
   const [openAPTS, setOpenAPTS] = useState(false)
   const [openASR, setOpenASR] = useState(false)
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
+  const [viewingStudy, setViewingStudy] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [triggerSave, setTriggerSave] = useState(false)
 
   const handleOpenSuspendDialog = (study) => {
     setStudyToSuspend(study)
@@ -1135,6 +1167,16 @@ export default function StudiesList({
     { id: "email", label: "Email", value: (s) => s.email, visible: true, sortable: true },
     { id: "mobile", label: "Phone/Mobile", value: (s) => s.mobile, visible: true, sortable: true },
     { id: "state", label: "State", value: (s) => s.state, visible: true, sortable: true },
+    { id: "purpose", label: "Study Purpose", value: (s) => s.purpose || "-", visible: false, sortable: true },
+    { id: "studyType", label: "Study Type", value: (s) => s.studyType || "-", visible: false, sortable: true },
+    {
+      id: "piInstitution",
+      label: "PI Institution",
+      value: (s) => s.piInstitution || "-",
+      visible: false,
+      sortable: true,
+    },
+    { id: "adminNote", label: "Admin Notes", value: (s) => s.adminNote || "-", visible: false, sortable: true },
   ])
 
   const [openAddResearcherDialog, setOpenAddResearcherDialog] = useState(false)
@@ -1182,11 +1224,251 @@ export default function StudiesList({
     }, {})
   }, [allStudies])
 
+  const handleViewStudy = (study) => {
+    console.log(study)
+    setViewingStudy(study)
+    setIsEditing(false)
+    setTriggerSave(false)
+  }
+
+  const handleCloseViewStudy = () => {
+    setViewingStudy(null)
+    setIsEditing(false)
+    setTriggerSave(false)
+    setActiveButton({ id: null, action: null })
+  }
+
+  const handleEditStudy = () => {
+    if (isEditing) {
+      setIsEditing(false)
+    } else {
+      setIsEditing(true)
+      setTriggerSave(false)
+    }
+  }
+
+  const handleSaveStudy = () => {
+    setTriggerSave(true)
+  }
+
+  const handleSaveComplete = (updatedStudy) => {
+    setViewingStudy(updatedStudy)
+    setIsEditing(false)
+    setTriggerSave(false)
+    searchFilterStudies()
+  }
+
   const TableView_Mod = () => {
     const [sortConfig, setSortConfig] = useState({ field: "name", direction: "desc" })
     const [selectedRows, setSelectedRows] = useState([])
     const classes = useModularTableStyles()
     const currentStudy = expandedStudyId ? allStudies?.find((s) => s.id === expandedStudyId) : null
+    const [editingStudy, setEditingStudy] = useState(null)
+    const [editedData, setEditedData] = useState({})
+    // const [isEditing, setIsEditing] = useState(false)
+    // const [editedValues, setEditedValues] = useState({})
+
+    const editableColumns = [
+      "name",
+      "description",
+      "email",
+      "mobile",
+      "purpose",
+      "studyType",
+      "state",
+      "piInstitution",
+      "adminNote",
+    ]
+    const fieldConfigs = {
+      purpose: {
+        type: "select",
+        options: [
+          { value: "practice", label: t("Practice") },
+          { value: "support", label: t("Support") },
+          { value: "research", label: t("Research") },
+          { value: "other", label: t("Other") },
+        ],
+      },
+      studyType: {
+        type: "select",
+        options: [
+          { value: "DE", label: t("Descriptive") },
+          { value: "CC", label: t("Case Control") },
+          { value: "CO", label: t("Cohort") },
+          { value: "OB", label: t("Observational") },
+          { value: "RCT", label: t("RCTs") },
+          { value: "OC", label: t("Other Clinical trials") },
+        ],
+      },
+      state: {
+        type: "select",
+        options: [
+          { value: "production", label: "Production" },
+          { value: "development", label: "Development" },
+        ],
+      },
+      // adminNote: {
+      //   type: "multiline"
+      // },
+      description: {
+        type: "multiline",
+      },
+    }
+
+    const handleEditClick = (study) => {
+      console.log("handleEditClick from study", study)
+      if (activeButton.id === study.id && activeButton.action === "edit") {
+        // If clicking edit on currently editing study, cancel edit mode
+        setEditingStudy(null)
+        setEditedData({})
+        setActiveButton({ id: null, action: null })
+      } else {
+        // Start editing new study
+        setEditingStudy(study)
+        setEditedData({})
+        setActiveButton({ id: study.id, action: "edit" })
+      }
+    }
+
+    const handleSaveClick = async (study) => {
+      if (Object.keys(editedData).length > 0) {
+        const errors = validateFields(editedData)
+
+        if (errors.length > 0) {
+          errors.forEach((error) => {
+            enqueueSnackbar(error, { variant: "error" })
+          })
+          return
+        }
+
+        const updatedStudy = {
+          ...study,
+          ...editedData,
+        }
+
+        await handleUpdateStudy(study.id, updatedStudy)
+        setEditingStudy(null)
+        setEditedData({})
+        setActiveButton({ id: null, action: null })
+      }
+    }
+
+    // const handleCellValueChange = (studyId, field, value) => {
+    //   setEditedValues(prev => ({
+    //     ...prev,
+    //     [field]: value
+    //   }))
+    // }
+
+    const formatValue = (value: any, key: string) => {
+      if (!value) return "--"
+      if (typeof value === "string") {
+        const words = value.split(" ")
+        return words.length > 3 ? (
+          <>
+            {words.slice(0, 3).join(" ")} <br /> {words.slice(3).join(" ")}
+          </>
+        ) : (
+          value
+        )
+      }
+      return value
+    }
+
+    // const handleCellEdit = (rowIndex: number, columnKey: string, value: any) => {
+    //   setEditedData((prev) => ({
+    //     ...prev,
+    //     [`${rowIndex}-${columnKey}`]: value,
+    //   }))
+    //   setIsEditing(true)
+    // }
+
+    const validateFields = (data) => {
+      const errors = []
+
+      if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        errors.push("Invalid email format")
+      }
+
+      if (data.mobile && !/^\+?[\d\s-]{10,}$/.test(data.mobile)) {
+        errors.push("Invalid phone number format")
+      }
+
+      return errors
+    }
+
+    const renderCell = (column: any, row: any) => {
+      const columnKey = column.id
+      const value = column.value(row)
+
+      // Check if this cell should be editable
+      const isEditable =
+        editableColumns.includes(columnKey) && activeButton.action === "edit" && activeButton.id === row.id
+      // const isEditable = editableColumns.includes(columnKey) &&
+      // activeButton.id === row.id &&
+      // activeButton.action === "edit" &&
+      // editingStudy?.id === row.id
+
+      if (!isEditable) {
+        return <div className={classes.cellContent}>{formatValue(value, columnKey)}</div>
+      }
+
+      const fieldConfig = fieldConfigs[columnKey]
+
+      if (fieldConfig?.type === "select") {
+        return (
+          <Select
+            value={editedData[columnKey] ?? value}
+            onChange={(e) => {
+              setEditedData((prev) => ({
+                ...prev,
+                [columnKey]: e.target.value,
+              }))
+            }}
+            className={classes.editableSelect}
+            fullWidth
+          >
+            {fieldConfig.options.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+        )
+      }
+
+      if (fieldConfig?.type === "multiline") {
+        return (
+          <TextField
+            multiline
+            rows={2}
+            value={editedData[columnKey] ?? value}
+            onChange={(e) => {
+              setEditedData((prev) => ({
+                ...prev,
+                [columnKey]: e.target.value,
+              }))
+            }}
+            className={classes.editableInput}
+            fullWidth
+          />
+        )
+      }
+
+      return (
+        <TextField
+          value={editedData[columnKey] ?? value}
+          onChange={(e) => {
+            setEditedData((prev) => ({
+              ...prev,
+              [columnKey]: e.target.value,
+            }))
+          }}
+          className={classes.editableInput}
+          fullWidth
+        />
+      )
+    }
 
     const sortedData = useMemo(() => {
       if (!allStudies) return []
@@ -1221,14 +1503,16 @@ export default function StudiesList({
               className="selected"
               onClick={() => {
                 setActiveButton({ id: study.id, action: "view" })
-                toggleStudyDetails(study.id)
+                // toggleStudyDetails(study.id)
+                handleViewStudy(study)
               }}
             />
           ) : (
             <ViewIcon
               onClick={() => {
                 setActiveButton({ id: study.id, action: "view" })
-                toggleStudyDetails(study.id)
+                // toggleStudyDetails(study.id)
+                handleViewStudy(study)
               }}
             />
           )}
@@ -1252,7 +1536,51 @@ export default function StudiesList({
             />
           )}
         </Box>
-
+        <Box component="span" className={classes.actionIcon}>
+          {activeButton.id === study.id && activeButton.action === "edit" ? (
+            <EditFilledIcon
+              className="active"
+              onClick={() => {
+                handleEditClick(study)
+              }}
+            />
+          ) : (
+            <EditIcon
+              onClick={() => {
+                handleEditClick(study)
+              }}
+            />
+          )}
+        </Box>
+        <Box component="span" className={classes.actionIcon}>
+          {activeButton.id === study.id && activeButton.action === "save" ? (
+            <SaveFilledIcon
+              className="active"
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "save" })
+                if (Object.keys(editedData).length > 0) {
+                  handleSaveClick(study)
+                } else {
+                  enqueueSnackbar("No changes made for updating.", { variant: "info", autoHideDuration: 1000 })
+                }
+                setActiveButton({ id: null, action: null })
+              }}
+            />
+          ) : (
+            <SaveIcon
+              className={!Object.keys(editedData).length ? classes.disabledIcon : ""}
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "save" })
+                if (Object.keys(editedData).length > 0) {
+                  handleSaveClick(study)
+                } else {
+                  enqueueSnackbar("No changes made for updating.", { variant: "info", autoHideDuration: 1000 })
+                }
+                setActiveButton({ id: null, action: null })
+              }}
+            />
+          )}
+        </Box>
         {props.authType === "admin" && (
           <Box component="span" className={classes.actionIcon}>
             {studyToSuspend?.id === study.id ? (
@@ -1276,12 +1604,6 @@ export default function StudiesList({
 
         {props.authType === "admin" && (
           <Box component="span" className={classes.actionIcon}>
-            {/* <DeleteStudy 
-              study={study} 
-              deletedStudy={handleDeletedStudy} 
-              researcherId={researcherId}
-              setActiveButton={setActiveButton}
-            /> */}
             <DeleteIcon
               onClick={() => {
                 setActiveButton({ id: study.id, action: "delete" })
@@ -1292,27 +1614,21 @@ export default function StudiesList({
         )}
 
         <Box component="span" className={classes.actionIcon}>
-          {/* <AddSubResearcher
-            study={study}
-            upatedDataStudy={handleUpdatedStudyObject}
-            researcherId={researcherId}
-            handleShareUpdate={(studyid, updatedStudy) => handleUpdateStudy(studyid, updatedStudy)}
-            setActiveButton={setActiveButton}
-            activeButton={activeButton}
-          /> */}
           {props.activeButton?.id === study.id && props.activeButton?.action === "share" ? (
             <SRAddFilledIcon
               className="active"
               onClick={() => {
                 setActiveButton({ id: study.id, action: "share" })
-                handleOpenDialog(study, "addResearcher")
+                setSelectedStudyForDialog(study)
+                setOpenASR(true)
               }}
             />
           ) : (
             <SRAddIcon
               onClick={() => {
                 setActiveButton({ id: study.id, action: "share" })
-                handleOpenDialog(study, "addResearcher")
+                setSelectedStudyForDialog(study)
+                setOpenASR(true)
               }}
             />
           )}
@@ -1362,6 +1678,9 @@ export default function StudiesList({
             })
           }}
           indexmap={originalIndexMap}
+          renderCell={renderCell}
+          // editingStudy={editingStudy}
+          activeButton={activeButton}
         />
         {selectedStudyForDialog && (
           <DeleteStudy
@@ -1410,7 +1729,7 @@ export default function StudiesList({
           />
         )}
 
-        {currentStudy && (
+        {/* {currentStudy && (
           <StudyDetailsDialog
             study={currentStudy}
             open={!!expandedStudyId}
@@ -1420,7 +1739,7 @@ export default function StudiesList({
             formatDate={formatDate}
             researcherId={researcherId}
           />
-        )}
+        )} */}
 
         {/* <StudyDetailsDialog
           study={expandedStudyId ? allStudies.find(s => s.id === expandedStudyId) : null}
@@ -1488,252 +1807,292 @@ export default function StudiesList({
         <CircularProgress color="inherit" />
       </Backdrop>
       <Box>
-        <Header
-          studies={allStudies ?? null}
-          researcherId={researcherId}
-          searchData={handleSearchData}
-          setParticipants={searchFilterStudies}
-          newStudyObj={setNewStudy}
-          updatedDataStudy={handleUpdatedStudyObject}
-          title={props.ptitle}
-          authType={props.authType}
-          onLogout={props.onLogout}
-          onViewModechanged={setViewMode}
-          viewMode={viewMode}
-          resins={props.resins}
-          VisibleColumns={columns}
-          setVisibleColumns={setColumns}
-        />
+        {viewingStudy ? (
+          <ItemViewHeader
+            ItemTitle="Study"
+            ItemName={viewingStudy.name}
+            searchData={handleSearchData}
+            authType={props.authType}
+            onEdit={handleEditStudy}
+            onSave={() => {
+              if (isEditing) {
+                handleSaveStudy()
+              }
+            }}
+            onPrevious={() => {
+              const currentIndex = allStudies.findIndex((s) => s.id === viewingStudy.id)
+              if (currentIndex > 0) {
+                setViewingStudy(allStudies[currentIndex - 1])
+              }
+            }}
+            onNext={() => {
+              const currentIndex = allStudies.findIndex((s) => s.id === viewingStudy.id)
+              if (currentIndex < allStudies.length - 1) {
+                setViewingStudy(allStudies[currentIndex + 1])
+              }
+            }}
+            onClose={handleCloseViewStudy}
+          />
+        ) : (
+          <Header
+            studies={allStudies ?? null}
+            researcherId={researcherId}
+            searchData={handleSearchData}
+            setParticipants={searchFilterStudies}
+            newStudyObj={setNewStudy}
+            updatedDataStudy={handleUpdatedStudyObject}
+            title={props.ptitle}
+            authType={props.authType}
+            onLogout={props.onLogout}
+            onViewModechanged={setViewMode}
+            viewMode={viewMode}
+            resins={props.resins}
+            VisibleColumns={columns}
+            setVisibleColumns={setColumns}
+          />
+        )}
         <Box
           className={layoutClasses.tableContainer + " " + (!supportsSidebar ? layoutClasses.tableContainerMobile : "")}
           style={{ overflowX: "hidden" }}
         >
-          {viewMode === "grid" ? (
-            <Grid container spacing={3}>
-              {allStudies !== null && (allStudies || []).length > 0 ? (
-                (allStudies || []).map((study) => (
-                  <Grid item lg={4} md={6} xs={12} key={study.id}>
-                    <Paper className={studycardclasses.dhrCard} elevation={3}>
-                      <Box display={"flex"} flexDirection={"row"}>
-                        <Box flexGrow={1}>
-                          <Typography className={studycardclasses.cardTitle}>
-                            {study.name || "No Name provided."}
-                          </Typography>
-                        </Box>
-                        <div className={studycardclasses.stateChip}>
-                          {study.timestamps?.deletedAt && <DeletedIcon />}
-                          {study.timestamps?.suspendedAt && <SuspendedIcon />}
-                          {!study.timestamps?.deletedAt && !study.timestamps?.suspendedAt && (
-                            <div
-                              className={`${studycardclasses.stateIndicator} ${
-                                study.state === "production" ? "production" : ""
-                              }`}
-                            >
-                              {study.state}
+          {viewingStudy ? (
+            <StudyDetailItem
+              study={viewingStudy}
+              isEditing={isEditing}
+              onSave={handleSaveComplete}
+              researcherId={researcherId}
+              triggerSave={triggerSave}
+            />
+          ) : (
+            <>
+              {viewMode === "grid" ? (
+                <Grid container spacing={3}>
+                  {allStudies !== null && (allStudies || []).length > 0 ? (
+                    (allStudies || []).map((study) => (
+                      <Grid item lg={4} md={6} xs={12} key={study.id}>
+                        <Paper className={studycardclasses.dhrCard} elevation={3}>
+                          <Box display={"flex"} flexDirection={"row"}>
+                            <Box flexGrow={1}>
+                              <Typography className={studycardclasses.cardTitle}>
+                                {study.name || "No Name provided."}
+                              </Typography>
+                            </Box>
+                            <div className={studycardclasses.stateChip}>
+                              {study.timestamps?.deletedAt && <DeletedIcon />}
+                              {study.timestamps?.suspendedAt && <SuspendedIcon />}
+                              {!study.timestamps?.deletedAt && !study.timestamps?.suspendedAt && (
+                                <div
+                                  className={`${studycardclasses.stateIndicator} ${
+                                    study.state === "production" ? "production" : ""
+                                  }`}
+                                >
+                                  {study.state}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </Box>
-                      <Divider className={studycardclasses.titleDivider} />
-                      <Typography className={studycardclasses.cardSubtitle}>
-                        {`SID ${study.id} - ${study.description || "No Description provided."}`}
-                      </Typography>
-                      <Typography className={studycardclasses.cardMetadata}>
-                        {`Participants: ${study.participants?.length || 0} | Start: ${formatDate_alph(
-                          study.timestamp
-                        )} | Shared: ${study.sub_researchers?.length || 0}`}
-                      </Typography>
+                          </Box>
+                          <Divider className={studycardclasses.titleDivider} />
+                          <Typography className={studycardclasses.cardSubtitle}>
+                            {`SID ${study.id} - ${study.description || "No Description provided."}`}
+                          </Typography>
+                          <Typography className={studycardclasses.cardMetadata}>
+                            {`Participants: ${study.participants?.length || 0} | Start: ${formatDate_alph(
+                              study.timestamp
+                            )} | Shared: ${study.sub_researchers?.length || 0}`}
+                          </Typography>
 
-                      <Grid container className={studycardclasses.statsGrid}>
-                        {stats(study).map((stat) => (
-                          <Grid
-                            item
-                            xs={3}
-                            key={stat.key}
-                            className={`${studycardclasses.statItem} ${
-                              selectedTab.id === study.id && selectedTab.tab === stat.key ? "selected" : ""
-                            }`}
-                            onClick={() => {
-                              selectedTab.id === study.id && selectedTab.tab === stat.key
-                                ? setSelectedTab({ id: null, tab: null })
-                                : setSelectedTab({ id: study.id, tab: stat.key })
-                            }}
-                          >
-                            <Typography className={studycardclasses.statNumber} style={{ color: stat.color }}>
-                              {stat.value}
-                            </Typography>
-                            <Typography className={studycardclasses.statLabel}>{stat.label}</Typography>
-                          </Grid>
-                        ))}
-                      </Grid>
-                      {selectedTab.id === study.id && <Divider className={studycardclasses.titleDivider} />}
-                      {selectedTab.id === study.id && selectedTab.tab === "groups" && (
-                        <Box className={studycardclasses.groupList}>
-                          {getGroupDetails(study).map((group, index) => (
-                            <Box key={index} className={studycardclasses.groupItem}>
-                              <Box display="flex" justifyContent="space-between" alignItems="center">
-                                <Box>
-                                  <Typography className={studycardclasses.groupName}>{group.name}</Typography>
-                                  <Typography className={studycardclasses.groupDesc}>{group.desc}</Typography>
-                                </Box>
-                                <Typography className={studycardclasses.groupCount}>{group.count}</Typography>
-                                <Typography className={studycardclasses.groupitem}>Participants</Typography>
-                              </Box>
-                            </Box>
-                          ))}
-                        </Box>
-                      )}
-
-                      {selectedTab.id === study.id && selectedTab.tab === "assessments" && (
-                        <Box className={studycardclasses.groupList}>
-                          {study.activities
-                            ?.filter((a) => a.category?.includes("assess"))
-                            .map((assessment, index) => (
-                              <Box key={index} className={studycardclasses.groupItem}>
-                                <Typography className={studycardclasses.groupName}>{assessment.name}</Typography>
-                                <Typography className={studycardclasses.groupDesc}>{assessment.spec}</Typography>
-                              </Box>
+                          <Grid container className={studycardclasses.statsGrid}>
+                            {stats(study).map((stat) => (
+                              <Grid
+                                item
+                                xs={3}
+                                key={stat.key}
+                                className={`${studycardclasses.statItem} ${
+                                  selectedTab.id === study.id && selectedTab.tab === stat.key ? "selected" : ""
+                                }`}
+                                onClick={() => {
+                                  selectedTab.id === study.id && selectedTab.tab === stat.key
+                                    ? setSelectedTab({ id: null, tab: null })
+                                    : setSelectedTab({ id: study.id, tab: stat.key })
+                                }}
+                              >
+                                <Typography className={studycardclasses.statNumber} style={{ color: stat.color }}>
+                                  {stat.value}
+                                </Typography>
+                                <Typography className={studycardclasses.statLabel}>{stat.label}</Typography>
+                              </Grid>
                             ))}
-                        </Box>
-                      )}
-
-                      {selectedTab.id === study.id && selectedTab.tab === "activities" && (
-                        <Box className={studycardclasses.groupList}>
-                          {study.activities?.map((activity, index) => (
-                            <Box key={index} className={studycardclasses.groupItem}>
-                              <Typography className={studycardclasses.groupName}>{activity.name}</Typography>
-                              <Typography className={studycardclasses.groupDesc}>{activity.spec}</Typography>
+                          </Grid>
+                          {selectedTab.id === study.id && <Divider className={studycardclasses.titleDivider} />}
+                          {selectedTab.id === study.id && selectedTab.tab === "groups" && (
+                            <Box className={studycardclasses.groupList}>
+                              {getGroupDetails(study).map((group, index) => (
+                                <Box key={index} className={studycardclasses.groupItem}>
+                                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                                    <Box>
+                                      <Typography className={studycardclasses.groupName}>{group.name}</Typography>
+                                      <Typography className={studycardclasses.groupDesc}>{group.desc}</Typography>
+                                    </Box>
+                                    <Typography className={studycardclasses.groupCount}>{group.count}</Typography>
+                                    <Typography className={studycardclasses.groupitem}>Participants</Typography>
+                                  </Box>
+                                </Box>
+                              ))}
                             </Box>
-                          ))}
-                        </Box>
-                      )}
+                          )}
 
-                      {selectedTab.id === study.id && selectedTab.tab === "sensors" && (
-                        <Box className={studycardclasses.groupList}>
-                          {study.sensors?.map((sensor, index) => (
-                            <Box key={index} className={studycardclasses.groupItem}>
-                              <Typography className={studycardclasses.groupName}>{sensor.name}</Typography>
-                              <Typography className={studycardclasses.groupDesc}>{sensor.spec}</Typography>
+                          {selectedTab.id === study.id && selectedTab.tab === "assessments" && (
+                            <Box className={studycardclasses.groupList}>
+                              {study.activities
+                                ?.filter((a) => a.category?.includes("assess"))
+                                .map((assessment, index) => (
+                                  <Box key={index} className={studycardclasses.groupItem}>
+                                    <Typography className={studycardclasses.groupName}>{assessment.name}</Typography>
+                                    <Typography className={studycardclasses.groupDesc}>{assessment.spec}</Typography>
+                                  </Box>
+                                ))}
                             </Box>
-                          ))}
-                        </Box>
-                      )}
+                          )}
 
-                      <Box className={studycardclasses.actionButtons}>
-                        {/* <ViewIcon 
+                          {selectedTab.id === study.id && selectedTab.tab === "activities" && (
+                            <Box className={studycardclasses.groupList}>
+                              {study.activities?.map((activity, index) => (
+                                <Box key={index} className={studycardclasses.groupItem}>
+                                  <Typography className={studycardclasses.groupName}>{activity.name}</Typography>
+                                  <Typography className={studycardclasses.groupDesc}>{activity.spec}</Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+
+                          {selectedTab.id === study.id && selectedTab.tab === "sensors" && (
+                            <Box className={studycardclasses.groupList}>
+                              {study.sensors?.map((sensor, index) => (
+                                <Box key={index} className={studycardclasses.groupItem}>
+                                  <Typography className={studycardclasses.groupName}>{sensor.name}</Typography>
+                                  <Typography className={studycardclasses.groupDesc}>{sensor.spec}</Typography>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+
+                          <Box className={studycardclasses.actionButtons}>
+                            {/* <ViewIcon 
                       className={`${studycardclasses.actionIcon} ${
                         expandedStudyId === study.id ? 'selected' : ''
                       }`}
                       onClick={() => { setActiveButton({ id: study.id, action: 'view' });toggleStudyDetails(study.id)}}
                     /> */}
-                        {expandedStudyId === study.id ? (
-                          <ViewIcon
-                            className={`${studycardclasses.actionIcon} selected`}
-                            onClick={() => {
-                              setActiveButton({ id: study.id, action: "view" })
-                              toggleStudyDetails(study.id)
-                            }}
-                          />
-                        ) : (
-                          <ViewIcon
-                            className={studycardclasses.actionIcon}
-                            onClick={() => {
-                              setActiveButton({ id: study.id, action: "view" })
-                              toggleStudyDetails(study.id)
-                            }}
-                          />
-                        )}
-                        {activeButton.id === study.id && activeButton.action === "copy" ? (
-                          <CopyFilledIcon
-                            className={`${studycardclasses.actionIcon} active`}
-                            onClick={() => {
-                              setActiveButton({ id: study.id, action: "copy" })
-                              handleOpenCopyDialog(study)
-                            }}
-                          />
-                        ) : (
-                          <CopyIcon
-                            className={`${studycardclasses.actionIcon} ${
-                              activeButton.id === study.id && activeButton.action === "copy" ? "active" : ""
-                            }`}
-                            onClick={() => {
-                              setActiveButton({ id: study.id, action: "copy" })
-                              handleOpenCopyDialog(study)
-                            }}
-                          />
-                        )}
-                        {props.authType === "admin" &&
-                          (studyToSuspend?.id === study.id ? (
-                            <SuspendFilledIcon
-                              className={`${studycardclasses.actionIcon} selected`}
-                              onClick={() => {
-                                setActiveButton({ id: study.id, action: "suspend" })
-                                handleOpenSuspendDialog(study)
-                              }}
-                            />
-                          ) : (
-                            <SuspendIcon
-                              className={`${studycardclasses.actionIcon} ${
-                                studyToSuspend?.id === study.id ? "selected" : ""
-                              }`}
-                              onClick={() => {
-                                setActiveButton({ id: study.id, action: "suspend" })
-                                handleOpenSuspendDialog(study)
-                              }}
-                            />
-                          ))}
-                        {props.authType == "admin" && (
-                          <DeleteStudy
-                            study={study}
-                            deletedStudy={handleDeletedStudy}
-                            researcherId={researcherId}
-                            setActiveButton={setActiveButton}
-                          />
-                        )}
-                        {activeButton.id === study.id && activeButton.action === "share" ? (
-                          <SRAddFilledIcon
-                            className={`${studycardclasses.actionIcon} active`}
-                            onClick={() => {
-                              setActiveButton({ id: study.id, action: "share" })
-                              setSelectedStudyForDialog(study)
-                              setOpenASR(true)
-                            }}
-                          />
-                        ) : (
-                          <SRAddIcon
-                            className={studycardclasses.actionIcon}
-                            onClick={() => {
-                              setActiveButton({ id: study.id, action: "share" })
-                              setSelectedStudyForDialog(study)
-                              setOpenASR(true)
-                            }}
-                          />
-                        )}
-                        {activeButton.id === study.id && activeButton.action === "add_participant" ? (
-                          <UserAddFilledIcon
-                            className={`${studycardclasses.actionIcon} active`}
-                            onClick={() => {
-                              setActiveButton({ id: study.id, action: "add_participant" })
-                              setSelectedStudyForDialog(study)
-                              setOpenAPTS(true)
-                            }}
-                          />
-                        ) : (
-                          <UserAddIcon
-                            className={studycardclasses.actionIcon}
-                            onClick={() => {
-                              setActiveButton({ id: study.id, action: "add_participant" })
-                              setSelectedStudyForDialog(study)
-                              setOpenAPTS(true)
-                            }}
-                          />
-                        )}
-                      </Box>
-                    </Paper>
-                    {/* </Grid>
+                            {expandedStudyId === study.id ? (
+                              <ViewIcon
+                                className={`${studycardclasses.actionIcon} selected`}
+                                onClick={() => {
+                                  setActiveButton({ id: study.id, action: "view" })
+                                  // toggleStudyDetails(study.id)
+                                  handleViewStudy(study)
+                                }}
+                              />
+                            ) : (
+                              <ViewIcon
+                                className={studycardclasses.actionIcon}
+                                onClick={() => {
+                                  setActiveButton({ id: study.id, action: "view" })
+                                  // toggleStudyDetails(study.id)
+                                  handleViewStudy(study)
+                                }}
+                              />
+                            )}
+                            {activeButton.id === study.id && activeButton.action === "copy" ? (
+                              <CopyFilledIcon
+                                className={`${studycardclasses.actionIcon} active`}
+                                onClick={() => {
+                                  setActiveButton({ id: study.id, action: "copy" })
+                                  handleOpenCopyDialog(study)
+                                }}
+                              />
+                            ) : (
+                              <CopyIcon
+                                className={`${studycardclasses.actionIcon} ${
+                                  activeButton.id === study.id && activeButton.action === "copy" ? "active" : ""
+                                }`}
+                                onClick={() => {
+                                  setActiveButton({ id: study.id, action: "copy" })
+                                  handleOpenCopyDialog(study)
+                                }}
+                              />
+                            )}
+                            {props.authType === "admin" &&
+                              (studyToSuspend?.id === study.id ? (
+                                <SuspendFilledIcon
+                                  className={`${studycardclasses.actionIcon} selected`}
+                                  onClick={() => {
+                                    setActiveButton({ id: study.id, action: "suspend" })
+                                    handleOpenSuspendDialog(study)
+                                  }}
+                                />
+                              ) : (
+                                <SuspendIcon
+                                  className={`${studycardclasses.actionIcon} ${
+                                    studyToSuspend?.id === study.id ? "selected" : ""
+                                  }`}
+                                  onClick={() => {
+                                    setActiveButton({ id: study.id, action: "suspend" })
+                                    handleOpenSuspendDialog(study)
+                                  }}
+                                />
+                              ))}
+                            {props.authType == "admin" && (
+                              <DeleteStudy
+                                study={study}
+                                deletedStudy={handleDeletedStudy}
+                                researcherId={researcherId}
+                                setActiveButton={setActiveButton}
+                              />
+                            )}
+                            {activeButton.id === study.id && activeButton.action === "share" ? (
+                              <SRAddFilledIcon
+                                className={`${studycardclasses.actionIcon} active`}
+                                onClick={() => {
+                                  setActiveButton({ id: study.id, action: "share" })
+                                  setSelectedStudyForDialog(study)
+                                  setOpenASR(true)
+                                }}
+                              />
+                            ) : (
+                              <SRAddIcon
+                                className={studycardclasses.actionIcon}
+                                onClick={() => {
+                                  setActiveButton({ id: study.id, action: "share" })
+                                  setSelectedStudyForDialog(study)
+                                  setOpenASR(true)
+                                }}
+                              />
+                            )}
+                            {activeButton.id === study.id && activeButton.action === "add_participant" ? (
+                              <UserAddFilledIcon
+                                className={`${studycardclasses.actionIcon} active`}
+                                onClick={() => {
+                                  setActiveButton({ id: study.id, action: "add_participant" })
+                                  setSelectedStudyForDialog(study)
+                                  setOpenAPTS(true)
+                                }}
+                              />
+                            ) : (
+                              <UserAddIcon
+                                className={studycardclasses.actionIcon}
+                                onClick={() => {
+                                  setActiveButton({ id: study.id, action: "add_participant" })
+                                  setSelectedStudyForDialog(study)
+                                  setOpenAPTS(true)
+                                }}
+                              />
+                            )}
+                          </Box>
+                        </Paper>
+                        {/* </Grid>
  
                   <Grid item lg={6} xs={12} key={study.id}> */}
-                    {/* <Box display="flex" p={1} className={classes.studyMain}>
+                        {/* <Box display="flex" p={1} className={classes.studyMain}>
                       <Box flexGrow={1}>
                         <EditStudy
                           study={study}
@@ -1775,36 +2134,36 @@ export default function StudiesList({
                         </Icon>
                       </Fab>
                     </Box> */}
-                    {selectedStudyForDialog && (
-                      <AddParticipantToStudy
-                        study={study}
-                        researcherId={researcherId}
-                        onParticipantAdded={handleParticipantAdded}
-                        title={props.ptitle}
-                        resemail={props.resemail}
-                        open={openAPTS}
-                        onclose={() => {
-                          setOpenAPTS(false)
-                          setActiveButton({ id: null, action: null })
-                        }}
-                      />
-                    )}
-                    {selectedStudyForDialog && (
-                      <AddSubResearcher
-                        study={study}
-                        upatedDataStudy={handleUpdatedStudyObject}
-                        researcherId={researcherId}
-                        handleShareUpdate={(studyid, updatedStudy) => handleUpdateStudy(studyid, updatedStudy)}
-                        setActiveButton={setActiveButton}
-                        activeButton={activeButton}
-                        open={openASR}
-                        onclose={() => {
-                          setOpenASR(false)
-                          setActiveButton({ id: null, action: null })
-                        }}
-                      />
-                    )}
-                    <StudyDetailsDialog
+                        {selectedStudyForDialog && (
+                          <AddParticipantToStudy
+                            study={study}
+                            researcherId={researcherId}
+                            onParticipantAdded={handleParticipantAdded}
+                            title={props.ptitle}
+                            resemail={props.resemail}
+                            open={openAPTS}
+                            onclose={() => {
+                              setOpenAPTS(false)
+                              setActiveButton({ id: null, action: null })
+                            }}
+                          />
+                        )}
+                        {selectedStudyForDialog && (
+                          <AddSubResearcher
+                            study={study}
+                            upatedDataStudy={handleUpdatedStudyObject}
+                            researcherId={researcherId}
+                            handleShareUpdate={(studyid, updatedStudy) => handleUpdateStudy(studyid, updatedStudy)}
+                            setActiveButton={setActiveButton}
+                            activeButton={activeButton}
+                            open={openASR}
+                            onclose={() => {
+                              setOpenASR(false)
+                              setActiveButton({ id: null, action: null })
+                            }}
+                          />
+                        )}
+                        {/* <StudyDetailsDialog
                       study={study}
                       open={expandedStudyId === study.id}
                       onClose={() => setExpandedStudyId(null)}
@@ -1814,63 +2173,67 @@ export default function StudiesList({
                       editStudyId={study.id}
                       formatDate={formatDate}
                       researcherId={researcherId}
-                    />
-                    <Dialog
-                      open={suspendDialogOpen}
-                      onClose={handleCloseSuspendDialog}
-                      scroll="paper"
-                      aria-labelledby="alert-dialog-slide-title"
-                      aria-describedby="alert-dialog-slide-description"
-                      classes={{ paper: classes.manageStudyDialog }}
-                    >
-                      <DialogTitle>Suspend Study</DialogTitle>
-                      <DialogContent>
-                        <Typography>Are you sure you want to suspend the study "{studyToSuspend?.name}"?</Typography>
-                      </DialogContent>
-                      <DialogActions>
-                        <Button onClick={handleCloseSuspendDialog} color="secondary">
-                          Cancel
-                        </Button>
-                        <Button onClick={confirmSuspend} color="primary">
-                          Suspend
-                        </Button>
-                      </DialogActions>
-                    </Dialog>
-                    <Dialog
-                      open={CopyDialogOpen}
-                      onClose={handleCloseCopyDialog}
-                      scroll="paper"
-                      aria-labelledby="alert-dialog-slide-title"
-                      aria-describedby="alert-dialog-slide-description"
-                      classes={{ paper: classes.manageStudyDialog }}
-                    >
-                      <DialogTitle>Copy Study</DialogTitle>
-                      <DialogContent>
-                        <Typography>Are you sure you want to copy the study "{studyToCopy?.name}"?</Typography>
-                      </DialogContent>
-                      <DialogActions>
-                        <Button onClick={handleCloseCopyDialog} color="secondary">
-                          Cancel
-                        </Button>
-                        <Button onClick={confirmCopy} color="primary">
-                          Copy
-                        </Button>
-                      </DialogActions>
-                    </Dialog>
-                  </Grid>
-                ))
-              ) : (
-                <Grid item lg={6} xs={12}>
-                  <Box display="flex" alignItems="center" className={classes.norecords}>
-                    <Icon>info</Icon>
-                    {`${t("No Records Found")}`}
-                  </Box>
+                    /> */}
+                        <Dialog
+                          open={suspendDialogOpen}
+                          onClose={handleCloseSuspendDialog}
+                          scroll="paper"
+                          aria-labelledby="alert-dialog-slide-title"
+                          aria-describedby="alert-dialog-slide-description"
+                          classes={{ paper: classes.manageStudyDialog }}
+                        >
+                          <DialogTitle>Suspend Study</DialogTitle>
+                          <DialogContent>
+                            <Typography>
+                              Are you sure you want to suspend the study "{studyToSuspend?.name}"?
+                            </Typography>
+                          </DialogContent>
+                          <DialogActions>
+                            <Button onClick={handleCloseSuspendDialog} color="secondary">
+                              Cancel
+                            </Button>
+                            <Button onClick={confirmSuspend} color="primary">
+                              Suspend
+                            </Button>
+                          </DialogActions>
+                        </Dialog>
+                        <Dialog
+                          open={CopyDialogOpen}
+                          onClose={handleCloseCopyDialog}
+                          scroll="paper"
+                          aria-labelledby="alert-dialog-slide-title"
+                          aria-describedby="alert-dialog-slide-description"
+                          classes={{ paper: classes.manageStudyDialog }}
+                        >
+                          <DialogTitle>Copy Study</DialogTitle>
+                          <DialogContent>
+                            <Typography>Are you sure you want to copy the study "{studyToCopy?.name}"?</Typography>
+                          </DialogContent>
+                          <DialogActions>
+                            <Button onClick={handleCloseCopyDialog} color="secondary">
+                              Cancel
+                            </Button>
+                            <Button onClick={confirmCopy} color="primary">
+                              Copy
+                            </Button>
+                          </DialogActions>
+                        </Dialog>
+                      </Grid>
+                    ))
+                  ) : (
+                    <Grid item lg={6} xs={12}>
+                      <Box display="flex" alignItems="center" className={classes.norecords}>
+                        <Icon>info</Icon>
+                        {`${t("No Records Found")}`}
+                      </Box>
+                    </Grid>
+                  )}
                 </Grid>
+              ) : (
+                // <TableView />
+                <TableView_Mod />
               )}
-            </Grid>
-          ) : (
-            // <TableView />
-            <TableView_Mod />
+            </>
           )}
         </Box>
       </Box>

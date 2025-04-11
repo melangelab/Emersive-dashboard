@@ -25,6 +25,7 @@ import {
   DialogTitle,
   makeStyles,
   Typography,
+  TextField,
 } from "@material-ui/core"
 import { ReactComponent as ViewIcon } from "../../icons/NewIcons/overview.svg"
 import { ReactComponent as ViewFilledIcon } from "../../icons/NewIcons/overview-filled.svg"
@@ -40,6 +41,8 @@ import { ReactComponent as Save } from "../../icons/NewIcons/floppy-disks.svg"
 
 import AddUpdateAdmin from "./AddUpdateAdmin"
 import { Theme } from "@material-ui/core/styles"
+import { key } from "vega"
+import ConfirmationDialog from "../ConfirmationDialog"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -127,15 +130,6 @@ export default function Admins({ title, authType, adminType, history }) {
     )
   }
 
-  const handleChange = (adminData, checked) => {
-    if (checked) {
-      setSelectedAdmins((prevState) => [...prevState, adminData])
-    } else {
-      let selected = selectedAdmins.filter((item) => item.id != adminData.id)
-      setSelectedAdmins(selected)
-    }
-  }
-
   const categorizeAdmins = (admins) => {
     console.log("categorizeItems clicked", admins)
   }
@@ -144,17 +138,29 @@ export default function Admins({ title, authType, adminType, history }) {
     const selectedadmins = admins.filter((data) => data.some({ searchVal }))
   }
 
+  const updateAdmins = (emailAddress, updatedAdmin) => {
+    setAdmins((prevAdmins) =>
+      prevAdmins.map((admin) => (admin.emailAddress === emailAddress ? { ...admin, ...updatedAdmin } : admin))
+    )
+  }
+
   const TableView_Mod = () => {
+    const userId = LAMP.Auth._auth.id
     const [sortConfig, setSortConfig] = useState({ field: "name", direction: "desc" })
     const [selectedRows, setSelectedRows] = useState([])
     const classes = useModularTableStyles()
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
     const [selectedAdmin, setSelectedAdmin] = useState(null)
-    const [confirmationDialog, setConfirmationDialog] = useState(false)
+    const [confirmationDialog, setConfirmationDialog] = useState(0)
     const [activeButton, setActiveButton] = useState({ id: null, action: null })
 
     const [editedData, setEditedData] = useState<{ [key: string]: any }>({})
     const [isEditing, setIsEditing] = useState(false)
+
+    const [updatedPassword, setUpdatedPassword] = useState("")
+    const [confirmPassword, setConfirmPassword] = useState("")
+    const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+    const [passwordError, setPasswordError] = useState("")
 
     const classesTemp = useStyles()
 
@@ -169,9 +175,14 @@ export default function Admins({ title, authType, adminType, history }) {
     const editable_columns = ["firstName", "lastName", "userName"]
 
     const handleEditClick = (Admin) => {
+      if (userId !== "admin") {
+        alert("You are not System Admin!")
+        return
+      }
       if (activeButton.action === "edit") {
         setActiveButton({ id: null, action: null })
         setEditedData({})
+        setSelectedAdmin(null)
         setIsEditing(false)
       } else {
         setSelectedAdmin(Admin)
@@ -181,20 +192,55 @@ export default function Admins({ title, authType, adminType, history }) {
     }
 
     const handleDeleteClick = (Admin) => {
+      if (userId !== "admin") {
+        alert("You are not System Admin!")
+        return
+      }
       setSelectedAdmin(Admin)
-      setConfirmationDialog(true)
+      setConfirmationDialog(6)
       setActiveButton({ id: Admin.emailAddress, action: "delete" })
     }
 
     const handlePasswordClick = (Admin) => {
+      if (userId !== "admin") {
+        alert("You are not System Admin!")
+        return
+      }
       if (activeButton.action === "passwordEdit") {
         setActiveButton({ id: null, action: null })
+        setSelectedAdmin(null)
       } else {
         setActiveButton({ id: Admin.emailAddress, action: "passwordEdit" })
+        setSelectedAdmin(Admin)
+        setShowPasswordDialog(true)
       }
     }
 
-    const handleSaveClick = (Admin) => {
+    const handleSaveClick = async (Admin) => {
+      if (userId !== "admin") {
+        alert("You are not System Admin!")
+        return
+      }
+      console.log("HEY ADMIN SAVED CLICKED", Admin, editedData)
+      if (Object.entries(editedData).length > 0) {
+        let rowEdits = {}
+        Object.entries(editedData).forEach(([key, value]) => {
+          const [rowIndex, columnKey] = key.split("-")
+          if (!rowEdits[rowIndex]) rowEdits[rowIndex] = {}
+          rowEdits[rowIndex][columnKey] = value
+        })
+        let updatedAdmin
+
+        for (const [rowIndex, updates] of Object.entries(rowEdits)) {
+          updatedAdmin = { ...Admin, ...(updates as any) }
+          if (!updatedAdmin.emailAddress) {
+            console.error("Missing admin ID")
+            continue
+          }
+          await LAMP.Type.setAttachment(updatedAdmin.emailAddress, LAMP.Auth._type, "emersive.profile", updatedAdmin)
+          updateAdmins(updatedAdmin.emailAddress, updatedAdmin)
+        }
+      }
       setActiveButton({ id: null, action: null })
       setEditedData({})
       setIsEditing(false)
@@ -205,22 +251,40 @@ export default function Admins({ title, authType, adminType, history }) {
     const handleDelete = async (status) => {
       if (status === "Yes") {
         try {
-          await LAMP.Participant.delete(selectedAdmin.id)
-          await Service.delete("admins", [selectedAdmin.id])
-          enqueueSnackbar(t("Admin deleted successfully"), { variant: "success" })
-          searchAdmins()
+          console.log("called before delete")
+          await LAMP.Credential.delete(selectedAdmin.emailAddress, selectedAdmin.emailAddress)
+          console.log("called after delete")
+
+          const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+          const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+          const params = new URLSearchParams({
+            attachment_key: "emersive.profile",
+            type: "admin",
+            type_id: selectedAdmin.emailAddress,
+          }).toString()
+          const response: any = await fetch(`${baseURL}/delete-tag?${params}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic " + authString,
+            },
+          })
+          // if (!response.error) {
+          // }
         } catch (error) {
-          console.error("Error deleting Admin:", error)
-          enqueueSnackbar(t("Failed to delete Admin"), { variant: "error" })
+          console.error(error)
         }
+        setConfirmationDialog(0)
+        setSelectedAdmin(null)
+      } else {
+        setConfirmationDialog(0)
+        setSelectedAdmin(null)
       }
-      setConfirmationDialog(false)
-      setActiveButton({ id: null, action: null })
     }
 
     const originalIndexMap = useMemo(() => {
-      return (Array.isArray(admins) ? admins : []).reduce((acc, Admin, index) => {
-        acc[Admin.id] = index
+      return (Array.isArray(admins) ? admins : []).reduce((acc, admin, index) => {
+        acc[admin.emailAddress] = index
         return acc
       }, {})
     }, [admins])
@@ -231,8 +295,8 @@ export default function Admins({ title, authType, adminType, history }) {
       const sortableData = [...admins]
       if (sortConfig.field === "index") {
         sortableData.sort((a, b) => {
-          const aIndex = originalIndexMap[a.id]
-          const bIndex = originalIndexMap[b.id]
+          const aIndex = originalIndexMap[a.emailAddress]
+          const bIndex = originalIndexMap[b.emailAddress]
           return sortConfig.direction === "asc" ? aIndex - bIndex : bIndex - aIndex
         })
       } else if (sortConfig.field) {
@@ -269,16 +333,6 @@ export default function Admins({ title, authType, adminType, history }) {
           </Box>
           <Box component="span" className={isEditing ? classes.actionIcon : classes.disabledIconContainer}>
             <Save onClick={() => handleSaveClick(Admin)} className={isEditing ? null : classes.disabledIcon} />
-            {/* {activeButton.id === Admin.id && activeButton.action === 'save' ? (
-              <PasswordEditFilled
-                className="active"
-                onClick={() => handleSaveClick(Admin)}
-              />
-            ) : (
-              <PasswordEdit
-                onClick={() => handlePasswordClick(Admin)}
-              />
-            )} */}
           </Box>
           <Box component="span" className={classes.actionIcon}>
             {activeButton.id === Admin.emailAddress && activeButton.action === "delete" ? (
@@ -323,7 +377,7 @@ export default function Admins({ title, authType, adminType, history }) {
 
       const columnKey = column.id
       const value = column.value(row)
-      const rowIndex = originalIndexMap[row.id]
+      const rowIndex = originalIndexMap[row.emailAddress]
 
       const isEditable =
         editable_columns.includes(columnKey) && activeButton.action === "edit" && row.emailAddress === activeButton.id
@@ -356,6 +410,45 @@ export default function Admins({ title, authType, adminType, history }) {
 
     console.log("Admins list", sortedData, admins, columns)
 
+    const handleCloseDialog = () => {
+      setShowPasswordDialog(false)
+      setPasswordError("")
+      setActiveButton({ id: null, action: null })
+    }
+
+    const handleSubmitPassword = async () => {
+      try {
+        if (updatedPassword !== confirmPassword) {
+          setPasswordError("Passwords do not match")
+          return
+        }
+
+        const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+
+        const response = await fetch(`${baseURL}/update-credential`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic " + authString,
+          },
+          body: JSON.stringify({
+            type_id: null,
+            access_key: selectedAdmin.emailAddress,
+            credential: {
+              access_key: selectedAdmin.emailAddress,
+              secret_key: confirmPassword,
+            },
+          }),
+        })
+        setShowPasswordDialog(false)
+        setActiveButton({ id: null, action: null })
+      } catch (error) {
+        console.error("Final error:", error)
+        enqueueSnackbar(`Failed to create/update credential: ${error.message || "Unknown error"}`, { variant: "error" })
+      }
+    }
+
     return (
       <>
         <ModularTable
@@ -368,7 +461,7 @@ export default function Admins({ title, authType, adminType, history }) {
             setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
           }}
           onSelectAll={() => {
-            setSelectedRows((prev) => (prev.length === admins.length ? [] : admins.map((p) => p.id)))
+            setSelectedRows((prev) => (prev.length === admins.length ? [] : admins.map((p) => p.emailAddress)))
           }}
           sortConfig={sortConfig}
           onSort={(field) => {
@@ -381,39 +474,43 @@ export default function Admins({ title, authType, adminType, history }) {
           renderCell={renderCell}
         />
 
-        {/* <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
-              <DialogTitle>Suspend Admin</DialogTitle>
-              <DialogContent>
-                <Typography>
-                  Are you sure you want to suspend the Admin "{AdminToSuspend?.name}"?
-                </Typography>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleCloseSuspendDialog} color="secondary">
-                  Cancel
-                </Button>
-                <Button onClick={confirmSuspend} color="primary">
-                  Suspend
-                </Button>
-              </DialogActions>
-            </Dialog> */}
-
-        {/* <Dialog open={unsuspendDialogOpen} onClose={handleCloseUnSuspendDialog}>
-              <DialogTitle>Removal of Admin from Suspension</DialogTitle>
-              <DialogContent>
-                <Typography>
-                  Are you sure you want to undo suspension of the Admin "{AdminToUnSuspend?.name}"?
-                </Typography>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleCloseUnSuspendDialog} color="secondary">
-                  Cancel
-                </Button>
-                <Button onClick={confirmUnSuspend} color="primary">
-                  Undo Suspension
-                </Button>
-              </DialogActions>
-            </Dialog> */}
+        <Dialog open={showPasswordDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
+          <DialogTitle id="form-dialog-title">Reset Researcher Password</DialogTitle>
+          <DialogContent>
+            {passwordError && (
+              <Typography color="error" variant="body2" gutterBottom>
+                {passwordError}
+              </Typography>
+            )}
+            <TextField
+              autoFocus
+              margin="dense"
+              id="new-password"
+              label="New Password"
+              type="password"
+              fullWidth
+              value={updatedPassword}
+              onChange={(e) => setUpdatedPassword(e.target.value)}
+            />
+            <TextField
+              margin="dense"
+              id="confirm-password"
+              label="Confirm Password"
+              type="password"
+              fullWidth
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog} color="primary">
+              Close
+            </Button>
+            <Button onClick={handleSubmitPassword} color="primary" variant="contained">
+              Submit
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {selectedAdmin && (
           <>
@@ -437,16 +534,16 @@ export default function Admins({ title, authType, adminType, history }) {
                   }}
                 /> */}
 
-            {/* <ConfirmationDialog
-                  open={confirmationDialog}
-                  onClose={() => {
-                    setConfirmationDialog(false);
-                    setSelectedAdmin(null);
-                    setActiveButton({ id: null, action: null});
-                  }}
-                  confirmAction={handleDelete}
-                  confirmationMsg={t("Are you sure you want to delete this Admin?")}
-                /> */}
+            <ConfirmationDialog
+              open={confirmationDialog > 0}
+              onClose={() => {
+                setConfirmationDialog(0)
+                setSelectedAdmin(null)
+                setActiveButton({ id: null, action: null })
+              }}
+              confirmAction={handleDelete}
+              confirmationMsg={t("Are you sure you want to delete this Admin?")}
+            />
           </>
         )}
       </>

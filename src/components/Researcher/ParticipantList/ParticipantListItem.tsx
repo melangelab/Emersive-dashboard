@@ -18,6 +18,12 @@ import {
   Paper,
   Divider,
   Grid,
+  TextField,
+  DialogContent,
+  DialogActions,
+  DialogTitle,
+  Dialog,
+  Button,
 } from "@material-ui/core"
 import LAMP from "lamp-core"
 import { useSnackbar } from "notistack"
@@ -48,6 +54,9 @@ import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/tras
 import ConfirmationDialog from "../../ConfirmationDialog"
 import { ReactComponent as VisualiseIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
 import { ReactComponent as VisualiseFilledIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
+import { ReactComponent as PasswordIcon } from "../../../icons/NewIcons/password-lock.svg"
+import { ReactComponent as PasswordFilledIcon } from "../../../icons/NewIcons/password-lock-filled.svg"
+import SetPassword from "../../SetPassword"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -139,6 +148,11 @@ export default function ParticipantListItem({
   const pStudy = studies.filter((study) => study.id === participant.study_id)[0]
   const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
+  const [updatedPassword, setUpdatedPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [passwordError, setPasswordError] = useState("")
+
   const stats = (participant, study) => {
     return [
       {
@@ -228,6 +242,53 @@ export default function ParticipantListItem({
     }
     setConfirmationDialog(false)
     setActiveButton({ id: null, action: null })
+  }
+
+  const handleCloseDialog = () => {
+    setShowPasswordDialog(false)
+    setPasswordError("")
+  }
+
+  const handleSubmitPassword = async () => {
+    try {
+      // Validate passwords
+      if (updatedPassword !== confirmPassword) {
+        setPasswordError("Passwords do not match")
+        return
+      }
+
+      console.log("IN THE UPDATED PASSWORD", confirmPassword)
+
+      try {
+        console.log("Attempting to update credential...", activeButton.id, participant)
+        const credlist = await LAMP.Credential.list(activeButton.id)
+        const response = (await LAMP.Credential.update(activeButton.id, participant.email, {
+          ...(credlist[0] as any),
+          secret_key: confirmPassword,
+        })) as any
+        console.log("Update response:", response)
+
+        // Check if response contains error
+        if (response && response.error === "404.no-such-credentials") {
+          console.log("Attempting to create new credential...")
+          await LAMP.Credential.create(activeButton.id, participant.email, confirmPassword)
+          enqueueSnackbar("Successfully created new credential", { variant: "success" })
+        } else {
+          enqueueSnackbar("Successfully updated credential", { variant: "success" })
+        }
+      } catch (updateError) {
+        console.error("Operation error:", updateError)
+        throw updateError
+      }
+      setActiveButton({ id: null, action: null })
+      setConfirmPassword("")
+      setUpdatedPassword("")
+      setPasswordError("")
+      setShowPasswordDialog(false)
+    } catch (error) {
+      console.error("Final error:", error)
+      enqueueSnackbar(`Failed to create/update credential: ${error.message || "Unknown error"}`, { variant: "error" })
+    }
   }
 
   return (
@@ -343,7 +404,7 @@ export default function ParticipantListItem({
               }}
             />
           )}
-          {activeButton.id === participant.id && activeButton.action === "edit" ? (
+          {/* {activeButton.id === participant.id && activeButton.action === "edit" ? (
             <EditFilledIcon
               className={`${participantcardclasses.actionIcon} active`}
               onClick={() => {
@@ -353,16 +414,32 @@ export default function ParticipantListItem({
             />
           ) : (
             <EditIcon
-              className={`${participantcardclasses.actionIcon} ${
-                activeButton.id === participant.id && activeButton.action === "edit" ? "active" : ""
-              }`}
+              className={`${participantcardclasses.actionIcon} ${activeButton.id === participant.id && activeButton.action === "edit" ? "active" : ""
+                }`}
               onClick={() => {
                 setActiveButton({ id: participant.id, action: "edit" })
                 setDetailsDialogOpen(true)
               }}
             />
+          )} */}
+          {activeButton?.id === participant.id && activeButton?.action === "credentials" ? (
+            <PasswordFilledIcon
+              className={`${participantcardclasses.actionIcon} active`}
+              onClick={() => {
+                setActiveButton?.({ id: participant.id, action: "credentials" })
+                setShowPasswordDialog(true)
+              }}
+            />
+          ) : (
+            <PasswordIcon
+              className={participantcardclasses.actionIcon}
+              onClick={() => {
+                setActiveButton?.({ id: participant.id, action: "credentials" })
+                setShowPasswordDialog(true)
+              }}
+            />
           )}
-          <Credentials user={participant} activeButton={activeButton} setActiveButton={setActiveButton} />
+          {/* <Credentials user={participant} activeButton={activeButton} setActiveButton={setActiveButton} /> */}
           {!participant.systemTimestamps?.suspensionTime ? (
             activeButton.id === participant.id && activeButton.action === "suspend" ? (
               <SuspendFilledIcon
@@ -416,7 +493,7 @@ export default function ParticipantListItem({
               }}
             />
           )}
-          {activeButton.id === participant.id && activeButton.action === "settings" ? (
+          {/* {activeButton.id === participant.id && activeButton.action === "settings" ? (
             <CopyFilledIcon
               className={`${participantcardclasses.actionIcon} active`}
               onClick={() => {
@@ -426,15 +503,14 @@ export default function ParticipantListItem({
             />
           ) : (
             <CopyIcon
-              className={`${participantcardclasses.actionIcon} ${
-                activeButton.id === participant.id && activeButton.action === "settings" ? "active" : ""
-              }`}
+              className={`${participantcardclasses.actionIcon} ${activeButton.id === participant.id && activeButton.action === "settings" ? "active" : ""
+                }`}
               onClick={() => {
                 setActiveButton({ id: participant.id, action: "settings" })
                 window.location.href = `/#/researcher/${researcherId}/participant/${participant?.id}/settings`
               }}
             />
-          )}
+          )} */}
         </Box>
         <ParticipantDetailsDialog
           participant={participant}
@@ -468,6 +544,43 @@ export default function ParticipantListItem({
           confirmationMsg={t("Are you sure you want to delete this Participant?")}
         />
       </Box>
+      <Dialog open={showPasswordDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
+        <DialogTitle id="form-dialog-title">Reset Researcher Password</DialogTitle>
+        <DialogContent>
+          {passwordError && (
+            <Typography color="error" variant="body2" gutterBottom>
+              {passwordError}
+            </Typography>
+          )}
+          <TextField
+            autoFocus
+            margin="dense"
+            id="new-password"
+            label="New Password"
+            type="password"
+            fullWidth
+            value={updatedPassword}
+            onChange={(e) => setUpdatedPassword(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            id="confirm-password"
+            label="Confirm Password"
+            type="password"
+            fullWidth
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="primary">
+            Close
+          </Button>
+          <Button onClick={handleSubmitPassword} color="primary" variant="contained">
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   )
 }
