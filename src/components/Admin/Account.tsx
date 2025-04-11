@@ -17,6 +17,7 @@ import { ReactComponent as ProfileIcon } from "../../icons/NewIcons/ProfileIcon.
 import { Visibility, VisibilityOff, Edit, Close, Check } from "@material-ui/icons"
 import LAMP, { Researcher } from "lamp-core"
 import { useSnackbar } from "notistack"
+import { Service } from "../DBService/DBService"
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -199,7 +200,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }))
 
-const Account = ({ updateStore, adminType, authType, onLogout, ...props }) => {
+const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...props }) => {
   const classes = useStyles()
   const [currentTab, setCurrentTab] = useState(0)
   const [showPassword, setShowPassword] = useState(false)
@@ -218,6 +219,7 @@ const Account = ({ updateStore, adminType, authType, onLogout, ...props }) => {
   const { enqueueSnackbar } = useSnackbar()
 
   const [editingFields, setEditingFields] = useState({
+    id: false,
     userName: false,
     firstName: false,
     lastName: false,
@@ -227,6 +229,7 @@ const Account = ({ updateStore, adminType, authType, onLogout, ...props }) => {
   })
 
   const [tempValues, setTempValues] = useState({
+    id: "",
     userName: "",
     firstName: "",
     lastName: "",
@@ -281,7 +284,27 @@ const Account = ({ updateStore, adminType, authType, onLogout, ...props }) => {
       setProfile(updatedProfile)
       setEditingFields((prev) => ({ ...prev, [field]: false }))
 
-      await LAMP.Type.setAttachment(userId, "me", "emersive.profile", updatedProfile.data)
+      if (field === "password") {
+        // const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+        // const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        // const response = await fetch(`${baseURL}/update-credential`, {
+        //   method: "PUT",
+        //   headers: {
+        //     "Content-Type": "application/json",
+        //     Authorization: "Basic " + authString,
+        //   },
+        //   body: {
+        //     type_id: LAMP.Auth._type === "admin" ? null : profile.data.id,
+        //     access_key: profile.data.emailAddress,
+        //     credential: {
+        //       access_key: profile.data.emailAddress,
+        //       secret_key: confirmPassword
+        //     }
+        //   } as any
+        // })
+      } else {
+        await LAMP.Type.setAttachment(userId, LAMP.Auth._type, "emersive.profile", updatedProfile.data)
+      }
 
       enqueueSnackbar(`${field} updated successfully`, { variant: "success" })
     } catch (error) {
@@ -306,12 +329,33 @@ const Account = ({ updateStore, adminType, authType, onLogout, ...props }) => {
       setUserId(userId)
 
       // Fetch the profile data
-      const response: any = await LAMP.Type.getAttachment(userId, "emersive.profile")
+      let response: any = await LAMP.Type.getAttachment(userId, "emersive.profile")
 
       if (!response || !response.data) {
         throw new Error("Invalid profile data structure")
       }
 
+      const temp: any = LAMP.Auth._me
+      response.data[0]["id"] = temp.id
+
+      const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+      const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+      const params = new URLSearchParams({
+        access_key: userId,
+      }).toString()
+      const credentialResponse: any = await fetch(`${baseURL}/view-credential?${params}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Basic " + authString,
+        },
+      })
+
+      const response2 = await credentialResponse.json()
+
+      response.data[0]["password"] = response2.data
+
+      console.log("FINAL PROFILE", response.data[0])
       setProfile({ data: response.data[0] })
     } catch (error) {
       console.error("Error fetching user data:", error)
@@ -384,9 +428,10 @@ const Account = ({ updateStore, adminType, authType, onLogout, ...props }) => {
 
       if (userType === "admin") {
         credlist = await LAMP.Credential.list(null)
+        console.log("CRED LIST", credlist)
         const rightAdminIndex = credlist.findIndex((cred) => cred.access_key === userId)
         response = await LAMP.Credential.update(null, userId, {
-          ...(credlist[rightAdminIndex] || {}),
+          ...(credlist[rightAdminIndex].access_key || {}),
           secret_key: confirmPassword,
         })
       } else {
@@ -397,8 +442,42 @@ const Account = ({ updateStore, adminType, authType, onLogout, ...props }) => {
           secret_key: confirmPassword,
         })
       }
-
       console.log("Update response:", response)
+
+      try {
+        const res = await setIdentity({
+          id: LAMP.Auth._auth.id,
+          password: confirmPassword,
+          serverAddress: LAMP.Auth._auth.serverAddress,
+        })
+
+        console.log("Identity set result:", res)
+
+        if (res.authType === "researcher") {
+          if (res.auth.serverAddress === "demo.lamp.digital") {
+            let studiesSelected =
+              localStorage.getItem("studies_" + res.identity.id) !== null
+                ? JSON.parse(localStorage.getItem("studies_" + res.identity.id))
+                : []
+            if (studiesSelected.length === 0) {
+              let studiesList = [res.identity.name]
+              localStorage.setItem("studies_" + res.identity.id, JSON.stringify(studiesList))
+              localStorage.setItem("studyFilter_" + res.identity.id, JSON.stringify(1))
+            }
+          } else {
+            let researcherT = res.identity
+            researcherT.timestamps.lastLoginAt = new Date().getTime()
+            researcherT.loggedIn = true
+            await LAMP.Researcher.update(researcherT.id, researcherT)
+          }
+        }
+
+        await Service.deleteDB()
+        await Service.deleteUserDB()
+      } catch (err) {
+        console.error("Error with auth request:", err)
+        enqueueSnackbar("Incorrect username, password, or server address.", { variant: "error" })
+      }
       await handleSaveField("password")
       setShowPasswordDialog(false)
     } catch (error) {
@@ -437,6 +516,16 @@ const Account = ({ updateStore, adminType, authType, onLogout, ...props }) => {
             <Grid container spacing={4}>
               {/* Left Column - Profile Form */}
               <Grid item xs={12} md={7}>
+                <div className={classes.formField}>
+                  <Typography className={classes.inputLabel}>ID</Typography>
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    value={profile.data.id === "" ? "NA" : profile.data.id}
+                    InputProps={{ readOnly: true }}
+                    className={classes.textField}
+                  />
+                </div>
                 <div className={classes.formField}>
                   <Typography className={classes.inputLabel}>Role</Typography>
                   <TextField
@@ -585,17 +674,19 @@ const Account = ({ updateStore, adminType, authType, onLogout, ...props }) => {
                     fullWidth
                     variant="outlined"
                     type={showPassword ? "text" : "password"}
-                    value="••••••••" // Masked password display
+                    value={showPassword ? profile.data.password : "••••••••"} // Masked password display
                     className={classes.textField}
                     disabled={true}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          <IconButton onClick={() => setShowPasswordDialog(true)}>
-                            <Edit className={classes.editIcon} />
-                          </IconButton>
+                          {LAMP.Auth._auth.id === "admin" ? null : (
+                            <IconButton onClick={() => setShowPasswordDialog(true)}>
+                              <Edit className={classes.editIcon} />
+                            </IconButton>
+                          )}
                           <IconButton onClick={handleTogglePassword}>
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                            {!showPassword ? <VisibilityOff /> : <Visibility />}
                           </IconButton>
                         </InputAdornment>
                       ),

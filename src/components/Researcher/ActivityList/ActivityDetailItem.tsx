@@ -207,7 +207,7 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-interface DeveloperInfo {
+export interface DeveloperInfo {
   version?: string
   versionNumber?: string
   userIp?: string
@@ -217,6 +217,17 @@ interface DeveloperInfo {
   user?: string
   status?: string
   submittedOn?: string
+}
+
+export const fetchUserIp = async () => {
+  try {
+    const response = await fetch("https://api64.ipify.org?format=json")
+    const data = await response.json()
+    return data.ip
+  } catch (error) {
+    console.error("Error fetching IP:", error)
+    return "Unavailable"
+  }
 }
 
 interface ActivityDetailItemProps {
@@ -295,6 +306,15 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     title: activity?.streak?.title || "",
     description: activity?.streak?.description || "",
   })
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null)
+  const [isPreviewReady, setIsPreviewReady] = useState(false)
+  const [videoData, setVideoData] = useState({
+    stream: null,
+    chunks: [],
+    previewUrl: null,
+  })
+  const [videoPreviewBlob, setVideoPreviewBlob] = useState<Blob | null>(null)
+  const [videoStreamActive, setVideoStreamActive] = useState(false)
 
   // Form state
   const [editedValues, setEditedValues] = useState<{
@@ -347,8 +367,10 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         audio: audioEnabled,
       })
       setStream(mediaStream)
+      setVideoStreamActive(true)
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream
+        videoRef.current.play().catch((err) => console.error("Error playing video:", err))
       }
     } catch (err) {
       console.error("Error accessing camera:", err)
@@ -360,6 +382,10 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     if (stream) {
       stream.getTracks().forEach((track) => track.stop())
       setStream(null)
+      setVideoStreamActive(false)
+      if (videoRef.current) {
+        videoRef.current.srcObject = null
+      }
     }
   }
 
@@ -372,6 +398,10 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
   }
 
   const startRecording = () => {
+    if (!stream || !videoStreamActive) {
+      enqueueSnackbar("Camera stream not available", { variant: "error" })
+      return
+    }
     if (stream) {
       const updatedActivityGuide = {
         ...editedValues.activityGuide,
@@ -394,19 +424,23 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
       }
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "video/webm" })
-        const videoURL = URL.createObjectURL(blob)
+        const videoBlob = new Blob(chunks, { type: "video/webm" })
+
+        setVideoPreviewBlob(videoBlob)
+        const videoURL = URL.createObjectURL(videoBlob)
 
         setRecordedChunks(chunks)
+        const stableVideoURL = URL.createObjectURL(videoBlob)
+        setVideoPreviewUrl(stableVideoURL) // Add new state for video URL
 
-        if (previewRef.current) {
-          previewRef.current.src = videoURL
-          previewRef.current.load()
-          previewRef.current.onloadeddata = () => {
-            console.log(previewRef.current)
-            previewRef.current?.play()
-          }
-        }
+        // if (previewRef.current) {
+        //   previewRef.current.src = stableVideoURL
+        //   previewRef.current.load()
+        //   previewRef.current.onloadeddata = () => {
+        //     console.log(previewRef.current)
+        //     previewRef.current?.play()
+        //   }
+        // }
 
         const reader = new FileReader()
         reader.onloadend = () => {
@@ -424,7 +458,10 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
             activityGuide: updatedActivityGuide,
           }))
         }
-        reader.readAsDataURL(blob)
+        reader.readAsDataURL(videoBlob)
+        // return () => {
+        //   URL.revokeObjectURL(stableVideoURL);
+        // };
       }
 
       recorder.start()
@@ -656,7 +693,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         let developer_info = null
         const devRes = (await LAMP.Type.getAttachment(activity.id, "emersive.activity.developer_info")) as any
         if (devRes.error == undefined && devRes.data) {
-          developer_info = devRes.data
+          developer_info = Array.isArray(devRes.data) ? devRes.data[0] : devRes.data
         }
         console.log("devRes", devRes, developer_info)
 
@@ -672,7 +709,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
 
         const detailsRes = (await LAMP.Type.getAttachment(activity.id, "emersive.activity.details")) as any
         if (detailsRes.data) {
-          const attachmentData = detailsRes.data
+          const attachmentData = Array.isArray(detailsRes.data) ? detailsRes.data[0] : detailsRes.data
           activity_description = attachmentData.description || activity_description
           activity_image = attachmentData.photo || activity_image
           activity_streak = attachmentData.streak || activity_streak
@@ -750,30 +787,42 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     return () => clearInterval(interval)
   }, [audioRecording])
 
+  // useEffect(() => {
+  //   if (guideTab === 1 && isEditing) {
+  //     if (!stream) {
+  //       startCamera()
+  //     }
+  //   } else {
+  //     stopCamera()
+  //   }
+
+  //   return () => {
+  //     stopCamera()
+  //   }
+  // }, [guideTab, isEditing])
   useEffect(() => {
+    // Handle camera initialization
     if (guideTab === 1 && isEditing) {
-      if (!stream) {
-        startCamera()
-      }
-    } else {
-      stopCamera()
+      startCamera()
     }
 
     return () => {
+      // Cleanup
       stopCamera()
+      if (videoPreviewUrl) {
+        URL.revokeObjectURL(videoPreviewUrl)
+      }
+      setVideoPreviewBlob(null)
+      setVideoPreviewUrl(null)
+      setIsPreviewReady(false)
     }
   }, [guideTab, isEditing])
 
-  const fetchUserIp = async () => {
-    try {
-      const response = await fetch("https://api64.ipify.org?format=json")
-      const data = await response.json()
-      return data.ip
-    } catch (error) {
-      console.error("Error fetching IP:", error)
-      return "Unavailable"
+  useEffect(() => {
+    if (previewRef.current && videoPreviewUrl) {
+      previewRef.current.load()
     }
-  }
+  }, [videoPreviewUrl])
 
   const handleSaveDeveloperInfo = async () => {
     setLoading(true)
@@ -1045,7 +1094,6 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
             disabled: false,
           })) || [],
     },
-
     {
       id: "id",
       label: t("Activity ID"),
@@ -1235,12 +1283,27 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
                 )}
               </Box>
               <Box className={classes.controlsContainer || ""}>
-                {recordedChunks.length > 0 && (
+                {/* {recordedChunks.length > 0 && (
                   <Box
                     className={classes.previewThumbnail || ""}
                     onClick={() => handleViewMedia("video", previewRef.current?.src || "", "video/webm")}
                   >
                     <video ref={previewRef} autoPlay muted loop />
+                  </Box>
+                )} */}
+                {videoPreviewBlob && (
+                  <Box className={classes.previewThumbnail}>
+                    <video
+                      ref={previewRef}
+                      key={videoPreviewUrl} // Add key to force remount
+                      src={videoPreviewUrl}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      controls={false}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
                   </Box>
                 )}
                 <Box
@@ -1875,7 +1938,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         editedValues.developer_info?.submittedOn ||
         (activity?.createdAt ? new Date(activity.createdAt).toLocaleString() : "NA"),
     }
-
+    console.log("developerInfo", developerInfo)
     return {
       ...developerInfo,
       onChangeStatus: () => {

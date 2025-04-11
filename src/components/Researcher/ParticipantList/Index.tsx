@@ -31,6 +31,7 @@ import {
   DialogContent,
   useMediaQuery,
   useTheme,
+  TextField,
 } from "@material-ui/core"
 import TimeAgo from "javascript-time-ago"
 import en from "javascript-time-ago/locale/en"
@@ -78,6 +79,10 @@ import ParticipantDetailsDialog from "./ParticipantDetailsDialog"
 import ConfirmationDialog from "../../ConfirmationDialog"
 import ItemViewHeader from "../SharedStyles/ItemViewHeader"
 import ParticipantDetailItem from "./ParticipantDetailItem"
+import { ReactComponent as SaveIcon } from "../../../icons/NewIcons/floppy-disks.svg"
+import { ReactComponent as SaveFilledIcon } from "../../../icons/NewIcons/floppy-disks-filled.svg"
+import { ReactComponent as VisualiseIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
+import { ReactComponent as VisualiseFilledIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -271,22 +276,22 @@ export default function ParticipantList({
   const { t } = useTranslation()
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
   const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
-  const stats = (study) => {
+  const stats = (participant, study) => {
     return [
       {
-        value: study.assessments?.length || 0,
+        value: participant.assessments?.length || study?.assessments?.length || 0,
         label: "ASSESSMENTS",
         color: "#f2aa85",
         key: "assessments",
       },
       {
-        value: study.activities?.length || 0,
+        value: participant.activities?.length || study?.activities?.length || 0,
         label: "ACTIVITIES",
         color: "#06B0F0",
         key: "activities",
       },
       {
-        value: study.sensors?.length || 0,
+        value: participant.sensors?.length || study?.sensors?.length || 0,
         label: "SENSORS",
         color: "#75d36d",
         key: "sensors",
@@ -521,9 +526,9 @@ export default function ParticipantList({
     { id: "mobile", label: "Mobile", value: (p) => p.mobile, visible: true },
     { id: "group", label: "Group", value: (p) => p.group_name || "-", visible: true },
     { id: "study", label: "Study", value: (p) => p.study_name, visible: true },
-    { id: "age", label: "Age", value: (p) => p.userAge || "-", visible: false },
+    { id: "userAge", label: "Age", value: (p) => p.userAge || "-", visible: false },
     { id: "gender", label: "Gender", value: (p) => p.gender || "-", visible: false },
-    { id: "caregiver", label: "Caregiver", value: (p) => p.caregiverName || "-", visible: false },
+    { id: "caregiverName", label: "Caregiver", value: (p) => p.caregiverName || "-", visible: false },
     {
       id: "lastLogin",
       label: "Last Login",
@@ -795,11 +800,91 @@ export default function ParticipantList({
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
     const [selectedParticipant, setSelectedParticipant] = useState(null)
     const [confirmationDialog, setConfirmationDialog] = useState(false)
+    const [editingParticipant, setEditingParticipant] = useState(null)
+    const [editedData, setEditedData] = useState({})
+    const editableColumns = [
+      "firstName",
+      "lastName",
+      "username",
+      "email",
+      "mobile",
+      "userAge",
+      "gender",
+      "caregiverName",
+    ]
+    const fieldConfigs = {
+      gender: {
+        type: "select",
+        options: [
+          { value: "male", label: "Male" },
+          { value: "female", label: "Female" },
+          { value: "other", label: "Other" },
+        ],
+      },
+      userAge: {
+        type: "number",
+      },
+    }
 
     const handleEditClick = (participant) => {
-      setSelectedParticipant(participant)
-      setDetailsDialogOpen(true)
-      setActiveButton({ id: participant.id, action: "edit" })
+      if (activeButton.id === participant.id && activeButton.action === "edit") {
+        // Cancel edit mode
+        setEditingParticipant(null)
+        setEditedData({})
+        setActiveButton({ id: null, action: null })
+      } else {
+        // Start editing
+        setEditingParticipant(participant)
+        setEditedData({})
+        setActiveButton({ id: participant.id, action: "edit" })
+      }
+    }
+
+    const handleSaveClick = async (participant) => {
+      if (Object.keys(editedData).length > 0) {
+        const errors = validateFields(editedData)
+
+        if (errors.length > 0) {
+          errors.forEach((error) => {
+            enqueueSnackbar(error, { variant: "error" })
+          })
+          return
+        }
+
+        // Prepare updated participant data
+        const updatedParticipant = {
+          ...participant,
+          ...editedData,
+        }
+
+        try {
+          await handleUpdateParticipant(participant.id, updatedParticipant)
+          setEditingParticipant(null)
+          setEditedData({})
+          setActiveButton({ id: null, action: null })
+          enqueueSnackbar("Participant updated successfully", { variant: "success" })
+        } catch (error) {
+          enqueueSnackbar("Failed to update participant", { variant: "error" })
+        }
+      }
+    }
+
+    const validateFields = (data) => {
+      const errors = []
+
+      if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        errors.push("Invalid email format")
+      }
+
+      if (data.mobile && !/^\+?[\d\s-]{10,}$/.test(data.mobile)) {
+        errors.push("Invalid phone number format")
+      }
+
+      if (data.userAge && (isNaN(data.userAge) || data.userAge < 0)) {
+        errors.push("Invalid age")
+      }
+
+      return errors
     }
 
     const handleDeleteClick = (participant) => {
@@ -825,6 +910,9 @@ export default function ParticipantList({
       setActiveButton({ id: null, action: null })
     }
     const renderCellContent = (column, row) => {
+      const columnKey = column.id
+      const value = column.value(row)
+
       if (column.id === "username") {
         return (
           <ParticipantName
@@ -849,9 +937,101 @@ export default function ParticipantList({
             {row.isLoggedIn ? "Online" : "Offline"}
           </Typography>
         )
-      } else {
-        return column.value(row)
       }
+      // else {
+      //   return column.value(row)
+      // }
+
+      const isEditable =
+        editableColumns.includes(columnKey) &&
+        // editingParticipant?.id === row.id &&
+        activeButton.id === row.id &&
+        activeButton.action === "edit"
+
+      if (!isEditable) {
+        // Handle special non-editable displays
+        if (column.id === "isLoggedIn") {
+          return (
+            <Typography
+              variant="body2"
+              style={{
+                color: row.isLoggedIn ? "#2e7d32" : "#c62828",
+                fontWeight: 500,
+              }}
+            >
+              {row.isLoggedIn ? "Online" : "Offline"}
+            </Typography>
+          )
+        } else if (column.id === "username") {
+          return (
+            <ParticipantName
+              participant={row}
+              updateParticipant={(nameVal) => {
+                setParticipants((prevParticipants) =>
+                  prevParticipants.map((p) => (p.id === row.id ? { ...p, name: nameVal } : p))
+                )
+              }}
+              openSettings={false}
+            />
+          )
+        }
+
+        return <div className={classes.cellContent}>{value}</div>
+      }
+      const fieldConfig = fieldConfigs[columnKey]
+
+      if (fieldConfig?.type === "select") {
+        return (
+          <Select
+            value={editedData[columnKey] ?? value}
+            onChange={(e) => {
+              setEditedData((prev) => ({
+                ...prev,
+                [columnKey]: e.target.value,
+              }))
+            }}
+            className={classes.editableSelect}
+            fullWidth
+          >
+            {fieldConfig.options.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+        )
+      }
+
+      if (fieldConfig?.type === "number") {
+        return (
+          <TextField
+            type="number"
+            value={editedData[columnKey] ?? value}
+            onChange={(e) => {
+              setEditedData((prev) => ({
+                ...prev,
+                [columnKey]: e.target.value,
+              }))
+            }}
+            className={classes.editableInput}
+            fullWidth
+          />
+        )
+      }
+
+      return (
+        <TextField
+          value={editedData[columnKey] ?? value}
+          onChange={(e) => {
+            setEditedData((prev) => ({
+              ...prev,
+              [columnKey]: e.target.value,
+            }))
+          }}
+          className={classes.editableInput}
+          fullWidth
+        />
+      )
     }
 
     const originalIndexMap = useMemo(() => {
@@ -900,12 +1080,34 @@ export default function ParticipantList({
                 className="active"
                 onClick={() => {
                   setActiveButton({ id: participant.id, action: "view" })
-                  onParticipantSelect(participant.id)
+                  handleViewParticipant(participant)
+                  // onParticipantSelect(participant.id)
                   setActiveButton({ id: null, action: null })
                 }}
               />
             ) : (
               <ViewIcon
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "view" })
+                  // onParticipantSelect(participant.id)
+                  handleViewParticipant(participant)
+                  setActiveButton({ id: null, action: null })
+                }}
+              />
+            )}
+          </Box>
+          <Box component="span" className={classes.actionIcon}>
+            {activeButton.id === participant.id && activeButton.action === "view" ? (
+              <VisualiseFilledIcon
+                className="active"
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "view" })
+                  onParticipantSelect(participant.id)
+                  setActiveButton({ id: null, action: null })
+                }}
+              />
+            ) : (
+              <VisualiseIcon
                 onClick={() => {
                   setActiveButton({ id: participant.id, action: "view" })
                   onParticipantSelect(participant.id)
@@ -920,6 +1122,18 @@ export default function ParticipantList({
             ) : (
               <EditIcon onClick={() => handleEditClick(participant)} />
             )}
+          </Box>
+          <Box component="span" className={classes.actionIcon}>
+            <SaveIcon
+              className={!Object.keys(editedData).length ? classes.disabledIcon : ""}
+              onClick={() => {
+                if (Object.keys(editedData).length > 0) {
+                  handleSaveClick(participant)
+                } else {
+                  enqueueSnackbar("No changes to save.", { variant: "info", autoHideDuration: 1000 })
+                }
+              }}
+            />
           </Box>
           <Box component="span" className={classes.actionIcon}>
             <Credentials user={participant} />
@@ -966,7 +1180,7 @@ export default function ParticipantList({
               <DeleteIcon onClick={() => handleDeleteClick(participant)} />
             )}
           </Box>
-          <Box component="span" className={classes.actionIcon}>
+          {/* <Box component="span" className={classes.actionIcon}>
             {activeButton.id === participant.id && activeButton.action === "settings" ? (
               <CopyFilledIcon
                 className="active"
@@ -983,7 +1197,7 @@ export default function ParticipantList({
                 }}
               />
             )}
-          </Box>
+          </Box> */}
         </Box>
       )
     }
@@ -1044,6 +1258,16 @@ export default function ParticipantList({
             </Button>
           </DialogActions>
         </Dialog>
+        <ConfirmationDialog
+          open={confirmationDialog}
+          onClose={() => {
+            setConfirmationDialog(false)
+            setSelectedParticipant(null)
+            setActiveButton({ id: null, action: null })
+          }}
+          confirmAction={handleDelete}
+          confirmationMsg={t("Are you sure you want to delete this Participant?")}
+        />
 
         {selectedParticipant && (
           <>
@@ -1062,14 +1286,13 @@ export default function ParticipantList({
                   setSelectedParticipant(null)
                   setActiveButton({ id: null, action: null })
                 } catch (error) {
-                  console.error("Error updating participant:", error)
+                  console.error("Error  updating participant:", error)
                 }
               }}
               formatDate={formatDate}
               researcherId={researcherId}
               pStudy={studies.find((s) => s.id === selectedParticipant.study_id)}
             />
-
             <ConfirmationDialog
               open={confirmationDialog}
               onClose={() => {
@@ -1128,6 +1351,7 @@ export default function ParticipantList({
       ) : (
         <Header
           studies={studies}
+          participants={participants}
           researcherId={researcherId}
           selectedParticipants={selectedParticipants}
           searchData={handleSearchData}

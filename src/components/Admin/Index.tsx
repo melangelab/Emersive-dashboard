@@ -300,12 +300,6 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
       icon: <ResearcherIcon />,
       filledIcon: <ResearcherIconFilled />,
     },
-    {
-      text: "Participants",
-      path: `${path}/participants`,
-      icon: <ParticipantsIcon />,
-      filledIcon: <ParticipantsIconFilled />,
-    },
     { text: "Dev Lab", path: `${path}/dev-lab`, icon: <DevLabIcon />, filledIcon: <DevLabIconFilled /> },
     { text: "Account", path: `${path}/account`, icon: <AccountIcon />, filledIcon: <AccountIconFilled /> },
   ]
@@ -387,11 +381,6 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
               )}
             />
 
-            <Route
-              path={`${path}/participants`}
-              render={(routeProps) => <AdminDashboard {...routeProps} {...props} />}
-            />
-
             <Route path={`${path}/dev-lab`} render={(routeProps) => <AdminDashboard {...routeProps} {...props} />} />
 
             <Route
@@ -417,6 +406,7 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
                   adminType={adminType}
                   authType={authType}
                   onLogout={onLogout}
+                  setIdentity={setIdentity}
                   title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
                 />
               )}

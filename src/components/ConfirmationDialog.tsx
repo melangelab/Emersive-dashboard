@@ -32,6 +32,7 @@ export default function ConfirmationDialog({
     setIsClicked(false)
   }, [])
 
+  console.log("ConfirmationDialog called")
   return (
     <Dialog {...props} aria-labelledby="alert-dialog-title" aria-describedby="alert-dialog-description">
       <DialogTitle id="alert-dialog-title">{`${t("Confirmation")}`}</DialogTitle>
