@@ -697,7 +697,7 @@ export default function GameCreator({
         <CircularProgress color="inherit" />
       </Backdrop>
       <Container className={classes.containerWidth}>
-        <ActivityHeader
+        {/* <ActivityHeader
           studies={studies}
           value={value}
           details={details}
@@ -717,7 +717,7 @@ export default function GameCreator({
               ? BreatheIcon
               : null
           }
-        />
+        /> */}
         {validateAudioSize() > breatheFileLimit && (
           <Box my={2} p={2} border={1} borderColor="#0000001f" className={classes.errorcustom}>
             <Typography variant="h6">Errors</Typography>

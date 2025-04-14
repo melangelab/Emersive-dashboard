@@ -272,7 +272,7 @@ export default function ParticipantList({
   const { enqueueSnackbar, closeSnackbar } = useSnackbar()
 
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
-
+  const [confirmationDialog, setConfirmationDialog] = useState(false)
   const { t } = useTranslation()
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
   const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
@@ -799,7 +799,6 @@ export default function ParticipantList({
     const classes = useModularTableStyles()
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
     const [selectedParticipant, setSelectedParticipant] = useState(null)
-    const [confirmationDialog, setConfirmationDialog] = useState(false)
     const [editingParticipant, setEditingParticipant] = useState(null)
     const [editedData, setEditedData] = useState({})
     const editableColumns = [
@@ -887,10 +886,14 @@ export default function ParticipantList({
       return errors
     }
 
+    useEffect(() => {
+      console.log("confirmation dialog  value ", confirmationDialog, selectedParticipant)
+    }, [confirmationDialog])
     const handleDeleteClick = (participant) => {
       setSelectedParticipant(participant)
       setConfirmationDialog(true)
       setActiveButton({ id: participant.id, action: "delete" })
+      console.log("deleting participant", participant, confirmationDialog)
     }
 
     const handleDelete = async (status) => {
@@ -1258,7 +1261,35 @@ export default function ParticipantList({
             </Button>
           </DialogActions>
         </Dialog>
-        <ConfirmationDialog
+        <Dialog
+          open={confirmationDialog}
+          onClose={() => {
+            setConfirmationDialog(false)
+            setSelectedParticipant(null)
+            setActiveButton({ id: null, action: null })
+          }}
+        >
+          <DialogTitle>Removal of Participant from Study</DialogTitle>
+          <DialogContent>
+            <Typography>Are you sure you want to delete the participant "{selectedParticipant?.name}"?</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setConfirmationDialog(false)
+                setSelectedParticipant(null)
+                setActiveButton({ id: null, action: null })
+              }}
+              color="secondary"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleDelete} color="primary">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+        {/* <ConfirmationDialog
           open={confirmationDialog}
           onClose={() => {
             setConfirmationDialog(false)
@@ -1267,7 +1298,7 @@ export default function ParticipantList({
           }}
           confirmAction={handleDelete}
           confirmationMsg={t("Are you sure you want to delete this Participant?")}
-        />
+        /> */}
 
         {selectedParticipant && (
           <>
@@ -1292,16 +1323,6 @@ export default function ParticipantList({
               formatDate={formatDate}
               researcherId={researcherId}
               pStudy={studies.find((s) => s.id === selectedParticipant.study_id)}
-            />
-            <ConfirmationDialog
-              open={confirmationDialog}
-              onClose={() => {
-                setConfirmationDialog(false)
-                setSelectedParticipant(null)
-                setActiveButton({ id: null, action: null })
-              }}
-              confirmAction={handleDelete}
-              confirmationMsg={t("Are you sure you want to delete this Participant?")}
             />
           </>
         )}

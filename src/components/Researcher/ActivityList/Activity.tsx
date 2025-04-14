@@ -242,7 +242,7 @@ export default function Activity({
                 <Icon>arrow_back</Icon>
               </Link>
               <Typography variant="h5">
-                {!!type ? `${t("Create a new activity")}` : `${t("Modify an existing activity")}`}
+                {!!type ? `${t("Create a new activity")}` : `${t("Modify an existing activity settings.")}`}
               </Typography>
             </Toolbar>
           </AppBar>

@@ -406,12 +406,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className={`sidebar ${sidebarCollapse ? "collapse" : ""}`}>
-      <div className="logo-component">
-        <Logo />
+      <div className="logo">
+        <Logo className="logo-icon" />
+        {sidebarCollapse ? null : <span className="platform-name">emersive</span>}
+        {sidebarCollapse ? null : <span className="platform-tag">MOBILE SENSING RESEARCH</span>}
       </div>
-
-      {sidebarCollapse ? null : <span className="platform-name">emersive</span>}
-      {sidebarCollapse ? null : <span className="platform-desc">MOBILE SENSING RESEARCH</span>}
 
       <div className="list-container">
         <List className="sidebar-list">

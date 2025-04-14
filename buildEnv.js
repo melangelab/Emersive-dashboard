@@ -68,7 +68,8 @@ function writeFile() {
                 `REACT_APP_GIT_SHA=${description}`,
                 `REACT_APP_LATEST_LAMP=${latest}`,
                 isDev || isTest ? "BROWSER=none" : "CI=false",
-                `REACT_APP_NODE_SERVER_URL=${isDev ? "https://192.168.21.214:8000" : isTest? "TEST_https://emersive.io" : "https://emersive.io" }`,
+                `REACT_APP_NODE_SERVER_URL=${isDev ? "https://192.168.21.214:8000" : "https://emersive.io" }`,
+                isTest && `REACT_TESTING=${true}`,
                 "PORT=8080",
               ].join("\r\n")
             )
