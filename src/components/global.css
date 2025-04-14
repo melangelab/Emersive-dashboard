@@ -1,70 +1,90 @@
 .sidebar {
-  width: 16vw;
-  height: 100vh;
-  /* position: fixed;
-    z-index: 11111; */
-  background-color: white;
-  /* left:0;
-    top:0; */
+  z-index: 11;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  box-shadow: 0 0 15px rgba(154, 154, 154, 0.8);
-  border-right: 0.5px solid black;
+  align-items: flex-start;
+  height: 100vh;
+  width: 15vw;
+  background-color: #ffffff;
+  border-right: 0.5px solid #dbdbdb;
+  box-shadow: 0px 0px 9px 4px #9a9a9a24;
 }
 
 .sidebar.collapse {
   width: 7vw;
 }
 
-.logo-component {
-  width: 60%;
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
   margin-top: 20px;
 }
 
-.platform-name {
-  color: #eb8367;
-  font-size: 50px;
-  font-weight: 400;
-  margin: 0;
+.logo-icon {
+  width: 60%;
 }
 
-.platform-desc {
+.platform-name {
+  display: inline-block;
+  color: #eb8367;
+  font-family: "Exo 2", sans-serif;
+  font-size: clamp(1.72rem, 0.05vi + 1.59rem, 2rem);
+  font-weight: 400;
+  font-optical-sizing: auto;
+  font-style: normal;
+  line-height: 32px;
+  margin-top: -14px;
+  margin-bottom: 4px;
+}
+
+.platform-tag {
+  display: inline-block;
   color: grey;
-  font-size: 15px;
-  margin-top: -16px;
+  font-family: "Exo 2", sans-serif;
+  font-size: 10.5px;
+  font-weight: 400;
+  font-optical-sizing: auto;
+  font-style: normal;
+  line-height: 10.5px;
 }
 
 .list-container {
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  margin-top: 5vh;
   width: 100%;
-  margin-top: 100px;
 }
 
 .sidebar-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .sidebar-item {
   display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
   align-items: center;
-  padding: 8px 16px !important;
+  width: 100%;
   transition: background-color 0.3s ease;
+  cursor: pointer;
 }
 
 .sidebar-icon {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 40px;
+  width: 35px !important;
   height: 50px;
-  margin: 0 12px;
-  border-radius: 50%;
+  margin: 5px 5px 5px 15px;
+  border-radius: 100%;
   transition: background-color 0.3s ease, width 0.3s ease, height 0.3s ease;
   cursor: pointer;
 }
@@ -86,34 +106,13 @@
 }
 
 .sidebar-icon.active {
-  border-radius: 50%;
+  border-radius: 100% !important;
   background-color: #e47c62;
 }
 
 .sidebar-icon.active svg path {
   fill: #fff !important; /* White fill for active state */
 }
-
-/* .sidebar-item:hover .sidebar-icon,
-.sidebar-item.active .sidebar-icon {
-  background-color: #e47c62;
-  border-radius: 50%;
-}
-
-.sidebar-item:hover .sidebar-icon path,
-.sidebar-item.active .sidebar-icon path {
-  fill: white !important;
-}
-
-.sidebar-item.active .sidebar-icon svg,
-.sidebar-item:hover .sidebar-icon svg {
-  width: 30px;
-}
-
-.sidebar-item.active .sidebar-icon svg path,
-.sidebar-item:hover .sidebar-icon svg path {
-  fill: white !important;
-} */
 
 /* Text styling */
 .sidebar-item .MuiListItemText-root .MuiTypography-root {
@@ -125,26 +124,40 @@
 }
 
 .bottom-list-container {
-  /* width:100%; */
-  margin-top: auto !important;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin-top: auto;
   margin-bottom: 20px;
-  margin-left: 25px;
+  border-radius: 10px 20px 30px 40px;
+  border-radius: black;
 }
 
 .bottom-list {
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  justify-content: space-around;
+  align-items: center;
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+  width: 90%;
 }
 
 .sidebar-bottom-item {
-  padding: 0px !important;
-  margin: 0px !important;
-  height: 30px;
+  height: 25px;
+  width: 25px;
+  padding: 0 !important;
 }
 
 .bottom-list.collapse {
   flex-direction: column;
+  width: auto;
+  margin-left: auto;
+  gap: 4px;
+  min-width: 65px;
+  /* transform: translateX(-50%); */
 }
 
 .sidebar-bottom-icon {
@@ -152,8 +165,8 @@
 }
 
 .sidebar-bottom-icon svg {
-  width: 30px;
-  height: 50px !important;
+  width: 25px;
+  height: 25px;
 }
 
 .sidebar-bottom-icon path {
