@@ -537,7 +537,7 @@ export default function FormBuilderCreator({
         <CircularProgress color="inherit" />
       </Backdrop>
       <Container className={classes.containerWidth}>
-        {/* <ActivityHeader
+        <ActivityHeader
           studies={studies}
           value={value}
           details={details}
@@ -546,7 +546,7 @@ export default function FormBuilderCreator({
           onChange={handleChange}
           onTabChange={handleTabChange}
           image={null}
-        /> */}
+        />
         <FormBuilder
           onChange={(formData) => {
             updateSettings(formData)
