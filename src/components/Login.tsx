@@ -979,7 +979,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                 <LineArt className="line-art" />
               </div>
               <span className="platform-name">emersive</span>
-              <span className="platform-desc">MOBILE SENSING RESEARCH</span>
+              <span className="platform-tag">MOBILE SENSING RESEARCH</span>
             </Grid>
           )}
           <Grid item xs={12} md={supportsSidebar ? 5 : 12} className="grid-item">

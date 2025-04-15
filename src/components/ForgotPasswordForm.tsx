@@ -18,10 +18,15 @@ export default function ForgotPasswordForm({ onBack }) {
     event.preventDefault()
     setLoading(true)
 
-    console.log("****URL FINAL****", `${process.env.REACT_APP_NODE_SERVER_URL}/auth/forgot-password`)
+    const serverAddress =
+      process.env.NODE_ENV === "development" && process.env.REACT_APP_PORT === "8000"
+        ? "https://192.168.21.214:8000"
+        : "https://emersive.io"
+
+    console.log("SERVER ADDRESS", serverAddress, process.env.NODE_ENV, process.env.REACT_APP_PORT)
 
     try {
-      await axios.post(`${process.env.REACT_APP_NODE_SERVER_URL}/auth/forgot-password-mail`, { email, userType })
+      await axios.post(`${serverAddress}/auth/forgot-password-mail`, { email, userType })
       enqueueSnackbar(t("Password reset link has been sent to your email"), { variant: "success" })
       onBack()
     } catch (error) {
