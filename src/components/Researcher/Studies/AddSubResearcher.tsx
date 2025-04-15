@@ -200,7 +200,7 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
       if (value && value.accessScope) {
         const researcher = availableResearchers.find((r) => r.id === researcherId)
         changesArray.push({
-          researcher: researcher.name,
+          researcher: researcher?.name || researcher?.id || "NA",
           accessLevel: getAccessLevelLabel(value.accessScope),
           action: "added",
         })
