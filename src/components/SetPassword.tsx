@@ -65,14 +65,17 @@ const SetPassword = ({ token, onComplete, title, userType }) => {
 
     setSubmitClick(true)
 
-    const baseURL = process.env.REACT_APP_NODE_SERVER_URL || "api.lamp.digital"
+    const serverAddress =
+      process.env.NODE_ENV === "development" && process.env.REACT_APP_PORT === "8000"
+        ? "https://192.168.21.214:8000"
+        : "https://emersive.io"
     const params = new URLSearchParams({
       token: token,
       userType: userType,
     }).toString()
 
     try {
-      const response = await fetch(`${baseURL}/set-password?${params}`, {
+      const response = await fetch(`${serverAddress}/set-password?${params}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),

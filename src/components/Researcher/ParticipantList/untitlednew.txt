@@ -1,0 +1,418 @@
+
+```typescript
+// CreateActivity.tsx
+
+import React, { useState, useEffect } from "react"
+import {
+  Box,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Typography,
+  Button,
+  Tabs,
+  Tab,
+  Grid,
+  Divider,
+  CircularProgress,
+  Backdrop,
+} from "@material-ui/core"
+import { makeStyles, Theme, createStyles } from "@material-ui/core/styles"
+import { useTranslation } from "react-i18next"
+import { useSnackbar } from "notistack"
+import LAMP from "lamp-core"
+import { Service } from "../../DBService/DBService"
+import ViewItems, { FieldConfig } from "../SensorsList/ViewItems"
+import { ImageUploader } from "../../ImageUploader"
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+    },
+    content: {
+      padding: theme.spacing(2),
+      flex: 1,
+      overflow: "auto",
+    },
+    formControl: {
+      marginBottom: theme.spacing(2),
+      minWidth: 200,
+    },
+    backdrop: {
+      zIndex: theme.zIndex.drawer + 1,
+      color: "#fff",
+    },
+    tabContent: {
+      padding: theme.spacing(2),
+    },
+    submitButton: {
+      marginTop: theme.spacing(2),
+    },
+  })
+)
+
+interface CreateActivityProps {
+  researcherId: string
+  studies: any[]
+  onSave: (activity: any) => void
+  onCancel: () => void
+  activityType?: string
+}
+
+export default function CreateActivity({
+  researcherId,
+  studies,
+  onSave,
+  onCancel,
+  activityType,
+}: CreateActivityProps) {
+  const classes = useStyles()
+  const { t } = useTranslation()
+  const { enqueueSnackbar } = useSnackbar()
+  const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState(0)
+
+  // Form state
+  const [formValues, setFormValues] = useState({
+    name: "",
+    description: "",
+    spec: activityType ? `lamp.${activityType}` : "",
+    study_id: "",
+    groups: [],
+    category: [],
+    settings: {},
+    schedule: [],
+    scoreInterpretation: {},
+    activityGuide: {
+      text: "",
+      video: null,
+      audio: null,
+    },
+    photo: null,
+    showInFeed: true,
+    streak: {
+      enabled: false,
+      title: "",
+      description: "",
+    },
+  })
+
+  // Validation state
+  const [errors, setErrors] = useState({
+    name: "",
+    spec: "",
+    study_id: "",
+  })
+
+  // Field configurations for ViewItems
+  const fields: FieldConfig[] = [
+    {
+      id: "name",
+      label: t("Activity Name"),
+      value: formValues.name,
+      editable: true,
+      required: true,
+      type: "text",
+      error: errors.name,
+    },
+    {
+      id: "spec",
+      label: t("Activity Type"),
+      value: formValues.spec.replace("lamp.", ""),
+      editable: true,
+      required: true,
+      type: "select",
+      options: [
+        { value: "survey", label: t("Survey") },
+        { value: "group", label: t("Activity Group") },
+        // Add other activity types
+      ],
+      error: errors.spec,
+    },
+    {
+      id: "description",
+      label: t("Description"),
+      value: formValues.description,
+      editable: true,
+      type: "multiline",
+    },
+    {
+      id: "study_id",
+      label: t("Study"),
+      value: formValues.study_id,
+      editable: true,
+      required: true,
+      type: "select",
+      options: studies.map((study) => ({
+        value: study.id,
+        label: study.name,
+      })),
+      error: errors.study_id,
+    },
+    {
+      id: "groups",
+      label: t("Groups"),
+      value: formValues.groups,
+      editable: true,
+      type: "multiselect",
+      options:
+        studies
+          .find((s) => s.id === formValues.study_id)
+          ?.gname.map((group) => ({
+            value: group,
+            label: group,
+          })) || [],
+    },
+    {
+      id: "category",
+      label: t("Categories"),
+      value: formValues.category,
+      editable: true,
+      type: "multiselect",
+      options: [
+        { value: "assess", label: t("Assess") },
+        { value: "learn", label: t("Learn") },
+        { value: "manage", label: t("Manage") },
+        { value: "prevent", label: t("Portal") },
+      ],
+    },
+  ]
+
+  // Validation function
+  const validateForm = () => {
+    const newErrors = {
+      name: !formValues.name ? t("Name is required") : "",
+      spec: !formValues.spec ? t("Activity type is required") : "",
+      study_id: !formValues.study_id ? t("Study is required") : "",
+    }
+    setErrors(newErrors)
+    return !Object.values(newErrors).some((error) => error !== "")
+  }
+
+  // Handle form value changes
+  const handleChange = (field: string, value: any) => {
+    setFormValues((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+    // Clear error when field is changed
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: "",
+      }))
+    }
+  }
+
+  // Settings tab content
+  const SettingsContent = () => (
+    <Box className={classes.tabContent}>
+      {/* Add settings fields based on activity type */}
+      <Typography variant="subtitle1" gutterBottom>
+        {t("Activity Settings")}
+      </Typography>
+      {/* Add appropriate settings fields */}
+    </Box>
+  )
+
+  // Score Interpretation tab content
+  const ScoreInterpretationContent = () => (
+    <Box className={classes.tabContent}>
+      {/* Add score interpretation fields */}
+      <Typography variant="subtitle1" gutterBottom>
+        {t("Score Interpretation")}
+      </Typography>
+      {/* Add score range fields */}
+    </Box>
+  )
+
+  // Activity Guide tab content
+  const ActivityGuideContent = () => (
+    <Box className={classes.tabContent}>
+      <TextField
+        fullWidth
+        multiline
+        rows={4}
+        label={t("Activity Guide Text")}
+        value={formValues.activityGuide.text}
+        onChange={(e) =>
+          handleChange("activityGuide", {
+            ...formValues.activityGuide,
+            text: e.target.value,
+          })
+        }
+      />
+      {/* Add video and audio upload/record options */}
+    </Box>
+  )
+
+  // Schedule tab content
+  const ScheduleContent = () => (
+    <Box className={classes.tabContent}>
+      {/* Add schedule configuration */}
+      <Typography variant="subtitle1" gutterBottom>
+        {t("Activity Schedule")}
+      </Typography>
+      {/* Add schedule fields */}
+    </Box>
+  )
+
+  // Handle form submission
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      enqueueSnackbar(t("Please fill in all required fields"), {
+        variant: "error",
+      })
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Create activity in LAMP
+      const activityData = {
+        name: formValues.name,
+        spec: formValues.spec,
+        settings: formValues.settings,
+        schedule: formValues.schedule,
+        study_id: formValues.study_id,
+        groups: formValues.groups,
+        category: formValues.category,
+      }
+
+      const result = await LAMP.Activity.create(formValues.study_id, activityData)
+
+      if (result.error) {
+        throw new Error(result.error)
+      }
+
+      // Add attachments
+      await LAMP.Type.setAttachment(result.data, "me", "lamp.dashboard.activity_details", {
+        description: formValues.description,
+        photo: formValues.photo,
+        streak: formValues.streak,
+        showInFeed: formValues.showInFeed,
+      })
+
+      // Save to local DB
+      await Service.addData("activities", {
+        activities: [
+          {
+            id: result.data,
+            ...activityData,
+            description: formValues.description,
+            photo: formValues.photo,
+            streak: formValues.streak,
+            showInFeed: formValues.showInFeed,
+          },
+        ],
+      })
+
+      enqueueSnackbar(t("Activity created successfully"), {
+        variant: "success",
+      })
+
+      onSave(result.data)
+    } catch (error) {
+      console.error("Error creating activity:", error)
+      enqueueSnackbar(t("Failed to create activity"), {
+        variant: "error",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Box className={classes.root}>
+      <Backdrop className={classes.backdrop} open={loading}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
+
+      <ViewItems
+        fields={fields}
+        isEditing={true}
+        onSave={handleSubmit}
+        onCancel={onCancel}
+        editedValues={formValues}
+        setEditedValues={setFormValues}
+        loading={loading}
+        tabs={[
+          {
+            id: "settings",
+            label: t("Settings"),
+            content: <SettingsContent />,
+          },
+          {
+            id: "scoreInterpretation",
+            label: t("Score Interpretation"),
+            content: <ScoreInterpretationContent />,
+          },
+          {
+            id: "activityGuide",
+            label: t("Activity Guide"),
+            content: <ActivityGuideContent />,
+          },
+          {
+            id: "schedule",
+            label: t("Schedule"),
+            content: <ScheduleContent />,
+          },
+        ]}
+      />
+    </Box>
+  )
+}
+```
+
+To use this component, modify your AddActivity.tsx:
+
+```typescript
+// AddActivity.tsx
+import CreateActivity from './CreateActivity'
+
+export default function AddActivity({ researcherId, studies, ...props }) {
+  const [showCreate, setShowCreate] = useState(false)
+  const [selectedType, setSelectedType] = useState("")
+
+  // ... your existing code ...
+
+  const handleActivityTypeSelect = (type: string) => {
+    setSelectedType(type)
+    setShowCreate(true)
+    setSlideOpen(false)
+  }
+
+  return (
+    <Box>
+      {showCreate ? (
+        <CreateActivity
+          researcherId={researcherId}
+          studies={studies}
+          activityType={selectedType}
+          onSave={(activity) => {
+            setShowCreate(false)
+            // Refresh activity list or handle save
+          }}
+          onCancel={() => setShowCreate(false)}
+        />
+      ) : (
+        // Your existing AddActivity UI
+        <Box>
+          {/* Modify your menu items to use handleActivityTypeSelect */}
+          <MenuItem
+            onClick={() => handleActivityTypeSelect(x?.id?.replace("lamp.", ""))}
+          >
+            {/* ... */}
+          </MenuItem>
+        </Box>
+      )}
+    </Box>
+  )
+}
+```
