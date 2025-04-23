@@ -50,6 +50,7 @@ import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward"
 import { useModularTableStyles } from "../Studies/Index"
 import ItemViewHeader from "../SharedStyles/ItemViewHeader"
 import ActivityDetailItem from "./ActivityDetailItem"
+import CreateActivity from "./CreateActivity"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -430,7 +431,8 @@ export default function ActivityList({
   const [viewingActivity, setViewingActivity] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [triggerSave, setTriggerSave] = useState(false)
-
+  const [creatingActivity, setCreatingActivity] = useState(false)
+  const [selectedSpec, setSelectedSpec] = useState(null)
   useInterval(
     () => {
       setLoading(true)
@@ -534,6 +536,15 @@ export default function ActivityList({
       try {
         const activitiesData = await Service.getAll("activities")
         setAllActivities(activitiesData)
+        console.log("activitiesData", activitiesData)
+        const resylt = Array.isArray(activitiesData) ? activitiesData : []
+        const ids = resylt.map((activity) => activity.id)
+        const detailedActivities = await Promise.all(
+          ids.map((id) => Service.getDataByKey("activities", [id], "id").then((data) => data[0]))
+        )
+        console.log("Detailed Activities:", detailedActivities)
+        const detailedLActivities = await Promise.all(ids.map((id) => LAMP.Activity.view(id)))
+        console.log("Detailed L Activities:", detailedLActivities)
 
         let filteredData = activitiesData || []
         if (filterParam) {
@@ -1018,6 +1029,9 @@ export default function ActivityList({
           viewMode={viewMode}
           VisibleColumns={columns}
           setVisibleColumns={setColumns}
+          showCreateForm={creatingActivity}
+          setShowCreateForm={setCreatingActivity}
+          setSelectedSpec={setSelectedSpec}
         />
       )}
       <Box
@@ -1031,6 +1045,17 @@ export default function ActivityList({
             onSave={handleSaveComplete}
             studies={studies}
             triggerSave={triggerSave}
+          />
+        ) : creatingActivity ? (
+          <CreateActivity
+            studies={studies}
+            selectedSpec={selectedSpec}
+            researcherId={researcherId}
+            onSave={(newActivity) => {
+              setActivities((prev) => [...prev, newActivity])
+              setCreatingActivity(false)
+            }}
+            onCancel={() => setCreatingActivity(false)}
           />
         ) : (
           <>

@@ -1562,7 +1562,7 @@ export async function saveTipActivity(x) {
   let result
   if (!x.id && x.name) {
     result = (await LAMP.Activity.create(x.studyID, raw)) as any
-    await LAMP.Type.setAttachment(result.data, "me", "lamp.dashboard.activity_details", {
+    await LAMP.Type.setAttachment(result.data, "me", "emersive.activity.details", {
       //photo
       photo: x.icon,
       streak: x.streak,
@@ -1572,7 +1572,7 @@ export async function saveTipActivity(x) {
     result = (await LAMP.Activity.update(x.id, {
       settings: x.settings,
     })) as any
-    await LAMP.Type.setAttachment(x.id, "me", "lamp.dashboard.activity_details", {
+    await LAMP.Type.setAttachment(x.id, "me", "emersive.activity.details", {
       photo: x.icon,
       streak: x.streak,
       showFeed: x.showFeed,
@@ -1584,7 +1584,7 @@ export async function saveTipActivity(x) {
 export async function saveCTestActivity(x) {
   let newItem = (await LAMP.Activity.create(x.studyID, x)) as any
   console.log("inside save CTest activity", newItem)
-  await LAMP.Type.setAttachment(newItem.data, "me", "lamp.dashboard.activity_details", {
+  await LAMP.Type.setAttachment(newItem.data, "me", "emersive.activity.details", {
     // photo
     description: x.description,
     photo: x.photo,
@@ -1648,7 +1648,7 @@ export async function updateActivityData(x, isDuplicated, selectedActivity) {
     // Short-circuit for groups and CTests
     if (isDuplicated) {
       result = (await LAMP.Activity.create(x.studyID, x)) as any
-      await LAMP.Type.setAttachment(result.data, "me", "lamp.dashboard.activity_details", {
+      await LAMP.Type.setAttachment(result.data, "me", "emersive.activity.details", {
         description: x?.description ?? "",
         photo: x?.photo ?? "",
         streak: x?.streak ?? null,
@@ -1658,16 +1658,16 @@ export async function updateActivityData(x, isDuplicated, selectedActivity) {
       return result
     } else {
       if (selectedActivity?.study_id !== x.studyID) {
-        // let tag = await LAMP.Type.setAttachment(x.id, "me", "lamp.dashboard.activity_details", null)
+        // let tag = await LAMP.Type.setAttachment(x.id, "me", "emersive.activity.details", null)
         // await LAMP.Activity.delete(x.id)
         // result = (await LAMP.Activity.create(x.studyID, x)) as any
-        // await LAMP.Type.setAttachment(result.data, "me", "lamp.dashboard.activity_details", {
+        // await LAMP.Type.setAttachment(result.data, "me", "emersive.activity.details", {
         //   description: x?.description ?? "",
         //   photo: x?.photo ?? "",
         // })
       } else {
         result = (await LAMP.Activity.update(x.id, x)) as any
-        await LAMP.Type.setAttachment(selectedActivity?.id, "me", "lamp.dashboard.activity_details", {
+        await LAMP.Type.setAttachment(selectedActivity?.id, "me", "emersive.activity.details", {
           description: x.description,
           photo: x.photo,
           streak: x.streak,
@@ -1682,7 +1682,7 @@ export async function updateActivityData(x, isDuplicated, selectedActivity) {
     if (isDuplicated) {
       console.log("VIA UPDATE AND x photo if dupli", x.photo)
       result = (await LAMP.Activity.create(x.studyID, x)) as any
-      await LAMP.Type.setAttachment(result.data, "me", "lamp.dashboard.activity_details", {
+      await LAMP.Type.setAttachment(result.data, "me", "emersive.activity.details", {
         description: x.description,
         photo: x.photo,
         streak: x.streak,
@@ -1693,7 +1693,7 @@ export async function updateActivityData(x, isDuplicated, selectedActivity) {
       console.log("VIA UPDATE AND x photo", x.photo)
       result = (await LAMP.Activity.update(selectedActivity?.id, x)) as any
 
-      await LAMP.Type.setAttachment(selectedActivity?.id, "me", "lamp.dashboard.activity_details", {
+      await LAMP.Type.setAttachment(selectedActivity?.id, "me", "emersive.activity.details", {
         description: x.description,
         photo: x.photo,
         streak: x.streak,
@@ -1730,7 +1730,7 @@ export async function updateActivityData(x, isDuplicated, selectedActivity) {
       return result
     } else {
       result = (await LAMP.Activity.update(selectedActivity?.id, x)) as any
-      await LAMP.Type.setAttachment(selectedActivity?.id, "me", "lamp.dashboard.activity_details", {
+      await LAMP.Type.setAttachment(selectedActivity?.id, "me", "emersive.activity.details", {
         photo: x.icon,
         streak: x.streak,
         visualSettings: x?.visualSettings,
@@ -1741,7 +1741,7 @@ export async function updateActivityData(x, isDuplicated, selectedActivity) {
   } else if (x.spec === "lamp.form_builder") {
     result = (await LAMP.Activity.update(selectedActivity?.id, x)) as any
 
-    await LAMP.Type.setAttachment(selectedActivity?.id, "me", "lamp.dashboard.activity_details", {
+    await LAMP.Type.setAttachment(selectedActivity?.id, "me", "emersive.activity.details", {
       description: x.description,
       photo: x.photo,
       streak: x.streak,

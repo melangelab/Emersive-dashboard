@@ -97,10 +97,15 @@ export default function Activity({
   useEffect(() => {
     setLoading(true)
     console.log("in activity.tsx use effect", type)
+    Service.getDataByKey("activities", [id], "id").then((data) => {
+      console.log("inside Activity.tsx and data is:", data[0])
+    })
+
     Service.getAll("studies").then((studies) => {
       setStudies(studies)
       Service.getAll("activities").then((activities) => {
         setAllActivities(activities)
+        console.log("activities are:", activities)
         if (!!id) {
           Service.getDataByKey("activities", [id], "id").then((data) => {
             setActivity(data[0])
@@ -136,7 +141,7 @@ export default function Activity({
             }
             return ds.concat(newD)
           }, [])
-          let tag = [await LAMP.Type.getAttachment(activity.id, "lamp.dashboard.activity_details")].map((y: any) =>
+          let tag = [await LAMP.Type.getAttachment(activity.id, "emersive.activity.details")].map((y: any) =>
             !!y.error ? undefined : y.data
           )[0]
           setActivity(activity)
@@ -145,7 +150,7 @@ export default function Activity({
           if (activity.spec === "lamp.breathe" && activity.settings?.audio === null) {
             delete activity.settings?.audio
           }
-          let tag = [await LAMP.Type.getAttachment(activity.id, "lamp.dashboard.activity_details")].map((y: any) =>
+          let tag = [await LAMP.Type.getAttachment(activity.id, "emersive.activity.details")].map((y: any) =>
             !!y.error ? undefined : y.data
           )[0]
           setDetails(tag ?? [])

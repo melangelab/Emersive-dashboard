@@ -81,28 +81,13 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
   const sliderclasses = slideStyles()
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
-  //   const [openDialogDeleteStudy, setOpenDialogDeleteStudy] = useState(false)
-  const [studyIdForAddingSR, setStudyIdForAddingSR] = useState("")
   const [availableResearchers, setAvailableResearchers] = useState<any[]>([])
   const [selectedResearchers, setSelectedResearchers] = useState<{ [id: string]: { accessScope: number } }>({})
   const [confirmationOpen, setConfirmationOpen] = useState(false)
   const [changes, setChanges] = useState([])
+  const [originalResearchers, setOriginalResearchers] = useState<{ [id: string]: { accessScope: number } }>({})
 
-  // useEffect(() => {
-  //   const fetchResearchers = async () => {
-  //     try {
-  //       const researchers = await LAMP.Researcher.all()
-  //       console.log("all researcher", researchers)
-  //       setAvailableResearchers(researchers)
-  //       setLoading(false)
-  //     } catch (error) {
-  //       console.error("Error fetching researchers:", error)
-  //       setLoading(false)
-  //     }
-  //   }
-  //   fetchResearchers()
-  // }, [])
-
+  console.log("Study ID for adding sub-researcher:", study)
   useEffect(() => {
     const fetchResearchers = async () => {
       try {
@@ -118,7 +103,8 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
             }
           }
         })
-        setSelectedResearchers(subResearchersWithAccessScope)
+        setOriginalResearchers(JSON.parse(JSON.stringify(subResearchersWithAccessScope)))
+        setSelectedResearchers(JSON.parse(JSON.stringify(subResearchersWithAccessScope)))
         setLoading(false)
       } catch (error) {
         console.error("Error fetching researchers:", error)
@@ -175,7 +161,11 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
 
   const handleConfirmChanges = async () => {
     for (const [researcherId, value] of Object.entries(selectedResearchers)) {
-      if (value && value.accessScope) {
+      // Check if researcher is new or has changed access scope
+      const isNew = !originalResearchers[researcherId]
+      const hasChanged = !isNew && originalResearchers[researcherId]?.accessScope !== value?.accessScope
+
+      if ((isNew || hasChanged) && value && value.accessScope) {
         const currentStudy = await addSubResearcher(study.id, researcherId, value.accessScope)
         const updatedStudy = {
           ...study,
@@ -189,25 +179,52 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
         props.handleShareUpdate(study.id, updatedStudy)
       }
     }
-    enqueueSnackbar(t("Sub-researchers added successfully."), { variant: "success" })
+    enqueueSnackbar(t("Sub-researchers updated successfully."), { variant: "success" })
     setConfirmationOpen(false)
     onclose()
   }
 
   const handleAddResearchers = async () => {
     const changesArray = []
+    const validResearcherIds = availableResearchers.map((r) => r.id)
     for (const [researcherId, value] of Object.entries(selectedResearchers)) {
-      if (value && value.accessScope) {
-        const researcher = availableResearchers.find((r) => r.id === researcherId)
+      if (!validResearcherIds.includes(researcherId)) continue
+      const researcher = availableResearchers.find((r) => r.id === researcherId)
+      if (!originalResearchers[researcherId] && value) {
         changesArray.push({
           researcher: researcher?.name || researcher?.id || "NA",
           accessLevel: getAccessLevelLabel(value.accessScope),
           action: "added",
+          type: "new",
+        })
+      } else if (
+        originalResearchers[researcherId] &&
+        value &&
+        originalResearchers[researcherId].accessScope !== value.accessScope
+      ) {
+        changesArray.push({
+          researcher: researcher?.name || researcher?.id || "NA",
+          oldAccessLevel: getAccessLevelLabel(originalResearchers[researcherId].accessScope),
+          newAccessLevel: getAccessLevelLabel(value.accessScope),
+          action: "modified",
+          type: "modified",
+        })
+      } else if (originalResearchers[researcherId] && !value) {
+        changesArray.push({
+          researcher: researcher?.name || researcher?.id || "NA",
+          accessLevel: getAccessLevelLabel(originalResearchers[researcherId].accessScope),
+          action: "removed",
+          type: "removed",
         })
       }
     }
-    setChanges(changesArray)
-    setConfirmationOpen(true)
+
+    if (changesArray.length > 0) {
+      setChanges(changesArray)
+      setConfirmationOpen(true)
+    } else {
+      enqueueSnackbar(t("No changes to apply."), { variant: "info" })
+    }
   }
 
   return (
@@ -312,7 +329,7 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
                 The following changes will be applied:
               </Typography>
 
-              {changes.map((change, index) => (
+              {/* {changes.map((change, index) => (
                 <Box key={index} className={sliderclasses.diffRow} bgcolor="#e6ffed" p={2} borderRadius={1} mb={1}>
                   <Typography variant="body2" style={{ fontFamily: "monospace" }}>
                     <span style={{ color: "#22863a" }}>
@@ -320,7 +337,39 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
                     </span>
                   </Typography>
                 </Box>
-              ))}
+              ))} */}
+              {changes.length === 0 ? (
+                <Typography variant="body2">No changes to apply</Typography>
+              ) : (
+                changes.map((change, index) => (
+                  <Box
+                    key={index}
+                    className={sliderclasses.diffRow}
+                    bgcolor={change.type === "new" ? "#e6ffed" : change.type === "removed" ? "#ffeef0" : "#f1f8ff"}
+                    p={2}
+                    borderRadius={1}
+                    mb={1}
+                  >
+                    <Typography variant="body2" style={{ fontFamily: "monospace" }}>
+                      {change.type === "new" && (
+                        <span style={{ color: "#22863a" }}>
+                          + Adding {change.researcher} with {change.accessLevel} access
+                        </span>
+                      )}
+                      {change.type === "modified" && (
+                        <span style={{ color: "#0366d6" }}>
+                          ~ Changing {change.researcher} access from {change.oldAccessLevel} to {change.newAccessLevel}
+                        </span>
+                      )}
+                      {change.type === "removed" && (
+                        <span style={{ color: "#d73a49" }}>
+                          - Removing {change.researcher} ({change.accessLevel} access)
+                        </span>
+                      )}
+                    </Typography>
+                  </Box>
+                ))
+              )}
             </Box>
 
             <Box className={sliderclasses.buttonContainer}>

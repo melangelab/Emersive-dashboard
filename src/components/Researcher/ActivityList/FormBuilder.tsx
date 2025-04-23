@@ -98,7 +98,7 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
   }, [formFields, prevFormFieldsLength])
 
   const deleteField = (fieldId) => {
-    setFormFields(formFields.filter((field) => field.id !== fieldId))
+    setFormFields(formFields?.filter((field) => field.id !== fieldId))
   }
 
   const updateField = (fieldId, updates) => {
@@ -139,7 +139,7 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
     )
   }
 
-  const [fields4Calc, setFields4Calc] = useState(formFields.filter((field) => field.useInCalculation))
+  const [fields4Calc, setFields4Calc] = useState(formFields?.filter((field) => field.useInCalculation))
 
   const renderFieldSettings = (field) => {
     switch (field.type) {

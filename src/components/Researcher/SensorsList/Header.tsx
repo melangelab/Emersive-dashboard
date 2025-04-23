@@ -175,7 +175,7 @@ export default function Header({
             <IconButton
               className={headerclasses.backButton}
               onClick={() => {
-                window.location.href = `/admin`
+                window.location.href = `/`
               }}
             >
               <Icon>arrow_back</Icon>

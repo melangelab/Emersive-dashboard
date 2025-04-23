@@ -32,7 +32,7 @@ export async function getImage(activityId: string, spec: string) {
   return [
     await LAMP.Type.getAttachment(
       activityId,
-      spec === "lamp.survey" ? "lamp.dashboard.survey_description" : "lamp.dashboard.activity_details"
+      spec === "lamp.survey" ? "lamp.dashboard.survey_description" : "emersive.activity.details"
     ),
   ].map((y: any) => (!!y.error ? undefined : y.data))[0]
 }

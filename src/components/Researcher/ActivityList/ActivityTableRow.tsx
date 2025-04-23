@@ -431,7 +431,7 @@ export default function ActivityTableRow({
         if (activity.spec === "lamp.survey") {
           await LAMP.Type.setAttachment(activity.id, "me", "lamp.dashboard.survey_description", null)
         } else {
-          await LAMP.Type.setAttachment(activity.id, "me", "lamp.dashboard.activity_details", null)
+          await LAMP.Type.setAttachment(activity.id, "me", "emersive.activity.details", null)
         }
         await LAMP.Activity.delete(activity.id)
         await Service.delete("activities", [activity.id])

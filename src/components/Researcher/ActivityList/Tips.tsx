@@ -221,7 +221,7 @@ export default function Tips({
           let existsData = categoryArray.find((o) => o.id === category)
           if (Object.keys(existsData).length > 0) {
             if (existsData.id) {
-              let iconsData: any = await LAMP.Type.getAttachment(existsData.id, "lamp.dashboard.activity_details")
+              let iconsData: any = await LAMP.Type.getAttachment(existsData.id, "emersive.activity.details")
               if (iconsData.hasOwnProperty("data")) {
                 setCategoryImage(iconsData.data.icon)
               }
@@ -271,7 +271,7 @@ export default function Tips({
         if (Object.keys(activitiesData.settings).length > 0) {
           setTipsDataArray(activitiesData.settings)
         }
-        let iconsData: any = await LAMP.Type.getAttachment(activitiesData.id, "lamp.dashboard.activity_details")
+        let iconsData: any = await LAMP.Type.getAttachment(activitiesData.id, "emersive.activity.details")
         if (iconsData.hasOwnProperty("data")) {
           setCategoryImage(iconsData.data.photo)
         }

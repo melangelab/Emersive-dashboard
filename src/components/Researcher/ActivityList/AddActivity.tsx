@@ -162,6 +162,9 @@ export default function AddActivity({
   studyId,
   setActivities,
   researcherId,
+  showCreateForm,
+  setShowCreateForm,
+  setSelectedSpec,
   ...props
 }: {
   activities?: any
@@ -169,6 +172,9 @@ export default function AddActivity({
   studyId?: string
   setActivities?: Function
   researcherId?: string
+  showCreateForm?: boolean
+  setShowCreateForm?: Function
+  setSelectedSpec?: Function
 }) {
   const [activitySpecs, setActivitySpecs] = useState([])
   const { t } = useTranslation()
@@ -293,24 +299,37 @@ export default function AddActivity({
                   <MenuItem
                     key={x.id}
                     onClick={() => {
-                      window.location.href = `/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`
+                      setSelectedSpec(x)
+                      setShowCreateForm(true)
                       setSlideOpen(false)
                     }}
                     className={sliderclasses.menuLinks}
                   >
-                    <Link
-                      href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}
-                      underline="none"
-                    >
-                      {activitiesObj[x.id]
-                        ? `${t(activitiesObj[x.id])}`
-                        : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
-                    </Link>
+                    {activitiesObj[x.id]
+                      ? `${t(activitiesObj[x.id])}`
+                      : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
                   </MenuItem>
+                  // <MenuItem
+                  //   key={x.id}
+                  //   onClick={() => {
+                  //     window.location.href = `/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`
+                  //     setSlideOpen(false)
+                  //   }}
+                  //   className={sliderclasses.menuLinks}
+                  // >
+                  //   <Link
+                  //     href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}
+                  //     underline="none"
+                  //   >
+                  //     {activitiesObj[x.id]
+                  //       ? `${t(activitiesObj[x.id])}`
+                  //       : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
+                  //   </Link>
+                  // </MenuItem>
                 ))}
             </React.Fragment>
           )}
-          {activitySpecs.filter(
+          {/* {activitySpecs.filter(
             (x) => !["lamp.group", "lamp.survey", "lamp.form_builder", "lamp.cbt_thought_record"].includes(x.id)
           ).length > 0 && [
             <MenuItem divider key="head" disabled className={classes.borderTop}>
@@ -339,7 +358,7 @@ export default function AddActivity({
                   </Link>
                 </MenuItem>
               )),
-          ]}
+          ]} */}
         </Box>
       </Slide>
     </Box>

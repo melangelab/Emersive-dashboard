@@ -224,7 +224,7 @@ export default function Header({
             <IconButton
               className={headerclasses.backButton}
               onClick={() => {
-                window.location.href = `/admin`
+                window.location.href = `/`
               }}
             >
               <Icon>arrow_back</Icon>
@@ -269,6 +269,9 @@ export default function Header({
             studyId={null}
             setActivities={setActivities}
             researcherId={researcherId}
+            showCreateForm={props.showCreateForm}
+            setShowCreateForm={props.setShowCreateForm}
+            setSelectedSpec={props.setSelectedSpec}
           />
           {props.viewMode === "table" && (
             <>

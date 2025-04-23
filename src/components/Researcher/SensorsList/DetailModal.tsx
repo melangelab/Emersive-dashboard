@@ -28,7 +28,35 @@ const DetailModal: React.FC<DetailModalProps> = ({ open, onClose, title, content
       case "json":
         return (
           <Box p={2} maxHeight="400px" overflow="auto">
-            {JSON.stringify(content, null, 2)}
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <strong>Setting</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Value</strong>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {Object.entries(content || {}).map(([key, value], index) => (
+                  <TableRow key={index}>
+                    <TableCell>{key}</TableCell>
+                    <TableCell>
+                      {value === null ? "null" : typeof value === "object" ? JSON.stringify(value) : String(value)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {Object.keys(content || {}).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={2} align="center">
+                      No settings
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </Box>
         )
 

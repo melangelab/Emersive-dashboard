@@ -287,7 +287,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
   const { t } = useTranslation()
 
   const handleValueChange = (field, value) => {
-    if ((isEditing || submissionInfo.isEditing) && setEditedValues) {
+    if ((isEditing || submissionInfo?.isEditing) && setEditedValues) {
       if (field.startsWith("developer_info.")) {
         const fieldName = field.split(".")[1]
         setEditedValues((prev) => ({
@@ -312,9 +312,9 @@ const ViewItems: React.FC<ViewItemsProps> = ({
         <div className={classes.infoRow}>
           <div className={classes.infoLabel}>Version:</div>
           <div className={classes.infoValue}>
-            {submissionInfo.version}
-            {submissionInfo.versionNumber && (
-              <span className={classes.versionBadge}>#{submissionInfo.versionNumber}</span>
+            {submissionInfo?.version}
+            {submissionInfo?.versionNumber && (
+              <span className={classes.versionBadge}>#{submissionInfo?.versionNumber}</span>
             )}
           </div>
         </div>
@@ -324,7 +324,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
           <div className={classes.infoRow}>
             <div className={classes.infoLabel}>User IP:</div>
             <div className={classes.infoValue}>
-              <span className="blue-text">{submissionInfo.userIp}</span>
+              <span className="blue-text">{submissionInfo?.userIp}</span>
             </div>
           </div>
           <Divider />
@@ -335,7 +335,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
           <div className={classes.infoRow}>
             <div className={classes.infoLabel}>Source URL:</div>
             <div className={classes.infoValue}>
-              {submissionInfo.isEditing ? (
+              {submissionInfo?.isEditing ? (
                 <TextField
                   size="small"
                   variant="outlined"
@@ -344,7 +344,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
                   fullWidth
                 />
               ) : (
-                <span className="blue-text url-text">{submissionInfo.sourceUrl}</span>
+                <span className="blue-text url-text">{submissionInfo?.sourceUrl}</span>
               )}
             </div>
           </div>
@@ -355,7 +355,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
         <>
           <div className={classes.infoRow}>
             <div className={classes.infoLabel}>Browser:</div>
-            <div className={classes.infoValue}>{submissionInfo.browser}</div>
+            <div className={classes.infoValue}>{submissionInfo?.browser}</div>
           </div>
           <Divider />
         </>
@@ -364,7 +364,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
         <>
           <div className={classes.infoRow}>
             <div className={classes.infoLabel}>Device:</div>
-            <div className={classes.infoValue}>{submissionInfo.device}</div>
+            <div className={classes.infoValue}>{submissionInfo?.device}</div>
           </div>
           <Divider />
         </>
@@ -374,7 +374,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
           <div className={classes.infoRow}>
             <div className={classes.infoLabel}>User:</div>
             <div className={classes.infoValue}>
-              {submissionInfo.isEditing ? (
+              {submissionInfo?.isEditing ? (
                 <TextField
                   size="small"
                   variant="outlined"
@@ -383,11 +383,11 @@ const ViewItems: React.FC<ViewItemsProps> = ({
                   fullWidth
                 />
               ) : (
-                submissionInfo.user
+                submissionInfo?.user
               )}
             </div>
-            {submissionInfo.onUserEdit && (
-              <IconButton className={classes.editIconButton} size="small" onClick={submissionInfo.onUserEdit}>
+            {submissionInfo?.onUserEdit && (
+              <IconButton className={classes.editIconButton} size="small" onClick={submissionInfo?.onUserEdit}>
                 <EditIcon fontSize="small" />
               </IconButton>
             )}
@@ -399,7 +399,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
         <>
           <div className={classes.infoRow}>
             <div className={classes.infoLabel}>Status:</div>
-            <div className={classes.infoValue}>{submissionInfo.status}</div>
+            <div className={classes.infoValue}>{submissionInfo?.status}</div>
           </div>
           <Divider />
         </>
@@ -408,23 +408,23 @@ const ViewItems: React.FC<ViewItemsProps> = ({
         <>
           <div className={classes.infoRow}>
             <div className={classes.infoLabel}>Submitted On:</div>
-            <div className={classes.infoValue}>{submissionInfo.submittedOn}</div>
+            <div className={classes.infoValue}>{submissionInfo?.submittedOn}</div>
           </div>
           <Divider />
         </>
       )}
       <div className={classes.buttonContainer}>
-        {submissionInfo.isEditing ? (
-          <Button variant="contained" className={classes.editButton} onClick={submissionInfo.onSave}>
+        {submissionInfo?.isEditing ? (
+          <Button variant="contained" className={classes.editButton} onClick={submissionInfo?.onSave}>
             Save Changes
           </Button>
         ) : (
-          <Button variant="contained" className={classes.editButton} onClick={submissionInfo.onEdit}>
+          <Button variant="contained" className={classes.editButton} onClick={submissionInfo?.onEdit}>
             <EditIcon fontSize="small" style={{ marginRight: 8 }} /> Edit
           </Button>
         )}
         {submissionInfo?.onChangeStatus && (
-          <Button variant="outlined" className={classes.changeStatusButton} onClick={submissionInfo.onChangeStatus}>
+          <Button variant="outlined" className={classes.changeStatusButton} onClick={submissionInfo?.onChangeStatus}>
             Change status to <span className={classes.dropdownIcon}>▼</span>
           </Button>
         )}
@@ -434,7 +434,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
 
   return (
     <Grid container spacing={0} className={classes.viewGrid}>
-      <Grid item xs={12} md={7} className={classes.infoContainer}>
+      <Grid item xs={12} md={submissionInfo ? 7 : 12} className={classes.infoContainer}>
         <Paper elevation={1} className={`${classes.infoPaper} ${isEditing ? "editing-mode" : ""}`}>
           {fields.map((field) => (
             <Box key={field.id} className={classes.fieldContainer}>
@@ -600,32 +600,33 @@ const ViewItems: React.FC<ViewItemsProps> = ({
           )}
         </Paper>
       </Grid>
-
-      <Grid item xs={12} md={5} className={classes.sideContainer}>
-        <Paper elevation={3} className={classes.sidePaper}>
-          <div className={classes.tabsContainer}>
-            <div
-              className={`${classes.tab} ${activeTab === "developer" ? classes.activeTab : classes.inactiveTab}`}
-              onClick={() => setActiveTab("developer")}
-            >
-              Developer Info
-            </div>
-            {tabs.map((tab) => (
+      {submissionInfo && (
+        <Grid item xs={12} md={5} className={classes.sideContainer}>
+          <Paper elevation={3} className={classes.sidePaper}>
+            <div className={classes.tabsContainer}>
               <div
-                key={tab.id}
-                className={`${classes.tab} ${activeTab === tab.id ? classes.activeTab : classes.inactiveTab}`}
-                onClick={() => setActiveTab(tab.id)}
+                className={`${classes.tab} ${activeTab === "developer" ? classes.activeTab : classes.inactiveTab}`}
+                onClick={() => setActiveTab("developer")}
               >
-                {tab.label}
+                Developer Info
               </div>
-            ))}
-          </div>
+              {tabs.map((tab) => (
+                <div
+                  key={tab.id}
+                  className={`${classes.tab} ${activeTab === tab.id ? classes.activeTab : classes.inactiveTab}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                </div>
+              ))}
+            </div>
 
-          <Box className={classes.tabContent}>
-            {activeTab === "developer" ? renderSubmissionInfo() : tabs.find((tab) => tab.id === activeTab)?.content}
-          </Box>
-        </Paper>
-      </Grid>
+            <Box className={classes.tabContent}>
+              {activeTab === "developer" ? renderSubmissionInfo() : tabs.find((tab) => tab.id === activeTab)?.content}
+            </Box>
+          </Paper>
+        </Grid>
+      )}
     </Grid>
   )
 }

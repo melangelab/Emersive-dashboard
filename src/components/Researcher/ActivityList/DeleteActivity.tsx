@@ -63,7 +63,7 @@ export default function DeleteActivity({
         if (activity.spec === "lamp.survey") {
           tag = await LAMP.Type.setAttachment(activity.id, "me", "lamp.dashboard.survey_description", null)
         } else {
-          tag = await LAMP.Type.setAttachment(activity.id, "me", "lamp.dashboard.activity_details", null)
+          tag = await LAMP.Type.setAttachment(activity.id, "me", "emersive.activity.details", null)
         }
         console.dir("deleted tag " + JSON.stringify(tag))
         let raw = await LAMP.Activity.delete(activity.id)

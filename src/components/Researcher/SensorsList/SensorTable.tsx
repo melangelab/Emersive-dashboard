@@ -59,11 +59,21 @@ const SensorTable: React.FC<SensorTableProps> = ({
   const mtstyles = useModularTableStyles()
   const { enqueueSnackbar } = useSnackbar()
   const [sensorSpecs, setSensorSpecs] = useState([])
+  const [timeSettings, setTimeSettings] = useState({
+    start_time: null,
+    end_time: null,
+  })
 
   useEffect(() => {
     if (!sensorSpecs.length || editingSensor) {
       LAMP.SensorSpec.all().then((res) => {
         setSensorSpecs(res)
+      })
+    }
+    if (editingSensor) {
+      setTimeSettings({
+        start_time: editingSensor.settings?.data_collection_timeperiod?.start_time || null,
+        end_time: editingSensor.settings?.data_collection_timeperiod?.end_time || null,
       })
     }
   }, [editingSensor])
@@ -159,6 +169,59 @@ const SensorTable: React.FC<SensorTableProps> = ({
             sensor.spec
           ),
       },
+      // {
+      //   id: "settings",
+      //   label: "Settings",
+      //   getValue: (sensor) => {
+      //     if (!sensor.settings || Object.keys(sensor.settings).length === 0) {
+      //       return "Default"
+      //     }
+      //     return JSON.stringify(sensor.settings).substring(0, 30) + "..."
+      //   },
+      //   visible: true,
+      //   sortable: false,
+      //   renderCell: (sensor) =>
+      //     mode == "edit" && editingSensor && editingSensor.id === sensor.id && editableColumns?.includes("settings") ? (
+      //       <textarea
+      //         defaultValue={JSON.stringify(sensor.settings || {}, null, 2)}
+      //         style={{
+      //           width: "100%",
+      //           padding: "4px",
+      //           border: "1px solid #ccc",
+      //           borderRadius: "4px",
+      //           minHeight: "60px",
+      //         }}
+      //         onChange={(e) => {
+      //           try {
+      //             const parsed = JSON.parse(e.target.value)
+      //             onCellValueChange(sensor.id, "settings", parsed)
+      //           } catch (error) {
+      //             console.error("Invalid JSON:", error)
+      //           }
+      //         }}
+      //       />
+      //     ) : (
+      //       <Box
+      //         style={{
+      //           cursor: "pointer",
+      //           color: "#215F9A",
+      //         }}
+      //         onClick={(e) => {
+      //           e.stopPropagation()
+      //           setDetailModal({
+      //             open: true,
+      //             title: `Settings for ${sensor.name}`,
+      //             content: sensor.settings || {},
+      //             contentType: "json",
+      //           })
+      //         }}
+      //       >
+      //         {!sensor.settings || Object.keys(sensor.settings).length === 0
+      //           ? "Default"
+      //           : JSON.stringify(sensor.settings).substring(0, 30) + "..."}
+      //       </Box>
+      //     ),
+      // },
       {
         id: "settings",
         label: "Settings",
@@ -166,30 +229,114 @@ const SensorTable: React.FC<SensorTableProps> = ({
           if (!sensor.settings || Object.keys(sensor.settings).length === 0) {
             return "Default"
           }
-          return JSON.stringify(sensor.settings).substring(0, 30) + "..."
+          const settingsString = Object.entries(sensor.settings)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join("\n")
+          return settingsString
+          // return JSON.stringify(sensor.settings).substring(0, 30) + "..."
         },
         visible: true,
         sortable: false,
         renderCell: (sensor) =>
           mode == "edit" && editingSensor && editingSensor.id === sensor.id && editableColumns?.includes("settings") ? (
-            <textarea
-              defaultValue={JSON.stringify(sensor.settings || {}, null, 2)}
-              style={{
-                width: "100%",
-                padding: "4px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                minHeight: "60px",
-              }}
-              onChange={(e) => {
-                try {
-                  const parsed = JSON.parse(e.target.value)
-                  onCellValueChange(sensor.id, "settings", parsed)
-                } catch (error) {
-                  console.error("Invalid JSON:", error)
-                }
-              }}
-            />
+            <Box sx={{ width: "100%", padding: "8px" }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                <Box sx={{ width: "50%", fontWeight: 500 }}>Data Collection Duration:</Box>
+                <input
+                  type="text"
+                  defaultValue={sensor.settings?.data_collection_duration ?? ""}
+                  style={{
+                    width: "50%",
+                    padding: "4px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                  }}
+                  onChange={(e) => {
+                    const newSettings = { ...sensor.settings, data_collection_duration: e.target.value || null }
+                    onCellValueChange(sensor.id, "settings", newSettings)
+                  }}
+                />
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                <Box sx={{ width: "50%", fontWeight: 500 }}>Frequency:</Box>
+                <input
+                  type="number"
+                  defaultValue={sensor.settings?.frequency ?? 1}
+                  style={{
+                    width: "50%",
+                    padding: "4px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                  }}
+                  onChange={(e) => {
+                    const newSettings = { ...sensor.settings, frequency: Number(e.target.value) || 1 }
+                    onCellValueChange(sensor.id, "settings", newSettings)
+                  }}
+                />
+              </Box>
+              <Box sx={{ fontWeight: 500 }}>Data Collection Timeperiod:</Box>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Box sx={{ width: "50%" }}>
+                  <input
+                    type="time"
+                    defaultValue={sensor.settings?.data_collection_timeperiod?.start_time ?? ""}
+                    style={{
+                      width: "100%",
+                      padding: "4px",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                    }}
+                    onChange={(e) => {
+                      const start_time = e.target.value || null
+                      setTimeSettings((prev) => ({
+                        ...prev,
+                        start_time,
+                        end_time: prev.end_time || sensor.settings?.data_collection_timeperiod?.end_time,
+                      }))
+
+                      const newSettings = {
+                        ...sensor.settings,
+                        data_collection_timeperiod: {
+                          start_time,
+                          end_time: timeSettings.end_time || sensor.settings?.data_collection_timeperiod?.end_time,
+                        },
+                      }
+                      onCellValueChange(sensor.id, "settings", newSettings)
+                    }}
+                  />
+                </Box>
+                <Box sx={{ width: "50%" }}>
+                  <input
+                    type="time"
+                    defaultValue={sensor.settings?.data_collection_timeperiod?.end_time ?? ""}
+                    style={{
+                      width: "100%",
+                      padding: "4px",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                    }}
+                    onChange={(e) => {
+                      const end_time = e.target.value || null
+                      setTimeSettings((prev) => ({
+                        ...prev,
+                        end_time,
+                        start_time: prev.start_time || sensor.settings?.data_collection_timeperiod?.start_time,
+                      }))
+
+                      const newSettings = {
+                        ...sensor.settings,
+                        data_collection_timeperiod: {
+                          start_time:
+                            timeSettings.start_time || sensor.settings?.data_collection_timeperiod?.start_time,
+                          end_time,
+                        },
+                      }
+                      onCellValueChange(sensor.id, "settings", newSettings)
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Box>
           ) : (
             <Box
               style={{
