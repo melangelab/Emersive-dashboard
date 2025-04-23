@@ -102,11 +102,16 @@ const useStyles = makeStyles((theme) =>
       top: theme.spacing(1),
       color: theme.palette.grey[500],
     },
+    settingsField: {
+      width: "100%",
+    },
   })
 )
 
 interface SensorSettings {
   frequency?: number
+  data_collection_duration?: number
+  data_collection_timeperiod?: { start_time: string; end_time: string } | null
 }
 
 interface SettingsInfo {
@@ -129,6 +134,7 @@ export interface Sensors {
   name?: string
   group?: string
   spec?: string
+  settings?: SensorSettings
 }
 export default function SensorDialog({
   sensor,
@@ -169,6 +175,13 @@ export default function SensorDialog({
   const [selectedGroup, setSelectedGroup] = useState(sensor ? sensor.group : "")
   const [confirmationOpen, setConfirmationOpen] = useState(false)
   const [createdSensor, setCreatedSensor] = useState(null)
+  const [sensorSettings, setSensorSettings] = useState(
+    sensor?.settings || {
+      frequency: 1,
+      data_collection_duration: null,
+      data_collection_timeperiod: { start_time: null, end_time: null },
+    }
+  )
 
   useEffect(() => {
     LAMP.SensorSpec.all().then((res) => {
@@ -188,11 +201,25 @@ export default function SensorDialog({
       setSelectedStudy(sensor ? sensor.study_id : studyId ?? "")
       setSensorName("")
       setSensorSpec("")
+      setSensorSettings({
+        frequency: 1,
+        data_collection_duration: null,
+        data_collection_timeperiod: { start_time: null, end_time: null },
+      })
     } else {
       setSelectedStudy(sensor ? sensor.study_id : studyId ?? "")
       setSelectedSensor(sensor ?? null)
       setSensorName(sensor ? sensor.name : "")
       setSensorSpec(sensor ? sensor.spec : null)
+      if (sensor?.settings) {
+        setSensorSettings(sensor.settings)
+      } else {
+        setSensorSettings({
+          frequency: 1,
+          data_collection_duration: null,
+          data_collection_timeperiod: { start_time: null, end_time: null },
+        })
+      }
     }
   }, [open])
 
@@ -239,6 +266,13 @@ export default function SensorDialog({
     setGroups(study?.gname)
   }, [selectedStudy])
 
+  const handleSettingsChange = (key, value) => {
+    setSensorSettings((prevSettings) => ({
+      ...prevSettings,
+      [key]: value,
+    }))
+  }
+
   const validate = () => {
     return !(
       duplicateCnt > 0 ||
@@ -259,12 +293,13 @@ export default function SensorDialog({
     const result = await LAMP.Sensor.update(selectedSensor.id, {
       name: sensorName.trim(),
       spec: sensorSpec,
+      settings: sensorSettings,
     })
       .then((res) => {
         Service.updateMultipleKeys(
           "sensors",
-          { sensors: [{ id: selectedSensor.id, name: sensorName.trim(), spec: sensorSpec }] },
-          ["name", "spec"],
+          { sensors: [{ id: selectedSensor.id, name: sensorName.trim(), spec: sensorSpec, settings: sensorSettings }] },
+          ["name", "spec", "settings"],
           "id"
         )
         enqueueSnackbar(`${t("Successfully updated a sensor.")}`, {
@@ -275,6 +310,7 @@ export default function SensorDialog({
         setCreatedSensor({
           name: sensorName.trim(),
           spec: sensorSpec,
+          settings: sensorSettings,
           study: studies.find((s) => s.id === selectedStudy)?.name,
         })
         setConfirmationOpen(true)
@@ -293,7 +329,8 @@ export default function SensorDialog({
       name: sensorName.trim(),
       spec: sensorSpec,
       group: selectedGroup,
-      settings: sensorSpecs.find((sensorElem) => sensorElem.id === sensorSpec)?.settings_schema,
+      settings: sensorSettings,
+      // settings: sensorSpecs.find((sensorElem) => sensorElem.id === sensorSpec)?.settings_schema,
     } as any)
       .then((res: any) => {
         console.log("THE RESULT", res)
@@ -305,7 +342,8 @@ export default function SensorDialog({
             spec: sensorSpec,
             study_id: selectedStudy,
             study_name: studies.filter((study) => study.id === selectedStudy)[0]?.name,
-            settings: result.settings,
+            // settings: result.settings,
+            settings: sensorSettings,
             studies: result.studies,
             group: result.gname || selectedGroup,
             statusInUsers: result.statusInUsers,
@@ -330,6 +368,7 @@ export default function SensorDialog({
           setCreatedSensor({
             name: sensorName.trim(),
             spec: sensorSpec,
+            settings: sensorSettings,
             study: studies.find((s) => s.id === selectedStudy)?.name,
           })
           setConfirmationOpen(true)
@@ -356,7 +395,7 @@ export default function SensorDialog({
     <>
       <Slide direction="left" in={open && !confirmationOpen} mountOnEnter unmountOnExit>
         <Box
-          className={`${sliderclasses.slidePanel} ${sliderclasses.TabSlidePanel}`}
+          className={`${sliderclasses.slidePanel} ${type === "edit" ? sliderclasses.TabSlidePanel : ""}`}
           onClick={(e) => e.stopPropagation()}
         >
           <IconButton aria-label="close" className={classes.closeButton} onClick={handleClose as any}>
@@ -471,6 +510,89 @@ export default function SensorDialog({
                 ))}
             </TextField>
           </Box>
+          <Box mt={4}>
+            <Typography variant="subtitle1" className={sliderclasses.field}>
+              {t("Sensor Settings")}
+            </Typography>
+            <Box p={2} mt={1} border="1px solid rgba(0, 0, 0, 0.12)" borderRadius="4px" bgcolor="rgba(0, 0, 0, 0.02)">
+              <Box display="flex" alignItems="center" mb={2}>
+                <Typography variant="body2" style={{ width: "50%", fontWeight: 500 }}>
+                  {t("Data Collection Duration")}:
+                </Typography>
+                <TextField
+                  size="small"
+                  variant="outlined"
+                  value={sensorSettings?.data_collection_duration || ""}
+                  onChange={(e) => handleSettingsChange("data_collection_duration", e.target.value)}
+                  placeholder={t("Enter duration")}
+                  style={{ width: "50%" }}
+                  className={classes.settingsField}
+                />
+              </Box>
+
+              <Box display="flex" alignItems="center" mb={2}>
+                <Typography variant="body2" style={{ width: "50%", fontWeight: 500 }}>
+                  {t("Frequency")}:
+                </Typography>
+                <TextField
+                  size="small"
+                  variant="outlined"
+                  type="number"
+                  value={sensorSettings?.frequency || 1}
+                  onChange={(e) => handleSettingsChange("frequency", Number(e.target.value) || 1)}
+                  placeholder={t("Enter frequency")}
+                  style={{ width: "50%" }}
+                  className={classes.settingsField}
+                />
+              </Box>
+
+              <Box display="flex" alignItems="center">
+                <Typography variant="body2" style={{ width: "50%", fontWeight: 500 }}>
+                  {t("Data Collection Timeperiod")}:
+                </Typography>
+                <Box style={{ width: "50%" }}>
+                  <Box display="flex" mb={1}>
+                    <Typography variant="caption" style={{ width: "50%" }}>
+                      {t("Start Time")}:
+                    </Typography>
+                    <TextField
+                      type="time"
+                      size="small"
+                      variant="outlined"
+                      value={sensorSettings?.data_collection_timeperiod?.start_time || ""}
+                      onChange={(e) =>
+                        handleSettingsChange("data_collection_timeperiod", {
+                          ...(sensorSettings?.data_collection_timeperiod || {}),
+                          start_time: e.target.value,
+                        })
+                      }
+                      className={classes.settingsField}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Box>
+                  <Box display="flex">
+                    <Typography variant="caption" style={{ width: "50%" }}>
+                      {t("End Time")}:
+                    </Typography>
+                    <TextField
+                      type="time"
+                      size="small"
+                      variant="outlined"
+                      value={sensorSettings?.data_collection_timeperiod?.end_time || ""}
+                      onChange={(e) =>
+                        handleSettingsChange("data_collection_timeperiod", {
+                          ...(sensorSettings?.data_collection_timeperiod || {}),
+                          end_time: e.target.value,
+                        })
+                      }
+                      className={classes.settingsField}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
           <Divider className={sliderclasses.divider} />
           <Box textAlign="center" mt={2}>
             <Button
@@ -506,6 +628,15 @@ export default function SensorDialog({
           <Typography variant="body2" paragraph>
             <strong>{t("Study")}:</strong> {createdSensor?.study}
           </Typography>
+          <Typography variant="body2" paragraph>
+            <strong>{t("Settings")}:</strong>{" "}
+            {createdSensor?.settings
+              ? Object.keys(createdSensor.settings).length > 0
+                ? JSON.stringify(createdSensor.settings)
+                : t("Default")
+              : t("Default")}
+          </Typography>
+
           <Divider className={sliderclasses.divider} />
           <Button className={sliderclasses.button} onClick={handleConfirmationClose}>
             {t("Close")}

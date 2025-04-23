@@ -11,6 +11,9 @@ import {
   Switch,
   TextField,
   Divider,
+  IconButton,
+  Collapse,
+  MenuItem,
 } from "@material-ui/core"
 import ViewItems, { FieldConfig, TabConfig } from "../SensorsList/ViewItems"
 import { useTranslation } from "react-i18next"
@@ -20,7 +23,11 @@ import { Service } from "../../DBService/DBService"
 import CloseIcon from "@material-ui/icons/Close"
 import { DeveloperInfo, fetchUserIp } from "../ActivityList/ActivityDetailItem"
 import { fetchResult } from "../SaveResearcherData"
-
+import ExpandMoreIcon from "@material-ui/icons/ExpandMore"
+import ExpandLessIcon from "@material-ui/icons/ExpandLess"
+import { ca } from "date-fns/locale"
+import DateFnsUtils from "@date-io/date-fns"
+import { MuiPickersUtilsProvider, KeyboardDatePicker } from "@material-ui/pickers"
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
@@ -130,6 +137,72 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
+const CustomSelect = ({ options, value, onChange, label, required = false, fullWidth = true }) => {
+  const [isOtherMode, setIsOtherMode] = useState(
+    options.some((opt) => opt.value === "Other") && value !== "Other" && !options.some((opt) => opt.value === value)
+  )
+
+  const handleSelectChange = (e) => {
+    const selectedValue = e.target.value
+    if (selectedValue === "Other") {
+      setIsOtherMode(true)
+      onChange("")
+    } else {
+      setIsOtherMode(false)
+      onChange(selectedValue)
+    }
+  }
+
+  const handleTextChange = (e) => {
+    onChange(e.target.value)
+  }
+
+  return (
+    <TextField
+      fullWidth={fullWidth}
+      select={!isOtherMode}
+      label={label}
+      value={value}
+      onChange={isOtherMode ? handleTextChange : handleSelectChange}
+      variant="outlined"
+      required={required}
+      SelectProps={{ native: false }}
+      InputProps={{
+        endAdornment: isOtherMode && (
+          <MenuItem
+            component="div"
+            onClick={() => setIsOtherMode(false)}
+            // style={{ cursor: 'pointer', position: 'absolute', right: 5 }}
+            style={{
+              cursor: "pointer",
+              position: "absolute",
+              right: 8,
+              top: 2,
+              opacity: 0.8,
+              backgroundColor: "rgba(240, 240, 240, 0.9)",
+              zIndex: 1000,
+              padding: "2px 8px",
+              borderRadius: "4px",
+              fontSize: "0.60rem",
+              color: "#1976d2",
+              border: "1px solid #e0e0e0",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+            }}
+          >
+            ⤴ Back to options
+          </MenuItem>
+        ),
+      }}
+    >
+      {!isOtherMode &&
+        options.map((option) => (
+          <MenuItem key={option.value} value={option.value}>
+            {option.label}
+          </MenuItem>
+        ))}
+    </TextField>
+  )
+}
 interface ParticipantDetailItemProps {
   participant: any
   isEditing: boolean
@@ -147,6 +220,12 @@ const AsyncStatsContent: React.FC<{
 }> = ({ selectedTab, study, participant, classes }) => {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+  const [startDate, setStartDate] = useState<Date | null>(
+    new Date(new Date().setDate(new Date().getDate() - 7)) // Default to 7 days ago
+  )
+  const [endDate, setEndDate] = useState<Date | null>(new Date()) // Default to today
+  const [dateRangeEnabled, setDateRangeEnabled] = useState<boolean>(false)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -154,39 +233,84 @@ const AsyncStatsContent: React.FC<{
       try {
         const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
         let newItems: any[] = []
-        const result = await fetchResult(authString, study.id, "participant/mode/5", "study")
+        const endpoint = dateRangeEnabled
+          ? `participant/mode/6?from_date=${startDate?.getTime()}&to_date=${endDate?.getTime()}`
+          : "participant/mode/5"
+        const result = await fetchResult(authString, study.id, endpoint, "study")
+        // const result = await fetchResult(authString, study.id, "participant/mode/5", "study")
         const participantData = result.participants?.find((p) => p.id === participant.id)
+        console.log("participantData", participantData, endpoint)
         if (selectedTab.tab === "assessments") {
           newItems = study.activities?.filter((a) => a.category?.includes("assess")) || []
         } else if (selectedTab.tab === "activities") {
-          newItems = (study.activities || []).map((activity) => {
-            const activityEvent = participantData?.last_activity_events?.find((e) => e.activity_id === activity.id)
-            return {
-              ...activity,
-              lastEvent: activityEvent?.last_event
-                ? {
-                    timestamp: new Date(activityEvent.last_event.timestamp).toLocaleString(),
-                    // type: activityEvent.last_event.type,
-                    // data: activityEvent.data,
-                  }
-                : null,
-            }
-          })
-        } else if (selectedTab.tab === "sensors") {
-          newItems = (study.sensors || []).map((sensor) => {
-            const sensorEvent = participantData?.last_sensor_events?.find((s) => s.sensor_spec === sensor.spec)
-            return {
-              ...sensor,
-              lastEvent: sensorEvent?.last_event
-                ? {
-                    timestamp: new Date(sensorEvent.last_event.timestamp).toLocaleString(),
-                    // data: sensorEvent.last_event.data,
-                  }
-                : null,
-            }
-          })
-        }
+          if (dateRangeEnabled && participantData?.activity_events) {
+            // When date range is enabled, use the activity events in the date range
+            const activityMap = new Map()
+            ;(study.activities || []).forEach((activity) => {
+              activityMap.set(activity.id, { ...activity, events: [] })
+            })
 
+            // Group events by activity
+            participantData.activity_events.forEach((event) => {
+              if (activityMap.has(event.activity)) {
+                const activity = activityMap.get(event.activity)
+                activity.events.push({
+                  ...event,
+                  timestamp: new Date(event.timestamp).toLocaleString(),
+                })
+              }
+            })
+
+            newItems = Array.from(activityMap.values())
+          } else {
+            newItems = (study.activities || []).map((activity) => {
+              const activityEvent = participantData?.last_activity_events?.find((e) => e.activity_id === activity.id)
+              return {
+                ...activity,
+                lastEvent: activityEvent?.last_event
+                  ? {
+                      ...activityEvent.last_event,
+                      timestamp: new Date(activityEvent.last_event.timestamp).toLocaleString(),
+                    }
+                  : null,
+              }
+            })
+          }
+        } else if (selectedTab.tab === "sensors") {
+          if (dateRangeEnabled && participantData?.sensor_events) {
+            // When date range is enabled, use the sensor events in the date range
+            const sensorMap = new Map()
+            ;(study.sensors || []).forEach((sensor) => {
+              sensorMap.set(sensor.spec, { ...sensor, events: [] })
+            })
+
+            // Group events by sensor
+            participantData.sensor_events.forEach((event) => {
+              if (sensorMap.has(event.sensor)) {
+                const sensor = sensorMap.get(event.sensor)
+                sensor.events.push({
+                  ...event,
+                  timestamp: new Date(event.timestamp).toLocaleString(),
+                })
+              }
+            })
+
+            newItems = Array.from(sensorMap.values())
+          } else {
+            newItems = (study.sensors || []).map((sensor) => {
+              const sensorEvent = participantData?.last_sensor_events?.find((s) => s.sensor_spec === sensor.spec)
+              return {
+                ...sensor,
+                lastEvent: sensorEvent?.last_event
+                  ? {
+                      ...sensorEvent.last_event,
+                      timestamp: new Date(sensorEvent.last_event.timestamp).toLocaleString(),
+                    }
+                  : null,
+              }
+            })
+          }
+        }
         setItems(newItems)
       } catch (err) {
         console.error("Failed to fetch stats:", err)
@@ -197,7 +321,15 @@ const AsyncStatsContent: React.FC<{
     }
 
     fetchStats()
-  }, [selectedTab, study, participant])
+  }, [selectedTab, study, participant, dateRangeEnabled, startDate, endDate])
+
+  const handleStartDateChange = (date: Date | null) => {
+    setStartDate(date)
+  }
+
+  const handleEndDateChange = (date: Date | null) => {
+    setEndDate(date)
+  }
 
   if (loading) {
     return <Typography className={classes.groupName}>Loading...</Typography>
@@ -207,29 +339,199 @@ const AsyncStatsContent: React.FC<{
     return <Typography className={classes.groupName}>{`No ${selectedTab.tab} present at this moment.`}</Typography>
   }
 
+  console.log("items", items)
   return (
     <Box className={classes.groupList}>
+      <Box mb={2} display="flex" flexDirection="row" alignItems="center">
+        <MuiPickersUtilsProvider utils={DateFnsUtils}>
+          <Box display="flex" alignItems="center" flexWrap="wrap">
+            <Box mr={2} mb={1}>
+              <KeyboardDatePicker
+                disabled={!dateRangeEnabled}
+                margin="normal"
+                id="start-date-picker"
+                label="Start Date"
+                format="MM/dd/yyyy"
+                value={startDate}
+                onChange={handleStartDateChange}
+                KeyboardButtonProps={{
+                  "aria-label": "change start date",
+                }}
+                style={{ width: 180 }}
+              />
+            </Box>
+            <Box mr={2} mb={1}>
+              <KeyboardDatePicker
+                disabled={!dateRangeEnabled}
+                margin="normal"
+                id="end-date-picker"
+                label="End Date"
+                format="MM/dd/yyyy"
+                value={endDate}
+                onChange={handleEndDateChange}
+                KeyboardButtonProps={{
+                  "aria-label": "change end date",
+                }}
+                style={{ width: 180 }}
+              />
+            </Box>
+            <Box mb={1} display="flex" alignItems="center">
+              <Box
+                component="label"
+                //  htmlFor="date-range-toggle"
+                mr={1}
+              >
+                <Typography variant="body2">Enable Date Range</Typography>
+              </Box>
+              <input
+                id="date-range-toggle"
+                type="checkbox"
+                checked={dateRangeEnabled}
+                onChange={(e) => setDateRangeEnabled(e.target.checked)}
+              />
+            </Box>
+          </Box>
+        </MuiPickersUtilsProvider>
+      </Box>
+      <Divider style={{ marginBottom: 16 }} />
       {items.map((item, index) => (
         <Box key={index} className={classes.groupItem}>
           <Typography className={classes.groupName}>{item.name}</Typography>
           <Typography className={classes.groupDesc}>{item.spec}</Typography>
-          {item.lastEvent && (
+          {dateRangeEnabled && item.events ? (
             <Box mt={1}>
-              <Typography variant="subtitle2" color="textSecondary">
-                Last Event: {item.lastEvent.timestamp}
-              </Typography>
-              {selectedTab.tab === "activities" && (
-                <Typography variant="body2" color="textSecondary">
-                  Type: {item.lastEvent.type}
-                  {item.lastEvent.data && <span>, Value: {JSON.stringify(item.lastEvent.data)}</span>}
+              <Box display="flex" alignItems="center">
+                <Typography variant="subtitle2" color="textSecondary">
+                  Events: {item.events.length}
                 </Typography>
-              )}
-              {selectedTab.tab === "sensors" && item.lastEvent.data && (
-                <Typography variant="body2" color="textSecondary">
-                  Data: {JSON.stringify(item.lastEvent.data)}
-                </Typography>
-              )}
+                <IconButton
+                  size="small"
+                  onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+                  style={{ marginLeft: 8 }}
+                >
+                  {expandedIndex === index ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                </IconButton>
+              </Box>
+              <Collapse in={expandedIndex === index} timeout="auto" unmountOnExit>
+                <Box mt={1} pl={2} borderLeft="3px solid #ccc">
+                  {item.events.length > 0 ? (
+                    item.events.map((event: any, eventIdx: number) => (
+                      <Box key={eventIdx} mb={2} pb={1} borderBottom="1px dashed #eee">
+                        <Typography variant="body2" color="textPrimary">
+                          <strong>Timestamp:</strong> {event.timestamp}
+                        </Typography>
+                        {selectedTab.tab === "activities" && event.temporal_slices && (
+                          <Box mt={1} pl={2}>
+                            {event.temporal_slices.map((slice: any, sliceIdx: number) => (
+                              <Box key={sliceIdx} mb={1}>
+                                <Typography variant="body2" color="textPrimary">
+                                  <strong>Item:</strong> {slice.item}
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary">
+                                  <strong>Value:</strong> {slice.value || "N/A"}
+                                </Typography>
+                                {Object.keys(slice.emotions || {}).length > 0 && (
+                                  <Typography variant="body2" color="textSecondary">
+                                    <strong>Emotions:</strong>{" "}
+                                    {Object.entries(slice.emotions)
+                                      .map(([k, v]) => `${k}: ${v}`)
+                                      .join(", ")}
+                                  </Typography>
+                                )}
+                                <Typography variant="body2" color="textSecondary">
+                                  <strong>Duration:</strong> {slice.duration} ms
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        )}
+                        {selectedTab.tab === "sensors" && (
+                          <Typography variant="body2" color="textSecondary">
+                            <strong>Data:</strong> {event.data ? "Present" : "None"}
+                          </Typography>
+                        )}
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography variant="body2" color="textSecondary">
+                      No events found in the selected date range.
+                    </Typography>
+                  )}
+                </Box>
+              </Collapse>
             </Box>
+          ) : (
+            item.lastEvent && (
+              <Box mt={1}>
+                <Box display="flex" alignItems="center">
+                  <Typography variant="subtitle2" color="textSecondary">
+                    Last Event: {item.lastEvent.timestamp}
+                  </Typography>
+                  {item.lastEvent.temporal_slices && (
+                    <IconButton
+                      size="small"
+                      onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+                      style={{ marginLeft: 8 }}
+                    >
+                      {expandedIndex === index ? (
+                        <ExpandLessIcon fontSize="small" />
+                      ) : (
+                        <ExpandMoreIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  )}
+                </Box>
+                {/* {selectedTab.tab === "activities" && item.lastEvent.temporal_slices && (
+              <Box mt={1} pl={2} borderLeft="3px solid #ccc">
+                {item.lastEvent.temporal_slices.map((slice: any, idx: number) => (
+                  <Box key={idx} mb={1}>
+                    <Typography variant="body2" color="textPrimary">
+                      <strong>Item:</strong> {slice.item}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Value:</strong> {slice.value || "N/A"}
+                    </Typography>
+                    {Object.keys(slice.emotions || {}).length > 0 && (
+                      <Typography variant="body2" color="textSecondary">
+                        <strong>Emotions:</strong> {Object.entries(slice.emotions).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                      </Typography>
+                    )}
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Duration:</strong> {slice.duration} ms
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )} */}
+                <Collapse in={expandedIndex === index} timeout="auto" unmountOnExit>
+                  {selectedTab.tab === "activities" && item.lastEvent.temporal_slices && (
+                    <Box mt={1} pl={2} borderLeft="3px solid #ccc">
+                      {item.lastEvent.temporal_slices.map((slice: any, idx: number) => (
+                        <Box key={idx} mb={1}>
+                          <Typography variant="body2" color="textPrimary">
+                            <strong>Item:</strong> {slice.item}
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            <strong>Value:</strong> {slice.value || "N/A"}
+                          </Typography>
+                          {Object.keys(slice.emotions || {}).length > 0 && (
+                            <Typography variant="body2" color="textSecondary">
+                              <strong>Emotions:</strong>{" "}
+                              {Object.entries(slice.emotions)
+                                .map(([k, v]) => `${k}: ${v}`)
+                                .join(", ")}
+                            </Typography>
+                          )}
+                          <Typography variant="body2" color="textSecondary">
+                            <strong>Duration:</strong> {slice.duration} ms
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+                </Collapse>
+              </Box>
+            )
           )}
         </Box>
       ))}
@@ -279,6 +581,15 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
       user: "",
       status: "",
       submittedOn: "",
+    },
+    demographics: {
+      maritalStatus: "",
+      educationYears: "",
+      educationCategory: "",
+      occupation: "",
+      socioEconomicStatus: "",
+      familyType: "",
+      religion: "",
     },
   })
 
@@ -377,7 +688,12 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
         fieldtoupdate,
         "id"
       )
-
+      await LAMP.Type.setAttachment(
+        participant.id,
+        "me",
+        "emersive.participant.demographics",
+        editedValues.demographics
+      )
       enqueueSnackbar(t("Participant updated successfully"), { variant: "success" })
       onSave(editedValues)
     } catch (error) {
@@ -386,6 +702,74 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDemographicsChange = (field, value) => {
+    console.log("handleDemographicsChange", field, value)
+    if (isEditing) {
+      setEditedValues((prev) => ({
+        ...prev,
+        demographics: {
+          ...prev.demographics,
+          [field]: value,
+        },
+      }))
+    }
+  }
+
+  const demographicOptions = {
+    maritalStatus: [
+      // Empty default option
+      { value: "Married", label: "Married" },
+      { value: "Single", label: "Single" },
+      { value: "Separated", label: "Separated" },
+      { value: "Divorced", label: "Divorced" },
+      { value: "Widowed", label: "Widowed" },
+      { value: "Not known", label: "Not known" },
+      { value: "Other", label: "Other" },
+    ],
+    educationCategory: [
+      { value: "Illiterate", label: "Illiterate" },
+      { value: "Primary", label: "Primary" },
+      { value: "Secondary", label: "Secondary" },
+      { value: "Higher Secondary", label: "Higher Secondary" },
+      { value: "Graduate", label: "Graduate" },
+      { value: "Other", label: "Other" },
+    ],
+    occupation: [
+      { value: "Student", label: "Student" },
+      { value: "Professional", label: "Professional" },
+      { value: "Semi Profession", label: "Semi Profession" },
+      { value: "Clerical/Shop/Farm", label: "Clerical/Shop/Farm" },
+      { value: "Skilled Worker", label: "Skilled Worker" },
+      { value: "Semi Skilled Worker", label: "Semi Skilled Worker" },
+      { value: "Unskilled Worker", label: "Unskilled Worker" },
+      { value: "Homemaker", label: "Homemaker" },
+      { value: "Unemployed", label: "Unemployed" },
+      { value: "Not known", label: "Not known" },
+    ],
+    socioEconomicStatus: [
+      { value: "Lower", label: "Lower" },
+      { value: "Upper lower", label: "Upper lower" },
+      { value: "Lower middle", label: "Lower middle" },
+      { value: "Upper middle", label: "Upper middle" },
+      { value: "Upper", label: "Upper" },
+    ],
+    familyType: [
+      { value: "Nuclear", label: "Nuclear" },
+      { value: "Joint", label: "Joint" },
+      { value: "Extended", label: "Extended" },
+      { value: "Extended-Nuclear", label: "Extended-Nuclear" },
+      { value: "Other", label: "Other" },
+    ],
+    religion: [
+      { value: "Hinduism", label: "Hinduism" },
+      { value: "Islam", label: "Islam" },
+      { value: "Christianity", label: "Christianity" },
+      { value: "Sikhism", label: "Sikhism" },
+      { value: "Buddhism", label: "Buddhism" },
+      { value: "Other", label: "Other" },
+    ],
   }
 
   // Define fields for the ViewItems component
@@ -629,6 +1013,136 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
     </Box>
   ) : null
 
+  const socioDemographicsContent = (
+    <Box className={classes.tabContent}>
+      {isEditing ? (
+        <Grid container spacing={2}>
+          <Grid item xs={6}>
+            {/* <TextField
+            fullWidth
+            select
+            label={t("Marital Status")}
+            value={editedValues.demographics.maritalStatus}
+            onChange={(e) => handleDemographicsChange("maritalStatus", e.target.value)}
+            variant="outlined"
+            required
+            SelectProps={{native: false }}
+          >
+          {demographicOptions.maritalStatus.map(option => (
+            <MenuItem key={option.value} value={option.value}>{t(option.label)}</MenuItem>
+          ))}
+          </TextField>
+          {editedValues.demographics.maritalStatus === "Other" && (
+            <TextField
+              fullWidth
+              label={t("Please specify")}
+              value={editedValues.demographics.maritalStatus || ""}
+              onChange={(e) => handleDemographicsChange("maritalStatus", e.target.value)}
+              variant="outlined"
+              margin="normal"
+              size="small"
+            />
+          )} */}
+            <CustomSelect
+              options={demographicOptions.maritalStatus}
+              value={editedValues.demographics.maritalStatus}
+              onChange={(value) => handleDemographicsChange("maritalStatus", value)}
+              label={t("Marital Status")}
+              required
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <TextField
+              fullWidth
+              label={t("Education (in years)")}
+              value={editedValues.demographics.educationYears}
+              onChange={(e) => handleDemographicsChange("educationYears", e.target.value)}
+              variant="outlined"
+              required
+              type="number"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <CustomSelect
+              options={demographicOptions.educationCategory}
+              value={editedValues.demographics.educationCategory}
+              onChange={(value) => handleDemographicsChange("educationCategory", value)}
+              label={t("Education Category")}
+              required
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <CustomSelect
+              options={demographicOptions.occupation}
+              value={editedValues.demographics.occupation}
+              onChange={(value) => handleDemographicsChange("occupation", value)}
+              label={t("Occupation")}
+              required
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <CustomSelect
+              options={demographicOptions.socioEconomicStatus}
+              value={editedValues.demographics.socioEconomicStatus}
+              onChange={(value) => handleDemographicsChange("socioEconomicStatus", value)}
+              label={t("Socio-economic status")}
+              required
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <CustomSelect
+              options={demographicOptions.familyType}
+              value={editedValues.demographics.familyType}
+              onChange={(value) => handleDemographicsChange("familyType", value)}
+              label={t("Type of Family")}
+              required
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <CustomSelect
+              options={demographicOptions.religion}
+              value={editedValues.demographics.religion}
+              onChange={(value) => handleDemographicsChange("religion", value)}
+              label={t("Religion")}
+              required
+            />
+          </Grid>
+        </Grid>
+      ) : (
+        <Grid container spacing={2}>
+          <Grid item xs={6}>
+            <Typography variant="subtitle2">{t("Marital Status")}</Typography>
+            <Typography variant="body2">{editedValues.demographics?.maritalStatus || "-"}</Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="subtitle2">{t("Education (in years)")}</Typography>
+            <Typography variant="body2">{editedValues.demographics?.educationYears || "-"}</Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="subtitle2">{t("Education Category")}</Typography>
+            <Typography variant="body2">{editedValues.demographics?.educationCategory || "-"}</Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="subtitle2">{t("Occupation")}</Typography>
+            <Typography variant="body2">{editedValues.demographics?.occupation || "-"}</Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="subtitle2">{t("Socio-economic status")}</Typography>
+            <Typography variant="body2">{editedValues.demographics?.socioEconomicStatus || "-"}</Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="subtitle2">{t("Type of Family")}</Typography>
+            <Typography variant="body2">{editedValues.demographics?.familyType || "-"}</Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="subtitle2">{t("Religion")}</Typography>
+            <Typography variant="body2">{editedValues.demographics?.religion || "-"}</Typography>
+          </Grid>
+        </Grid>
+      )}
+    </Box>
+  )
+
   // Create tabs configuration
   const tabs: TabConfig[] = [
     {
@@ -722,6 +1236,11 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
           </Grid>
         </Box>
       ),
+    },
+    {
+      id: "socioDemographics",
+      label: t("Socio Demographics"),
+      content: socioDemographicsContent,
     },
     {
       id: "system",
@@ -850,15 +1369,36 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
       editableFields: ["sourceUrl", "user"],
     }
   }
+
   useEffect(() => {
     if (participant) {
       const initializeData = async () => {
         try {
           // Fetch developer info
           let developer_info = null
-          const devRes = (await LAMP.Type.getAttachment(participant.id, "emersive.participant.developer_info")) as any
-          if (devRes.error === undefined && devRes.data) {
-            developer_info = devRes.data
+          try {
+            const devRes = (await LAMP.Type.getAttachment(participant.id, "emersive.participant.developer_info")) as any
+            if (devRes.error === undefined && devRes.data) {
+              developer_info = Array.isArray(devRes.data) ? devRes.data[0] : devRes.data
+            }
+          } catch (error) {
+            console.error("Error fetching developer info:", error)
+          }
+          console.log("developer_info:", developer_info)
+          let demographics_set = null
+          try {
+            const demographicsData = (await LAMP.Type.getAttachment(
+              participant.id,
+              "emersive.participant.demographics"
+            )) as any
+            if (demographicsData.error === undefined && demographicsData.data) {
+              demographics_set = Array.isArray(demographicsData.data) ? demographicsData.data[0] : demographicsData.data
+              if (demographics_set) {
+                setEditedValues((prev) => ({ ...prev, demographics: demographics_set }))
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching demographics data:", error)
           }
           setEditedValues({
             firstName: participant.firstName || "",
@@ -878,6 +1418,15 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
             language: participant.language || "en_US",
             group_name: participant.group_name || "",
             developer_info: developer_info || {},
+            demographics: demographics_set || {
+              maritalStatus: "",
+              educationYears: "",
+              educationCategory: "",
+              occupation: "",
+              socioEconomicStatus: "",
+              familyType: "",
+              religion: "",
+            },
           })
         } catch (error) {
           console.error("Error initializing participant data:", error)

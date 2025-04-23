@@ -51,7 +51,7 @@ export default function ExportActivity({ activities, ...props }) {
         } catch (e) {}
       } else if (!["lamp.survey"].includes(x.spec)) {
         try {
-          let res = (await LAMP.Type.getAttachment(x.id, "lamp.dashboard.activity_details")) as any
+          let res = (await LAMP.Type.getAttachment(x.id, "emersive.activity.details")) as any
           let activity = spliceCTActivity({
             raw: { ...x, tableData: undefined },
             tag: !!res.error ? undefined : res.data,

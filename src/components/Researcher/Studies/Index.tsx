@@ -62,7 +62,7 @@ import { ReactComponent as SuspendFilledIcon } from "../../../icons/NewIcons/sto
 import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
 import { ReactComponent as DeletedIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
 import { ReactComponent as SuspendedIcon } from "../../../icons/NewIcons/stop-circle-filled.svg"
-import { formatDate_alph } from "../../Utils"
+import { formatDate_alph, formatLastUse, getItemFrequency } from "../../Utils"
 import { ReactComponent as EditIcon } from "../../../icons/NewIcons/text-box-edit.svg"
 import { ReactComponent as EditFilledIcon } from "../../../icons/NewIcons/text-box-edit-filled.svg"
 import { ReactComponent as SRAddIcon } from "../../../icons/NewIcons/users-alt.svg"
@@ -115,6 +115,9 @@ export const studycardStyles = makeStyles((theme: Theme) =>
     titleDivider: {
       margin: `${theme.spacing(1)}px -${theme.spacing(2)}px ${theme.spacing(2)}px -${theme.spacing(2)}px`,
     },
+    gridDivider: {
+      margin: `${theme.spacing(1)}px ${theme.spacing(2)}px -${theme.spacing(2)}px`,
+    },
     cardTitle: {
       // fontWeight: 'bold',
       marginBottom: theme.spacing(1),
@@ -166,16 +169,29 @@ export const studycardStyles = makeStyles((theme: Theme) =>
     groupsSection: {
       marginTop: theme.spacing(2),
     },
+    // groupItem: {
+    //   padding: theme.spacing(1.5),
+    //   borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
+    //   "&:last-child": {
+    //     borderBottom: "none",
+    //   },
+    // },
     groupItem: {
-      padding: theme.spacing(1.5),
-      borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
+      padding: theme.spacing(2, 1.5),
+      borderBottom: "1px dashed rgba(0, 0, 0, 0.12)",
       "&:last-child": {
         borderBottom: "none",
       },
     },
+    // groupName: {
+    //   fontSize: "0.875rem",
+    //   fontWeight: 500,
+    // },
     groupName: {
-      fontSize: "0.875rem",
+      fontSize: "1rem",
       fontWeight: 500,
+      marginBottom: theme.spacing(1),
+      color: "rgba(0, 0, 0, 0.87)",
     },
     groupDesc: {
       fontSize: "0.75rem",
@@ -316,6 +332,17 @@ export const studycardStyles = makeStyles((theme: Theme) =>
       },
       "&::-webkit-scrollbar-thumb": {
         background: "#888",
+      },
+    },
+    bulletList: {
+      listStylePosition: "outside",
+      padding: theme.spacing(0, 0, 0, 3),
+      margin: theme.spacing(1, 0),
+      "& li": {
+        marginBottom: theme.spacing(0.5),
+        "& p": {
+          display: "inline",
+        },
       },
     },
     actionIcon: {
@@ -1100,7 +1127,7 @@ export default function StudiesList({
       ...(study.gname?.map((groupName, index) => ({
         name: `Group ${index + 1}: ${groupName}`,
         desc: index === 0 ? "Control Group" : "Study Group",
-        count: Math.floor(allParticipantsCount / (study.gname.length || 1)),
+        count: study.participants?.filter((participant) => participant.group_name?.includes(groupName)).length || 0,
       })) || []),
     ]
     return groups
@@ -1923,7 +1950,7 @@ export default function StudiesList({
                               </Grid>
                             ))}
                           </Grid>
-                          {selectedTab.id === study.id && <Divider className={studycardclasses.titleDivider} />}
+                          {selectedTab.id === study.id && <Divider className={studycardclasses.gridDivider} />}
                           {selectedTab.id === study.id && selectedTab.tab === "groups" && (
                             <Box className={studycardclasses.groupList}>
                               {getGroupDetails(study).map((group, index) => (
@@ -1940,8 +1967,7 @@ export default function StudiesList({
                               ))}
                             </Box>
                           )}
-
-                          {selectedTab.id === study.id && selectedTab.tab === "assessments" && (
+                          {/* {selectedTab.id === study.id && selectedTab.tab === "assessments" && (
                             <Box className={studycardclasses.groupList}>
                               {study.activities
                                 ?.filter((a) => a.category?.includes("assess"))
@@ -1949,33 +1975,131 @@ export default function StudiesList({
                                   <Box key={index} className={studycardclasses.groupItem}>
                                     <Typography className={studycardclasses.groupName}>{assessment.name}</Typography>
                                     <Typography className={studycardclasses.groupDesc}>{assessment.spec}</Typography>
+                                    <Typography className={studycardclasses.groupDesc}>Frequency : </Typography>
+                                    <Typography className={studycardclasses.groupDesc}>Last use :</Typography>
+                                    <Typography className={studycardclasses.groupDesc}>total times completed : </Typography>
                                   </Box>
                                 ))}
                             </Box>
+                          )} */}
+                          {selectedTab.id === study.id && selectedTab.tab === "assessments" && (
+                            <Box className={studycardclasses.groupList}>
+                              {study.assessments?.length > 0 ? (
+                                study.assessments
+                                  // ?.filter((a) => a.category?.includes("assess"))
+                                  .map((assessment, index) => (
+                                    <Box key={index} className={studycardclasses.groupItem}>
+                                      <Typography className={studycardclasses.groupName}>
+                                        {assessment.name} [ID-{assessment.id}]: {assessment.spec}
+                                      </Typography>
+                                      <ul className={studycardclasses.bulletList}>
+                                        <li>
+                                          <Typography className={studycardclasses.groupDesc}>
+                                            Frequency: {assessment.frequency || "Every Day"}
+                                          </Typography>
+                                        </li>
+                                        <li>
+                                          <Typography className={studycardclasses.groupDesc}>
+                                            Total times completed: {assessment.completedCount || 0}
+                                          </Typography>
+                                        </li>
+                                        <li>
+                                          <Typography className={studycardclasses.groupDesc}>
+                                            Last Use: {assessment.lastUse || "Never"}
+                                          </Typography>
+                                        </li>
+                                      </ul>
+                                    </Box>
+                                  ))
+                              ) : (
+                                <Typography>No Assessments present at this moment.</Typography>
+                              )}
+                            </Box>
                           )}
-
-                          {selectedTab.id === study.id && selectedTab.tab === "activities" && (
+                          {/* {selectedTab.id === study.id && selectedTab.tab === "activities" && (
                             <Box className={studycardclasses.groupList}>
                               {study.activities?.map((activity, index) => (
                                 <Box key={index} className={studycardclasses.groupItem}>
                                   <Typography className={studycardclasses.groupName}>{activity.name}</Typography>
                                   <Typography className={studycardclasses.groupDesc}>{activity.spec}</Typography>
+                                  <Typography className={studycardclasses.groupDesc}>Frequency : </Typography>
+                                  <Typography className={studycardclasses.groupDesc}>Last use :</Typography>
+                                  <Typography className={studycardclasses.groupDesc}>total times completed : </Typography>
                                 </Box>
                               ))}
                             </Box>
+                          )} */}
+                          {selectedTab.id === study.id && selectedTab.tab === "activities" && (
+                            <Box className={studycardclasses.groupList}>
+                              {study.activities?.length > 0 ? (
+                                study.activities?.map((activity, index) => (
+                                  <Box key={index} className={studycardclasses.groupItem}>
+                                    <Typography className={studycardclasses.groupName}>
+                                      {activity.name} [ID-{activity.id}]: {activity.spec}
+                                    </Typography>
+                                    <ul className={studycardclasses.bulletList}>
+                                      <li>
+                                        <Typography className={studycardclasses.groupDesc}>
+                                          Frequency: {getItemFrequency(activity, "activities")}
+                                        </Typography>
+                                      </li>
+                                      <li>
+                                        <Typography className={studycardclasses.groupDesc}>
+                                          Total times completed: {activity.completedCount || 0}
+                                        </Typography>
+                                      </li>
+                                      <li>
+                                        <Typography className={studycardclasses.groupDesc}>
+                                          Last Use: {formatLastUse(activity.lastUse) || "Never"}
+                                        </Typography>
+                                      </li>
+                                    </ul>
+                                  </Box>
+                                ))
+                              ) : (
+                                <Typography>No Activities present at this moment.</Typography>
+                              )}
+                            </Box>
                           )}
-
-                          {selectedTab.id === study.id && selectedTab.tab === "sensors" && (
+                          {/* {selectedTab.id === study.id && selectedTab.tab === "sensors" && (
                             <Box className={studycardclasses.groupList}>
                               {study.sensors?.map((sensor, index) => (
                                 <Box key={index} className={studycardclasses.groupItem}>
                                   <Typography className={studycardclasses.groupName}>{sensor.name}</Typography>
                                   <Typography className={studycardclasses.groupDesc}>{sensor.spec}</Typography>
+                                  <Typography className={studycardclasses.groupDesc}>Frequency : {sensor.settings?.frequency || "NA"}</Typography>
+                                  <Typography className={studycardclasses.groupDesc}>Last use :</Typography>
                                 </Box>
                               ))}
                             </Box>
+                          )} */}
+                          {selectedTab.id === study.id && selectedTab.tab === "sensors" && (
+                            <Box className={studycardclasses.groupList}>
+                              {study.sensors?.length > 0 ? (
+                                study.sensors?.map((sensor, index) => (
+                                  <Box key={index} className={studycardclasses.groupItem}>
+                                    <Typography className={studycardclasses.groupName}>
+                                      {sensor.name} [ID-{sensor.id}]: {sensor.spec}
+                                    </Typography>
+                                    <ul className={studycardclasses.bulletList}>
+                                      <li>
+                                        <Typography className={studycardclasses.groupDesc}>
+                                          Frequency: {getItemFrequency(sensor, "sensors")}
+                                        </Typography>
+                                      </li>
+                                      <li>
+                                        <Typography className={studycardclasses.groupDesc}>
+                                          Last Use: {formatLastUse(sensor.lastUse) || "Never"}
+                                        </Typography>
+                                      </li>
+                                    </ul>
+                                  </Box>
+                                ))
+                              ) : (
+                                <Typography>No Sensors present at this moment.</Typography>
+                              )}
+                            </Box>
                           )}
-
                           <Box className={studycardclasses.actionButtons}>
                             {/* <ViewIcon 
                       className={`${studycardclasses.actionIcon} ${
@@ -2136,7 +2260,7 @@ export default function StudiesList({
                     </Box> */}
                         {selectedStudyForDialog && (
                           <AddParticipantToStudy
-                            study={study}
+                            study={selectedStudyForDialog}
                             researcherId={researcherId}
                             onParticipantAdded={handleParticipantAdded}
                             title={props.ptitle}
@@ -2150,7 +2274,7 @@ export default function StudiesList({
                         )}
                         {selectedStudyForDialog && (
                           <AddSubResearcher
-                            study={study}
+                            study={selectedStudyForDialog}
                             upatedDataStudy={handleUpdatedStudyObject}
                             researcherId={researcherId}
                             handleShareUpdate={(studyid, updatedStudy) => handleUpdateStudy(studyid, updatedStudy)}

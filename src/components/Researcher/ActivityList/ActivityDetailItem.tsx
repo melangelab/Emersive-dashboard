@@ -44,6 +44,9 @@ import { Mic, MicOff, Stop } from "@material-ui/icons"
 import CloseIcon from "@material-ui/icons/Close"
 import { ImageUploader } from "../../ImageUploader"
 import { useStyles as ViewItemsStyles } from "../SensorsList/ViewItems"
+import { SchemaList } from "./ActivityMethods"
+import DynamicForm from "../../shared/DynamicForm"
+
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     tableContainer: {
@@ -256,7 +259,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     src: string
     mimeType: string
   } | null>(null)
-
+  const [schemaListObj, setSchemaListObj] = useState({})
   // Add state for developer info editing
   const [isDeveloperInfoEditing, setIsDeveloperInfoEditing] = useState(false)
 
@@ -679,7 +682,9 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
   //     });
   //   }
   // }, [activity]);
-
+  useEffect(() => {
+    setSchemaListObj(SchemaList())
+  }, [])
   useEffect(() => {
     const initializeData = async () => {
       if (!activity?.id) return
@@ -1225,10 +1230,32 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
 
   // Create tab content for settings
   const SettingsContent = () => (
-    <Box>
-      <Box className={classes.codeBlock}>
-        <pre>{JSON.stringify(activity?.settings || {}, null, 2)}</pre>
-      </Box>
+    <Box mt={3}>
+      {editedValues.spec && Object.keys(schemaListObj).includes(editedValues.spec) ? (
+        <>
+          <Typography variant="h6" gutterBottom>
+            {t("Activity Settings")}
+          </Typography>
+          <DynamicForm
+            schema={schemaListObj[editedValues.spec]}
+            initialData={{
+              settings: editedValues.settings,
+              spec: editedValues.spec,
+            }}
+            onChange={(x) => {
+              console.log("Settings updated:", x)
+              setEditedValues((prev) => ({
+                ...prev,
+                settings: x.settings || {},
+              }))
+            }}
+          />
+        </>
+      ) : (
+        <Box className={classes.codeBlock}>
+          <pre>{JSON.stringify(activity?.settings || {}, null, 2)}</pre>
+        </Box>
+      )}
     </Box>
   )
 

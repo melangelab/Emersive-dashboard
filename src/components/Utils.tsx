@@ -3,6 +3,64 @@ import React from "react"
 import { Box, Paper, useTheme, useMediaQuery } from "@material-ui/core"
 import { useLocation } from "react-router-dom"
 
+export const formatInterval = (seconds) => {
+  if (seconds < 60) {
+    return `${Math.round(seconds)} second${seconds !== 1 ? "s" : ""}`
+  } else if (seconds < 3600) {
+    const minutes = seconds / 60
+    return `${Math.round(minutes)} minute${minutes !== 1 ? "s" : ""}`
+  } else if (seconds < 86400) {
+    const hours = seconds / 3600
+    return `${Math.round(hours)} hour${hours !== 1 ? "s" : ""}`
+  } else {
+    const days = seconds / 86400
+    return `${Math.round(days)} day${days !== 1 ? "s" : ""}`
+  }
+}
+
+export const getItemFrequency = (item, itemType) => {
+  if (itemType === "sensors" && item.settings?.frequency) {
+    const hz = parseFloat(item.settings.frequency)
+    if (!isNaN(hz) && hz > 0) {
+      const seconds = 1 / hz
+      return `Every ${formatInterval(seconds)}`
+    }
+    // return `Every ${item.settings.frequency} Day`
+  } else if (itemType === "activities" || itemType === "assessments") {
+    if (item.schedule && item.schedule.length > 0) {
+      const schedule = item.schedule[0]
+      if (schedule.repeat_interval === "daily") {
+        return "Every Day"
+      } else if (schedule.repeat_interval === "weekly") {
+        return "Every 7 Days"
+      } else if (schedule.repeat_interval === "biweekly") {
+        return "Every 14 Days"
+      } else if (schedule.repeat_interval === "monthly") {
+        return "Every 30 Days"
+      } else if (schedule.repeat_interval && schedule.repeat_interval.includes("every")) {
+        const match = schedule.repeat_interval.match(/every\s+(\d+)\s+days?/i)
+        if (match && match[1]) {
+          return `Every ${match[1]} Day${match[1] !== "1" ? "s" : ""}`
+        }
+      }
+
+      return schedule.repeat_interval || "Every Day"
+    }
+  }
+
+  return "NA"
+}
+
+export const formatLastUse = (lastUse) => {
+  if (!lastUse) return null
+  try {
+    const date = new Date(lastUse)
+    return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+  } catch (e) {
+    return lastUse
+  }
+}
+
 export function useQuery() {
   return new URLSearchParams(useLocation().search)
 }

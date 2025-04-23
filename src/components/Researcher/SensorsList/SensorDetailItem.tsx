@@ -10,6 +10,8 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Grid,
+  TextField,
 } from "@material-ui/core"
 import { useTranslation } from "react-i18next"
 import { useSnackbar } from "notistack"
@@ -63,6 +65,21 @@ const useStyles = makeStyles((theme: Theme) =>
       display: "inline-block",
       fontSize: "0.875rem",
     },
+    tabContent: {
+      padding: theme.spacing(2),
+    },
+    settingsField: {
+      marginBottom: theme.spacing(2),
+    },
+    settingsContainer: {
+      marginTop: theme.spacing(1),
+    },
+    readOnlyField: {
+      backgroundColor: "#f5f5f5",
+    },
+    fieldLabel: {
+      fontWeight: 500,
+    },
     rootContainer: {
       height: "100%",
       width: "100%",
@@ -113,12 +130,14 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
     spec: string
     group: string
     developer_info: DeveloperInfo
+    settings: any
   }>({
     name: "",
     description: "",
     spec: "",
     group: "",
     developer_info: {},
+    settings: {},
   })
 
   // Initialize form data
@@ -129,6 +148,7 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
       spec: sensor?.spec || "",
       group: sensor?.group || "",
       developer_info: sensor?.developer_info || {},
+      settings: sensor?.settings || {},
     })
 
     // Load saved developer info from LAMP
@@ -139,7 +159,7 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
             // Update the developer_info in the state
             setEditedValues((prevValues) => ({
               ...prevValues,
-              developer_info: res.data,
+              developer_info: Array.isArray(res.data) ? res.data[0] : res.data,
             }))
             console.log("Loaded developer info:", res.data)
           }
@@ -147,6 +167,20 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
         .catch((err) => {
           console.error("Error loading developer info:", err)
           enqueueSnackbar(`Failed to load developer info: ${err.message}`, { variant: "error" })
+        })
+
+      LAMP.Type.getAttachment(sensor.id, "emersive.sensor.description")
+        .then((res: any) => {
+          if (res.error === undefined && res.data) {
+            setEditedValues((prev) => ({
+              ...prev,
+              description: Array.isArray(res.data) ? res.data[0] : res.data,
+            }))
+          }
+        })
+        .catch((err) => {
+          console.error("Error loading description:", err)
+          enqueueSnackbar(`Failed to load description: ${err.message}`, { variant: "error" })
         })
     }
   }, [sensor])
@@ -291,10 +325,11 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
         spec: editedValues.spec,
         description: editedValues.description,
         group: editedValues.group,
+        settings: editedValues.settings,
       } as any)
-
       // Save developer info as an attachment
       await LAMP.Type.setAttachment(sensor.id, "me", "emersive.sensor.developer_info", editedValues.developer_info)
+      await LAMP.Type.setAttachment(sensor.id, "me", "emersive.sensor.description", editedValues.description)
 
       await Service.updateMultipleKeys(
         "sensors",
@@ -307,10 +342,11 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
               description: editedValues.description,
               group: editedValues.group,
               developer_info: editedValues.developer_info,
+              settings: editedValues.settings,
             },
           ],
         },
-        ["name", "spec", "description", "group", "developer_info"],
+        ["name", "spec", "description", "group", "developer_info", "settings"],
         "id"
       )
 
@@ -323,6 +359,7 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
         name: editedValues.name.trim(),
         spec: editedValues.spec,
         description: editedValues.description,
+        settings: editedValues.settings,
         group: editedValues.group,
         developer_info: editedValues.developer_info,
       })
@@ -336,6 +373,30 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
     }
   }
 
+  const handleSettingsChange = (key, value) => {
+    setEditedValues((prev) => {
+      if (key === "data_collection_timeperiod") {
+        return {
+          ...prev,
+          settings: {
+            ...prev.settings,
+            data_collection_timeperiod: {
+              ...prev.settings.data_collection_timeperiod,
+              ...value,
+            },
+          },
+        }
+      }
+
+      return {
+        ...prev,
+        settings: {
+          ...prev.settings,
+          [key]: key === "frequency" ? Number(value) || 1 : value,
+        },
+      }
+    })
+  }
   // Define fields for the ViewItems component
   const fields: FieldConfig[] = [
     {
@@ -347,7 +408,7 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
     {
       id: "description",
       label: t("Description"),
-      value: sensor?.description || "",
+      value: editedValues?.description || "",
       editable: true,
       type: "multiline",
     },
@@ -378,13 +439,102 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
   ]
 
   // Create tab content for settings
-  const SettingsContent = () => (
-    <Box>
-      <Box className={classes.codeBlock}>
-        <pre>{JSON.stringify(sensor?.settings || {}, null, 2)}</pre>
+  const SettingsContent = () => {
+    const sensorSettings = editedValues.settings || {}
+    return (
+      <Box className={classes.tabContent}>
+        <Grid container spacing={2} className={classes.settingsContainer}>
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" className={classes.fieldLabel}>
+              {t("Sensor Settings")}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label={t("Data Collection Duration")}
+              value={sensorSettings.data_collection_duration || ""}
+              onChange={(e) => handleSettingsChange("data_collection_duration", e.target.value)}
+              variant="outlined"
+              className={classes.settingsField}
+              placeholder={isEditing ? t("Enter duration") : t("Not set")}
+              disabled={!isEditing}
+              InputProps={{
+                classes: !isEditing ? { root: classes.readOnlyField } : {},
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              type={isEditing ? "number" : "text"}
+              label={t("Frequency")}
+              value={sensorSettings.frequency || 1}
+              onChange={(e) => handleSettingsChange("frequency", e.target.value)}
+              variant="outlined"
+              className={classes.settingsField}
+              placeholder={t("Enter frequency")}
+              disabled={!isEditing}
+              InputProps={{
+                classes: !isEditing ? { root: classes.readOnlyField } : {},
+              }}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" className={classes.fieldLabel}>
+              {t("Data Collection Time Period")}
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="time"
+                  label={t("Start Time")}
+                  value={sensorSettings.data_collection_timeperiod?.start_time || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("data_collection_timeperiod", {
+                      ...(sensorSettings.data_collection_timeperiod || {}),
+                      start_time: e.target.value,
+                    })
+                  }
+                  variant="outlined"
+                  className={classes.settingsField}
+                  placeholder={t("Enter start time")}
+                  disabled={!isEditing}
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{
+                    classes: !isEditing ? { root: classes.readOnlyField } : {},
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  type="time"
+                  label={t("End Time")}
+                  value={sensorSettings.data_collection_timeperiod?.end_time || ""}
+                  onChange={(e) => {
+                    handleSettingsChange("data_collection_timeperiod", {
+                      ...(sensorSettings.data_collection_timeperiod || {}),
+                      end_time: e.target.value,
+                    })
+                  }}
+                  variant="outlined"
+                  className={classes.settingsField}
+                  placeholder={t("Enter end time")}
+                  disabled={!isEditing}
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{
+                    classes: !isEditing ? { root: classes.readOnlyField } : {},
+                  }}
+                />
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
       </Box>
-    </Box>
-  )
+    )
+  }
 
   // Create tab content for status in users
   const ParticipantsContent = () => (

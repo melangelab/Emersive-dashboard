@@ -57,6 +57,8 @@ import { ReactComponent as VisualiseFilledIcon } from "../../../icons/NewIcons/a
 import { ReactComponent as PasswordIcon } from "../../../icons/NewIcons/password-lock.svg"
 import { ReactComponent as PasswordFilledIcon } from "../../../icons/NewIcons/password-lock-filled.svg"
 import SetPassword from "../../SetPassword"
+import { formatLastUse, getItemFrequency } from "../../Utils"
+import { fetchResult } from "../SaveResearcherData"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -175,6 +177,111 @@ export default function ParticipantListItem({
       },
     ]
   }
+
+  const StudyTabContent = ({ selectedTab, study, participant, participantcardclasses }) => {
+    const [items, setItems] = useState([])
+    const [participantData, setParticipantData] = useState(null)
+    const [activityEvents, setActivityEvents] = useState([])
+    const [sensorEvents, setSensorEvents] = useState([])
+    useEffect(() => {
+      const fetchStats = async () => {
+        try {
+          const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+          const result = await fetchResult(authString, study.id, "participant/mode/5", "study")
+          const data = result.participants?.find((p) => p.id === participant.id)
+          setParticipantData(data)
+
+          let newItems = []
+          if (selectedTab.tab === "assessments") {
+            newItems = study.activities?.filter((a) => a.category?.includes("assess")) || []
+          } else if (selectedTab.tab === "activities") {
+            newItems = study.activities || []
+          } else if (selectedTab.tab === "sensors") {
+            newItems = study.sensors || []
+          }
+          setItems(newItems)
+        } catch (err) {
+          console.error("Error fetching participant data:", err)
+          setItems([])
+          setParticipantData(null)
+        }
+        try {
+          const Aresult = await LAMP.ActivityEvent.allByParticipant(participant.id)
+          const Sresult = await LAMP.SensorEvent.allByParticipant(participant.id)
+          setActivityEvents(Aresult)
+          setSensorEvents(Sresult)
+          console.log(Aresult, "Aresult")
+          console.log(Sresult, "Sresult")
+        } catch (err) {
+          console.error("Error fetching event data:", err)
+          setActivityEvents([])
+          setSensorEvents([])
+        }
+      }
+
+      fetchStats()
+    }, [selectedTab, study, participant])
+
+    const getLastEvent = (item) => {
+      if (!participantData) return null
+
+      if (selectedTab.tab === "assessments" || selectedTab.tab === "activities") {
+        return participantData.last_activity_events?.find((e) => e.activity_id === item.id)?.last_event || null
+      } else if (selectedTab.tab === "sensors") {
+        return participantData.last_sensor_events?.find((s) => s.sensor_spec === item.spec)?.last_event || null
+      }
+      return null
+    }
+
+    const formatLastUse = (timestamp) => {
+      if (!timestamp) return "Never"
+      return new Date(timestamp).toLocaleString()
+    }
+    const getTotalCompleted = (item) => {
+      if (selectedTab.tab === "assessments" || selectedTab.tab === "activities") {
+        return activityEvents.filter((event) => event.activity === item.id).length
+      } else if (selectedTab.tab === "sensors") {
+        return sensorEvents.filter((event) => event.sensor === item.spec).length
+      }
+      return 0
+    }
+
+    return (
+      <Box className={participantcardclasses.groupList}>
+        {items.length === 0 ? (
+          <Typography className={participantcardclasses.groupName}>
+            {`No ${selectedTab.tab} present at this moment.`}
+          </Typography>
+        ) : (
+          items.map((item, index) => (
+            <Box key={index} className={participantcardclasses.groupItem}>
+              <Typography className={participantcardclasses.groupName}>
+                {item.name} [ID-{item.id}]: {item.spec}
+              </Typography>
+              <ul className={participantcardclasses.bulletList}>
+                <li>
+                  <Typography className={participantcardclasses.groupDesc}>
+                    Frequency: {getItemFrequency(item, selectedTab.tab)}
+                  </Typography>
+                </li>
+                <li>
+                  <Typography className={participantcardclasses.groupDesc}>
+                    Total times completed: {getTotalCompleted(item) || 0}
+                  </Typography>
+                </li>
+                <li>
+                  <Typography className={participantcardclasses.groupDesc}>
+                    Last Use: {formatLastUse(getLastEvent(item)?.timestamp)}
+                  </Typography>
+                </li>
+              </ul>
+            </Box>
+          ))
+        )}
+      </Box>
+    )
+  }
+
   const renderStudyTabContent = (selectedTab, study, participantcardclasses, studySubvs?) => {
     let items = []
 
@@ -191,7 +298,18 @@ export default function ParticipantListItem({
       default:
         return null
     }
-    console.log(items, "items")
+    console.log(items, "items", studySubvs)
+    const getLastEvent = (item) => {
+      if (!studySubvs) return null
+
+      if (selectedTab.tab === "assessments" || selectedTab.tab === "activities") {
+        return studySubvs.last_activity_events?.find((e) => e.activity_id === item.id)?.last_event
+      } else if (selectedTab.tab === "sensors") {
+        return studySubvs.last_sensor_events?.find((s) => s.sensor_spec === item.spec)?.last_event
+      }
+      return null
+    }
+
     return (
       <Box className={participantcardclasses.groupList}>
         {items.length === 0 ? (
@@ -201,8 +319,26 @@ export default function ParticipantListItem({
         ) : (
           items.map((item, index) => (
             <Box key={index} className={participantcardclasses.groupItem}>
-              <Typography className={participantcardclasses.groupName}>{item.name}</Typography>
-              <Typography className={participantcardclasses.groupDesc}>{item.spec}</Typography>
+              <Typography className={participantcardclasses.groupName}>
+                {item.name} [ID-{item.id}]: {item.spec}
+              </Typography>
+              <ul className={participantcardclasses.bulletList}>
+                <li>
+                  <Typography className={participantcardclasses.groupDesc}>
+                    Frequency: {getItemFrequency(item, selectedTab.tab)}
+                  </Typography>
+                </li>
+                <li>
+                  <Typography className={participantcardclasses.groupDesc}>
+                    Total times completed: {item.completedCount || 0}
+                  </Typography>
+                </li>
+                <li>
+                  <Typography className={participantcardclasses.groupDesc}>
+                    Last Use: {formatLastUse(getLastEvent(item)?.timestamp) || "Never"}
+                  </Typography>
+                </li>
+              </ul>
             </Box>
           ))
         )}
@@ -338,9 +474,17 @@ export default function ParticipantListItem({
             </Grid>
           ))}
         </Grid>
-        {selectedTab.id === participant.id && <Divider className={participantcardclasses.titleDivider} />}
-        {selectedTab.id === participant.id &&
-          renderStudyTabContent(selectedTab, pStudy, participantcardclasses, participant)}
+        {selectedTab.id === participant.id && <Divider className={participantcardclasses.gridDivider} />}
+        {/* {selectedTab.id === participant.id &&
+          renderStudyTabContent(selectedTab, pStudy, participantcardclasses, participant)} */}
+        {selectedTab.id === participant.id && (
+          <StudyTabContent
+            selectedTab={selectedTab}
+            study={pStudy}
+            participant={participant}
+            participantcardclasses={participantcardclasses}
+          />
+        )}
         <Divider className={participantcardclasses.titleDivider} />
         <Typography className={participantcardclasses.cardSubtitle}>
           {`RESEARCHER - `}
