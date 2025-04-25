@@ -91,7 +91,16 @@ export default function AddParticipantToStudy({
   }
 
   const createParticipant = async () => {
-    let idData = ((await LAMP.Participant.create(study.id, { study_code: "001" } as any)) as any).data
+    let idData = ((await LAMP.Participant.create(study.id, {
+      study_id: study.id,
+      study_name: study.name,
+      group_name: selectedGroup,
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      mobile: mobile,
+      researcherNote: notes,
+    } as any)) as any).data
     let id = typeof idData === "object" ? idData.id : idData
     let newParticipant: any = {}
     if (typeof idData === "object") {
@@ -105,6 +114,11 @@ export default function AddParticipantToStudy({
       newParticipant.study_id = study.id
       newParticipant.study_name = study.name
       newParticipant.group_name = selectedGroup
+      newParticipant.firstName = firstName
+      newParticipant.lastName = lastName
+      newParticipant.email = email
+      newParticipant.mobile = mobile
+      newParticipant.researcherNote = notes
       Service.addData("participants", [newParticipant])
       Service.updateCount("studies", study.id, "participant_count")
       Service.getData("studies", study.id).then((studiesObject) => {

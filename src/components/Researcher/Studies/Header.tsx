@@ -849,7 +849,7 @@ export default function Header({
           </Box>
           <Box className={headerclasses.actionGroup}>
             <SearchBox searchData={searchData} />
-            <RefreshIcon className={classes.actionIcon} onClick={() => window.location.reload()} />
+            <RefreshIcon className={classes.actionIcon} onClick={() => props.refreshStudies?.()} />
             {props.viewMode === "grid" ? (
               <GridViewFilledIcon
                 className={`${classes.actionIcon} ${props.viewMode === "grid" ? "active" : ""}`}

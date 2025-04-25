@@ -76,6 +76,7 @@ export const useLayoutStyles = makeStyles((theme: Theme) =>
       position: "absolute",
       maxWidth: 120,
       border: 6,
+      top: 0,
       borderRadius: 20,
       marginLeft: theme.spacing(2),
       "& span": {
@@ -136,7 +137,7 @@ export const useLayoutStyles = makeStyles((theme: Theme) =>
     fixedContentContainer: {
       position: "fixed",
       top: 0,
-      left: 0,
+      left: 10,
       width: "100vw",
       zIndex: 100,
       display: "flex",
