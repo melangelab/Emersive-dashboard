@@ -195,7 +195,9 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
     const lang = matched_codes.length > 0 ? matched_codes[0] : "en-US"
     return i18n.language ? i18n.language : userLanguages.includes(lang) ? lang : "en-US"
   }
+
   const [selectedLanguage, setSelectedLanguage]: any = useState(getSelectedLanguage())
+
   useEffect(() => {
     const cachedOptions = localStorage.getItem("cachedOptions")
     let options: SuggestedUrlOption[]
@@ -214,6 +216,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
       }
     }
   }, [])
+
   useEffect(() => {
     i18n.changeLanguage(selectedLanguage)
   }, [selectedLanguage])

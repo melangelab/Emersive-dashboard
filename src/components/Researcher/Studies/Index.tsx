@@ -973,7 +973,11 @@ export default function StudiesList({
     }
     handleUpdateStudy(studyid, updatedStudy)
   }
-
+  const refreshingStudies = async () => {
+    setLoading(true)
+    await getAllStudies()
+    setLoading(false)
+  }
   const handleFormChange = (study, field, value) => {
     const updatedForm = {
       ...formState,
@@ -1750,6 +1754,8 @@ export default function StudiesList({
             onclose={() => {
               setOpenAPTS(false)
               setActiveButton({ id: null, action: null })
+              refreshingStudies()
+              getAllStudies()
             }}
           />
         )}
@@ -1874,7 +1880,7 @@ export default function StudiesList({
             resins={props.resins}
             VisibleColumns={columns}
             setVisibleColumns={setColumns}
-            refreshStudies={getAllStudies}
+            refreshStudies={refreshingStudies}
           />
         )}
         <Box
@@ -2267,6 +2273,8 @@ export default function StudiesList({
                             onclose={() => {
                               setOpenAPTS(false)
                               setActiveButton({ id: null, action: null })
+                              refreshingStudies()
+                              getAllStudies()
                             }}
                           />
                         )}
