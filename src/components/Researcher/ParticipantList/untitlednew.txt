@@ -1,127 +1,505 @@
-const AsyncStatsContent: React.FC<{
-  selectedTab: any
-  study: any
-  participant: any
-  classes: any
-}> = ({ selectedTab, study, participant, classes }) => {
-  const [items, setItems] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
-  const [startDate, setStartDate] = useState<Date | null>(
-    new Date(new Date().setDate(new Date().getDate() - 7)) // Default to 7 days ago
-  );
-  const [endDate, setEndDate] = useState<Date | null>(new Date()); // Default to today
-  const [dateRangeEnabled, setDateRangeEnabled] = useState<boolean>(false);
+AddButton.tsx 
+```
+export default function AddButton({ researcherId, studies, setParticipants, setData, mode, ...props }) {
+  const [addUser, setAddUser] = useState(false)
+  const [addGroupUser, setAddGroupUser] = useState(false)
+  const { t } = useTranslation()
+  const classes = useStyles()
+  const sliderclasses = slideStyles()
+  const [open, setOpen] = useState(false)
+  const [popover, setPopover] = useState(null)
+  const [addParticipantStudy, setAddParticipantStudy] = useState(false)
+  const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
+  const handleNewStudyData = (data) => {
+    setData()
+  }
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true)
-      try {
-        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
-        let newItems: any[] = []
-        
-        if (dateRangeEnabled) {
-          // Use new endpoint for date range queries
-          if (selectedTab.tab === "activities") {
-            const endpoint = `participant/${participant.id}/_lookup/mode/1?from_date=${startDate?.getTime()}&to_date=${endDate?.getTime()}`;
-            const result = await fetchResult(authString, endpoint, "participant");
-            
-            // Process activity events
-            newItems = (study.activities || []).map((activity) => {
-              const activityData = result.activity_events?.find(a => a.activity_id === activity.id);
-              return {
-                ...activity,
-                events: activityData?.events || []
-              };
-            });
-          } else if (selectedTab.tab === "sensors") {
-            const endpoint = `participant/${participant.id}/_lookup/mode/2?from_date=${startDate?.getTime()}&to_date=${endDate?.getTime()}`;
-            const result = await fetchResult(authString, endpoint, "participant");
-            
-            // Process sensor events
-            newItems = (study.sensors || []).map((sensor) => {
-              const sensorData = result.sensor_events?.find(s => s.sensor_spec === sensor.spec);
-              return {
-                ...sensor,
-                events: sensorData?.events || []
-              };
-            });
-          } else if (selectedTab.tab === "assessments") {
-            newItems = study.activities?.filter((a) => a.category?.includes("assess")) || []
-          }
+  const handleClosePopUp = (data) => {
+    if (data === 1) {
+      setAddParticipantStudy(false)
+    } else if (data === 2) {
+      setAddUser(false)
+    } else {
+      setAddGroupUser(false)
+    }
+  }
+
+  return (
+    <Box>
+      <AddIcon
+        className={classes.addButton}
+        onClick={(event) =>
+          //  setPopover(event.currentTarget)
+          setOpen(true)
+        }
+      />
+      <Backdrop open={open} className={sliderclasses.backdrop} onClick={() => setOpen(false)}>
+        <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+          <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
+            <Box className={sliderclasses.icon}>
+              <UserIcon />
+            </Box>
+            <Typography variant="h6">ADD NEW PARTICIPANTS</Typography>
+            <Divider className={sliderclasses.divider} />
+            <Typography variant="body2" paragraph>
+              Participants are <strong>researcher</strong> & <strong>study</strong> specific. Admins should add
+              participants only in special circumstances, if researchers are unable to do so due to technical reasons.
+              (Account locked, Password lost etc.)
+            </Typography>
+            <Divider className={sliderclasses.divider} />
+            <Button
+              className={sliderclasses.button}
+              onClick={() => {
+                setOpen(false)
+                setAddUser(true)
+              }}
+            >
+              Next
+            </Button>
+          </Box>
+        </Slide>
+      </Backdrop>
+      <Popover
+        classes={{ root: classes.customPopover, paper: classes.customPaper }}
+        open={!!popover ? true : false}
+        //anchorPosition={!!popover && popover.getBoundingClientRect()}
+        anchorPosition={popover ? popover.getBoundingClientRect() : null}
+        anchorReference="anchorPosition"
+        onClose={() => setPopover(null)}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+      >
+        <React.Fragment>
+          {mode === "researcher" && (
+            <MenuItem
+              onClick={() => {
+                setPopover(null)
+                setAddUser(true)
+              }}
+            >
+              <Typography variant="h6">{`${t("Add a user")}`}</Typography>
+              <Typography variant="body2">{`${t("Create a new entry in this group.")}`}</Typography>
+            </MenuItem>
+          )}
+      </Popover>
+      <AddUser
+        researcherId={researcherId}
+        studies={studies}
+        open={addUser}
+        onClose={() => setAddUser(false)}
+        handleNewStudy={handleNewStudyData}
+        participants={props.participants}
+        setParticipants={setParticipants}
+        closePopUp={handleClosePopUp}
+        title={props.title}
+        resemail={props.resemail}
+      />
+    </Box>
+  )
+}
+```
+
+AddUser.tsx : 
+```
+export default function AddUser({
+  researcherId,
+  studies,
+  participants,
+  setParticipants,
+  handleNewStudy,
+  closePopUp,
+  open,
+  resemail,
+  ...props
+}: {
+  researcherId: any
+  studies: any
+  participants: any
+  setParticipants?: Function
+  handleNewStudy: Function
+  closePopUp: Function
+  open: any
+  resemail: any
+} & DialogProps) {
+  const classes = useStyles()
+  const sliderclasses = slideStyles()
+  const [selectedStudy, setSelectedStudy] = useState("")
+  const [selectedGroup, setSelectedGroup] = useState("")
+  const [showErrorMsg, setShowErrorMsg] = useState(true)
+  const [studyBtnClicked, setStudyBtnClicked] = useState(false)
+  const { enqueueSnackbar } = useSnackbar()
+  const { t } = useTranslation()
+  const [newId, setNewId] = useState(null)
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [mobile, setMobile] = useState("")
+  const [notes, setNotes] = useState("")
+  const [confirmationOpen, setConfirmationOpen] = useState(false)
+  const [isCreatingParticipant, setIsCreatingParticipant] = useState(false)
+  const validate = (element) => {
+    return !(typeof element === "undefined" || (typeof element !== "undefined" && element?.trim() === ""))
+  }
+  const handleChangeStudy = (event) => {
+    setShowErrorMsg(false)
+    setSelectedStudy(event.target.value)
+    setSelectedGroup("")
+  }
+  const handleChangeGroup = (event) => {
+    setSelectedGroup(event.target.value)
+  }
+
+  const resetForm = () => {
+    setSelectedStudy("")
+    setSelectedGroup("")
+    setFirstName("")
+    setLastName("")
+    setEmail("")
+    setMobile("")
+    setNotes("")
+  }
+
+  let createStudy = async () => {
+    if (selectedStudy === "") {
+      setShowErrorMsg(true)
+      return false
+    } else {
+      setIsCreatingParticipant(true)
+      setStudyBtnClicked(true)
+      let newCount = 1
+      let ids = []
+      for (let i = 0; i < newCount; i++) {
+        let idData = ((await LAMP.Participant.create(selectedStudy, { study_code: "001", email: email } as any)) as any)
+          .data
+        let id = typeof idData === "object" ? idData.id : idData
+        let newParticipant: any = {}
+        if (typeof idData === "object") {
+          newParticipant = idData
         } else {
-          // Use existing endpoint for last events
-          const result = await fetchResult(authString, study.id, "participant/mode/5", "study");
-          const participantData = result.participants?.find((p) => p.id === participant.id);
-          
-          if (selectedTab.tab === "assessments") {
-            newItems = study.activities?.filter((a) => a.category?.includes("assess")) || []
-          } else if (selectedTab.tab === "activities") {
-            newItems = (study.activities || []).map((activity) => {
-              const activityEvent = participantData?.last_activity_events?.find((e) => e.activity_id === activity.id)
-              return {
-                ...activity,
-                lastEvent: activityEvent?.last_event
-                  ? {
-                    ...activityEvent.last_event,
-                    timestamp: new Date(activityEvent.last_event.timestamp).toLocaleString(),
-                  }
-                  : null,
-              }
-            })
-          } else if (selectedTab.tab === "sensors") {
-            newItems = (study.sensors || []).map((sensor) => {
-              const sensorEvent = participantData?.last_sensor_events?.find((s) => s.sensor_spec === sensor.spec)
-              return {
-                ...sensor,
-                lastEvent: sensorEvent?.last_event
-                  ? {
-                    ...sensorEvent.last_event,
-                    timestamp: new Date(sensorEvent.last_event.timestamp).toLocaleString(),
-                  }
-                  : null,
-              }
-            })
-          }
+          newParticipant["id"] = idData
         }
 
-        setItems(newItems)
-      } catch (err) {
-        console.error("Failed to fetch stats:", err)
-        setItems([])
-      } finally {
-        setLoading(false)
+        const duplicates = participants.filter((x) => `${x.emailAddress}` === email)
+
+        if (duplicates.length > 0) {
+          enqueueSnackbar(t("Participant with same email id already exists."), { variant: "error" })
+          resetForm()
+          return
+        }
+
+        const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        const params = new URLSearchParams({
+          token: idData.token,
+          email: email,
+          userType: "participant",
+        }).toString()
+
+        const response: any = await fetch(`${baseURL}/send-password-email?${params}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic " + authString,
+          },
+        })
+
+        // if (!!((await LAMP.Credential.create(id, `${id}@lamp.com`, id, "Temporary Login")) as any).error) {
+        //   enqueueSnackbar(`${t("Could not create credential for id.", { id: id })}`, { variant: "error" })
+        // }
+
+        if (response.error) {
+          enqueueSnackbar(`${t("Could not create credential for id.", { id: id })}`, { variant: "error" })
+        } else {
+          newParticipant.study_id = selectedStudy
+          newParticipant.study_name = studies.filter((study) => study.id === selectedStudy)[0]?.name
+          newParticipant.group_name = selectedGroup
+          newParticipant.firstName = firstName
+          newParticipant.lastName = lastName
+          newParticipant.email = email
+          newParticipant.mobile = mobile
+          newParticipant.researcherNote = notes
+          Service.addData("participants", [newParticipant])
+          Service.updateCount("studies", selectedStudy, "participant_count")
+          Service.getData("studies", selectedStudy).then((studiesObject) => {
+            handleNewStudy(studiesObject)
+          })
+          console.log("LAMP.Participant.allByStudy", await LAMP.Participant.allByStudy(selectedStudy))
+          setNewId(newParticipant.id)
+          // const updParticipant : Participant = {
+          //   ...newParticipant,
+          //   group_name: selectedGroup,
+          // }
+          console.log("here", newParticipant, idData)
+          Service.getDataByKey("participants", [newParticipant.id], "id").then((data) => {
+            console.log("updated participants", data)
+          })
+          await LAMP.Type.setAttachment(id, "me", "lamp.group_name", selectedGroup)
+          await LAMP.Participant.update(newParticipant.id, newParticipant).then((res) =>
+            console.log("updaqted partiicpant", res)
+          )
+          const currentStudy = studies.find((study) => study.id === selectedStudy)
+          const timestamps = currentStudy.timestamps || {}
+          const updatedTimestamps = {
+            ...timestamps,
+            lastEnrollmentAt: new Date(),
+            firstEnrollmentAt: timestamps.firstEnrollmentAt || new Date(), // Set only if not already set
+          }
+          const updatedStudy = {
+            ...currentStudy,
+            timestamps: updatedTimestamps,
+          }
+          const fieldsToUpdate = ["timestamps"]
+          LAMP.Study.update(selectedStudy, updatedStudy).then((res) => {
+            Service.update(
+              "studies",
+              {
+                studies: [
+                  {
+                    id: selectedStudy,
+                    ...updatedStudy,
+                  },
+                ],
+              },
+              "name",
+              "id"
+            )
+            Service.updateMultipleKeys(
+              "studies",
+              {
+                studies: [
+                  {
+                    id: selectedStudy,
+                    ...updatedStudy,
+                  },
+                ],
+              },
+              fieldsToUpdate,
+              "id"
+            )
+          })
+          await Service.updateMultipleKeys(
+            "studies",
+            {
+              studies: [
+                {
+                  id: selectedStudy,
+                  timestamps: updatedTimestamps,
+                },
+              ],
+            },
+            ["timestamps"],
+            "id"
+          )
+        }
+        // const _owner = await LAMP.Type.parent(id)
+        // await LAMP.Researcher.update(_owner.data.Researcher, {"timestamps.lastActivityAt": new Date()} as any).then(()=>console.log("successfully updated for participant", id))
+        ids = [...ids, id]
       }
+      setParticipants()
     }
+    setSelectedStudy("")
+    closePopUp(2)
+    setIsCreatingParticipant(false)
+    // props.onClose as any
+  }
 
-    fetchStats()
-  }, [selectedTab, study, participant, dateRangeEnabled, startDate, endDate])
-
-  // Helper function to fetch the data (updated to support participant endpoints)
-  const fetchResult = async (authString, id, endpoint, type = "study") => {
-    try {
-      const headers = {
-        Authorization: `Basic ${btoa(authString)}`,
-        "Content-Type": "application/json",
-      };
-      
-      let url;
-      if (type === "study") {
-        url = `${process.env.REACT_APP_API_URL}/researcher/study/${id}/_lookup/${endpoint}`;
-      } else if (type === "participant") {
-        url = `${process.env.REACT_APP_API_URL}/researcher/${endpoint}`;
-      }
-      
-      const response = await fetch(url, { headers });
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      throw error;
+  const createNewStudy = () => {
+    let lampAuthId = LAMP.Auth._auth.id
+    if (
+      LAMP.Auth._type === "researcher" &&
+      (lampAuthId === "researcher@demo.lamp.digital" || lampAuthId === "clinician@demo.lamp.digital")
+    ) {
+      createDemoStudy()
+    } else {
+      createStudy()
     }
-  };
+  }
 
-  // ... rest of the component remains the same ...
+  const createDemoStudy = () => {
+    if (selectedStudy === "") {
+      setShowErrorMsg(true)
+      return false
+    } else {
+      let studyName = studies.filter((study) => study.id === selectedStudy)[0]?.name
+      setStudyBtnClicked(true)
+      let newParticipant: any = {}
+      newParticipant.id = "U" + crypto.getRandomValues(new Uint32Array(1))[0].toString().substring(0, 8)
+      newParticipant.study_id = selectedStudy
+      newParticipant.study_name = studyName
+      Service.addData("participants", [newParticipant])
+      Service.updateCount("studies", selectedStudy, "participant_count")
+      Service.getData("studies", selectedStudy).then((studiesObject) => {
+        handleNewStudy(studiesObject)
+      })
+      setNewId(newParticipant.id)
+      closePopUp(2)
+      setSelectedStudy("")
+      setParticipants()
+    }
+    setSelectedStudy("")
+    closePopUp(2)
+    // props.onClose as any
+  }
+
+  const handleEnter = () => {
+    setSelectedStudy("")
+    setSelectedGroup("")
+    setShowErrorMsg(true)
+  }
+
+  const handleAddParticipant = async () => {
+    createNewStudy()
+    enqueueSnackbar("Participant added successfully!", { variant: "success" })
+    setConfirmationOpen(true)
+  }
+
+  return (
+    <React.Fragment>
+      <Backdrop className={sliderclasses.backdrop} open={open} onClick={!isCreatingParticipant ? ()=>{resetForm(); (props.onClose as any)()} : undefined} />
+      <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+        <Box className={sliderclasses.slidePanel}>
+          <Box className={sliderclasses.icon}>
+            <UserIcon />
+          </Box>
+          <Typography variant="h6" className={sliderclasses.headings}>
+            ADD NEW PARTICIPANTS
+          </Typography>
+          <Divider className={sliderclasses.divider} />
+          <TextField
+            label="Researcher :"
+            fullWidth
+            disabled
+            margin="normal"
+            value={props.title || researcherId}
+            onChange={(e) => {}}
+            className={sliderclasses.field}
+          />
+          <TextField
+            label="Select Study"
+            fullWidth
+            margin="normal"
+            select
+            value={selectedStudy}
+            onChange={(e) => setSelectedStudy(e.target.value)}
+            className={sliderclasses.field}
+          >
+            {studies.map((study) => (
+              <MenuItem key={study.id} value={study.id}>
+                {study.name}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            label="Select Group"
+            fullWidth
+            margin="normal"
+            select
+            value={selectedGroup}
+            onChange={(e) => setSelectedGroup(e.target.value)}
+            className={sliderclasses.field}
+          >
+            {((selectedStudy && studies.find((study) => study.id === selectedStudy)?.gname) || []).map(
+              (groupName, index) => (
+                <MenuItem key={index} value={groupName}>
+                  {groupName}
+                </MenuItem>
+              )
+            )}
+          </TextField>
+          <Typography variant="h6" className={sliderclasses.headings}>
+            PARTICIPANT DETAILS
+          </Typography>
+          <Divider className={sliderclasses.divider} />
+          <TextField
+            label="First Name"
+            fullWidth
+            margin="normal"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className={sliderclasses.field}
+          />
+          <TextField
+            label="Last Name"
+            fullWidth
+            margin="normal"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            className={sliderclasses.field}
+          />
+          <TextField
+            label="Email"
+            fullWidth
+            margin="normal"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={sliderclasses.field}
+          />
+          <TextField
+            label="Mobile Number"
+            fullWidth
+            margin="normal"
+            value={mobile}
+            onChange={(e) => setMobile(e.target.value)}
+            className={sliderclasses.field}
+          />
+          <TextField
+            label="Notes"
+            fullWidth
+            margin="normal"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className={sliderclasses.field}
+          />
+          <Button className={sliderclasses.button} onClick={handleAddParticipant}>
+            Add
+          </Button>
+        </Box>
+      </Slide>
+      <Slide direction="left" in={confirmationOpen} mountOnEnter unmountOnExit>
+        <Box className={sliderclasses.slidePanel}>
+          <Box className={sliderclasses.icon}>
+            <UserIcon />
+          </Box>
+          <Typography variant="h6">ADD NEW PARTICIPANTS</Typography>
+          <Divider />
+          <Typography variant="body2" paragraph>
+            New participant -{" "}
+            <strong>
+              {firstName} {lastName}
+            </strong>{" "}
+            - has been successfully added to the study{" "}
+            <strong>
+              {selectedStudy}, Group {selectedGroup}
+            </strong>
+            . An account creation link has been successfully sent to the email - <a href={`mailto:${email}`}>{email}</a>
+            .
+          </Typography>
+          <Typography variant="body2" paragraph>
+            A copy has also been successfully sent to the researcher{" "}
+            <strong>{props.title || "Unknown Researcher"}</strong> at <a href={`mailto:${resemail}`}>{resemail}</a>.
+          </Typography>
+          <Divider />
+          <Button
+            className={sliderclasses.button}
+            onClick={!isCreatingParticipant ? () =>{
+              setConfirmationOpen(false)
+              resetForm()
+              props.onClose
+            }: undefined}
+            disabled={isCreatingParticipant}
+          >
+            Exit
+          </Button>
+        </Box>
+      </Slide>
+      {!!newId && <NewPatientDetail id={newId} />}
+    </React.Fragment>
+  )
 }
+```

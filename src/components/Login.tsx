@@ -858,7 +858,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
 
   let handleLogin = (event: any, mode?: string): void => {
     event.preventDefault()
-    console.log("clicked login", event, mode)
+    console.log("clicked login", event, mode, state)
     if (!!state.serverAddress && !options.find((item) => item?.label == state.serverAddress)) {
       options.push({ label: state.serverAddress })
       localStorage.setItem("cachedOptions", JSON.stringify(options))

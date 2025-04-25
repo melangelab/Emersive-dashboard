@@ -41,7 +41,6 @@ import { slideStyles } from "../ParticipantList/AddButton"
 import { useSnackbar } from "notistack"
 import LAMP from "lamp-core"
 import CopySensor from "./CopySensor"
-import { SettingsInfo } from "./Header"
 
 interface CardStyles {
   activitycardclasses: any
@@ -250,7 +249,6 @@ export default function SensorListItem({
   setSensors,
   researcherId,
   formatDate,
-  settingsInfo,
   onViewSensor,
   ...props
 }: {
@@ -261,7 +259,7 @@ export default function SensorListItem({
   setSensors?: Function
   researcherId: string
   formatDate: Function
-  settingsInfo?: SettingsInfo
+
   onViewSensor?: Function
 }) {
   const { t } = useTranslation()
@@ -453,7 +451,6 @@ export default function SensorListItem({
         open={copySensorOpen}
         onclose={() => handleCloseCopyDialog()}
         studyId={sensor.study_id ?? null}
-        settingsInfo={settingsInfo}
         allSensors={allSensors}
       />
 

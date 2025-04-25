@@ -378,6 +378,7 @@ export default function ParticipantListItem({
     }
     setConfirmationDialog(false)
     setActiveButton({ id: null, action: null })
+    props.refreshParticipants?.()
   }
 
   const handleCloseDialog = () => {
@@ -685,11 +686,17 @@ export default function ParticipantListItem({
             setActiveButton({ id: null, action: null })
           }}
           confirmAction={handleDelete}
-          confirmationMsg={t("Are you sure you want to delete this Participant?")}
+          confirmationMsg={t(
+            `Are you sure you want to delete "${
+              participant.lastName || participant.firstName
+                ? participant.firstName + " " + participant.lastName
+                : "this Participant"
+            }"?`
+          )}
         />
       </Box>
       <Dialog open={showPasswordDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
-        <DialogTitle id="form-dialog-title">Reset Researcher Password</DialogTitle>
+        <DialogTitle id="form-dialog-title">Reset Participant Password</DialogTitle>
         <DialogContent>
           {passwordError && (
             <Typography color="error" variant="body2" gutterBottom>

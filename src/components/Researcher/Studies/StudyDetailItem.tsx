@@ -21,6 +21,7 @@ import {
   Select,
   MenuItem,
   InputLabel,
+  CircularProgress,
 } from "@material-ui/core"
 import ViewItems, { FieldConfig, TabConfig } from "../SensorsList/ViewItems"
 import { useTranslation } from "react-i18next"
@@ -76,12 +77,12 @@ const useStyles = makeStyles((theme: Theme) =>
 )
 
 function getAccessScope(value: any) {
-  let ans = ""
-  ans += value & 4 ? "Action, " : ""
-  ans += value & 2 ? "Edit, " : ""
-  ans += value & 1 ? "View" : ""
-  ans += value == 0 ? "None" : ""
-  return ans
+  const scopes = []
+  if (value & 4) scopes.push("Action")
+  if (value & 2) scopes.push("Edit")
+  if (value & 1) scopes.push("View")
+  if (value === 0) scopes.push("None")
+  return scopes.join(", ")
 }
 
 interface StudyFormState {
@@ -344,21 +345,50 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
       </Grid>
     </Box>
   )
+  type ResearcherInfo = {
+    name: string
+    accessScope: string
+  }
+  const ResearchersContent = () => {
+    const [validResearchers, setValidResearchers] = useState<ResearcherInfo[] | null>(null)
 
-  const ResearchersContent = () => (
-    <Box className={classes.tabContent}>
-      <List>
-        {editedValues.sub_researchers?.map((researcher, index) => (
-          <ListItem key={index}>
-            <ListItemText
-              primary={researcher.ResearcherID}
-              secondary={`Access: ${getAccessScope(researcher.access_scope)}`}
-            />
-          </ListItem>
-        ))}
-      </List>
-    </Box>
-  )
+    if (validResearchers === null) {
+      const fetchValidResearchers = async () => {
+        const results: ResearcherInfo[] = []
+
+        await Promise.all(
+          editedValues.sub_researchers?.map(async (researcher) => {
+            try {
+              const res = await LAMP.Researcher.view(researcher.ResearcherID)
+              results.push({
+                name: res.name || researcher.ResearcherID,
+                accessScope: getAccessScope(researcher.access_scope),
+              })
+            } catch {
+              console.log("check this")
+            }
+          }) || []
+        )
+
+        setValidResearchers(results)
+      }
+
+      fetchValidResearchers()
+      return <CircularProgress />
+    }
+
+    return (
+      <Box className={classes.tabContent}>
+        <List>
+          {validResearchers.map((researcher, index) => (
+            <ListItem key={index}>
+              <ListItemText primary={researcher.name} secondary={`Access: ${researcher.accessScope}`} />
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    )
+  }
 
   const StatisticsContent = () => (
     // <Box className={classes.tabContent}>

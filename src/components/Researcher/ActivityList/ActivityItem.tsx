@@ -382,7 +382,7 @@ export default function ActivityItem({
               activeButton={activeButton}
               setActiveButton={setActiveButton}
             />
-            <UpdateActivity
+            {/* <UpdateActivity
               activity={activity}
               activities={activities}
               studies={studies}
@@ -391,7 +391,7 @@ export default function ActivityItem({
               researcherId={researcherId}
               activeButton={activeButton}
               setActiveButton={setActiveButton}
-            />
+            /> */}
             {activeButton.id === activity.id && activeButton.action === "history" ? (
               <HistoryFilledIcon
                 className={`${mtstyles.actionIcon} active`}

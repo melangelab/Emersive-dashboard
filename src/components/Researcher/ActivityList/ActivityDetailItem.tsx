@@ -46,6 +46,7 @@ import { ImageUploader } from "../../ImageUploader"
 import { useStyles as ViewItemsStyles } from "../SensorsList/ViewItems"
 import { SchemaList } from "./ActivityMethods"
 import DynamicForm from "../../shared/DynamicForm"
+import FormBuilder from "./FormBuilder"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -331,6 +332,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     groups: string[]
     image: string | null
     schedule: any[]
+    formula4Fields: any
     scoreInterpretation: any
     developer_info?: {
       version?: string
@@ -356,6 +358,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     schedule: [],
     scoreInterpretation: {},
     developer_info: {},
+    formula4Fields: null,
   })
 
   // Video recording functions
@@ -742,6 +745,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
           schedule: activity?.schedule || [],
           scoreInterpretation: activity?.scoreInterpretation || {},
           developer_info: developer_info || {},
+          formula4Fields: activity?.formula4Fields || "",
         })
       } catch (error) {
         console.error("Error initializing activity data:", error)
@@ -759,6 +763,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
           schedule: activity?.schedule || [],
           scoreInterpretation: activity?.scoreInterpretation || {},
           developer_info: {},
+          formula4Fields: activity?.formula4Fields || "",
         })
       }
     }
@@ -1231,26 +1236,36 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
   // Create tab content for settings
   const SettingsContent = () => (
     <Box mt={3}>
-      {editedValues.spec && Object.keys(schemaListObj).includes(editedValues.spec) ? (
-        <>
-          <Typography variant="h6" gutterBottom>
-            {t("Activity Settings")}
-          </Typography>
-          <DynamicForm
-            schema={schemaListObj[editedValues.spec]}
-            initialData={{
-              settings: editedValues.settings,
-              spec: editedValues.spec,
-            }}
-            onChange={(x) => {
-              console.log("Settings updated:", x)
-              setEditedValues((prev) => ({
-                ...prev,
-                settings: x.settings || {},
-              }))
-            }}
-          />
-        </>
+      <Typography variant="h6" gutterBottom>
+        {t("Activity Settings")}
+      </Typography>
+      {editedValues.spec === "lamp.form_builder" ? (
+        <FormBuilder
+          onChange={(formData) => {
+            setEditedValues((prev) => ({
+              ...prev,
+              formula4Fields: formData.formula,
+              settings: formData.fields,
+            }))
+          }}
+          formFieldsProp={editedValues.settings}
+          formula={editedValues.formula4Fields}
+        />
+      ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
+        <DynamicForm
+          schema={schemaListObj[editedValues.spec]}
+          initialData={{
+            settings: editedValues.settings,
+            spec: editedValues.spec,
+          }}
+          onChange={(x) => {
+            console.log("Settings updated:", x)
+            setEditedValues((prev) => ({
+              ...prev,
+              settings: x.settings || {},
+            }))
+          }}
+        />
       ) : (
         <Box className={classes.codeBlock}>
           <pre>{JSON.stringify(activity?.settings || {}, null, 2)}</pre>

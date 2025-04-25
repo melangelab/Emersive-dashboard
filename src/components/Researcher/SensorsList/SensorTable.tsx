@@ -1,6 +1,17 @@
 import React, { useState, useMemo, useEffect } from "react"
 import ModularTable, { ColumnConfig } from "./ModularTable"
-import { Box, FormControl, MenuItem, Select, useTheme } from "@material-ui/core"
+import {
+  Box,
+  FormControl,
+  Icon,
+  IconButton,
+  MenuItem,
+  Select,
+  TextField,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@material-ui/core"
 import { ReactComponent as ViewIcon } from "../../../icons/NewIcons/overview.svg"
 import { ReactComponent as ViewFilledIcon } from "../../../icons/NewIcons/overview-filled.svg"
 import { ReactComponent as EditIcon } from "../../../icons/NewIcons/text-box-edit.svg"
@@ -15,6 +26,8 @@ import { useSnackbar } from "notistack"
 import { useModularTableStyles } from "../Studies/Index"
 import LAMP from "lamp-core"
 import DetailModal from "./DetailModal"
+import { sensorConstraints } from "./SensorDialog"
+import { set } from "date-fns"
 
 export interface SensorTableProps {
   sensors: any[]
@@ -63,6 +76,9 @@ const SensorTable: React.FC<SensorTableProps> = ({
     start_time: null,
     end_time: null,
   })
+  const [editingSensorFrequency, setEditingSensorFrequency] = useState(null)
+  const [editingSensorDuration, setEditingSensorDuration] = useState(null)
+  const [editingCellSensorSpec, setEditingCellSensorSpec] = useState(null)
 
   useEffect(() => {
     if (!sensorSpecs.length || editingSensor) {
@@ -85,6 +101,29 @@ const SensorTable: React.FC<SensorTableProps> = ({
       const defaultSettings = selectedSpec.settings_schema || {}
       onCellValueChange(sensorId, "settings", defaultSettings)
     }
+  }
+
+  const isConstraintsSatisfied = () => {
+    if (!editingCellSensorSpec || !sensorConstraints[editingCellSensorSpec]) return true
+    if (!editingSensorFrequency) return true
+    const constraints = sensorConstraints[editingCellSensorSpec]
+    const frequency = editingSensorFrequency || 1
+
+    if (constraints.min !== null && frequency < constraints.min) return false
+    if (constraints.max !== null && frequency > constraints.max) return false
+    return true
+  }
+
+  const isDurationConstraintsSatisfied = () => {
+    if (!editingCellSensorSpec || !sensorConstraints[editingCellSensorSpec]) return true
+
+    if (!editingSensorDuration) return true
+    const constraints = sensorConstraints[editingCellSensorSpec]
+    const duration = editingSensorDuration || 0.1
+
+    if (constraints.min !== null && duration > 1 / constraints.min) return false
+    if (constraints.max !== null && duration < 1 / constraints.max) return false
+    return true
   }
 
   const allColumns: ColumnConfig[] = useMemo(
@@ -169,59 +208,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
             sensor.spec
           ),
       },
-      // {
-      //   id: "settings",
-      //   label: "Settings",
-      //   getValue: (sensor) => {
-      //     if (!sensor.settings || Object.keys(sensor.settings).length === 0) {
-      //       return "Default"
-      //     }
-      //     return JSON.stringify(sensor.settings).substring(0, 30) + "..."
-      //   },
-      //   visible: true,
-      //   sortable: false,
-      //   renderCell: (sensor) =>
-      //     mode == "edit" && editingSensor && editingSensor.id === sensor.id && editableColumns?.includes("settings") ? (
-      //       <textarea
-      //         defaultValue={JSON.stringify(sensor.settings || {}, null, 2)}
-      //         style={{
-      //           width: "100%",
-      //           padding: "4px",
-      //           border: "1px solid #ccc",
-      //           borderRadius: "4px",
-      //           minHeight: "60px",
-      //         }}
-      //         onChange={(e) => {
-      //           try {
-      //             const parsed = JSON.parse(e.target.value)
-      //             onCellValueChange(sensor.id, "settings", parsed)
-      //           } catch (error) {
-      //             console.error("Invalid JSON:", error)
-      //           }
-      //         }}
-      //       />
-      //     ) : (
-      //       <Box
-      //         style={{
-      //           cursor: "pointer",
-      //           color: "#215F9A",
-      //         }}
-      //         onClick={(e) => {
-      //           e.stopPropagation()
-      //           setDetailModal({
-      //             open: true,
-      //             title: `Settings for ${sensor.name}`,
-      //             content: sensor.settings || {},
-      //             contentType: "json",
-      //           })
-      //         }}
-      //       >
-      //         {!sensor.settings || Object.keys(sensor.settings).length === 0
-      //           ? "Default"
-      //           : JSON.stringify(sensor.settings).substring(0, 30) + "..."}
-      //       </Box>
-      //     ),
-      // },
+
       {
         id: "settings",
         label: "Settings",
@@ -241,38 +228,138 @@ const SensorTable: React.FC<SensorTableProps> = ({
           mode == "edit" && editingSensor && editingSensor.id === sensor.id && editableColumns?.includes("settings") ? (
             <Box sx={{ width: "100%", padding: "8px" }}>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <Box sx={{ width: "50%", fontWeight: 500 }}>Data Collection Duration:</Box>
-                <input
-                  type="text"
-                  defaultValue={sensor.settings?.data_collection_duration ?? ""}
+                <Box sx={{ width: "40%", fontWeight: 500 }}>Frequency:</Box>
+                {editingCellSensorSpec && sensorConstraints[editingCellSensorSpec] && (
+                  <Tooltip
+                    title={
+                      <Box p={1}>
+                        <Typography variant="body2">Constraints:</Typography>
+                        <Typography variant="body2">
+                          {sensorConstraints[editingCellSensorSpec].min !== null &&
+                            `Min: ${sensorConstraints[editingCellSensorSpec].min}`}
+                          {sensorConstraints[editingCellSensorSpec].min !== null &&
+                            sensorConstraints[editingCellSensorSpec].max !== null &&
+                            " | "}
+                          {sensorConstraints[editingCellSensorSpec].max !== null &&
+                            `Max: ${sensorConstraints[editingCellSensorSpec].max}`}
+                        </Typography>
+                      </Box>
+                    }
+                    style={{ marginLeft: "10px" }}
+                    placement="right"
+                  >
+                    <IconButton size="small">
+                      <Icon>info</Icon>
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {/* <div style={{ display:"flex" }}> */}
+                <TextField
+                  type="number"
+                  size="small"
+                  variant="outlined"
+                  inputProps={{ inputMode: "decimal", min: 0, step: 0.01, style: { appearance: "textfield" } }}
+                  defaultValue={sensor.settings?.frequency}
+                  error={!isConstraintsSatisfied()}
+                  // className=""
                   style={{
-                    width: "50%",
+                    width: "40%",
                     padding: "4px",
                     border: "1px solid #ccc",
                     borderRadius: "4px",
+                    marginLeft: "auto",
+                  }}
+                  onChange={(e) => {
+                    const newSettings = { ...sensor.settings, frequency: e.target.value }
+                    setEditingSensorFrequency(e.target.value)
+                    onCellValueChange(sensor.id, "settings", newSettings)
+                  }}
+                  helperText={
+                    !isConstraintsSatisfied()
+                      ? `Frequency must be ${
+                          sensorConstraints[editingCellSensorSpec]?.min !== null
+                            ? `>= ${sensorConstraints[editingCellSensorSpec]?.min}`
+                            : ""
+                        }${
+                          sensorConstraints[editingCellSensorSpec]?.min !== null &&
+                          sensorConstraints[editingCellSensorSpec]?.max !== null
+                            ? " and "
+                            : ""
+                        }${
+                          sensorConstraints[editingCellSensorSpec]?.max !== null
+                            ? `<= ${sensorConstraints[editingCellSensorSpec]?.max}`
+                            : ""
+                        }`
+                      : ""
+                  }
+                />
+                {/* </div> */}
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                <Box sx={{ width: "40%", fontWeight: 500 }}>Data Collection Duration:</Box>
+                {editingCellSensorSpec && sensorConstraints[editingCellSensorSpec] && (
+                  <Tooltip
+                    title={
+                      <Box p={1}>
+                        <Typography variant="body2">Value Range:</Typography>
+                        <Typography variant="body2">
+                          {sensorConstraints[editingCellSensorSpec].max !== null &&
+                            `Min: ${1 / sensorConstraints[editingCellSensorSpec].max}`}
+                          {sensorConstraints[editingCellSensorSpec].min !== null &&
+                            sensorConstraints[editingCellSensorSpec].max !== null &&
+                            " | "}
+                          {sensorConstraints[editingCellSensorSpec].min !== null &&
+                            `Max: ${1 / sensorConstraints[editingCellSensorSpec].min}`}
+                        </Typography>
+                      </Box>
+                    }
+                    style={{ marginLeft: "10px" }}
+                    placement="right"
+                  >
+                    <IconButton size="small">
+                      <Icon>info</Icon>
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <TextField
+                  size="small"
+                  variant="outlined"
+                  type="number"
+                  defaultValue={sensor.settings?.data_collection_duration ?? ""}
+                  inputProps={{ inputMode: "decimal", min: 0, step: 1, style: { appearance: "textfield" } }}
+                  error={!isDurationConstraintsSatisfied()}
+                  style={{
+                    width: "40%",
+                    padding: "4px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                    marginLeft: "auto",
                   }}
                   onChange={(e) => {
                     const newSettings = { ...sensor.settings, data_collection_duration: e.target.value || null }
                     onCellValueChange(sensor.id, "settings", newSettings)
+                    setEditingSensorDuration(e.target.value)
                   }}
+                  helperText={
+                    !isDurationConstraintsSatisfied()
+                      ? `Duration must be ${
+                          sensorConstraints[editingCellSensorSpec]?.max !== null
+                            ? `>= ${1 / sensorConstraints[editingCellSensorSpec]?.max}`
+                            : ""
+                        }${
+                          sensorConstraints[editingCellSensorSpec]?.min !== null &&
+                          sensorConstraints[editingCellSensorSpec]?.max !== null
+                            ? " and "
+                            : ""
+                        }${
+                          sensorConstraints[editingCellSensorSpec]?.min !== null
+                            ? `<= ${1 / sensorConstraints[editingCellSensorSpec]?.min}`
+                            : ""
+                        }`
+                      : ""
+                  }
                 />
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <Box sx={{ width: "50%", fontWeight: 500 }}>Frequency:</Box>
-                <input
-                  type="number"
-                  defaultValue={sensor.settings?.frequency ?? 1}
-                  style={{
-                    width: "50%",
-                    padding: "4px",
-                    border: "1px solid #ccc",
-                    borderRadius: "4px",
-                  }}
-                  onChange={(e) => {
-                    const newSettings = { ...sensor.settings, frequency: Number(e.target.value) || 1 }
-                    onCellValueChange(sensor.id, "settings", newSettings)
-                  }}
-                />
+                {/* </div> */}
               </Box>
               <Box sx={{ fontWeight: 500 }}>Data Collection Timeperiod:</Box>
               <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -555,8 +642,12 @@ const SensorTable: React.FC<SensorTableProps> = ({
               <EditFilledIcon
                 className={`${mtstyles.actionIcon} active`}
                 onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "edit" })
+                  setActiveButton({ id: null, action: null })
+                  setEditingCellSensorSpec(null)
+                  setEditingSensorDuration(null)
+                  setEditingSensorFrequency(null)
                   onEditSensor(sensor)
+                  // setEditingCellSensorSpec(sensor.spec)
                 }}
               />
             ) : (
@@ -565,6 +656,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
                 onClick={() => {
                   setActiveButton({ id: sensor.id, action: "edit" })
                   onEditSensor(sensor)
+                  setEditingCellSensorSpec(sensor.spec)
                 }}
               />
             )}

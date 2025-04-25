@@ -109,23 +109,9 @@ const useStyles = makeStyles((theme) =>
 )
 
 interface SensorSettings {
-  frequency?: number
-  data_collection_duration?: number
+  frequency?: number | null
+  data_collection_duration?: number | null
   data_collection_timeperiod?: { start_time: string; end_time: string } | null
-}
-
-interface SettingsInfo {
-  "lamp.analytics": SensorSettings
-  "lamp.gps": SensorSettings
-  "lamp.accelerometer": SensorSettings
-  "lamp.accelerometer.motion": SensorSettings
-  "lamp.accelerometer.device_motion": SensorSettings
-  "lamp.device_state": SensorSettings
-  "lamp.steps": SensorSettings
-  "lamp.nearby_device": SensorSettings
-  "lamp.telephony": SensorSettings
-  "lamp.sleep": SensorSettings
-  "lamp.ambient": SensorSettings
 }
 
 export interface Sensors {
@@ -136,6 +122,14 @@ export interface Sensors {
   spec?: string
   settings?: SensorSettings
 }
+
+export const sensorConstraints = {
+  "lamp.accelerometer": { min: 0.0, max: 5 },
+  "lamp.gps": { min: 0.008, max: 0.2 },
+  "lamp.wifi": { max: 0.003, min: 0.0 },
+  "lamp.bluetooth": { max: 0.003, min: 0.0 },
+}
+
 export default function SensorDialog({
   sensor,
   studies,
@@ -143,7 +137,6 @@ export default function SensorDialog({
   type,
   addOrUpdateSensor,
   allSensors,
-  settingsInfo,
   open,
   onclose,
   ...props
@@ -154,7 +147,6 @@ export default function SensorDialog({
   type?: string
   addOrUpdateSensor?: Function
   allSensors?: Array<any>
-  settingsInfo?: SettingsInfo
   open: any
   onclose: Function
 } & DialogProps) {
@@ -175,13 +167,19 @@ export default function SensorDialog({
   const [selectedGroup, setSelectedGroup] = useState(sensor ? sensor.group : "")
   const [confirmationOpen, setConfirmationOpen] = useState(false)
   const [createdSensor, setCreatedSensor] = useState(null)
+  const [constraintsSatisfied, setIsConstraintsSatisfied] = useState(false)
   const [sensorSettings, setSensorSettings] = useState(
     sensor?.settings || {
-      frequency: 1,
+      frequency: null,
       data_collection_duration: null,
       data_collection_timeperiod: { start_time: null, end_time: null },
     }
   )
+
+  useEffect(() => {
+    console.log("Sensor", sensor)
+    console.log("Sensor settings", sensorSettings)
+  }, [sensorSettings, sensor])
 
   useEffect(() => {
     LAMP.SensorSpec.all().then((res) => {
@@ -202,7 +200,7 @@ export default function SensorDialog({
       setSensorName("")
       setSensorSpec("")
       setSensorSettings({
-        frequency: 1,
+        frequency: null,
         data_collection_duration: null,
         data_collection_timeperiod: { start_time: null, end_time: null },
       })
@@ -215,7 +213,7 @@ export default function SensorDialog({
         setSensorSettings(sensor.settings)
       } else {
         setSensorSettings({
-          frequency: 1,
+          frequency: null,
           data_collection_duration: null,
           data_collection_timeperiod: { start_time: null, end_time: null },
         })
@@ -391,6 +389,29 @@ export default function SensorDialog({
     addOrUpdateSensor()
   }
 
+  const isConstraintsSatisfied = () => {
+    if (!sensorSpec || !sensorConstraints[sensorSpec]) return true
+    if (!sensorSettings?.frequency) return true
+    const constraints = sensorConstraints[sensorSpec]
+    const frequency = sensorSettings?.frequency || 1
+
+    if (constraints.min !== null && frequency < constraints.min) return false
+    if (constraints.max !== null && frequency > constraints.max) return false
+    return true
+  }
+
+  const isDurationConstraintsSatisfied = () => {
+    if (!sensorSpec || !sensorConstraints[sensorSpec]) return true
+
+    if (!sensorSettings?.data_collection_duration) return true
+    const constraints = sensorConstraints[sensorSpec]
+    const duration = sensorSettings?.data_collection_duration || 0.1
+
+    if (constraints.min !== null && duration > 1 / constraints.min) return false
+    if (constraints.max !== null && duration < 1 / constraints.max) return false
+    return true
+  }
+
   return (
     <>
       <Slide direction="left" in={open && !confirmationOpen} mountOnEnter unmountOnExit>
@@ -516,34 +537,133 @@ export default function SensorDialog({
             </Typography>
             <Box p={2} mt={1} border="1px solid rgba(0, 0, 0, 0.12)" borderRadius="4px" bgcolor="rgba(0, 0, 0, 0.02)">
               <Box display="flex" alignItems="center" mb={2}>
-                <Typography variant="body2" style={{ width: "50%", fontWeight: 500 }}>
-                  {t("Data Collection Duration")}:
+                <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
+                  {t("Frequency (in seconds)")}
                 </Typography>
-                <TextField
-                  size="small"
-                  variant="outlined"
-                  value={sensorSettings?.data_collection_duration || ""}
-                  onChange={(e) => handleSettingsChange("data_collection_duration", e.target.value)}
-                  placeholder={t("Enter duration")}
-                  style={{ width: "50%" }}
-                  className={classes.settingsField}
-                />
+                {sensorSpec && sensorConstraints[sensorSpec] && (
+                  <Tooltip
+                    title={
+                      <Box p={1}>
+                        <Typography variant="body2">Constraints:</Typography>
+                        <Typography variant="body2">
+                          {sensorConstraints[sensorSpec].min !== null && `Min: ${sensorConstraints[sensorSpec].min}`}
+                          {sensorConstraints[sensorSpec].min !== null &&
+                            sensorConstraints[sensorSpec].max !== null &&
+                            " | "}
+                          {sensorConstraints[sensorSpec].max !== null && `Max: ${sensorConstraints[sensorSpec].max}`}
+                        </Typography>
+                      </Box>
+                    }
+                    style={{ marginLeft: "10px" }}
+                    placement="right"
+                  >
+                    <IconButton size="small">
+                      <Icon>info</Icon>
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="flex-end"
+                  style={{ marginLeft: "auto", width: "50%" }}
+                >
+                  <TextField
+                    size="small"
+                    variant="outlined"
+                    type="number"
+                    inputProps={{ inputMode: "decimal", min: 0, step: 0.01, style: { appearance: "textfield" } }}
+                    error={!isConstraintsSatisfied()}
+                    value={sensorSettings?.frequency}
+                    onChange={(e) => handleSettingsChange("frequency", e.target.value)}
+                    placeholder={t("Enter frequency")}
+                    style={{ width: "100%" }}
+                    className={classes.settingsField}
+                    helperText={
+                      !isConstraintsSatisfied()
+                        ? `Frequency must be ${
+                            sensorConstraints[sensorSpec]?.min !== null
+                              ? `>= ${sensorConstraints[sensorSpec]?.min}`
+                              : ""
+                          }${
+                            sensorConstraints[sensorSpec]?.min !== null && sensorConstraints[sensorSpec]?.max !== null
+                              ? " and "
+                              : ""
+                          }${
+                            sensorConstraints[sensorSpec]?.max !== null
+                              ? `<= ${sensorConstraints[sensorSpec]?.max}`
+                              : ""
+                          }`
+                        : ""
+                    }
+                  />
+                </Box>
               </Box>
 
               <Box display="flex" alignItems="center" mb={2}>
-                <Typography variant="body2" style={{ width: "50%", fontWeight: 500 }}>
-                  {t("Frequency")}:
+                <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
+                  {t("Data Collection Duration (in mins)")}:
                 </Typography>
-                <TextField
-                  size="small"
-                  variant="outlined"
-                  type="number"
-                  value={sensorSettings?.frequency || 1}
-                  onChange={(e) => handleSettingsChange("frequency", Number(e.target.value) || 1)}
-                  placeholder={t("Enter frequency")}
-                  style={{ width: "50%" }}
-                  className={classes.settingsField}
-                />
+                {sensorSpec && sensorConstraints[sensorSpec] && (
+                  <Tooltip
+                    title={
+                      <Box p={1}>
+                        <Typography variant="body2">Value Range:</Typography>
+                        <Typography variant="body2">
+                          {sensorConstraints[sensorSpec].max !== null &&
+                            `Min: ${1 / sensorConstraints[sensorSpec].max}`}
+                          {sensorConstraints[sensorSpec].min !== null &&
+                            sensorConstraints[sensorSpec].max !== null &&
+                            " | "}
+                          {sensorConstraints[sensorSpec].min !== null &&
+                            `Max: ${1 / sensorConstraints[sensorSpec].min}`}
+                        </Typography>
+                      </Box>
+                    }
+                    style={{ marginLeft: "10px" }}
+                    placement="right"
+                  >
+                    <IconButton size="small">
+                      <Icon>info</Icon>
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="flex-end"
+                  style={{ marginLeft: "auto", width: "50%" }}
+                >
+                  <TextField
+                    size="small"
+                    variant="outlined"
+                    type="number"
+                    error={!isDurationConstraintsSatisfied()}
+                    value={sensorSettings?.data_collection_duration}
+                    inputProps={{ inputMode: "decimal", min: 0, step: 1, style: { appearance: "textfield" } }}
+                    onChange={(e) => handleSettingsChange("data_collection_duration", e.target.value)}
+                    placeholder={t("Enter duration")}
+                    style={{ width: "100%" }}
+                    className={classes.settingsField}
+                    helperText={
+                      !isDurationConstraintsSatisfied()
+                        ? `Duration must be ${
+                            sensorConstraints[sensorSpec]?.max !== null
+                              ? `>= ${1 / sensorConstraints[sensorSpec]?.max}`
+                              : ""
+                          }${
+                            sensorConstraints[sensorSpec]?.min !== null && sensorConstraints[sensorSpec]?.max !== null
+                              ? " and "
+                              : ""
+                          }${
+                            sensorConstraints[sensorSpec]?.min !== null
+                              ? `<= ${1 / sensorConstraints[sensorSpec]?.min}`
+                              : ""
+                          }`
+                        : ""
+                    }
+                  />
+                </Box>
               </Box>
 
               <Box display="flex" alignItems="center">
