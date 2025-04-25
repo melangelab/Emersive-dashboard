@@ -480,7 +480,7 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
           <Box p={2} mt={1} border="1px solid rgba(0, 0, 0, 0.12)" borderRadius="4px" bgcolor="rgba(0, 0, 0, 0.02)">
             <Box display="flex" alignItems="center" mb={2}>
               <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
-                {t("Frequency (in seconds)")}
+                {t("Frequency (Hz")}
               </Typography>
               {sensor.spec && sensorConstraints[sensor.spec] && (
                 <Tooltip
@@ -555,7 +555,7 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
 
             <Box display="flex" alignItems="center" mb={2}>
               <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
-                {t("Data Collection Duration (in mins)")}:
+                {t("Data Collection Duration (seconds)")}:
               </Typography>
               {sensor.spec && sensorConstraints[sensor.spec] && (
                 <Tooltip

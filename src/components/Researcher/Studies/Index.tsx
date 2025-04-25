@@ -959,7 +959,7 @@ export default function StudiesList({
 
   const confirmCopy = () => {
     if (studyToCopy) {
-      // fetchpostdata study clone here
+      // TODO fetchpostdata study clone here
       handleCloseCopyDialog()
     }
   }

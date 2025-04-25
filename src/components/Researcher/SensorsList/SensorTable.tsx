@@ -228,7 +228,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
           mode == "edit" && editingSensor && editingSensor.id === sensor.id && editableColumns?.includes("settings") ? (
             <Box sx={{ width: "100%", padding: "8px" }}>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <Box sx={{ width: "40%", fontWeight: 500 }}>Frequency:</Box>
+                <Box sx={{ width: "40%", fontWeight: 500 }}>Frequency(Hz):</Box>
                 {editingCellSensorSpec && sensorConstraints[editingCellSensorSpec] && (
                   <Tooltip
                     title={
@@ -296,7 +296,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
                 {/* </div> */}
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <Box sx={{ width: "40%", fontWeight: 500 }}>Data Collection Duration:</Box>
+                <Box sx={{ width: "40%", fontWeight: 500 }}>Data Collection Duration(seconds):</Box>
                 {editingCellSensorSpec && sensorConstraints[editingCellSensorSpec] && (
                   <Tooltip
                     title={

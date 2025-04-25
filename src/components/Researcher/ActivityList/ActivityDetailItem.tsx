@@ -361,6 +361,16 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     formula4Fields: null,
   })
 
+  const [creatorName, setcreatorName] = useState(activity?.creator || "")
+  useEffect(() => {
+    const fetchname = async () => {
+      const res = await LAMP.Researcher.view(activity?.creator)
+      if (res) {
+        setcreatorName(res.name)
+      }
+    }
+    fetchname()
+  }, [activity])
   // Video recording functions
   const startCamera = async () => {
     if (!window.navigator.mediaDevices || !window.navigator.mediaDevices.getUserMedia) {
@@ -1077,18 +1087,18 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
       value: activity?.study_name || "",
       editable: false,
     },
-    {
-      id: "study",
-      label: t("Choose Study"),
-      value: selectedStudy,
-      editable: true,
-      hide: true,
-      type: "select",
-      options: studies.map((study) => ({
-        value: study.id,
-        label: study.name,
-      })),
-    },
+    // {
+    //   id: "study",
+    //   label: t("Choose Study"),
+    //   value: selectedStudy,
+    //   editable: true,
+    //   hide: true,
+    //   type: "select",
+    //   options: studies.map((study) => ({
+    //     value: study.id,
+    //     label: study.name,
+    //   })),
+    // },
     {
       id: "groups",
       label: t("Groups"),
@@ -1132,7 +1142,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     {
       id: "creator",
       label: t("Creator"),
-      value: activity?.creator || "",
+      value: creatorName || "",
       editable: false,
     },
     {

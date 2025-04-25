@@ -556,7 +556,7 @@ export default function PatientStudyCreator({
                 </MenuItem>
               ))}
             </TextField>
-            <Box ml={-1}>
+            {/* <Box ml={-1}>
               <Checkbox
                 checked={createPatient}
                 onChange={(event) => {
@@ -569,7 +569,7 @@ export default function PatientStudyCreator({
             </Box>
             {!!createPatient && (
               <Typography variant="caption">{`${t("Group name and user name will be same.")}`}</Typography>
-            )}
+            )} */}
             <Box display="flex" justifyContent="flex-start" style={{ gap: 8 }} mt={2}>
               <Button color="primary" onClick={handleClose} className={sliderclasses.button}>
                 {`${t("Cancel")}`}
