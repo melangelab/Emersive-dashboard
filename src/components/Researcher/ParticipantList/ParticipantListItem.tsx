@@ -134,6 +134,7 @@ export default function ParticipantListItem({
   selectedParticipants,
   researcherId,
   onViewParticipant,
+  researcherName,
   ...props
 }) {
   const classes = useStyles()
@@ -489,7 +490,7 @@ export default function ParticipantListItem({
         <Divider className={participantcardclasses.titleDivider} />
         <Typography className={participantcardclasses.cardSubtitle}>
           {`RESEARCHER - `}
-          <strong>{`${researcherId || "No Researcher found; this is unusual."}`}</strong>
+          <strong>{`${researcherName || "No Researcher name found; this is unusual."}`}</strong>
         </Typography>
         <Typography className={participantcardclasses.cardSubtitle}>
           {`STUDY: `}

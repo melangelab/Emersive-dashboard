@@ -377,6 +377,7 @@ export default function Header({
   setParticipants,
   newStudyObj,
   updatedDataStudy,
+  refreshStudies,
   ...props
 }) {
   const classes = useStyles()
@@ -849,7 +850,7 @@ export default function Header({
           </Box>
           <Box className={headerclasses.actionGroup}>
             <SearchBox searchData={searchData} />
-            <RefreshIcon className={classes.actionIcon} onClick={() => window.location.reload()} />
+            <RefreshIcon className={classes.actionIcon} onClick={() => refreshStudies()} />
             {props.viewMode === "grid" ? (
               <GridViewFilledIcon
                 className={`${classes.actionIcon} ${props.viewMode === "grid" ? "active" : ""}`}

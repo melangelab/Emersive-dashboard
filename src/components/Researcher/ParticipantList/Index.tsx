@@ -270,7 +270,7 @@ export default function ParticipantList({
   const query = useQuery()
   const filterParam = query.get("filter")
   const { enqueueSnackbar, closeSnackbar } = useSnackbar()
-
+  const [researcherName, setResearcherName] = useState(null)
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
   const [confirmationDialog, setConfirmationDialog] = useState(false)
   const { t } = useTranslation()
@@ -298,6 +298,14 @@ export default function ParticipantList({
       },
     ]
   }
+
+  useEffect(() => {
+    const fetchresearchername = async () => {
+      const res = await LAMP.Researcher.view(researcherId)
+      setResearcherName(res.name)
+    }
+    fetchresearchername()
+  }, [researcherId])
 
   useInterval(
     () => {
@@ -1430,6 +1438,7 @@ export default function ParticipantList({
                           onSuspend={handleOpenSuspendDialog}
                           onUnSuspend={handleOpenUnSuspendDialog}
                           refreshParticipants={searchParticipants}
+                          researcherName={researcherName}
                         />
                       </Grid>
                     ))}

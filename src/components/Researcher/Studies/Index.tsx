@@ -1608,37 +1608,35 @@ export default function StudiesList({
             />
           )}
         </Box>
-        {props.authType === "admin" && (
-          <Box component="span" className={classes.actionIcon}>
-            {studyToSuspend?.id === study.id ? (
-              <SuspendFilledIcon
-                className="selected"
-                onClick={() => {
-                  setActiveButton({ id: study.id, action: "suspend" })
-                  handleOpenSuspendDialog(study)
-                }}
-              />
-            ) : (
-              <SuspendIcon
-                onClick={() => {
-                  setActiveButton({ id: study.id, action: "suspend" })
-                  handleOpenSuspendDialog(study)
-                }}
-              />
-            )}
-          </Box>
-        )}
-
-        {props.authType === "admin" && (
-          <Box component="span" className={classes.actionIcon}>
-            <DeleteIcon
+        <Box component="span" className={classes.actionIcon}>
+          {studyToSuspend?.id === study.id ? (
+            <SuspendFilledIcon
+              className="selected"
               onClick={() => {
-                setActiveButton({ id: study.id, action: "delete" })
-                handleOpenDialog(study, "delete")
+                setActiveButton({ id: study.id, action: "suspend" })
+                handleOpenSuspendDialog(study)
               }}
             />
-          </Box>
-        )}
+          ) : (
+            <SuspendIcon
+              onClick={() => {
+                setActiveButton({ id: study.id, action: "suspend" })
+                handleOpenSuspendDialog(study)
+              }}
+            />
+          )}
+        </Box>
+
+        {/* {props.authType === "admin" && ( */}
+        <Box component="span" className={classes.actionIcon}>
+          <DeleteIcon
+            onClick={() => {
+              setActiveButton({ id: study.id, action: "delete" })
+              handleOpenDialog(study, "delete")
+            }}
+          />
+        </Box>
+        {/* )} */}
 
         <Box component="span" className={classes.actionIcon}>
           {props.activeButton?.id === study.id && props.activeButton?.action === "share" ? (
@@ -1876,6 +1874,7 @@ export default function StudiesList({
             resins={props.resins}
             VisibleColumns={columns}
             setVisibleColumns={setColumns}
+            refreshStudies={getAllStudies}
           />
         )}
         <Box
@@ -2145,34 +2144,33 @@ export default function StudiesList({
                                 }}
                               />
                             )}
-                            {props.authType === "admin" &&
-                              (studyToSuspend?.id === study.id ? (
-                                <SuspendFilledIcon
-                                  className={`${studycardclasses.actionIcon} selected`}
-                                  onClick={() => {
-                                    setActiveButton({ id: study.id, action: "suspend" })
-                                    handleOpenSuspendDialog(study)
-                                  }}
-                                />
-                              ) : (
-                                <SuspendIcon
-                                  className={`${studycardclasses.actionIcon} ${
-                                    studyToSuspend?.id === study.id ? "selected" : ""
-                                  }`}
-                                  onClick={() => {
-                                    setActiveButton({ id: study.id, action: "suspend" })
-                                    handleOpenSuspendDialog(study)
-                                  }}
-                                />
-                              ))}
-                            {props.authType == "admin" && (
-                              <DeleteStudy
-                                study={study}
-                                deletedStudy={handleDeletedStudy}
-                                researcherId={researcherId}
-                                setActiveButton={setActiveButton}
+                            {studyToSuspend?.id === study.id ? (
+                              <SuspendFilledIcon
+                                className={`${studycardclasses.actionIcon} selected`}
+                                onClick={() => {
+                                  setActiveButton({ id: study.id, action: "suspend" })
+                                  handleOpenSuspendDialog(study)
+                                }}
+                              />
+                            ) : (
+                              <SuspendIcon
+                                className={`${studycardclasses.actionIcon} ${
+                                  studyToSuspend?.id === study.id ? "selected" : ""
+                                }`}
+                                onClick={() => {
+                                  setActiveButton({ id: study.id, action: "suspend" })
+                                  handleOpenSuspendDialog(study)
+                                }}
                               />
                             )}
+                            {/* {props.authType == "admin" && ( */}
+                            <DeleteStudy
+                              study={study}
+                              deletedStudy={handleDeletedStudy}
+                              researcherId={researcherId}
+                              setActiveButton={setActiveButton}
+                            />
+                            {/* )} */}
                             {activeButton.id === study.id && activeButton.action === "share" ? (
                               <SRAddFilledIcon
                                 className={`${studycardclasses.actionIcon} active`}
