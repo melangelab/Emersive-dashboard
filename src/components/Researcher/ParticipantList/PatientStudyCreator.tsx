@@ -476,7 +476,11 @@ export default function PatientStudyCreator({
               inputProps={{ maxLength: 80 }}
               helperText={
                 !validate(groupNames, gduplicateCnt)
-                  ? `${t("Please enter group name.")}`
+                  ? `${
+                      t("Please enter group name.") +
+                      "\n" +
+                      t("In order to add group name press enter after you finish typing.")
+                    }`
                   : t("Press Enter to add group name")
               }
             />
@@ -556,7 +560,7 @@ export default function PatientStudyCreator({
                 </MenuItem>
               ))}
             </TextField>
-            <Box ml={-1}>
+            {/* <Box ml={-1}>
               <Checkbox
                 checked={createPatient}
                 onChange={(event) => {
@@ -569,7 +573,7 @@ export default function PatientStudyCreator({
             </Box>
             {!!createPatient && (
               <Typography variant="caption">{`${t("Group name and user name will be same.")}`}</Typography>
-            )}
+            )} */}
             <Box display="flex" justifyContent="flex-start" style={{ gap: 8 }} mt={2}>
               <Button color="primary" onClick={handleClose} className={sliderclasses.button}>
                 {`${t("Cancel")}`}

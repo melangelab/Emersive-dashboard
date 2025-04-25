@@ -348,8 +348,18 @@ export default function ActivityTableRow({
   const [duplicateLoading, setDuplicateLoading] = useState(false)
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
   const activitycardclasses = studycardStyles()
-  const editableColumns = ["name", "creator", "groups"]
+  const editableColumns = ["name", "groups"] // TODO
   console.log("activity", activity)
+  const [creatorName, setcreatorName] = useState(activity?.creator || "")
+  useEffect(() => {
+    const fetchname = async () => {
+      const res = await LAMP.Researcher.view(activity?.creator)
+      if (res) {
+        setcreatorName(res.name)
+      }
+    }
+    fetchname()
+  }, [activity])
   const handlePreviewVersion = async (version) => {
     try {
       setPreviewDialogOpen(true)
@@ -561,17 +571,17 @@ export default function ActivityTableRow({
         //     </Select>
         //   </FormControl>
         //   )
-        case "creator":
-          return (
-            <TextField
-              defaultValue={getCurrentValue("creator")}
-              onChange={(e) => onCellValueChange("creator", e.target.value)}
-              fullWidth
-              size="small"
-              variant="outlined"
-              className={classes.editableField}
-            />
-          )
+        // case "creator":
+        //   return (
+        //     <TextField
+        //       defaultValue={getCurrentValue("creator")}
+        //       onChange={(e) => onCellValueChange("creator", e.target.value)}
+        //       fullWidth
+        //       size="small"
+        //       variant="outlined"
+        //       className={classes.editableField}
+        //     />
+        //   )
         case "groups":
           const availableGroups = activity.study_id ? studies.find((s) => s.id === activity.study_id)?.gname || [] : []
           return (
@@ -676,6 +686,22 @@ export default function ActivityTableRow({
           {value.map((group) => (
             <Chip key={group} label={group} size="small" />
           ))}
+        </Box>
+      )
+    }
+    if (column.id === "creator") {
+      return (
+        <Box
+          className={classes.copyableCell}
+          onClick={() => {
+            window.navigator?.clipboard?.writeText?.(creatorName)
+            enqueueSnackbar("Creator Name copied to clipboard", {
+              variant: "success",
+              autoHideDuration: 1000,
+            })
+          }}
+        >
+          {creatorName}
         </Box>
       )
     }

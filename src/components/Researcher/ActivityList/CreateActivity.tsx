@@ -301,15 +301,14 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
         photo: editedValues.photo,
         showFeed: editedValues.showInFeed,
       } as any
-      console.log("activityData", activityData)
       let newActivityId
       if (activityData.spec === "lamp.form_builder") {
-        const result = await LAMP.Activity.create(editedValues.study_id, {
+        const result = (await LAMP.Activity.create(editedValues.study_id, {
           ...activityData,
           settings: editedValues.settings,
           formula4Fields: editedValues.formula4Fields,
-        })
-        newActivityId = result
+        } as any)) as any
+        newActivityId = result.data ? result.data : result
       } else if (activityData.spec === "lamp.survey") {
         const result = await saveSurveyActivity({
           ...activityData,
@@ -335,11 +334,11 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
       console.log("newActivityId", newActivityId)
       // // Create activity in LAMP
       // const newActivityId = await LAMP.Activity.create(editedValues.study_id, activityData)
-      if (!newActivityId) {
-        throw new Error("Failed to create activity")
-      }
-      const result = await LAMP.Activity.view(newActivityId)
-      console.log("result", result)
+      // if (!newActivityId) {
+      //   throw new Error("Failed to create activity")
+      // }
+      // const result = await LAMP.Activity.view(newActivityId)
+      // console.log("result", result)
       // Set additional details as attachments
       await LAMP.Type.setAttachment(newActivityId, "me", "emersive.activity.details", {
         description: editedValues.description,
