@@ -1874,7 +1874,7 @@ export default function StudiesList({
             resins={props.resins}
             VisibleColumns={columns}
             setVisibleColumns={setColumns}
-            refreshStudies={searchFilterStudies}
+            refreshStudies={getAllStudies}
           />
         )}
         <Box
