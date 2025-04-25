@@ -161,6 +161,7 @@ type SuggestedUrlOption = {
 export default function Login({ setIdentity, lastDomain, onComplete, ...props }) {
   const { t, i18n } = useTranslation()
   // defaultaddress = "lamp-aiims.ihub-anubhuti-iiitd.org:3000" 192.168.21.214:3000
+
   const [state, setState] = useState({
     serverAddress:
       lastDomain ?? (process.env.NODE_ENV === "development" && process.env.REACT_APP_PORT === "8000")
@@ -169,6 +170,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
     id: undefined,
     password: undefined,
   })
+  console.log("state and node env", state, process.env.NODE_ENV, process.env.REACT_APP_PORT)
   const [srcLocked, setSrcLocked] = useState(false)
   const [tryitMenu, setTryitMenu] = useState<Element>()
   const [helpMenu, setHelpMenu] = useState<Element>()
