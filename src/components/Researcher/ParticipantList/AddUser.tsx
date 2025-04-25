@@ -470,7 +470,7 @@ export default function AddUser({
           </Button>
         </Box>
       </Slide>
-      {!!newId && <NewPatientDetail id={newId} />}
+      {/* {!!newId && <NewPatientDetail id={newId} />} */}
     </React.Fragment>
   )
 }
