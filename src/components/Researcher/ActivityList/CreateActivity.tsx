@@ -332,7 +332,7 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
         console.log("result", result)
         newActivityId = result.data
       }
-
+      console.log("newActivityId", newActivityId)
       // // Create activity in LAMP
       // const newActivityId = await LAMP.Activity.create(editedValues.study_id, activityData)
       if (!newActivityId) {

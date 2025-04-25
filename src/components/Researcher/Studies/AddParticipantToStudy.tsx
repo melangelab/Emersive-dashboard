@@ -91,6 +91,17 @@ export default function AddParticipantToStudy({
   }
 
   const createParticipant = async () => {
+    const participantData = await Service.getAll("participants")
+    const duplicates = Array.isArray(participantData)
+      ? participantData.filter((x) => `${x.emailAddress}` === email)
+      : []
+
+    if (duplicates.length > 0) {
+      enqueueSnackbar(t("Participant with same email id already exists."), { variant: "error" })
+      resetForm()
+      return
+    }
+
     let idData = ((await LAMP.Participant.create(study.id, {
       study_id: study.id,
       study_name: study.name,
@@ -108,8 +119,29 @@ export default function AddParticipantToStudy({
     } else {
       newParticipant["id"] = idData
     }
-    if (!!((await LAMP.Credential.create(id, `${id}@lamp.com`, id, "Temporary Login")) as any).error) {
-      enqueueSnackbar(`${t("Could not create credential for id.", { id })}`, { variant: "error" })
+
+    console.log("Before sending email")
+
+    const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+    const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+    const params = new URLSearchParams({
+      token: idData.token,
+      email: email,
+      userType: "participant",
+    }).toString()
+
+    const response: any = await fetch(`${baseURL}/send-password-email?${params}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Basic " + authString,
+      },
+    })
+
+    console.log("After sending email")
+
+    if (response.error) {
+      enqueueSnackbar(`${t("Could not create credential for id.", { id: id })}`, { variant: "error" })
     } else {
       newParticipant.study_id = study.id
       newParticipant.study_name = study.name
@@ -150,12 +182,12 @@ export default function AddParticipantToStudy({
       const newParticipant = await createParticipant()
       const participantId = newParticipant.id
 
-      await LAMP.Credential.create(
-        participantId,
-        email || `${participantId}@lamp.digital`,
-        participantId,
-        "Temporary Login"
-      )
+      // await LAMP.Credential.create(
+      //   participantId,
+      //   email || `${participantId}@lamp.digital`,
+      //   participantId,
+      //   "Temporary Login"
+      // )
 
       await LAMP.Type.setAttachment(participantId, "me", "lamp.group_name", selectedGroup)
 
