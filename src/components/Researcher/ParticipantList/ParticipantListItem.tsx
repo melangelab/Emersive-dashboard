@@ -365,6 +365,7 @@ export default function ParticipantListItem({
   const handleDelete = async (status) => {
     if (status === "Yes") {
       try {
+        // TODO
         await LAMP.Participant.delete(participant.id)
         await Service.delete("participants", [participant.id])
         await Service.updateCount("studies", participant.study_id, "participant_count", 1, 1)

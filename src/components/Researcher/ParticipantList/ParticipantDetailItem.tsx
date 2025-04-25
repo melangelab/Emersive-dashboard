@@ -556,6 +556,7 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
   const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
   const [editedValues, setEditedValues] = useState({
     firstName: "",
+    name: "",
     lastName: "",
     email: "",
     mobile: "",
@@ -592,6 +593,8 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
       religion: "",
     },
   })
+
+  console.log("ParticipantDetailItem", participant, editedValues)
 
   const handleSaveDeveloperInfo = async () => {
     setLoading(true)
@@ -651,7 +654,7 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
       if (!mobileRegex.test(editedValues.mobile)) {
         throw new Error(t("Mobile number must be 10 digits"))
       }
-
+      console.log("handleSave", participant, editedValues)
       // Update in LAMP backend
       await LAMP.Participant.update(participant.id, editedValues)
 
@@ -673,6 +676,8 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
         "otherHealthIds",
         "language",
         "group_name",
+        "name",
+        "username",
       ]
 
       await Service.updateMultipleKeys(
@@ -681,7 +686,10 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
           participants: [
             {
               id: participant.id,
-              ...editedValues,
+              ...{
+                ...editedValues,
+                username: editedValues.name,
+              },
             },
           ],
         },
@@ -695,7 +703,14 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
         editedValues.demographics
       )
       enqueueSnackbar(t("Participant updated successfully"), { variant: "success" })
-      onSave(editedValues)
+      const participantdetailsnew = await LAMP.Participant.view(participant.id)
+      const senddetails = {
+        ...participantdetailsnew,
+        ...editedValues,
+        name: editedValues.name,
+        username: editedValues.name,
+      }
+      onSave(senddetails)
     } catch (error) {
       console.error("Error updating participant:", error)
       enqueueSnackbar(t("Failed to update participant: ") + error.message, { variant: "error" })
@@ -1403,6 +1418,7 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
           setEditedValues({
             firstName: participant.firstName || "",
             lastName: participant.lastName || "",
+            name: participant.name || "",
             email: participant.email || "",
             mobile: participant.mobile || "",
             userAge: participant.userAge || "",
