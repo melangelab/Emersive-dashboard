@@ -476,7 +476,11 @@ export default function PatientStudyCreator({
               inputProps={{ maxLength: 80 }}
               helperText={
                 !validate(groupNames, gduplicateCnt)
-                  ? `${t("Please enter group name.")}`
+                  ? `${
+                      t("Please enter group name.") +
+                      "\n" +
+                      t("In order to add group name press enter after you finish typing.")
+                    }`
                   : t("Press Enter to add group name")
               }
             />
