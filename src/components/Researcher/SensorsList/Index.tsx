@@ -33,20 +33,6 @@ import ConfirmationDialog from "../../ConfirmationDialog"
 import SensorChangesConfirmationSlide from "./SensorChangesConfirmationSlide"
 import SensorDetailItem from "./SensorDetailItem"
 
-const settingsInfo = {
-  "lamp.analytics": {},
-  "lamp.gps": { frequency: 1 },
-  "lamp.accelerometer": { frequency: 1 },
-  "lamp.accelerometer.motion": { frequency: 1 },
-  "lamp.accelerometer.device_motion": { frequency: 1 },
-  "lamp.device_state": {},
-  "lamp.steps": {},
-  "lamp.nearby_device": { frequency: 1 },
-  "lamp.telephony": {},
-  "lamp.sleep": {},
-  "lamp.ambient": { frequency: 1 },
-}
-
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     tableContainer: {
@@ -534,7 +520,6 @@ export default function SensorsList({
           title={ptitle}
           authType={authType}
           onLogout={onLogout}
-          settingsInfo={settingsInfo}
           onViewModechanged={setViewMode}
           viewMode={viewMode}
           VisibleColumns={columns}
@@ -577,7 +562,6 @@ export default function SensorsList({
                           setSensors={searchFilterSensors}
                           researcherId={researcherId}
                           formatDate={formatDate}
-                          settingsInfo={settingsInfo}
                           onViewSensor={handleViewSensor}
                         />
                       </Grid>
@@ -644,7 +628,6 @@ export default function SensorsList({
                           open={copySensorOpen}
                           onclose={() => handleCloseCopyDialog()}
                           studyId={editingSensor.study_id ?? null}
-                          settingsInfo={settingsInfo}
                           allSensors={sensors || []}
                         />
 

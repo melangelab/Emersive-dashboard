@@ -366,6 +366,9 @@ interface TableColumn {
 }
 
 export const availableActivitySpecs = [
+  "lamp.form_builder",
+  "lamp.survey",
+  "lamp.cbt_thought_record",
   "lamp.group",
   "lamp.survey",
   "lamp.journal",
@@ -433,6 +436,10 @@ export default function ActivityList({
   const [triggerSave, setTriggerSave] = useState(false)
   const [creatingActivity, setCreatingActivity] = useState(false)
   const [selectedSpec, setSelectedSpec] = useState(null)
+  const [editingActivity, setEditingActivity] = useState(null)
+  const [editedValues, setEditedValues] = useState({})
+  const [rowMode, setRowMode] = useState("view")
+
   useInterval(
     () => {
       setLoading(true)
@@ -725,7 +732,7 @@ export default function ActivityList({
     //   value: (a) => formatSchedule(a.schedule),
     //   visible: true
     // },
-    { id: "groups", label: "Groups", value: (a) => a.groups?.join(", ") || "-", visible: true, sortable: false },
+    { id: "groups", label: "Groups", value: (a) => a.groups || [], visible: true, sortable: false },
     {
       id: "study",
       label: "Study",
@@ -771,6 +778,49 @@ export default function ActivityList({
     setIsEditing(false)
     setTriggerSave(false)
     searchActivities()
+  }
+
+  const handleEditRowActivity = (activity) => {
+    console.log("Editing activity:", activity?.id)
+    if (editingActivity?.id === activity.id) {
+      // Cancel edit mode
+      setRowMode("view")
+      setEditingActivity(null)
+      setEditedValues({})
+    } else {
+      // Enter edit mode
+      setEditingActivity(activity)
+      setRowMode("edit")
+      setEditedValues({
+        name: activity.name,
+        spec: activity.spec,
+        creator: activity.creator,
+        groups: activity.groups || [],
+      })
+    }
+  }
+
+  const handleSaveRowActivity = async (activity) => {
+    if (Object.keys(editedValues).length > 0) {
+      try {
+        const updatedActivity = {
+          ...activity,
+          ...editedValues,
+        }
+        await handleUpdateActivity(activity.id, updatedActivity)
+        setEditingActivity(null)
+        setEditedValues({})
+        setRowMode("view")
+        enqueueSnackbar(t("Activity updated successfully"), { variant: "success" })
+      } catch (error) {
+        console.error("Error updating activity:", error)
+        enqueueSnackbar(t("Failed to update activity"), { variant: "error" })
+      }
+    } else {
+      enqueueSnackbar(t("No changes to save"), { variant: "info" })
+      setEditingActivity(null)
+      setRowMode("view")
+    }
   }
 
   const TableView = ({ activities, handleChange, researcherId, studies, selectedActivities, onActivityUpdate }) => {
@@ -929,6 +979,19 @@ export default function ActivityList({
                         activities={activities}
                         searchActivities={searchActivities}
                         onViewActivity={handleViewActivity}
+                        editingActivity={editingActivity}
+                        onEditActivity={handleEditRowActivity}
+                        onSaveActivity={handleSaveRowActivity}
+                        mode={rowMode}
+                        editedValues={editedValues}
+                        onCellValueChange={(field, value) => {
+                          console.log("Cell value change:", field, value)
+                          setEditedValues((prev) => ({
+                            ...prev,
+                            [field]: value,
+                          }))
+                        }}
+                        availableSpecs={availableActivitySpecs}
                       />
                     ))}
                   </React.Fragment>

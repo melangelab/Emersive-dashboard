@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import {
   Box,
   Button,
@@ -26,6 +26,11 @@ import {
   Backdrop,
   Slide,
   Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  ListSubheader,
+  FormControlLabel,
 } from "@material-ui/core"
 import { useTranslation } from "react-i18next"
 import PatientStudyCreator from "../ParticipantList/PatientStudyCreator"
@@ -49,6 +54,14 @@ import { ReactComponent as PrintIcon } from "../../../icons/NewIcons/print.svg"
 import { ReactComponent as DownloadIcon } from "../../../icons/NewIcons/progress-download.svg"
 import { slideStyles } from "../ParticipantList/AddButton"
 import { ReactComponent as UserIcon } from "../../../icons/NewIcons/users.svg"
+import LAMP from "lamp-core"
+import { Service } from "../../DBService/DBService"
+import { spliceActivity, spliceCTActivity } from "../ActivityList/ActivityMethods"
+import { useSnackbar } from "notistack"
+import { saveAs } from "file-saver"
+import * as XLSX from "xlsx"
+import { jsPDF } from "jspdf"
+import { DatePicker } from "@material-ui/pickers/DatePicker/DatePicker"
 
 function Profile({ title, authType }) {
   return (
@@ -61,6 +74,36 @@ function Profile({ title, authType }) {
       </Typography>
     </div>
   )
+}
+interface StudyData {
+  id: string
+  name: string
+  participants: string[]
+  activities: string[]
+  sensors: string[]
+}
+
+interface DownloadSelection {
+  studyId: string
+  items: {
+    participants: string[]
+    activities: string[]
+    sensors: string[]
+  }
+}
+interface AttachmentResponse {
+  data?: any
+  error?: any
+}
+interface DownloadState {
+  anchor: null | HTMLElement | SVGElement
+  selectedStudies: DownloadSelection[]
+  includeEvents: boolean
+  format: "json" | "csv" | "excel" | "pdf"
+  dateRange: {
+    startDate: Date | null
+    endDate: Date | null
+  }
 }
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -306,6 +349,26 @@ const useStyles = makeStyles((theme: Theme) =>
     },
   })
 )
+function convertToCSV(data: any[]): string {
+  if (!data.length) return ""
+  const headers = Object.keys(data[0])
+  const rows = data.map((obj) => headers.map((header) => JSON.stringify(obj[header])).join(","))
+  return [headers.join(","), ...rows].join("\n")
+}
+
+async function convertToExcel(data: any[]): Promise<Blob> {
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, "Data")
+  const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" })
+  return new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+}
+
+async function convertToPDF(data: any[]): Promise<Blob> {
+  const doc = new jsPDF()
+  doc.text(JSON.stringify(data, null, 2), 10, 10)
+  return doc.output("blob")
+}
 
 export default function Header({
   studies,
@@ -334,6 +397,7 @@ export default function Header({
     newStudyObj(data)
     updatedDataStudy(data)
   }
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar()
   const roles = ["Administrator", "User Administrator", "Practice Lead"]
   const [slideOpen, setSlideOpen] = useState(false)
   const [activeModal, setActiveModal] = useState<"none" | "study" | "group" | "participant">("none")
@@ -384,6 +448,379 @@ export default function Header({
   const handleBackdropClick = () => {
     if (activeModal === "none") {
       setSlideOpen(false)
+    }
+  }
+
+  const [downloadState, setDownloadState] = useState<DownloadState>({
+    anchor: null,
+    selectedStudies: [],
+    includeEvents: false,
+    format: "json",
+    dateRange: {
+      startDate: null,
+      endDate: null,
+    },
+  })
+
+  const [studiesData, setStudiesData] = useState<StudyData[]>([])
+
+  useEffect(() => {
+    const fetchStudiesData = async () => {
+      try {
+        const studies = (await Service.getAll("studies")) || []
+        const enrichedStudies = await Promise.all(
+          studies.map(async (study) => {
+            const participants = await LAMP.Participant.allByStudy(study.id)
+            const activities = await LAMP.Activity.allByStudy(study.id)
+            const sensors = await LAMP.Sensor.allByStudy(study.id)
+
+            return {
+              id: study.id,
+              name: study.name,
+              participants: participants.map((p) => p.id),
+              activities: activities.map((a) => a.id),
+              sensors: sensors.map((s) => s.id),
+            }
+          })
+        )
+        setStudiesData(enrichedStudies)
+      } catch (error) {
+        console.error("Error fetching studies data:", error)
+        enqueueSnackbar(t("Failed to load studies data"), { variant: "error" })
+      }
+    }
+    fetchStudiesData()
+  }, [])
+
+  const downloadData = async () => {
+    try {
+      const { selectedStudies, includeEvents, format, dateRange } = downloadState
+      let allData: any[] = []
+
+      // Process each selected study
+      for (const selection of selectedStudies) {
+        const study = studiesData.find((s) => s.id === selection.studyId)
+        if (!study) continue
+
+        // Gather participants data
+        if (selection.items.participants.length > 0) {
+          const participantsData = await Promise.all(
+            selection.items.participants.map(async (participantId) => {
+              const participant = await LAMP.Participant.view(participantId)
+              let data = { ...participant, study_name: study.name, activity_events: [], sensor_events: [] }
+
+              // Include events if requested
+              if (includeEvents) {
+                const query =
+                  dateRange.startDate && dateRange.endDate
+                    ? `?start=${dateRange.startDate.toISOString()}&end=${dateRange.endDate.toISOString()}`
+                    : ""
+
+                const [activityEvents, sensorEvents] = await Promise.all([
+                  LAMP.ActivityEvent.allByParticipant(participantId + query),
+                  LAMP.SensorEvent.allByParticipant(participantId + query),
+                ])
+
+                data.activity_events = activityEvents
+                data.sensor_events = sensorEvents
+              }
+
+              return data
+            })
+          )
+          allData.push(...participantsData)
+        }
+
+        // Gather activities data
+        if (selection.items.activities.length > 0) {
+          const activitiesData = await Promise.all(
+            selection.items.activities.map(async (activityId) => {
+              const activity = await LAMP.Activity.view(activityId)
+
+              // Get activity details based on type
+              if (activity.spec === "lamp.survey") {
+                try {
+                  const res = (await LAMP.Type.getAttachment(
+                    activityId,
+                    "lamp.dashboard.survey_description"
+                  )) as AttachmentResponse
+
+                  return spliceActivity({
+                    raw: { ...activity, study_name: study.name },
+                    tag: res?.error ? undefined : res?.data,
+                  })
+                } catch (e) {
+                  console.error(`Error fetching survey details for ${activityId}:`, e)
+                  return { ...activity, study_name: study.name }
+                }
+              } else if (!["lamp.survey"].includes(activity.spec)) {
+                try {
+                  const res = (await LAMP.Type.getAttachment(
+                    activityId,
+                    "emersive.activity.details"
+                  )) as AttachmentResponse
+
+                  return spliceCTActivity({
+                    raw: { ...activity, study_name: study.name },
+                    tag: res?.error ? undefined : res?.data,
+                  })
+                } catch (e) {
+                  console.error(`Error fetching activity details for ${activityId}:`, e)
+                  return { ...activity, study_name: study.name }
+                }
+              }
+              return { ...activity, study_name: study.name }
+            })
+          )
+          allData.push(...activitiesData)
+        }
+
+        // Gather sensors data
+        if (selection.items.sensors.length > 0) {
+          const sensorsData = await Promise.all(
+            selection.items.sensors.map(async (sensorId) => {
+              const sensor = await LAMP.Sensor.view(sensorId)
+              return { ...sensor, study_name: study.name }
+            })
+          )
+          allData.push(...sensorsData)
+        }
+      }
+
+      // Format and download the data
+      let content: any
+      let fileName = `lamp_export_${new Date().toISOString().split("T")[0]}`
+
+      switch (format) {
+        case "json":
+          content = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" })
+          fileName += ".json"
+          break
+
+        case "csv":
+          content = new Blob([convertToCSV(allData)], { type: "text/csv" })
+          fileName += ".csv"
+          break
+
+        case "excel":
+          content = await convertToExcel(allData)
+          fileName += ".xlsx"
+          break
+
+        case "pdf":
+          content = await convertToPDF(allData)
+          fileName += ".pdf"
+          break
+      }
+
+      // Trigger download
+      saveAs(content, fileName)
+
+      enqueueSnackbar(t("Data exported successfully"), { variant: "success" })
+      setDownloadState({ ...downloadState, anchor: null }) // Close menu
+    } catch (error) {
+      console.error("Download failed:", error)
+      enqueueSnackbar(t("Failed to export data"), { variant: "error" })
+    }
+  }
+  const convertToCSV = (data: any[]): string => {
+    if (!data.length) return ""
+
+    // Get all possible headers from all objects
+    const headers = Array.from(new Set(data.reduce((acc, obj) => [...acc, ...Object.keys(obj)], [] as string[])))
+
+    // Create CSV rows
+    const rows = data.map((obj) =>
+      headers
+        .map((header) => {
+          // Use type assertion to tell TypeScript that header is a valid key
+          const value = obj[header as keyof typeof obj]
+          if (typeof value === "object" && value !== null) {
+            return JSON.stringify(value).replace(/"/g, '""')
+          }
+          return value === null || value === undefined ? "" : String(value)
+        })
+        .join(",")
+    )
+
+    return [headers.join(","), ...rows].join("\n")
+  }
+
+  const convertToExcel = async (data: any[]): Promise<Blob> => {
+    // Create workbook
+    const wb = XLSX.utils.book_new()
+
+    // Convert data to worksheet
+    const ws = XLSX.utils.json_to_sheet(
+      data.map((item) => {
+        // Process each item to ensure proper Excel formatting
+        const processedItem = { ...item }
+        Object.keys(processedItem).forEach((key) => {
+          if (typeof processedItem[key] === "object" && processedItem[key] !== null) {
+            processedItem[key] = JSON.stringify(processedItem[key])
+          }
+        })
+        return processedItem
+      })
+    )
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, "LAMP Data")
+
+    // Generate Excel file
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" })
+
+    return new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+  }
+
+  const convertToPDF = async (data: any[]): Promise<Blob> => {
+    const doc = new jsPDF()
+
+    // Configure PDF settings
+    doc.setFontSize(10)
+    let yPos = 10
+
+    // Add title
+    doc.setFontSize(16)
+    doc.text("LAMP Data Export", 10, yPos)
+    yPos += 10
+    doc.setFontSize(10)
+
+    // Add export date
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 10, yPos)
+    yPos += 10
+
+    // Process each item
+    data.forEach((item, index) => {
+      // Add page break if needed
+      if (yPos > 280) {
+        doc.addPage()
+        yPos = 10
+      }
+
+      // Add item header
+      doc.setFontSize(12)
+      doc.text(`Item ${index + 1}:`, 10, yPos)
+      yPos += 7
+      doc.setFontSize(10)
+
+      // Add item data
+      Object.entries(item).forEach(([key, value]) => {
+        // Add page break if needed
+        if (yPos > 280) {
+          doc.addPage()
+          yPos = 10
+        }
+
+        let displayValue = value
+        if (typeof value === "object" && value !== null) {
+          displayValue = JSON.stringify(value)
+        }
+
+        doc.text(`${key}: ${displayValue}`, 15, yPos)
+        yPos += 5
+      })
+
+      yPos += 5 // Add space between items
+    })
+
+    return doc.output("blob")
+  }
+
+  const downloadData_prev = async (type: string, format: string, startDate?: Date, endDate?: Date) => {
+    try {
+      let data: any[] = []
+      switch (type) {
+        case "studies":
+          const studiesData = await Service.getAll("studies")
+          data = studiesData || []
+          break
+
+        case "activities":
+          const activities = (await Service.getAll("activities")) || []
+          for (let x of activities) {
+            delete x["study_id"]
+            delete x["study_name"]
+            let activityData = await LAMP.Activity.view(x.id)
+            x.settings = activityData.settings
+            if (x.spec === "lamp.survey") {
+              try {
+                const res = (await LAMP.Type.getAttachment(
+                  x.id,
+                  "lamp.dashboard.survey_description"
+                )) as AttachmentResponse
+                let activity = spliceActivity({
+                  raw: { ...x, tableData: undefined },
+                  tag: res?.error ? undefined : res?.data,
+                })
+                data.push(activity)
+              } catch (e) {}
+            } else if (!["lamp.survey"].includes(x.spec)) {
+              try {
+                const res = (await LAMP.Type.getAttachment(x.id, "emersive.activity.details")) as AttachmentResponse
+                let activity = spliceCTActivity({
+                  raw: { ...x, tableData: undefined },
+                  tag: res?.error ? undefined : res?.data,
+                })
+                data.push(activity)
+              } catch (e) {}
+            } else data.push({ ...x, tableData: undefined })
+          }
+          break
+
+        case "participants":
+          const participantsData = await Service.getAll("participants")
+          data = participantsData || []
+          break
+
+        case "sensors":
+          const sensorsData = await Service.getAll("sensors")
+          data = sensorsData || []
+          break
+
+        case "activity_events":
+          const query = startDate && endDate ? `?start=${startDate.toISOString()}&end=${endDate.toISOString()}` : ""
+          data = await LAMP.ActivityEvent.allByParticipant(researcherId + query)
+          break
+
+        case "sensor_events":
+          const query2 = startDate && endDate ? `?start=${startDate.toISOString()}&end=${endDate.toISOString()}` : ""
+          data = await LAMP.SensorEvent.allByParticipant(researcherId + query2)
+          break
+      }
+
+      // Convert data based on format
+      let content, fileName
+      switch (format) {
+        case "json":
+          content = btoa(unescape(encodeURIComponent(JSON.stringify(data))))
+          fileName = `${type}_export.json`
+          saveAs(new Blob([content], { type: "text/plain;charset=utf-8" }), fileName)
+          break
+
+        case "csv":
+          content = convertToCSV(data)
+          fileName = `${type}_export.csv`
+          saveAs(new Blob([content], { type: "text/csv;charset=utf-8" }), fileName)
+          break
+
+        case "excel":
+          content = await convertToExcel(data)
+          fileName = `${type}_export.xlsx`
+          saveAs(content, fileName)
+          break
+
+        case "pdf":
+          content = await convertToPDF(data)
+          fileName = `${type}_export.pdf`
+          saveAs(content, fileName)
+          break
+      }
+
+      enqueueSnackbar(t("Data exported successfully"), { variant: "success" })
+    } catch (error) {
+      console.error("Download failed:", error)
+      enqueueSnackbar(t("Failed to export data"), { variant: "error" })
     }
   }
 
@@ -452,13 +889,18 @@ export default function Header({
                   className={classes.actionIcon}
                   // onClick={(event) => setPopover(event.currentTarget)}
                 />
-                <PrintIcon
+                {/* <PrintIcon
                   className={classes.actionIcon}
                   // onClick={(event) => setPopover(event.currentTarget)}
-                />
+                /> */}
                 <DownloadIcon
                   className={classes.actionIcon}
-                  // onClick={(event) => setPopover(event.currentTarget)}
+                  onClick={(event) =>
+                    setDownloadState({
+                      ...downloadState,
+                      anchor: event.currentTarget,
+                    })
+                  }
                 />
               </>
             )}
@@ -693,6 +1135,278 @@ export default function Header({
           <b style={{ color: colors.grey[600] }}>{t("Privacy Policy")}</b>
         </MenuItem>
       </Menu>
+      {/* <Menu
+        anchorEl={downloadMenu.anchor}
+        open={Boolean(downloadMenu.anchor)}
+        onClose={() => setDownloadMenu({...downloadMenu, anchor: null})}
+      >
+        <MenuItem>
+          <FormControl fullWidth>
+            <InputLabel>{t("Select Data Type")}</InputLabel>
+            <Select
+              value={downloadMenu.type}
+              onChange={(e: React.ChangeEvent<{ value: unknown }>) => 
+                setDownloadMenu({...downloadMenu, type: e.target.value as DownloadType})}
+            >
+              <MenuItem value="studies">{t("Studies")}</MenuItem>
+              <MenuItem value="activities">{t("Activities")}</MenuItem>
+              <MenuItem value="participants">{t("Participants")}</MenuItem>
+              <MenuItem value="sensors">{t("Sensors")}</MenuItem>
+              <MenuItem value="activity_events">{t("Activity Events")}</MenuItem>
+              <MenuItem value="sensor_events">{t("Sensor Events")}</MenuItem>
+            </Select>
+          </FormControl>
+        </MenuItem>
+
+        {(downloadMenu.type === 'activity_events' || downloadMenu.type === 'sensor_events') && (
+          <MenuItem>
+            <Box display="flex" flexDirection="column">
+              <DatePicker
+                label={t("Start Date")}
+                value={downloadMenu.startDate}
+                onChange={(date) => setDownloadMenu({...downloadMenu, startDate: date})}
+              />
+              <DatePicker
+                label={t("End Date")}
+                value={downloadMenu.endDate}
+                onChange={(date) => setDownloadMenu({...downloadMenu, endDate: date})}
+              />
+            </Box>
+          </MenuItem>
+        )}
+
+        <MenuItem>
+          <FormControl fullWidth>
+            <InputLabel>{t("Select Format")}</InputLabel>
+            <Select
+              value={downloadMenu.format}
+              onChange={(e: React.ChangeEvent<{ value: unknown }>) => 
+                setDownloadMenu({...downloadMenu, format: e.target.value as DownloadFormat})}
+            >
+              <MenuItem value="json">JSON</MenuItem>
+              <MenuItem value="csv">CSV</MenuItem>
+              <MenuItem value="excel">Excel</MenuItem>
+              <MenuItem value="pdf">PDF</MenuItem>
+            </Select>
+          </FormControl>
+        </MenuItem>
+
+        <MenuItem onClick={() => {
+          downloadData(
+            downloadMenu.type, 
+            downloadMenu.format,
+            downloadMenu.startDate,
+            downloadMenu.endDate
+          )
+          setDownloadMenu({...downloadMenu, anchor: null})
+        }}>
+          <Button fullWidth variant="contained" color="primary">
+            {t("Download")}
+          </Button>
+        </MenuItem>
+      </Menu> */}
+      <Menu
+        anchorEl={downloadState.anchor}
+        open={Boolean(downloadState.anchor)}
+        onClose={() => setDownloadState({ ...downloadState, anchor: null })}
+        PaperProps={{
+          style: {
+            maxHeight: "80vh",
+            width: "400px",
+          },
+        }}
+      >
+        {/* Studies Selection */}
+        <MenuItem>
+          <FormControl fullWidth>
+            <InputLabel>{t("Select Studies")}</InputLabel>
+            <Select
+              multiple
+              value={downloadState.selectedStudies.map((s) => s.studyId)}
+              onChange={(e) => {
+                const selectedIds = e.target.value as string[]
+                const newSelections = selectedIds.map((id) => ({
+                  studyId: id,
+                  items: { participants: [], activities: [], sensors: [] },
+                }))
+                setDownloadState({ ...downloadState, selectedStudies: newSelections })
+              }}
+              renderValue={(selected) => `${(selected as string[]).length} studies selected`}
+            >
+              <MenuItem>
+                <Button
+                  onClick={() => {
+                    setDownloadState({
+                      ...downloadState,
+                      selectedStudies: studiesData.map((s) => ({
+                        studyId: s.id,
+                        items: { participants: [], activities: [], sensors: [] },
+                      })),
+                    })
+                  }}
+                >
+                  {t("Select All")}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setDownloadState({ ...downloadState, selectedStudies: [] })
+                  }}
+                >
+                  {t("Deselect All")}
+                </Button>
+              </MenuItem>
+              <Divider />
+              {studiesData.map((study) => (
+                <MenuItem key={study.id} value={study.id}>
+                  <Checkbox checked={downloadState.selectedStudies.some((s) => s.studyId === study.id)} />
+                  <ListItemText primary={study.name} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </MenuItem>
+
+        {/* For each selected study, show its items */}
+        {downloadState.selectedStudies.map((selection) => {
+          const study = studiesData.find((s) => s.id === selection.studyId)
+          if (!study) return null
+
+          return (
+            <React.Fragment key={study.id}>
+              <ListSubheader>{study.name}</ListSubheader>
+
+              {/* Participants */}
+              <MenuItem>
+                <FormControl fullWidth>
+                  <InputLabel>{t("Participants")}</InputLabel>
+                  <Select
+                    multiple
+                    value={selection.items.participants}
+                    onChange={(e) => {
+                      const newSelections = downloadState.selectedStudies.map((s) =>
+                        s.studyId === study.id
+                          ? { ...s, items: { ...s.items, participants: e.target.value as string[] } }
+                          : s
+                      )
+                      setDownloadState({ ...downloadState, selectedStudies: newSelections })
+                    }}
+                  >
+                    <MenuItem>
+                      <Button
+                        onClick={() => {
+                          const newSelections = downloadState.selectedStudies.map((s) =>
+                            s.studyId === study.id
+                              ? { ...s, items: { ...s.items, participants: study.participants } }
+                              : s
+                          )
+                          setDownloadState({ ...downloadState, selectedStudies: newSelections })
+                        }}
+                      >
+                        {t("Select All")}
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          const newSelections = downloadState.selectedStudies.map((s) =>
+                            s.studyId === study.id ? { ...s, items: { ...s.items, participants: [] } } : s
+                          )
+                          setDownloadState({ ...downloadState, selectedStudies: newSelections })
+                        }}
+                      >
+                        {t("Deselect All")}
+                      </Button>
+                    </MenuItem>
+                    {study.participants.map((id) => (
+                      <MenuItem key={id} value={id}>
+                        <Checkbox checked={selection.items.participants.includes(id)} />
+                        <ListItemText primary={id} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </MenuItem>
+
+              {/* Similar sections for Activities and Sensors */}
+              {/* ... */}
+            </React.Fragment>
+          )
+        })}
+
+        {/* Events Option */}
+        <MenuItem>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={downloadState.includeEvents}
+                onChange={(e) => setDownloadState({ ...downloadState, includeEvents: e.target.checked })}
+              />
+            }
+            label={t("Include Events")}
+          />
+        </MenuItem>
+
+        {/* Date Range (if events included) */}
+        {downloadState.includeEvents && (
+          <MenuItem>
+            <Box display="flex" flexDirection="column" style={{ gap: 2 }}>
+              <DatePicker
+                label={t("Start Date")}
+                value={downloadState.dateRange.startDate}
+                onChange={(date) =>
+                  setDownloadState({
+                    ...downloadState,
+                    dateRange: { ...downloadState.dateRange, startDate: date },
+                  })
+                }
+              />
+              <DatePicker
+                label={t("End Date")}
+                value={downloadState.dateRange.endDate}
+                onChange={(date) =>
+                  setDownloadState({
+                    ...downloadState,
+                    dateRange: { ...downloadState.dateRange, endDate: date },
+                  })
+                }
+              />
+            </Box>
+          </MenuItem>
+        )}
+
+        {/* Format Selection */}
+        <MenuItem>
+          <FormControl fullWidth>
+            <InputLabel>{t("Download Format")}</InputLabel>
+            <Select
+              value={downloadState.format}
+              onChange={(e) =>
+                setDownloadState({
+                  ...downloadState,
+                  format: e.target.value as typeof downloadState.format,
+                })
+              }
+            >
+              <MenuItem value="json">JSON</MenuItem>
+              <MenuItem value="csv">CSV</MenuItem>
+              <MenuItem value="excel">Excel</MenuItem>
+              <MenuItem value="pdf">PDF</MenuItem>
+            </Select>
+          </FormControl>
+        </MenuItem>
+
+        {/* Download Button */}
+        <MenuItem>
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={downloadData}
+            disabled={downloadState.selectedStudies.length === 0}
+          >
+            {t("Download")}
+          </Button>
+        </MenuItem>
+      </Menu>
+
       <Dialog open={confirmLogout} onClose={() => setConfirmLogout(false)}>
         <DialogTitle>{t("Are you sure you want to log out of LAMP right now?")}</DialogTitle>
         <DialogContent>

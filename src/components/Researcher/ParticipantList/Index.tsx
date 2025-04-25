@@ -1429,6 +1429,7 @@ export default function ParticipantList({
                           formatDate={formatDate}
                           onSuspend={handleOpenSuspendDialog}
                           onUnSuspend={handleOpenUnSuspendDialog}
+                          refreshParticipants={searchParticipants}
                         />
                       </Grid>
                     ))}

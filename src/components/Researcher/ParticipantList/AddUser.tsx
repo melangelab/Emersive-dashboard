@@ -99,6 +99,7 @@ export default function AddUser({
   const [mobile, setMobile] = useState("")
   const [notes, setNotes] = useState("")
   const [confirmationOpen, setConfirmationOpen] = useState(false)
+  const [isCreatingParticipant, setIsCreatingParticipant] = useState(false)
   const validate = (element) => {
     return !(typeof element === "undefined" || (typeof element !== "undefined" && element?.trim() === ""))
   }
@@ -126,6 +127,7 @@ export default function AddUser({
       setShowErrorMsg(true)
       return false
     } else {
+      setIsCreatingParticipant(true)
       setStudyBtnClicked(true)
       let newCount = 1
       let ids = []
@@ -174,6 +176,11 @@ export default function AddUser({
           newParticipant.study_id = selectedStudy
           newParticipant.study_name = studies.filter((study) => study.id === selectedStudy)[0]?.name
           newParticipant.group_name = selectedGroup
+          newParticipant.firstName = firstName
+          newParticipant.lastName = lastName
+          newParticipant.email = email
+          newParticipant.mobile = mobile
+          newParticipant.researcherNote = notes
           Service.addData("participants", [newParticipant])
           Service.updateCount("studies", selectedStudy, "participant_count")
           Service.getData("studies", selectedStudy).then((studiesObject) => {
@@ -255,6 +262,7 @@ export default function AddUser({
     }
     setSelectedStudy("")
     closePopUp(2)
+    setIsCreatingParticipant(false)
     // props.onClose as any
   }
 
@@ -310,7 +318,18 @@ export default function AddUser({
 
   return (
     <React.Fragment>
-      <Backdrop className={sliderclasses.backdrop} open={open} onClick={props.onClose as any} />
+      <Backdrop
+        className={sliderclasses.backdrop}
+        open={open}
+        onClick={
+          !isCreatingParticipant
+            ? () => {
+                resetForm()
+                ;(props.onClose as any)()
+              }
+            : undefined
+        }
+      />
       <Slide direction="left" in={open} mountOnEnter unmountOnExit>
         <Box className={sliderclasses.slidePanel}>
           <Box className={sliderclasses.icon}>
@@ -436,10 +455,16 @@ export default function AddUser({
           <Divider />
           <Button
             className={sliderclasses.button}
-            onClick={() => {
-              setConfirmationOpen(false)
-              props.onClose
-            }}
+            onClick={
+              !isCreatingParticipant
+                ? () => {
+                    setConfirmationOpen(false)
+                    resetForm()
+                    props.onClose
+                  }
+                : undefined
+            }
+            disabled={isCreatingParticipant}
           >
             Exit
           </Button>

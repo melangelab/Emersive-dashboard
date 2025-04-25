@@ -12,9 +12,6 @@ import {
   TableRow,
   Grid,
   TextField,
-  Tooltip,
-  IconButton,
-  Icon,
 } from "@material-ui/core"
 import { useTranslation } from "react-i18next"
 import { useSnackbar } from "notistack"
@@ -22,8 +19,6 @@ import LAMP from "lamp-core"
 import { Service } from "../../DBService/DBService"
 import ViewItems, { FieldConfig, TabConfig } from "./ViewItems"
 import EditIcon from "@material-ui/icons/Edit"
-import { sensorConstraints } from "./SensorDialog"
-import { slideStyles } from "../ParticipantList/AddButton"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -446,249 +441,97 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
   // Create tab content for settings
   const SettingsContent = () => {
     const sensorSettings = editedValues.settings || {}
-    const sliderclasses = slideStyles()
-
-    const isConstraintsSatisfied = () => {
-      if (!sensor.spec || !sensorConstraints[sensor.spec]) return true
-      if (!sensorSettings?.frequency) return true
-      const constraints = sensorConstraints[sensor.spec]
-      const frequency = sensorSettings?.frequency || 1
-
-      if (constraints.min !== null && frequency < constraints.min) return false
-      if (constraints.max !== null && frequency > constraints.max) return false
-      return true
-    }
-
-    const isDurationConstraintsSatisfied = () => {
-      if (!sensor.spec || !sensorConstraints[sensor.spec]) return true
-
-      if (!sensorSettings?.data_collection_duration) return true
-      const constraints = sensorConstraints[sensor.spec]
-      const duration = sensorSettings?.data_collection_duration || 0.1
-
-      if (constraints.min !== null && duration > 1 / constraints.min) return false
-      if (constraints.max !== null && duration < 1 / constraints.max) return false
-      return true
-    }
-
     return (
       <Box className={classes.tabContent}>
-        <Box mt={4}>
-          <Typography variant="subtitle1" className={sliderclasses.field}>
-            {t("Sensor Settings")}
-          </Typography>
-          <Box p={2} mt={1} border="1px solid rgba(0, 0, 0, 0.12)" borderRadius="4px" bgcolor="rgba(0, 0, 0, 0.02)">
-            <Box display="flex" alignItems="center" mb={2}>
-              <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
-                {t("Frequency (in seconds)")}
-              </Typography>
-              {sensor.spec && sensorConstraints[sensor.spec] && (
-                <Tooltip
-                  title={
-                    <Box p={1}>
-                      <Typography variant="body2">Constraints:</Typography>
-                      <Typography variant="body2">
-                        {sensorConstraints[sensor.spec].min !== null && `Min: ${sensorConstraints[sensor.spec].min}`}
-                        {sensorConstraints[sensor.spec].min !== null &&
-                          sensorConstraints[sensor.spec].max !== null &&
-                          " | "}
-                        {sensorConstraints[sensor.spec].max !== null && `Max: ${sensorConstraints[sensor.spec].max}`}
-                      </Typography>
-                    </Box>
-                  }
-                  style={{ marginLeft: "10px" }}
-                  placement="right"
-                >
-                  <IconButton size="small">
-                    <Icon>info</Icon>
-                  </IconButton>
-                </Tooltip>
-              )}
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="flex-end"
-                style={{ marginLeft: "auto", width: "50%" }}
-              >
+        <Grid container spacing={2} className={classes.settingsContainer}>
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" className={classes.fieldLabel}>
+              {t("Sensor Settings")}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label={t("Data Collection Duration")}
+              value={sensorSettings.data_collection_duration || ""}
+              onChange={(e) => handleSettingsChange("data_collection_duration", e.target.value)}
+              variant="outlined"
+              className={classes.settingsField}
+              placeholder={isEditing ? t("Enter duration") : t("Not set")}
+              disabled={!isEditing}
+              InputProps={{
+                classes: !isEditing ? { root: classes.readOnlyField } : {},
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              type={isEditing ? "number" : "text"}
+              label={t("Frequency")}
+              value={sensorSettings.frequency || 1}
+              onChange={(e) => handleSettingsChange("frequency", e.target.value)}
+              variant="outlined"
+              className={classes.settingsField}
+              placeholder={t("Enter frequency")}
+              disabled={!isEditing}
+              InputProps={{
+                classes: !isEditing ? { root: classes.readOnlyField } : {},
+              }}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" className={classes.fieldLabel}>
+              {t("Data Collection Time Period")}
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
                 <TextField
-                  size="small"
+                  fullWidth
+                  type="time"
+                  label={t("Start Time")}
+                  value={sensorSettings.data_collection_timeperiod?.start_time || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("data_collection_timeperiod", {
+                      ...(sensorSettings.data_collection_timeperiod || {}),
+                      start_time: e.target.value,
+                    })
+                  }
                   variant="outlined"
-                  type="number"
-                  inputProps={{
-                    inputMode: "decimal",
-                    min: 0,
-                    step: 0.01,
-                    style: { appearance: "textfield" },
-                  }}
-                  InputProps={{
-                    classes: {
-                      input: !isEditing ? classes.readOnlyField : undefined,
-                    },
-                    readOnly: !isEditing,
-                  }}
-                  error={!isConstraintsSatisfied()}
-                  value={sensorSettings?.frequency}
-                  onChange={(e) => handleSettingsChange("frequency", e.target.value)}
-                  placeholder={t("Enter frequency")}
-                  style={{ width: "100%" }}
                   className={classes.settingsField}
-                  helperText={
-                    !isConstraintsSatisfied()
-                      ? `Frequency must be ${
-                          sensorConstraints[sensor.spec]?.min !== null
-                            ? `>= ${sensorConstraints[sensor.spec]?.min}`
-                            : ""
-                        }${
-                          sensorConstraints[sensor.spec]?.min !== null && sensorConstraints[sensor.spec]?.max !== null
-                            ? " and "
-                            : ""
-                        }${
-                          sensorConstraints[sensor.spec]?.max !== null
-                            ? `<= ${sensorConstraints[sensor.spec]?.max}`
-                            : ""
-                        }`
-                      : ""
-                  }
+                  placeholder={t("Enter start time")}
+                  disabled={!isEditing}
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{
+                    classes: !isEditing ? { root: classes.readOnlyField } : {},
+                  }}
                 />
-              </Box>
-            </Box>
-
-            <Box display="flex" alignItems="center" mb={2}>
-              <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
-                {t("Data Collection Duration (in mins)")}:
-              </Typography>
-              {sensor.spec && sensorConstraints[sensor.spec] && (
-                <Tooltip
-                  title={
-                    <Box p={1}>
-                      <Typography variant="body2">Value Range:</Typography>
-                      <Typography variant="body2">
-                        {sensorConstraints[sensor.spec].max !== null &&
-                          `Min: ${1 / sensorConstraints[sensor.spec].max}`}
-                        {sensorConstraints[sensor.spec].min !== null &&
-                          sensorConstraints[sensor.spec].max !== null &&
-                          " | "}
-                        {sensorConstraints[sensor.spec].min !== null &&
-                          `Max: ${1 / sensorConstraints[sensor.spec].min}`}
-                      </Typography>
-                    </Box>
-                  }
-                  style={{ marginLeft: "10px" }}
-                  placement="right"
-                >
-                  <IconButton size="small">
-                    <Icon>info</Icon>
-                  </IconButton>
-                </Tooltip>
-              )}
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="flex-end"
-                style={{ marginLeft: "auto", width: "50%" }}
-              >
+              </Grid>
+              <Grid item xs={12} sm={6}>
                 <TextField
-                  size="small"
+                  fullWidth
+                  type="time"
+                  label={t("End Time")}
+                  value={sensorSettings.data_collection_timeperiod?.end_time || ""}
+                  onChange={(e) => {
+                    handleSettingsChange("data_collection_timeperiod", {
+                      ...(sensorSettings.data_collection_timeperiod || {}),
+                      end_time: e.target.value,
+                    })
+                  }}
                   variant="outlined"
-                  type="number"
-                  error={!isDurationConstraintsSatisfied()}
-                  value={sensorSettings?.data_collection_duration}
-                  inputProps={{
-                    inputMode: "decimal",
-                    min: 0,
-                    step: 0.01,
-                    style: { appearance: "textfield" },
-                  }}
-                  InputProps={{
-                    classes: {
-                      input: !isEditing ? classes.readOnlyField : undefined,
-                    },
-                    readOnly: !isEditing,
-                  }}
-                  onChange={(e) => handleSettingsChange("data_collection_duration", e.target.value)}
-                  placeholder={t("Enter duration")}
-                  style={{ width: "100%" }}
                   className={classes.settingsField}
-                  helperText={
-                    !isDurationConstraintsSatisfied()
-                      ? `Duration must be ${
-                          sensorConstraints[sensor.spec]?.max !== null
-                            ? `>= ${1 / sensorConstraints[sensor.spec]?.max}`
-                            : ""
-                        }${
-                          sensorConstraints[sensor.spec]?.min !== null && sensorConstraints[sensor.spec]?.max !== null
-                            ? " and "
-                            : ""
-                        }${
-                          sensorConstraints[sensor.spec]?.min !== null
-                            ? `<= ${1 / sensorConstraints[sensor.spec]?.min}`
-                            : ""
-                        }`
-                      : ""
-                  }
+                  placeholder={t("Enter end time")}
+                  disabled={!isEditing}
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{
+                    classes: !isEditing ? { root: classes.readOnlyField } : {},
+                  }}
                 />
-              </Box>
-            </Box>
-
-            <Box display="flex" alignItems="center">
-              <Typography variant="body2" style={{ width: "50%", fontWeight: 500 }}>
-                {t("Data Collection Timeperiod")}:
-              </Typography>
-              <Box style={{ width: "50%" }}>
-                <Box display="flex" mb={1}>
-                  <Typography variant="caption" style={{ width: "50%" }}>
-                    {t("Start Time")}:
-                  </Typography>
-                  <TextField
-                    type="time"
-                    size="small"
-                    variant="outlined"
-                    value={sensorSettings?.data_collection_timeperiod?.start_time || ""}
-                    onChange={(e) =>
-                      handleSettingsChange("data_collection_timeperiod", {
-                        ...(sensorSettings?.data_collection_timeperiod || {}),
-                        start_time: e.target.value,
-                      })
-                    }
-                    className={classes.settingsField}
-                    InputLabelProps={{ shrink: true }}
-                    InputProps={{
-                      classes: {
-                        input: !isEditing ? classes.readOnlyField : undefined,
-                      },
-                      readOnly: !isEditing,
-                    }}
-                  />
-                </Box>
-                <Box display="flex">
-                  <Typography variant="caption" style={{ width: "50%" }}>
-                    {t("End Time")}:
-                  </Typography>
-                  <TextField
-                    type="time"
-                    size="small"
-                    variant="outlined"
-                    value={sensorSettings?.data_collection_timeperiod?.end_time || ""}
-                    onChange={(e) =>
-                      handleSettingsChange("data_collection_timeperiod", {
-                        ...(sensorSettings?.data_collection_timeperiod || {}),
-                        end_time: e.target.value,
-                      })
-                    }
-                    className={classes.settingsField}
-                    InputLabelProps={{ shrink: true }}
-                    InputProps={{
-                      classes: {
-                        input: !isEditing ? classes.readOnlyField : undefined,
-                      },
-                      readOnly: !isEditing,
-                    }}
-                  />
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
       </Box>
     )
   }

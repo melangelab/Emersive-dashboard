@@ -89,35 +89,15 @@ export function addSensorItem(x, studies) {
   Service.addData("sensors", [x])
 }
 
-interface SensorSettings {
-  frequency?: number
-}
-
-interface SettingsInfo {
-  "lamp.analytics": SensorSettings
-  "lamp.gps": SensorSettings
-  "lamp.accelerometer": SensorSettings
-  "lamp.accelerometer.motion": SensorSettings
-  "lamp.accelerometer.device_motion": SensorSettings
-  "lamp.device_state": SensorSettings
-  "lamp.steps": SensorSettings
-  "lamp.nearby_device": SensorSettings
-  "lamp.telephony": SensorSettings
-  "lamp.sleep": SensorSettings
-  "lamp.ambient": SensorSettings
-}
-
 export default function AddSensor({
   studies,
   studyId,
   setSensors,
-  settingsInfo,
   ...props
 }: {
   studies?: Array<Object>
   studyId?: string
   setSensors?: Function
-  settingsInfo?: SettingsInfo
   [key: string]: any
 }) {
   const classes = useStyles()
@@ -200,7 +180,6 @@ export default function AddSensor({
         studyId={studyId ?? null}
         addOrUpdateSensor={addOrUpdateSensor}
         allSensors={allSensors}
-        settingsInfo={settingsInfo}
       />
     </Box>
   )

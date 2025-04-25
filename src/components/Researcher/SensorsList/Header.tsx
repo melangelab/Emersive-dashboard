@@ -84,24 +84,6 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-export interface SensorSettings {
-  frequency?: number
-}
-
-export interface SettingsInfo {
-  "lamp.analytics": SensorSettings
-  "lamp.gps": SensorSettings
-  "lamp.accelerometer": SensorSettings
-  "lamp.accelerometer.motion": SensorSettings
-  "lamp.accelerometer.device_motion": SensorSettings
-  "lamp.device_state": SensorSettings
-  "lamp.steps": SensorSettings
-  "lamp.nearby_device": SensorSettings
-  "lamp.telephony": SensorSettings
-  "lamp.sleep": SensorSettings
-  "lamp.ambient": SensorSettings
-}
-
 export default function Header({
   studies,
   researcherId,
@@ -116,7 +98,6 @@ export default function Header({
   title,
   authType,
   onLogout,
-  settingsInfo,
   ...props
 }: {
   studies?: Array<Object>
@@ -132,7 +113,6 @@ export default function Header({
   title?: string
   authType?: string
   onLogout?: Function
-  settingsInfo?: SettingsInfo
   [key: string]: any
 }) {
   const classes = useStyles()
@@ -222,7 +202,6 @@ export default function Header({
           <AddSensor
             studies={studies}
             setSensors={setSensors}
-            settingsInfo={settingsInfo}
             researcherId={researcherId}
             title={title}
             resemail={props.resemail}

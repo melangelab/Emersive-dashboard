@@ -24,6 +24,9 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  TextField,
+  Chip,
+  ListItemText,
 } from "@material-ui/core"
 import LAMP from "lamp-core"
 import ActivityDetailsDialog from "./ActivityDetailsDialog"
@@ -50,7 +53,8 @@ import { ReactComponent as RemoveCommunityFilledIcon } from "../../../icons/NewI
 import { ReactComponent as VersionThisIcon } from "../../../icons/NewIcons/code-merge.svg"
 import { ReactComponent as VersionThisFilledIcon } from "../../../icons/NewIcons/code-merge-filled.svg"
 import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/trash-xmark-Deleted.svg"
-
+import { ReactComponent as SaveIcon } from "../../../icons/NewIcons/floppy-disks.svg"
+import { ReactComponent as SaveFilledIcon } from "../../../icons/NewIcons/floppy-disks-filled.svg"
 import { studycardStyles } from "../Studies/Index"
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -277,6 +281,16 @@ const useStyles = makeStyles((theme: Theme) =>
       marginLeft: theme.spacing(1),
       fontSize: "0.75rem",
     },
+    editableField: {
+      "& .MuiInputBase-input": {
+        padding: theme.spacing(1),
+      },
+      "& .MuiOutlinedInput-root": {
+        "& fieldset": {
+          borderColor: theme.palette.primary.main,
+        },
+      },
+    },
   })
 )
 
@@ -309,6 +323,12 @@ export default function ActivityTableRow({
   setActivities,
   parentClasses,
   onViewActivity,
+  editingActivity,
+  onEditActivity,
+  onSaveActivity,
+  mode,
+  onCellValueChange,
+  availableSpecs,
   ...props
 }) {
   const classes = useStyles()
@@ -328,7 +348,8 @@ export default function ActivityTableRow({
   const [duplicateLoading, setDuplicateLoading] = useState(false)
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
   const activitycardclasses = studycardStyles()
-
+  const editableColumns = ["name", "creator", "groups"]
+  console.log("activity", activity)
   const handlePreviewVersion = async (version) => {
     try {
       setPreviewDialogOpen(true)
@@ -497,6 +518,100 @@ export default function ActivityTableRow({
     if (column.id === "index") {
       return index
     }
+    const getCurrentValue = (fieldId) => {
+      if (isEditable && props.editedValues.hasOwnProperty(fieldId)) {
+        return props.editedValues[fieldId]
+      }
+      return column.value(activity)
+    }
+
+    const isEditable = editableColumns.includes(column.id) && mode === "edit" && editingActivity?.id === activity.id
+    if (isEditable) {
+      switch (column.id) {
+        case "name":
+          return (
+            <TextField
+              defaultValue={getCurrentValue("name")}
+              onChange={(e) => onCellValueChange("name", e.target.value)}
+              fullWidth
+              size="small"
+              variant="outlined"
+              className={classes.editableField}
+            />
+          )
+        // case "type":
+        //   return (
+        //     <FormControl fullWidth size="small" variant="outlined">
+        //     <Select
+        //       value={activity.spec || ''} // Ensure default value
+        //       onChange={(e) => onCellValueChange("spec", e.target.value)}
+        //       className={classes.editableField}
+        //     >
+        //       {availableSpecs.map((spec) => (
+        //         <MenuItem key={spec} value={spec}>
+        //           {spec} {/* Remove 'lamp.' prefix for display */}
+        //         </MenuItem>
+        //       ))}
+        //                     {availableSpecs.map((spec) => (
+        //         <MenuItem key={spec} value={spec}>
+        //           {spec} {/* Remove 'lamp.' prefix for display */}
+        //         </MenuItem>
+        //       ))}
+
+        //     </Select>
+        //   </FormControl>
+        //   )
+        case "creator":
+          return (
+            <TextField
+              defaultValue={getCurrentValue("creator")}
+              onChange={(e) => onCellValueChange("creator", e.target.value)}
+              fullWidth
+              size="small"
+              variant="outlined"
+              className={classes.editableField}
+            />
+          )
+        case "groups":
+          const availableGroups = activity.study_id ? studies.find((s) => s.id === activity.study_id)?.gname || [] : []
+          return (
+            <FormControl fullWidth size="small" variant="outlined">
+              <Select
+                multiple
+                value={getCurrentValue("groups") || []}
+                onChange={(e) => onCellValueChange("groups", e.target.value)}
+                renderValue={(selected: string[]) => (
+                  <Box style={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                    {selected.map((value) => (
+                      <Chip key={value} label={value} size="small" />
+                    ))}
+                  </Box>
+                )}
+                className={classes.editableField}
+              >
+                {availableGroups.map((group) => (
+                  <MenuItem key={group} value={group}>
+                    <Checkbox checked={(getCurrentValue("groups") || []).indexOf(group) > -1} />
+                    <ListItemText primary={group} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            // return (
+            //   <TextField
+            //     defaultValue={getCurrentValue("groups")?.join(", ") || ""}
+            //     onChange={(e) => onCellValueChange("groups", e.target.value.split(",").map(g => g.trim()))}
+            //     fullWidth
+            //     size="small"
+            //     variant="outlined"
+            //     className={classes.editableField}
+            //     helperText="Comma separated values"
+            //   />
+          )
+        default:
+          return column.value(activity)
+      }
+    }
 
     const value = column.value(activity)
     if (column.id === "id") {
@@ -551,6 +666,15 @@ export default function ActivityTableRow({
             <Typography key={key} variant="body2">
               {key}: {(schema as ScoreInterpretationSchema).ranges.length} ranges
             </Typography>
+          ))}
+        </Box>
+      )
+    }
+    if (column.id === "groups" && Array.isArray(value)) {
+      return (
+        <Box style={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+          {value.map((group) => (
+            <Chip key={group} label={group} size="small" />
           ))}
         </Box>
       )
@@ -702,14 +826,49 @@ export default function ActivityTableRow({
                   activeButton={activeButton}
                   setActiveButton={setActiveButton}
                 />
-                <UpdateActivity
+                {activeButton.id === activity.id && activeButton.action === "edit" ? (
+                  <EditFilledIcon
+                    className={`${activitycardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "edit" })
+                      onEditActivity(activity)
+                    }}
+                  />
+                ) : (
+                  <EditIcon
+                    className={activitycardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "edit" })
+                      onEditActivity(activity)
+                    }}
+                  />
+                )}
+                {activeButton.id === activity.id && activeButton.action === "save" ? (
+                  <SaveFilledIcon
+                    className={`${activitycardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "save" })
+                      onSaveActivity(activity)
+                    }}
+                  />
+                ) : (
+                  <SaveIcon
+                    className={activitycardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "save" })
+                      onSaveActivity(activity)
+                    }}
+                  />
+                )}
+
+                {/* <UpdateActivity
                   activity={activity}
                   activities={activities}
                   studies={studies}
                   setActivities={setActivities}
                   profile={0}
                   researcherId={researcherId}
-                />
+                /> */}
                 {activeButton.id === activity.id && activeButton.action === "history" ? (
                   <HistoryFilledIcon
                     className={`${activitycardclasses.actionIcon} active`}

@@ -84,7 +84,7 @@ export default function DeleteStudy({ study, deletedStudy, researcherId, ...prop
             : []
         let data = selectedStudies.filter((d) => d !== study.name)
         localStorage.setItem("studies_" + researcherId, JSON.stringify(data))
-        enqueueSnackbar(`${t("Successfully deleted group.", { studyId: studyId })}`, { variant: "success" })
+        enqueueSnackbar(`${t(`Successfully deleted ${study.name ? study.name : "study"}.`)}`, { variant: "success" })
       })
       .catch((error) => {
         deletedStudy("")
@@ -145,7 +145,7 @@ export default function DeleteStudy({ study, deletedStudy, researcherId, ...prop
       >
         <DialogContent dividers={false} classes={{ root: classes.activityContent }}>
           <Box mt={2} mb={2}>
-            {`${t("Are you sure you want to delete this group?")}`}
+            {`${t(`Are you sure you want to delete "${study.name ? study.name : "this Study"}"?`)}`}
           </Box>
           <DialogActions>
             <Box textAlign="center" width={1} mb={3}>

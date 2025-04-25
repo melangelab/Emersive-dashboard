@@ -19,7 +19,7 @@ import { Service } from "../../DBService/DBService"
 import { slideStyles } from "../ParticipantList/AddButton"
 import { ReactComponent as SensorIcon } from "../../../icons/NewIcons/sensor-on-filled.svg"
 
-export default function CopySensor({ sensor, studies, setSensors, allSensors, settingsInfo, open, onclose, ...props }) {
+export default function CopySensor({ sensor, studies, setSensors, allSensors, open, onclose, ...props }) {
   const { t } = useTranslation()
   const { enqueueSnackbar } = useSnackbar()
   const sliderclasses = slideStyles()
@@ -64,7 +64,7 @@ export default function CopySensor({ sensor, studies, setSensors, allSensors, se
       name: sensorName.trim(),
       spec: sensor.spec,
       group: selectedGroup,
-      settings: sensor.settings || settingsInfo[sensor.spec],
+      settings: sensor.settings,
     } as any
     await LAMP.Sensor.create(selectedStudy, newsensordetails)
       .then((res: any) => {

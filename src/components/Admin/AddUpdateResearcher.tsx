@@ -113,7 +113,7 @@ export default function AddUpdateResearcher({
   const handleInputChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
-      [field]: field === "mobile" ? Number(event.target.value) : event.target.value,
+      [field]: event.target.value,
     })
   }
 

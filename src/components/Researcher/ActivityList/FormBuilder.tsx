@@ -22,7 +22,9 @@ import { Add as AddIcon, Delete as DeleteIcon, Description } from "@mui/icons-ma
 import QuestionLogic from "./QuestionLogic"
 
 const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
-  const [formFields, setFormFields] = useState(formFieldsProp)
+  const [formFields, setFormFields] = useState(formFieldsProp || [])
+  const initializedRef = useRef(false)
+  const prevFormFieldsRef = useRef(formFields)
   const [selectedFieldType, setSelectedFieldType] = useState("")
   const [selectedFormulaType, setSelectedFormulaType] = useState("")
 
@@ -34,8 +36,17 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
 
   // Sync form fields with parent component when needed
   useEffect(() => {
-    if (onChange) {
+    // if (onChange) {
+    //   onChange({ fields: formFields, formula: fieldsFormula })
+    // }
+    if (
+      onChange &&
+      initializedRef.current &&
+      (JSON.stringify(prevFormFieldsRef.current) !== JSON.stringify(formFields) ||
+        prevFormFieldsRef.current !== formFields)
+    ) {
       onChange({ fields: formFields, formula: fieldsFormula })
+      prevFormFieldsRef.current = formFields
     }
   }, [formFields, fieldsFormula])
 
@@ -50,6 +61,12 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
     { value: "date", label: "Date" }, // Added Date field
     { value: "time", label: "Time" }, // Added Time field
   ]
+
+  useEffect(() => {
+    initializedRef.current = true
+  }, [])
+
+  useEffect(() => {}, [formFieldsProp, formula])
 
   const scrollBoxRef = useRef(null)
 
