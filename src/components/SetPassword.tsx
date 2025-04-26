@@ -75,7 +75,7 @@ const SetPassword = ({ token, onComplete, title, userType }) => {
     }).toString()
 
     try {
-      const response = await fetch(`${serverAddress}/set-password?${params}`, {
+      const response: any = await fetch(`${serverAddress}/set-password?${params}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
@@ -85,7 +85,8 @@ const SetPassword = ({ token, onComplete, title, userType }) => {
         showAlert("Password reset successfully")
         onComplete()
       } else {
-        showAlert("Error resetting password")
+        const responseData = await response.json()
+        showAlert(`Error resetting password: ${responseData?.message}`)
         setSubmitClick(false)
       }
     } catch (error) {
@@ -124,7 +125,7 @@ const SetPassword = ({ token, onComplete, title, userType }) => {
                     fontWeight: "300",
                   }}
                 >
-                  Set Password
+                  {title}
                 </h1>
                 <form onSubmit={handleSubmit}>
                   <Box>
