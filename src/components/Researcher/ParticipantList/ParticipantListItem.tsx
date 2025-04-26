@@ -365,7 +365,12 @@ export default function ParticipantListItem({
   const handleDelete = async (status) => {
     if (status === "Yes") {
       try {
-        // TODO
+        const credentials = await LAMP.Credential.list(participant.id)
+        const filteredCreds = credentials.filter((c) => c.hasOwnProperty("origin"))
+        for (let cred of filteredCreds) {
+          await LAMP.Credential.delete(participant.id, cred["access_key"])
+        }
+        await LAMP.Type.setAttachment(participant.id, "me", "lamp.name", null)
         await LAMP.Participant.delete(participant.id)
         await Service.delete("participants", [participant.id])
         await Service.updateCount("studies", participant.study_id, "participant_count", 1, 1)
