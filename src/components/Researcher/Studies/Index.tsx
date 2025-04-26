@@ -1242,7 +1242,7 @@ export default function StudiesList({
 
   const handleParticipantAdded = (newParticipant) => {
     // Optional: Perform any actions after participant is added
-    enqueueSnackbar("Participant added successfully", { variant: "success" })
+    // enqueueSnackbar("Participant added successfully", { variant: "success" })
     // Optionally refresh studies or participants
     getAllStudies()
     setSelectedStudyForDialog(null)
