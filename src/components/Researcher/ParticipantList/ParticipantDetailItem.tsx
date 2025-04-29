@@ -222,7 +222,7 @@ const AsyncStatsContent: React.FC<{
   const [loading, setLoading] = useState(true)
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [startDate, setStartDate] = useState<Date | null>(
-    new Date(new Date().setDate(new Date().getDate() - 7)) // Default to 7 days ago
+    new Date(new Date().setDate(new Date().getDate() - 1)) // Default to previous day
   )
   const [endDate, setEndDate] = useState<Date | null>(new Date()) // Default to today
   const [dateRangeEnabled, setDateRangeEnabled] = useState<boolean>(false)
@@ -299,6 +299,7 @@ const AsyncStatsContent: React.FC<{
           } else {
             newItems = (study.sensors || []).map((sensor) => {
               const sensorEvent = participantData?.last_sensor_events?.find((s) => s.sensor_spec === sensor.spec)
+              console.log("sensorEvent", sensorEvent)
               return {
                 ...sensor,
                 lastEvent: sensorEvent?.last_event
@@ -329,6 +330,27 @@ const AsyncStatsContent: React.FC<{
 
   const handleEndDateChange = (date: Date | null) => {
     setEndDate(date)
+  }
+
+  const renderSensorData = (data: any) => {
+    if (!data) return <Typography variant="body2">No data available</Typography>
+
+    if (typeof data !== "object") {
+      return <Typography variant="body2">{String(data)}</Typography>
+    }
+
+    return (
+      <Box pl={1}>
+        {Object.entries(data).map(([key, value]) => (
+          <Box key={key} mb={1}>
+            <Typography variant="body2">
+              <strong>{key}:</strong>{" "}
+              {typeof value === "object" && value !== null ? JSON.stringify(value) : String(value)}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+    )
   }
 
   if (loading) {
@@ -446,9 +468,12 @@ const AsyncStatsContent: React.FC<{
                           </Box>
                         )}
                         {selectedTab.tab === "sensors" && (
-                          <Typography variant="body2" color="textSecondary">
-                            <strong>Data:</strong> {event.data ? "Present" : "None"}
-                          </Typography>
+                          <Box mt={1}>
+                            <Typography variant="body2" color="textSecondary">
+                              <strong>Sensor Data:</strong>
+                            </Typography>
+                            {renderSensorData(event.data)}
+                          </Box>
                         )}
                       </Box>
                     ))
@@ -467,19 +492,19 @@ const AsyncStatsContent: React.FC<{
                   <Typography variant="subtitle2" color="textSecondary">
                     Last Event: {item.lastEvent.timestamp}
                   </Typography>
-                  {item.lastEvent.temporal_slices && (
-                    <IconButton
-                      size="small"
-                      onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
-                      style={{ marginLeft: 8 }}
-                    >
-                      {expandedIndex === index ? (
-                        <ExpandLessIcon fontSize="small" />
-                      ) : (
-                        <ExpandMoreIcon fontSize="small" />
-                      )}
-                    </IconButton>
-                  )}
+                  {/* {item.lastEvent.temporal_slices && ( */}
+                  <IconButton
+                    size="small"
+                    onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+                    style={{ marginLeft: 8 }}
+                  >
+                    {expandedIndex === index ? (
+                      <ExpandLessIcon fontSize="small" />
+                    ) : (
+                      <ExpandMoreIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                  {/* )} */}
                 </Box>
                 {/* {selectedTab.tab === "activities" && item.lastEvent.temporal_slices && (
               <Box mt={1} pl={2} borderLeft="3px solid #ccc">
@@ -527,6 +552,14 @@ const AsyncStatsContent: React.FC<{
                           </Typography>
                         </Box>
                       ))}
+                    </Box>
+                  )}
+                  {selectedTab.tab === "sensors" && item.lastEvent.data && (
+                    <Box mt={1} pl={2} borderLeft="3px solid #ccc">
+                      <Typography variant="body2" color="textPrimary">
+                        <strong>Sensor Data:</strong>
+                      </Typography>
+                      {renderSensorData(item.lastEvent.data)}
                     </Box>
                   )}
                 </Collapse>
