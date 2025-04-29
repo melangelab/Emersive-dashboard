@@ -1116,6 +1116,7 @@ export default function ActivityList({
             researcherId={researcherId}
             onSave={(newActivity) => {
               setActivities((prev) => [...prev, newActivity])
+              searchActivities()
               setCreatingActivity(false)
             }}
             onCancel={() => setCreatingActivity(false)}

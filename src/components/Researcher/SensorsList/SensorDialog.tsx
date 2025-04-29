@@ -396,7 +396,7 @@ export default function SensorDialog({
     const frequency = sensorSettings?.frequency || 1
 
     if (constraints.min !== null && frequency < constraints.min) return false
-    if (constraints.max !== null && frequency > constraints.max) return false
+    // if (constraints.max !== null && frequency > constraints.max) return false
     return true
   }
 
@@ -407,8 +407,8 @@ export default function SensorDialog({
     const constraints = sensorConstraints[sensorSpec]
     const duration = sensorSettings?.data_collection_duration || 0.1
 
-    if (constraints.min !== null && duration > 1 / constraints.min) return false
-    if (constraints.max !== null && duration < 1 / constraints.max) return false
+    // if (constraints.min !== null && duration > 1 / (constraints.min*60)) return false
+    if (constraints.max !== null && duration < 1 / (constraints.max * 60)) return false
     return true
   }
 
@@ -575,7 +575,13 @@ export default function SensorDialog({
                     inputProps={{ inputMode: "decimal", min: 0, step: 0.01, style: { appearance: "textfield" } }}
                     error={!isConstraintsSatisfied()}
                     value={sensorSettings?.frequency}
-                    onChange={(e) => handleSettingsChange("frequency", e.target.value)}
+                    onChange={(e) => {
+                      let freq = null
+                      if (typeof e.target.value === "string") {
+                        freq = parseFloat(e.target.value)
+                      }
+                      handleSettingsChange("frequency", freq)
+                    }}
                     placeholder={t("Enter frequency")}
                     style={{ width: "100%" }}
                     className={classes.settingsField}
@@ -602,7 +608,7 @@ export default function SensorDialog({
 
               <Box display="flex" alignItems="center" mb={2}>
                 <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
-                  {t("Data Collection Duration (seconds)")}:
+                  {t("Data Collection Duration (minutes)")}:
                 </Typography>
                 {sensorSpec && sensorConstraints[sensorSpec] && (
                   <Tooltip
@@ -611,12 +617,12 @@ export default function SensorDialog({
                         <Typography variant="body2">Value Range:</Typography>
                         <Typography variant="body2">
                           {sensorConstraints[sensorSpec].max !== null &&
-                            `Min: ${1 / sensorConstraints[sensorSpec].max}`}
-                          {sensorConstraints[sensorSpec].min !== null &&
-                            sensorConstraints[sensorSpec].max !== null &&
-                            " | "}
-                          {sensorConstraints[sensorSpec].min !== null &&
-                            `Max: ${1 / sensorConstraints[sensorSpec].min}`}
+                            `Min: ${Math.round((1 / sensorConstraints[sensorSpec].max / 60) * 1000) / 1000}`}
+                          {/* {sensorConstraints[sensor.spec].min !== null &&
+                          sensorConstraints[sensor.spec].max !== null &&
+                          " | "}
+                        {sensorConstraints[sensor.spec].min !== null &&
+                          `Max: ${Math.round(((1 / sensorConstraints[sensor.spec].min)/60)*1000)/1000}`} */}
                         </Typography>
                       </Box>
                     }
@@ -641,25 +647,24 @@ export default function SensorDialog({
                     error={!isDurationConstraintsSatisfied()}
                     value={sensorSettings?.data_collection_duration}
                     inputProps={{ inputMode: "decimal", min: 0, step: 1, style: { appearance: "textfield" } }}
-                    onChange={(e) => handleSettingsChange("data_collection_duration", e.target.value)}
+                    onChange={(e) => {
+                      let duration = null
+                      if (typeof e.target.value === "string") {
+                        duration = parseFloat(e.target.value)
+                      }
+                      handleSettingsChange("data_collection_duration", duration)
+                    }}
                     placeholder={t("Enter duration")}
                     style={{ width: "100%" }}
                     className={classes.settingsField}
                     helperText={
                       !isDurationConstraintsSatisfied()
                         ? `Duration must be ${
-                            sensorConstraints[sensorSpec]?.max !== null
-                              ? `>= ${1 / sensorConstraints[sensorSpec]?.max}`
+                            sensorConstraints[sensor.spec]?.max !== null
+                              ? `>= ${Math.round((1 / sensorConstraints[sensor.spec].max / 60) * 1000) / 1000}`
                               : ""
-                          }${
-                            sensorConstraints[sensorSpec]?.min !== null && sensorConstraints[sensorSpec]?.max !== null
-                              ? " and "
-                              : ""
-                          }${
-                            sensorConstraints[sensorSpec]?.min !== null
-                              ? `<= ${1 / sensorConstraints[sensorSpec]?.min}`
-                              : ""
-                          }`
+                          }
+                        `
                         : ""
                     }
                   />

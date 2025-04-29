@@ -24,7 +24,7 @@ import { useSnackbar } from "notistack"
 import LAMP from "lamp-core"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
-import { fetchPostData } from "../SaveResearcherData"
+import { fetchGetData, fetchPostData } from "../SaveResearcherData"
 import { ReactComponent as SRAddIcon } from "../../../icons/NewIcons/users-alt.svg"
 import { ReactComponent as SRAddFilledIcon } from "../../../icons/NewIcons/users-alt-filled.svg"
 import { slideStyles } from "../ParticipantList/AddButton"
@@ -91,7 +91,11 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
   useEffect(() => {
     const fetchResearchers = async () => {
       try {
-        const researchers = await LAMP.Researcher.all()
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        console.log(authString)
+        const response = await fetchGetData(authString, `researcher/others/list`, "researcher")
+        console.log("Researchers with access scope:", response)
+        const researchers = response.data
         console.log("All researchers:", researchers)
         const filteredResearchers = researchers.filter((r) => r.id !== researcherId)
         setAvailableResearchers(filteredResearchers)
