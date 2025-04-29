@@ -138,6 +138,21 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
     }
   }
 
+  const removeSubResearcher = async (studyId, subResearcherId) => {
+    let authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+    let bodyData = {
+      sub_researcher_id: subResearcherId,
+    }
+    try {
+      let response = await fetchPostData(authString, studyId, "removesubresearcher", "study", "PUT", bodyData)
+      console.log("Sub-researcher removed successfully:", response)
+      return response
+    } catch (error) {
+      console.error("Failed to remove sub-researcher:", error)
+      return null
+    }
+  }
+
   const handleSelect = (id, checked) => {
     setSelectedResearchers((prev) => ({
       ...prev,
@@ -164,13 +179,33 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
   }
 
   const handleConfirmChanges = async () => {
+    const validResearcherIds = availableResearchers.map((r) => r.id)
+
     for (const [researcherId, value] of Object.entries(selectedResearchers)) {
       // Check if researcher is new or has changed access scope
+      if (!validResearcherIds.includes(researcherId)) continue
       const isNew = !originalResearchers[researcherId]
       const hasChanged = !isNew && originalResearchers[researcherId]?.accessScope !== value?.accessScope
 
       if ((isNew || hasChanged) && value && value.accessScope) {
         const currentStudy = await addSubResearcher(study.id, researcherId, value.accessScope)
+        const updatedStudy = {
+          ...study,
+          ...currentStudy?.["data"],
+          timestamps: {
+            ...study.timestamps,
+            ...currentStudy?.["data"]?.timestamps,
+            sharedAt: new Date(),
+          },
+        }
+        props.handleShareUpdate(study.id, updatedStudy)
+      }
+    }
+
+    // Handle removals - researchers who were originally present but are now missing
+    for (const [researcherId, value] of Object.entries(originalResearchers)) {
+      if (!selectedResearchers[researcherId] || !validResearcherIds.includes(researcherId)) {
+        const currentStudy = await removeSubResearcher(study.id, researcherId)
         const updatedStudy = {
           ...study,
           ...currentStudy?.["data"],
@@ -233,22 +268,6 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
 
   return (
     <React.Fragment>
-      {/* {props.activeButton?.id === study.id && props.activeButton?.action === 'share' ? (
-      <SRAddFilledIcon 
-        className={`${classes.actionIcon} active`}
-        style={{ fontSize: "1.25rem" }} 
-        onClick={() => { props.setActiveButton?.({ id: study.id, action: "share" }); setStudyIdForAddingSR(study.id)
-        setOpenDialog(true) }}
-          />
-      ) : (
-      <SRAddIcon 
-      style={{ fontSize: "1.25rem" }} onClick={() => { props.setActiveButton?.({ id: study.id, action: "share" }); setStudyIdForAddingSR(study.id)
-      setOpenDialog(true) }}
-      className={`${classes.actionIcon} ${
-            props.activeButton?.id === study.id && props.activeButton?.action === 'share' ? 'active' : ''
-          }`}
-      />
-        )} */}
       <Backdrop
         className={sliderclasses.backdrop}
         style={{ backgroundColor: "transparent" }}

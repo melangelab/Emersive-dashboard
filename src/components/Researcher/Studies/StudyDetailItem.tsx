@@ -31,6 +31,7 @@ import { Service } from "../../DBService/DBService"
 import { DeveloperInfo, fetchUserIp } from "../ActivityList/ActivityDetailItem"
 import { ImageUploader } from "../../ImageUploader"
 import { useHistory } from "react-router-dom"
+import { fetchGetData } from "../SaveResearcherData"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -200,14 +201,27 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
               institutionsSet.add(res.institution)
             }
           } catch (error) {
-            console.error("Failed to fetch researcher:", error)
+            try {
+              const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+              const response = await fetchGetData(
+                authString,
+                `researcher/others/list/${researcher.ResearcherID}`,
+                "researcher"
+              )
+              const researcherData = response.data[0]
+              console.log("researcherData", researcherData)
+              if (researcherData?.institution) {
+                institutionsSet.add(researcherData.institution)
+              }
+            } catch (secondError) {
+              console.error("Failed to fetch researcher with alternative method:", secondError)
+            }
           }
         }) || []
       )
 
       setCollaboratingInstitutions(Array.from(institutionsSet).join(", "))
     }
-
     fetchInstitutions()
   }, [editedValues.sub_researchers])
 
@@ -376,7 +390,7 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
   }
   const ResearchersContent = () => {
     const [validResearchers, setValidResearchers] = useState<ResearcherInfo[] | null>(null)
-
+    console.log(editedValues.sub_researchers)
     if (validResearchers === null) {
       const fetchValidResearchers = async () => {
         const results: ResearcherInfo[] = []
@@ -384,9 +398,17 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
         await Promise.all(
           editedValues.sub_researchers?.map(async (researcher) => {
             try {
-              const res = await LAMP.Researcher.view(researcher.ResearcherID)
+              const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+              const response = await fetchGetData(
+                authString,
+                `researcher/others/list/${researcher.ResearcherID}`,
+                "researcher"
+              )
+              const researchers = response.data[0]
+
+              // const res = await LAMP.Researcher.view(researcher.ResearcherID)
               results.push({
-                name: res.name || researcher.ResearcherID,
+                name: researchers.name || researcher.ResearcherID,
                 accessScope: getAccessScope(researcher.access_scope),
               })
             } catch {
@@ -416,28 +438,6 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
   }
 
   const StatisticsContent = () => (
-    // <Box className={classes.tabContent}>
-    //   <Grid container spacing={2}>
-    //     <Grid item xs={4}>
-    //       <Paper className={classes.statsContainer}>
-    //         <Typography variant="h6">{t("Participants")}</Typography>
-    //         <Typography variant="h4">{study.participants?.length || 0}</Typography>
-    //       </Paper>
-    //     </Grid>
-    //     <Grid item xs={4}>
-    //       <Paper className={classes.statsContainer}>
-    //         <Typography variant="h6">{t("Activities")}</Typography>
-    //         <Typography variant="h4">{study.activities?.length || 0}</Typography>
-    //       </Paper>
-    //     </Grid>
-    //     <Grid item xs={4}>
-    //       <Paper className={classes.statsContainer}>
-    //         <Typography variant="h6">{t("Sensors")}</Typography>
-    //         <Typography variant="h4">{study.sensors?.length || 0}</Typography>
-    //       </Paper>
-    //     </Grid>
-    //   </Grid>
-    // </Box>
     <Box className={classes.tabContent}>
       <Grid container spacing={2}>
         <Grid item xs={3}>
