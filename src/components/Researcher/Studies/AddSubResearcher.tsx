@@ -87,14 +87,14 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
   const [changes, setChanges] = useState([])
   const [originalResearchers, setOriginalResearchers] = useState<{ [id: string]: { accessScope: number } }>({})
 
-  console.log("Study ID for adding sub-researcher:", study)
+  // console.log("Study ID for adding sub-researcher:", study)
   useEffect(() => {
     const fetchResearchers = async () => {
       try {
         const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
         console.log(authString)
         const response = await fetchGetData(authString, `researcher/others/list`, "researcher")
-        console.log("Researchers with access scope:", response)
+        // console.log("Researchers with access scope:", response)
         const researchers = response.data
         console.log("All researchers:", researchers)
         const filteredResearchers = researchers.filter((r) => r.id !== researcherId)
@@ -107,6 +107,7 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
             }
           }
         })
+        console.log("subResearchersWithAccessScope", subResearchersWithAccessScope)
         setOriginalResearchers(JSON.parse(JSON.stringify(subResearchersWithAccessScope)))
         setSelectedResearchers(JSON.parse(JSON.stringify(subResearchersWithAccessScope)))
         setLoading(false)
@@ -180,42 +181,59 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
 
   const handleConfirmChanges = async () => {
     const validResearcherIds = availableResearchers.map((r) => r.id)
-
+    let currentStudyObj = { ...study }
     for (const [researcherId, value] of Object.entries(selectedResearchers)) {
       // Check if researcher is new or has changed access scope
-      if (!validResearcherIds.includes(researcherId)) continue
+      // if (!validResearcherIds.includes(researcherId)) continue
       const isNew = !originalResearchers[researcherId]
       const hasChanged = !isNew && originalResearchers[researcherId]?.accessScope !== value?.accessScope
 
       if ((isNew || hasChanged) && value && value.accessScope) {
-        const currentStudy = await addSubResearcher(study.id, researcherId, value.accessScope)
+        console.log("Adding or updating sub-researcher:", study.id, researcherId, value.accessScope)
+        // const currentStudy = await addSubResearcher(study.id, researcherId, value.accessScope)
+        const response = await addSubResearcher(currentStudyObj.id, researcherId, value.accessScope)
+
         const updatedStudy = {
-          ...study,
-          ...currentStudy?.["data"],
+          // ...study,
+          // ...currentStudy?.["data"],
+          ...currentStudyObj,
+          ...response?.["data"],
+
           timestamps: {
-            ...study.timestamps,
-            ...currentStudy?.["data"]?.timestamps,
+            // ...study.timestamps,
+            // ...currentStudy?.["data"]?.timestamps,
+            ...currentStudyObj.timestamps,
+            ...response?.["data"]?.timestamps,
             sharedAt: new Date(),
           },
         }
-        props.handleShareUpdate(study.id, updatedStudy)
+        // props.handleShareUpdate(study.id, updatedStudy)
+        props.handleShareUpdate(currentStudyObj.id, updatedStudy)
+        currentStudyObj = updatedStudy
       }
     }
 
     // Handle removals - researchers who were originally present but are now missing
     for (const [researcherId, value] of Object.entries(originalResearchers)) {
-      if (!selectedResearchers[researcherId] || !validResearcherIds.includes(researcherId)) {
-        const currentStudy = await removeSubResearcher(study.id, researcherId)
+      if (!selectedResearchers[researcherId]) {
+        // const currentStudy = await removeSubResearcher(study.id, researcherId)
+        const response = await removeSubResearcher(currentStudyObj.id, researcherId)
         const updatedStudy = {
-          ...study,
-          ...currentStudy?.["data"],
+          // ...study,
+          // ...currentStudy?.["data"],
+          ...currentStudyObj,
+          ...response?.["data"],
           timestamps: {
-            ...study.timestamps,
-            ...currentStudy?.["data"]?.timestamps,
+            // ...study.timestamps,
+            // ...currentStudy?.["data"]?.timestamps,
+            ...currentStudyObj.timestamps,
+            ...response?.["data"]?.timestamps,
             sharedAt: new Date(),
           },
         }
-        props.handleShareUpdate(study.id, updatedStudy)
+        // props.handleShareUpdate(study.id, updatedStudy)
+        props.handleShareUpdate(currentStudyObj.id, updatedStudy)
+        currentStudyObj = updatedStudy
       }
     }
     enqueueSnackbar(t("Sub-researchers updated successfully."), { variant: "success" })
