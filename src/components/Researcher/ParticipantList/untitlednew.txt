@@ -1,505 +1,904 @@
-AddButton.tsx 
-```
-export default function AddButton({ researcherId, studies, setParticipants, setData, mode, ...props }) {
-  const [addUser, setAddUser] = useState(false)
-  const [addGroupUser, setAddGroupUser] = useState(false)
-  const { t } = useTranslation()
-  const classes = useStyles()
-  const sliderclasses = slideStyles()
-  const [open, setOpen] = useState(false)
-  const [popover, setPopover] = useState(null)
-  const [addParticipantStudy, setAddParticipantStudy] = useState(false)
-  const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
-  const handleNewStudyData = (data) => {
-    setData()
-  }
+const ActivityGuideContent = () => {
+  // References for media elements
+  const videoRef = useRef(null);
+  const previewRef = useRef(null);
+  const audioPreviewRef = useRef(null);
+  const videoInputRef = useRef(null);
+  const audioInputRef = useRef(null);
 
-  const handleClosePopUp = (data) => {
-    if (data === 1) {
-      setAddParticipantStudy(false)
-    } else if (data === 2) {
-      setAddUser(false)
-    } else {
-      setAddGroupUser(false)
+  // Video recording states
+  const [stream, setStream] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [recordedChunks, setRecordedChunks] = useState([]);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
+  const [videoPreviewBlob, setVideoPreviewBlob] = useState(null);
+  const [isPreviewReady, setIsPreviewReady] = useState(false);
+  const [videoStreamActive, setVideoStreamActive] = useState(false);
+
+  // Audio recording states
+  const [audioStream, setAudioStream] = useState(null);
+  const [audioRecording, setAudioRecording] = useState(false);
+  const [audioRecorder, setAudioRecorder] = useState(null);
+  const [audioChunks, setAudioChunks] = useState([]);
+  const [audioRecordingTime, setAudioRecordingTime] = useState(0);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
+
+  // Initialize camera when tab changes to video
+  useEffect(() => {
+    if (guideTab === 1 && isEditing) {
+      startCamera();
     }
-  }
+
+    return () => {
+      // Clean up resources when component unmounts or tab changes
+      stopCamera();
+      if (videoPreviewUrl) {
+        URL.revokeObjectURL(videoPreviewUrl);
+      }
+      if (audioPreviewUrl) {
+        URL.revokeObjectURL(audioPreviewUrl);
+      }
+    };
+  }, [guideTab, isEditing]);
+
+  // Handle recording time updates
+  useEffect(() => {
+    let interval;
+    if (recording) {
+      interval = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [recording]);
+
+  useEffect(() => {
+    let interval;
+    if (audioRecording) {
+      interval = setInterval(() => {
+        setAudioRecordingTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [audioRecording]);
+
+  // Start camera for video recording
+  const startCamera = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        enqueueSnackbar("Camera access not supported in this browser or insecure context.", { variant: "error" });
+        return;
+      }
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: audioEnabled
+      });
+      
+      setStream(mediaStream);
+      setVideoStreamActive(true);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play().catch(err => {
+          console.error("Error playing video:", err);
+          enqueueSnackbar(`Error playing video: ${err.message || err}`, { variant: "error" });
+        });
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      enqueueSnackbar(`Error accessing camera: ${err.message || err}`, { variant: "error" });
+    }
+  };
+
+  // Stop camera
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+      setVideoStreamActive(false);
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    }
+  };
+
+  // Toggle microphone for video recording
+  const toggleMic = () => {
+    setAudioEnabled(!audioEnabled);
+    if (stream) {
+      stream.getAudioTracks().forEach(track => {
+        track.enabled = !audioEnabled;
+      });
+    }
+  };
+
+  // Toggle video recording
+  const toggleRecording = () => {
+    if (!recording) {
+      startRecording();
+    } else {
+      stopRecording();
+    }
+  };
+
+  // Start video recording
+  const startRecording = () => {
+    if (!stream || !videoStreamActive) {
+      enqueueSnackbar("Camera stream not available", { variant: "error" });
+      return;
+    }
+
+    // Clear any previous recording data
+    if (videoPreviewUrl) {
+      URL.revokeObjectURL(videoPreviewUrl);
+      setVideoPreviewUrl(null);
+    }
+    setVideoPreviewBlob(null);
+    setRecordedChunks([]);
+    setIsPreviewReady(false);
+
+    try {
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      setMediaRecorder(recorder);
+      const chunks = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const videoBlob = new Blob(chunks, { type: "video/webm" });
+        setRecordedChunks(chunks);
+        setVideoPreviewBlob(videoBlob);
+        
+        const videoURL = URL.createObjectURL(videoBlob);
+        setVideoPreviewUrl(videoURL);
+        
+        // Load video preview
+        if (previewRef.current) {
+          previewRef.current.src = videoURL;
+          previewRef.current.load();
+        }
+
+        // Save to activity guide
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const updatedActivityGuide = {
+            ...editedValues.activityGuide,
+            video: {
+              data: reader.result,
+              fileType: "webm",
+              uploadedAt: new Date(),
+            },
+          };
+
+          setEditedValues(prev => ({
+            ...prev,
+            activityGuide: updatedActivityGuide,
+          }));
+        };
+        reader.readAsDataURL(videoBlob);
+      };
+
+      recorder.start();
+      setRecording(true);
+      setRecordingTime(0);
+    } catch (err) {
+      console.error("Error starting recording:", err);
+      enqueueSnackbar(`Error starting recording: ${err.message || err}`, { variant: "error" });
+    }
+  };
+
+  // Stop video recording
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+      setRecording(false);
+    }
+  };
+
+  // Handle video upload from file
+  const handleVideoUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      // Clear previous video
+      if (videoPreviewUrl) {
+        URL.revokeObjectURL(videoPreviewUrl);
+      }
+
+      const newVideoUrl = URL.createObjectURL(file);
+      setVideoPreviewUrl(newVideoUrl);
+      setVideoPreviewBlob(file);
+      setIsPreviewReady(false);
+
+      // Read file as data URL for saving
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const fileType = file.type.split('/')[1] || 'webm';
+        const updatedActivityGuide = {
+          ...editedValues.activityGuide,
+          video: {
+            data: reader.result,
+            fileType: fileType,
+            uploadedAt: new Date(),
+          },
+        };
+
+        setEditedValues(prev => ({
+          ...prev,
+          activityGuide: updatedActivityGuide,
+        }));
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Error handling video upload:", err);
+      enqueueSnackbar(`Error uploading video: ${err.message || err}`, { variant: "error" });
+    }
+  };
+
+  // Start audio recording
+  const startAudioRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setAudioStream(stream);
+
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      setAudioRecorder(recorder);
+      const chunks = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: "audio/webm" });
+        setAudioChunks(chunks);
+        
+        const audioURL = URL.createObjectURL(audioBlob);
+        setAudioPreviewUrl(audioURL);
+        
+        if (audioPreviewRef.current) {
+          audioPreviewRef.current.src = audioURL;
+          audioPreviewRef.current.load();
+        }
+
+        // Save to activity guide
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const updatedActivityGuide = {
+            ...editedValues.activityGuide,
+            audio: {
+              data: reader.result,
+              fileType: "webm",
+              uploadedAt: new Date(),
+            },
+          };
+
+          setEditedValues(prev => ({
+            ...prev,
+            activityGuide: updatedActivityGuide,
+          }));
+        };
+        reader.readAsDataURL(audioBlob);
+      };
+
+      recorder.start();
+      setAudioRecording(true);
+      setAudioRecordingTime(0);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      enqueueSnackbar(`Error accessing microphone: ${err.message || err}`, { variant: "error" });
+    }
+  };
+
+  // Stop audio recording
+  const stopAudioRecording = () => {
+    if (audioRecorder && audioRecorder.state !== "inactive") {
+      audioRecorder.stop();
+      setAudioRecording(false);
+      
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+        setAudioStream(null);
+      }
+    }
+  };
+
+  // Handle audio upload from file
+  const handleAudioUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      if (audioPreviewUrl) {
+        URL.revokeObjectURL(audioPreviewUrl);
+      }
+
+      const audioURL = URL.createObjectURL(file);
+      setAudioPreviewUrl(audioURL);
+      
+      if (audioPreviewRef.current) {
+        audioPreviewRef.current.src = audioURL;
+        audioPreviewRef.current.load();
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const fileType = file.type.split('/')[1] || 'webm';
+        const updatedActivityGuide = {
+          ...editedValues.activityGuide,
+          audio: {
+            data: reader.result,
+            fileType: fileType,
+            uploadedAt: new Date(),
+          },
+        };
+
+        setEditedValues(prev => ({
+          ...prev,
+          activityGuide: updatedActivityGuide,
+        }));
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Error handling audio upload:", err);
+      enqueueSnackbar(`Error uploading audio: ${err.message || err}`, { variant: "error" });
+    }
+  };
+
+  // Helper function to get video mime type
+  const getVideoMimeType = (fileType) => {
+    if (!fileType) return "video/mp4";
+    if (fileType.startsWith("video/")) return fileType;
+    
+    const mimeTypeMap = {
+      webm: "video/webm",
+      mp4: "video/mp4",
+      mov: "video/quicktime",
+      avi: "video/x-msvideo",
+      m4v: "video/mp4",
+      mkv: "video/x-matroska",
+    };
+    
+    return mimeTypeMap[fileType.toLowerCase()] || `video/${fileType}`;
+  };
+
+  // Helper function to get audio mime type
+  const getAudioMimeType = (fileType) => {
+    if (!fileType) return "audio/mpeg";
+    if (fileType.startsWith("audio/")) return fileType;
+    
+    const mimeTypeMap = {
+      mp3: "audio/mpeg",
+      wav: "audio/wav",
+      ogg: "audio/ogg",
+      aac: "audio/aac",
+      m4a: "audio/mp4",
+      flac: "audio/flac",
+      webm: "audio/webm",
+    };
+    
+    return mimeTypeMap[fileType.toLowerCase()] || `audio/${fileType}`;
+  };
 
   return (
     <Box>
-      <AddIcon
-        className={classes.addButton}
-        onClick={(event) =>
-          //  setPopover(event.currentTarget)
-          setOpen(true)
-        }
-      />
-      <Backdrop open={open} className={sliderclasses.backdrop} onClick={() => setOpen(false)}>
-        <Slide direction="left" in={open} mountOnEnter unmountOnExit>
-          <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
-            <Box className={sliderclasses.icon}>
-              <UserIcon />
-            </Box>
-            <Typography variant="h6">ADD NEW PARTICIPANTS</Typography>
-            <Divider className={sliderclasses.divider} />
-            <Typography variant="body2" paragraph>
-              Participants are <strong>researcher</strong> & <strong>study</strong> specific. Admins should add
-              participants only in special circumstances, if researchers are unable to do so due to technical reasons.
-              (Account locked, Password lost etc.)
-            </Typography>
-            <Divider className={sliderclasses.divider} />
-            <Button
-              className={sliderclasses.button}
-              onClick={() => {
-                setOpen(false)
-                setAddUser(true)
-              }}
-            >
-              Next
-            </Button>
-          </Box>
-        </Slide>
-      </Backdrop>
-      <Popover
-        classes={{ root: classes.customPopover, paper: classes.customPaper }}
-        open={!!popover ? true : false}
-        //anchorPosition={!!popover && popover.getBoundingClientRect()}
-        anchorPosition={popover ? popover.getBoundingClientRect() : null}
-        anchorReference="anchorPosition"
-        onClose={() => setPopover(null)}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "right",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "right",
-        }}
+      <Tabs
+        value={guideTab}
+        onChange={(e, newValue) => setGuideTab(newValue)}
+        indicatorColor="primary"
+        textColor="primary"
+        style={{ marginBottom: 16 }}
       >
-        <React.Fragment>
-          {mode === "researcher" && (
-            <MenuItem
-              onClick={() => {
-                setPopover(null)
-                setAddUser(true)
+        <Tab icon={<DescriptionOutlined />} label={t("Text")} />
+        <Tab icon={<VideocamOutlined />} label={t("Video")} />
+        <Tab icon={<AudiotrackOutlined />} label={t("Audio")} />
+      </Tabs>
+
+      {guideTab === 0 && (
+        <TextField
+          fullWidth
+          multiline
+          rows={4}
+          variant="outlined"
+          label={t("Text Guide")}
+          value={editedValues.activityGuide?.text || ""}
+          disabled={!isEditing}
+          onChange={(e) => {
+            const updatedActivityGuide = {
+              ...editedValues.activityGuide,
+              text: e.target.value,
+            };
+
+            setEditedValues((prev) => ({
+              ...prev,
+              activityGuide: updatedActivityGuide,
+            }));
+          }}
+          placeholder={t("Enter instructions or description for the activity...")}
+        />
+      )}
+
+      {guideTab === 1 && (
+        <Box className={classes.videoContainer}>
+          {isEditing ? (
+            <>
+              {/* Video Recording Box */}
+              <Box 
+                className={classes.videoPreviewBox}
+                sx={{
+                  backgroundColor: "#1a237e",
+                  borderRadius: 2,
+                  position: "relative",
+                  overflow: "hidden",
+                  aspectRatio: "16/9",
+                  width: "100%",
+                  maxWidth: "600px",
+                  margin: "0 auto",
+                  marginBottom: 3
+                }}
+              >
+                <video 
+                  ref={videoRef}
+                  className={classes.videoFeed}
+                  autoPlay 
+                  muted 
+                  playsInline
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover',
+                    borderRadius: '8px' 
+                  }} 
+                />
+                
+                {recording && (
+                  <Typography 
+                    sx={{
+                      position: "absolute",
+                      top: 16,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      color: "#fff",
+                      fontSize: "2rem",
+                      fontWeight: "bold",
+                      backgroundColor: "rgba(0,0,0,0.3)",
+                      padding: "4px 12px",
+                      borderRadius: "4px"
+                    }}
+                  >
+                    {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
+                  </Typography>
+                )}
+              </Box>
+
+              {/* Video Controls */}
+              <Box 
+                className={classes.controlsContainer}
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: 2,
+                  marginBottom: 3
+                }}
+              >
+                {/* Video Preview Thumbnail */}
+                {videoPreviewUrl && (
+                  <Box 
+                    className={classes.previewThumbnail}
+                    onClick={() => handleViewMedia("video", videoPreviewUrl, "video/webm")}
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 1,
+                      overflow: "hidden",
+                      border: "2px solid #3f51b5",
+                      cursor: "pointer",
+                      position: "relative"
+                    }}
+                  >
+                    <video
+                      ref={previewRef}
+                      src={videoPreviewUrl}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onLoadedData={() => setIsPreviewReady(true)}
+                    />
+                    
+                    {!isPreviewReady && (
+                      <Box sx={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        left: 0, 
+                        right: 0, 
+                        bottom: 0, 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(0,0,0,0.3)'
+                      }}>
+                        <CircularProgress size={24} color="secondary" />
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                {/* Record Button */}
+                <Box
+                  onClick={toggleRecording}
+                  sx={{
+                    width: 64,
+                    height: 64,
+                    backgroundColor: "#f44336",
+                    borderRadius: recording ? 2 : "50%",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      opacity: 0.9,
+                      transform: "scale(1.05)"
+                    }
+                  }}
+                >
+                  {recording ? <Stop /> : null}
+                </Box>
+
+                {/* Microphone Toggle Button */}
+                <Box
+                  onClick={toggleMic}
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    backgroundColor: audioEnabled ? "#fff" : "#e0e0e0",
+                    borderRadius: "50%",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    "&:hover": {
+                      opacity: 0.9
+                    }
+                  }}
+                >
+                  {audioEnabled ? <Mic /> : <MicOff />}
+                </Box>
+              </Box>
+
+              {/* Video Upload Box */}
+              <Box
+                sx={{
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: 2,
+                  textAlign: "center",
+                  border: "2px dashed #ccc",
+                  cursor: "pointer",
+                  marginTop: 3,
+                  padding: 2,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    borderColor: "#3f51b5",
+                    backgroundColor: "#f0f0f0"
+                  }
+                }}
+                onClick={() => videoInputRef.current?.click()}
+              >
+                <Typography variant="subtitle1" gutterBottom>
+                  {t("Or upload a video file:")}
+                </Typography>
+                <input
+                  type="file"
+                  hidden
+                  ref={videoInputRef}
+                  accept="video/*"
+                  onChange={handleVideoUpload}
+                  disabled={!isEditing}
+                />
+                <VideocamOutlined sx={{ fontSize: 48, color: "#666", my: 1 }} />
+                <Typography>{t("Click to upload video guide")}</Typography>
+              </Box>
+            </>
+          ) : (
+            <>
+              {/* View Mode Video Preview */}
+              {editedValues.activityGuide?.video?.data ? (
+                <Box className={classes.videoPreview} sx={{ mt: 2 }}>
+                  <video
+                    width="100%"
+                    height="auto"
+                    controls
+                    style={{
+                      borderRadius: 8,
+                      backgroundColor: "#f5f5f5",
+                      maxHeight: 400,
+                    }}
+                  >
+                    <source
+                      src={editedValues.activityGuide.video.data}
+                      type={getVideoMimeType(editedValues.activityGuide.video.fileType)}
+                    />
+                    {t("Your browser does not support the video tag.")}
+                  </video>
+                  <Box 
+                    className={classes.mediaControls}
+                    sx={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "space-between", 
+                      mt: 1 
+                    }}
+                  >
+                    <Button
+                      startIcon={<VideocamOutlined />}
+                      onClick={() =>
+                        handleViewMedia(
+                          "video",
+                          editedValues.activityGuide.video.data,
+                          getVideoMimeType(editedValues.activityGuide.video.fileType)
+                        )
+                      }
+                    >
+                      {t("View Full Screen")}
+                    </Button>
+                    <IconButton
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.href = editedValues.activityGuide.video.data;
+                        link.download = `video_guide_${activity.id}_${new Date().getTime()}.${
+                          editedValues.activityGuide.video.fileType || "webm"
+                        }`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                    >
+                      <GetApp />
+                    </IconButton>
+                  </Box>
+                </Box>
+              ) : (
+                <Box 
+                  display="flex" 
+                  justifyContent="center" 
+                  alignItems="center" 
+                  py={4}
+                  sx={{ 
+                    backgroundColor: "#f5f5f5",
+                    borderRadius: 1,
+                    mt: 2 
+                  }}
+                >
+                  <Typography variant="body1" color="textSecondary">
+                    {t("No video guide available")}
+                  </Typography>
+                </Box>
+              )}
+            </>
+          )}
+        </Box>
+      )}
+
+      {guideTab === 2 && (
+        <Box className={classes.videoContainer}>
+          {isEditing ? (
+            <>
+              {/* Audio Recording UI */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 3,
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: 2,
+                  mb: 3,
+                  position: "relative"
+                }}
+              >
+                {/* Audio Recording Timer */}
+                {audioRecording && (
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      mb: 2, 
+                      fontWeight: "bold",
+                      color: "#f44336" 
+                    }}
+                  >
+                    {new Date(audioRecordingTime * 1000).toISOString().substr(14, 5)}
+                  </Typography>
+                )}
+                
+                {/* Audio Record Button */}
+                <Box
+                  onClick={() => (audioRecording ? stopAudioRecording() : startAudioRecording())}
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    backgroundColor: "#e74c3c",
+                    borderRadius: audioRecording ? 2 : "50%",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      opacity: 0.9,
+                      transform: "scale(1.05)"
+                    }
+                  }}
+                >
+                  {audioRecording ? <Stop /> : <Mic style={{ fontSize: 32 }} />}
+                </Box>
+                
+                <Typography variant="subtitle1" sx={{ mt: 2 }}>
+                  {audioRecording ? t("Recording in progress...") : t("Click to start recording")}
+                </Typography>
+              </Box>
+
+              {/* Audio File Upload */}
+              <Box
+                sx={{
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: 2,
+                  textAlign: "center",
+                  border: "2px dashed #ccc",
+                  cursor: "pointer",
+                  padding: 2,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    borderColor: "#3f51b5",
+                    backgroundColor: "#f0f0f0"
+                  }
+                }}
+                onClick={() => audioInputRef.current?.click()}
+              >
+                <Typography variant="subtitle1" align="center" gutterBottom>
+                  {t("Or upload an audio file:")}
+                </Typography>
+                <input 
+                  type="file" 
+                  hidden 
+                  ref={audioInputRef} 
+                  accept="audio/*" 
+                  onChange={handleAudioUpload} 
+                />
+                <AudiotrackOutlined sx={{ fontSize: 48, color: "#666", my: 1 }} />
+                <Typography>{t("Click to upload audio guide")}</Typography>
+              </Box>
+            </>
+          ) : null}
+
+          {/* Audio Preview */}
+          {(editedValues.activityGuide?.audio?.data || audioPreviewUrl) && (
+            <Box 
+              sx={{ 
+                mt: 3, 
+                p: 2, 
+                bgcolor: "#f5f5f5", 
+                borderRadius: 1,
+                border: "1px solid #e0e0e0" 
               }}
             >
-              <Typography variant="h6">{`${t("Add a user")}`}</Typography>
-              <Typography variant="body2">{`${t("Create a new entry in this group.")}`}</Typography>
-            </MenuItem>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  width: "100%",
+                }}
+              >
+                {editedValues.activityGuide?.audio?.data ? (
+                  <audio 
+                    controls 
+                    style={{ flexGrow: 1 }}
+                    src={editedValues.activityGuide.audio.data}
+                  >
+                    <source
+                      type={getAudioMimeType(editedValues.activityGuide.audio.fileType)}
+                    />
+                    {t("Your browser does not support the audio element.")}
+                  </audio>
+                ) : audioPreviewUrl ? (
+                  <audio
+                    controls
+                    src={audioPreviewUrl}
+                    style={{ flexGrow: 1 }}
+                    ref={audioPreviewRef}
+                  />
+                ) : (
+                  <Typography variant="body2" color="textSecondary">
+                    {t("No audio available")}
+                  </Typography>
+                )}
+
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <IconButton
+                    onClick={() => {
+                      const audioUrl = editedValues.activityGuide?.audio?.data || audioPreviewUrl;
+                      if (!audioUrl) return;
+                      
+                      const link = document.createElement("a");
+                      link.href = audioUrl;
+                      link.download = `audio_guide_${activity.id}_${new Date().getTime()}.webm`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    size="small"
+                  >
+                    <GetApp />
+                  </IconButton>
+
+                  {isEditing && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="secondary"
+                      onClick={() => {
+                        const updatedActivityGuide = {
+                          ...editedValues.activityGuide,
+                          audio: null,
+                        };
+
+                        setEditedValues(prev => ({
+                          ...prev,
+                          activityGuide: updatedActivityGuide,
+                        }));
+                        
+                        if (audioPreviewUrl) {
+                          URL.revokeObjectURL(audioPreviewUrl);
+                          setAudioPreviewUrl(null);
+                        }
+                        setAudioChunks([]);
+                      }}
+                    >
+                      {t("Remove Audio")}
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+            </Box>
           )}
-      </Popover>
-      <AddUser
-        researcherId={researcherId}
-        studies={studies}
-        open={addUser}
-        onClose={() => setAddUser(false)}
-        handleNewStudy={handleNewStudyData}
-        participants={props.participants}
-        setParticipants={setParticipants}
-        closePopUp={handleClosePopUp}
-        title={props.title}
-        resemail={props.resemail}
-      />
+
+          {/* No Audio Message */}
+          {!editedValues.activityGuide?.audio?.data && !audioPreviewUrl && !isEditing && (
+            <Box 
+              display="flex" 
+              justifyContent="center" 
+              alignItems="center" 
+              py={4}
+              sx={{ 
+                backgroundColor: "#f5f5f5",
+                borderRadius: 1,
+                mt: 2 
+              }}
+            >
+              <Typography variant="body1" color="textSecondary">
+                {t("No audio guide available")}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
-  )
-}
-```
-
-AddUser.tsx : 
-```
-export default function AddUser({
-  researcherId,
-  studies,
-  participants,
-  setParticipants,
-  handleNewStudy,
-  closePopUp,
-  open,
-  resemail,
-  ...props
-}: {
-  researcherId: any
-  studies: any
-  participants: any
-  setParticipants?: Function
-  handleNewStudy: Function
-  closePopUp: Function
-  open: any
-  resemail: any
-} & DialogProps) {
-  const classes = useStyles()
-  const sliderclasses = slideStyles()
-  const [selectedStudy, setSelectedStudy] = useState("")
-  const [selectedGroup, setSelectedGroup] = useState("")
-  const [showErrorMsg, setShowErrorMsg] = useState(true)
-  const [studyBtnClicked, setStudyBtnClicked] = useState(false)
-  const { enqueueSnackbar } = useSnackbar()
-  const { t } = useTranslation()
-  const [newId, setNewId] = useState(null)
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [email, setEmail] = useState("")
-  const [mobile, setMobile] = useState("")
-  const [notes, setNotes] = useState("")
-  const [confirmationOpen, setConfirmationOpen] = useState(false)
-  const [isCreatingParticipant, setIsCreatingParticipant] = useState(false)
-  const validate = (element) => {
-    return !(typeof element === "undefined" || (typeof element !== "undefined" && element?.trim() === ""))
-  }
-  const handleChangeStudy = (event) => {
-    setShowErrorMsg(false)
-    setSelectedStudy(event.target.value)
-    setSelectedGroup("")
-  }
-  const handleChangeGroup = (event) => {
-    setSelectedGroup(event.target.value)
-  }
-
-  const resetForm = () => {
-    setSelectedStudy("")
-    setSelectedGroup("")
-    setFirstName("")
-    setLastName("")
-    setEmail("")
-    setMobile("")
-    setNotes("")
-  }
-
-  let createStudy = async () => {
-    if (selectedStudy === "") {
-      setShowErrorMsg(true)
-      return false
-    } else {
-      setIsCreatingParticipant(true)
-      setStudyBtnClicked(true)
-      let newCount = 1
-      let ids = []
-      for (let i = 0; i < newCount; i++) {
-        let idData = ((await LAMP.Participant.create(selectedStudy, { study_code: "001", email: email } as any)) as any)
-          .data
-        let id = typeof idData === "object" ? idData.id : idData
-        let newParticipant: any = {}
-        if (typeof idData === "object") {
-          newParticipant = idData
-        } else {
-          newParticipant["id"] = idData
-        }
-
-        const duplicates = participants.filter((x) => `${x.emailAddress}` === email)
-
-        if (duplicates.length > 0) {
-          enqueueSnackbar(t("Participant with same email id already exists."), { variant: "error" })
-          resetForm()
-          return
-        }
-
-        const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
-        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
-        const params = new URLSearchParams({
-          token: idData.token,
-          email: email,
-          userType: "participant",
-        }).toString()
-
-        const response: any = await fetch(`${baseURL}/send-password-email?${params}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Basic " + authString,
-          },
-        })
-
-        // if (!!((await LAMP.Credential.create(id, `${id}@lamp.com`, id, "Temporary Login")) as any).error) {
-        //   enqueueSnackbar(`${t("Could not create credential for id.", { id: id })}`, { variant: "error" })
-        // }
-
-        if (response.error) {
-          enqueueSnackbar(`${t("Could not create credential for id.", { id: id })}`, { variant: "error" })
-        } else {
-          newParticipant.study_id = selectedStudy
-          newParticipant.study_name = studies.filter((study) => study.id === selectedStudy)[0]?.name
-          newParticipant.group_name = selectedGroup
-          newParticipant.firstName = firstName
-          newParticipant.lastName = lastName
-          newParticipant.email = email
-          newParticipant.mobile = mobile
-          newParticipant.researcherNote = notes
-          Service.addData("participants", [newParticipant])
-          Service.updateCount("studies", selectedStudy, "participant_count")
-          Service.getData("studies", selectedStudy).then((studiesObject) => {
-            handleNewStudy(studiesObject)
-          })
-          console.log("LAMP.Participant.allByStudy", await LAMP.Participant.allByStudy(selectedStudy))
-          setNewId(newParticipant.id)
-          // const updParticipant : Participant = {
-          //   ...newParticipant,
-          //   group_name: selectedGroup,
-          // }
-          console.log("here", newParticipant, idData)
-          Service.getDataByKey("participants", [newParticipant.id], "id").then((data) => {
-            console.log("updated participants", data)
-          })
-          await LAMP.Type.setAttachment(id, "me", "lamp.group_name", selectedGroup)
-          await LAMP.Participant.update(newParticipant.id, newParticipant).then((res) =>
-            console.log("updaqted partiicpant", res)
-          )
-          const currentStudy = studies.find((study) => study.id === selectedStudy)
-          const timestamps = currentStudy.timestamps || {}
-          const updatedTimestamps = {
-            ...timestamps,
-            lastEnrollmentAt: new Date(),
-            firstEnrollmentAt: timestamps.firstEnrollmentAt || new Date(), // Set only if not already set
-          }
-          const updatedStudy = {
-            ...currentStudy,
-            timestamps: updatedTimestamps,
-          }
-          const fieldsToUpdate = ["timestamps"]
-          LAMP.Study.update(selectedStudy, updatedStudy).then((res) => {
-            Service.update(
-              "studies",
-              {
-                studies: [
-                  {
-                    id: selectedStudy,
-                    ...updatedStudy,
-                  },
-                ],
-              },
-              "name",
-              "id"
-            )
-            Service.updateMultipleKeys(
-              "studies",
-              {
-                studies: [
-                  {
-                    id: selectedStudy,
-                    ...updatedStudy,
-                  },
-                ],
-              },
-              fieldsToUpdate,
-              "id"
-            )
-          })
-          await Service.updateMultipleKeys(
-            "studies",
-            {
-              studies: [
-                {
-                  id: selectedStudy,
-                  timestamps: updatedTimestamps,
-                },
-              ],
-            },
-            ["timestamps"],
-            "id"
-          )
-        }
-        // const _owner = await LAMP.Type.parent(id)
-        // await LAMP.Researcher.update(_owner.data.Researcher, {"timestamps.lastActivityAt": new Date()} as any).then(()=>console.log("successfully updated for participant", id))
-        ids = [...ids, id]
-      }
-      setParticipants()
-    }
-    setSelectedStudy("")
-    closePopUp(2)
-    setIsCreatingParticipant(false)
-    // props.onClose as any
-  }
-
-  const createNewStudy = () => {
-    let lampAuthId = LAMP.Auth._auth.id
-    if (
-      LAMP.Auth._type === "researcher" &&
-      (lampAuthId === "researcher@demo.lamp.digital" || lampAuthId === "clinician@demo.lamp.digital")
-    ) {
-      createDemoStudy()
-    } else {
-      createStudy()
-    }
-  }
-
-  const createDemoStudy = () => {
-    if (selectedStudy === "") {
-      setShowErrorMsg(true)
-      return false
-    } else {
-      let studyName = studies.filter((study) => study.id === selectedStudy)[0]?.name
-      setStudyBtnClicked(true)
-      let newParticipant: any = {}
-      newParticipant.id = "U" + crypto.getRandomValues(new Uint32Array(1))[0].toString().substring(0, 8)
-      newParticipant.study_id = selectedStudy
-      newParticipant.study_name = studyName
-      Service.addData("participants", [newParticipant])
-      Service.updateCount("studies", selectedStudy, "participant_count")
-      Service.getData("studies", selectedStudy).then((studiesObject) => {
-        handleNewStudy(studiesObject)
-      })
-      setNewId(newParticipant.id)
-      closePopUp(2)
-      setSelectedStudy("")
-      setParticipants()
-    }
-    setSelectedStudy("")
-    closePopUp(2)
-    // props.onClose as any
-  }
-
-  const handleEnter = () => {
-    setSelectedStudy("")
-    setSelectedGroup("")
-    setShowErrorMsg(true)
-  }
-
-  const handleAddParticipant = async () => {
-    createNewStudy()
-    enqueueSnackbar("Participant added successfully!", { variant: "success" })
-    setConfirmationOpen(true)
-  }
-
-  return (
-    <React.Fragment>
-      <Backdrop className={sliderclasses.backdrop} open={open} onClick={!isCreatingParticipant ? ()=>{resetForm(); (props.onClose as any)()} : undefined} />
-      <Slide direction="left" in={open} mountOnEnter unmountOnExit>
-        <Box className={sliderclasses.slidePanel}>
-          <Box className={sliderclasses.icon}>
-            <UserIcon />
-          </Box>
-          <Typography variant="h6" className={sliderclasses.headings}>
-            ADD NEW PARTICIPANTS
-          </Typography>
-          <Divider className={sliderclasses.divider} />
-          <TextField
-            label="Researcher :"
-            fullWidth
-            disabled
-            margin="normal"
-            value={props.title || researcherId}
-            onChange={(e) => {}}
-            className={sliderclasses.field}
-          />
-          <TextField
-            label="Select Study"
-            fullWidth
-            margin="normal"
-            select
-            value={selectedStudy}
-            onChange={(e) => setSelectedStudy(e.target.value)}
-            className={sliderclasses.field}
-          >
-            {studies.map((study) => (
-              <MenuItem key={study.id} value={study.id}>
-                {study.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            label="Select Group"
-            fullWidth
-            margin="normal"
-            select
-            value={selectedGroup}
-            onChange={(e) => setSelectedGroup(e.target.value)}
-            className={sliderclasses.field}
-          >
-            {((selectedStudy && studies.find((study) => study.id === selectedStudy)?.gname) || []).map(
-              (groupName, index) => (
-                <MenuItem key={index} value={groupName}>
-                  {groupName}
-                </MenuItem>
-              )
-            )}
-          </TextField>
-          <Typography variant="h6" className={sliderclasses.headings}>
-            PARTICIPANT DETAILS
-          </Typography>
-          <Divider className={sliderclasses.divider} />
-          <TextField
-            label="First Name"
-            fullWidth
-            margin="normal"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            className={sliderclasses.field}
-          />
-          <TextField
-            label="Last Name"
-            fullWidth
-            margin="normal"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            className={sliderclasses.field}
-          />
-          <TextField
-            label="Email"
-            fullWidth
-            margin="normal"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={sliderclasses.field}
-          />
-          <TextField
-            label="Mobile Number"
-            fullWidth
-            margin="normal"
-            value={mobile}
-            onChange={(e) => setMobile(e.target.value)}
-            className={sliderclasses.field}
-          />
-          <TextField
-            label="Notes"
-            fullWidth
-            margin="normal"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className={sliderclasses.field}
-          />
-          <Button className={sliderclasses.button} onClick={handleAddParticipant}>
-            Add
-          </Button>
-        </Box>
-      </Slide>
-      <Slide direction="left" in={confirmationOpen} mountOnEnter unmountOnExit>
-        <Box className={sliderclasses.slidePanel}>
-          <Box className={sliderclasses.icon}>
-            <UserIcon />
-          </Box>
-          <Typography variant="h6">ADD NEW PARTICIPANTS</Typography>
-          <Divider />
-          <Typography variant="body2" paragraph>
-            New participant -{" "}
-            <strong>
-              {firstName} {lastName}
-            </strong>{" "}
-            - has been successfully added to the study{" "}
-            <strong>
-              {selectedStudy}, Group {selectedGroup}
-            </strong>
-            . An account creation link has been successfully sent to the email - <a href={`mailto:${email}`}>{email}</a>
-            .
-          </Typography>
-          <Typography variant="body2" paragraph>
-            A copy has also been successfully sent to the researcher{" "}
-            <strong>{props.title || "Unknown Researcher"}</strong> at <a href={`mailto:${resemail}`}>{resemail}</a>.
-          </Typography>
-          <Divider />
-          <Button
-            className={sliderclasses.button}
-            onClick={!isCreatingParticipant ? () =>{
-              setConfirmationOpen(false)
-              resetForm()
-              props.onClose
-            }: undefined}
-            disabled={isCreatingParticipant}
-          >
-            Exit
-          </Button>
-        </Box>
-      </Slide>
-      {!!newId && <NewPatientDetail id={newId} />}
-    </React.Fragment>
-  )
-}
-```
+  );
+};

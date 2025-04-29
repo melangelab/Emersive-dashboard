@@ -77,6 +77,7 @@ import ItemViewHeader from "../SharedStyles/ItemViewHeader"
 import StudyDetailItem from "./StudyDetailItem"
 import { ReactComponent as SaveIcon } from "../../../icons/NewIcons/floppy-disks.svg"
 import { ReactComponent as SaveFilledIcon } from "../../../icons/NewIcons/floppy-disks-filled.svg"
+import { fetchPostData } from "../SaveResearcherData"
 
 export const studycardStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -511,6 +512,14 @@ export const useModularTableStyles = makeStyles((theme: Theme) =>
       position: "sticky",
       right: 0,
       backgroundColor: "#fff",
+      zIndex: 1,
+      boxShadow: "-2px 0px 4px rgba(0, 0, 0, 0.1)",
+      gap: theme.spacing(1),
+    },
+    actionCellHeader: {
+      position: "sticky",
+      right: 0,
+      backgroundColor: "#fff",
       zIndex: 2,
       boxShadow: "-2px 0px 4px rgba(0, 0, 0, 0.1)",
       gap: theme.spacing(1),
@@ -836,7 +845,7 @@ export const ModularTable = ({
                   </div>
                 </TableCell>
               ))}
-            <TableCell className={classes.actionCell}>Actions</TableCell>
+            <TableCell className={classes.actionCellHeader}>Actions</TableCell>
             {/* <TableCell className={classes.actionCell}>Actions</TableCell> */}
           </TableRow>
         </TableHead>
@@ -896,6 +905,7 @@ export default function StudiesList({
   const [search, setSearch] = useState(null)
   const [allStudies, setAllStudies] = useState(null)
   const [newStudy, setNewStudy] = useState(null)
+  const [sharedStudies, setSharedstudies] = useState<{ [key: string]: any[] }>({})
   const [loading, setLoading] = useState(true)
   const layoutClasses = useLayoutStyles()
   // const [showDetails, setShowDetails] = useState(false)
@@ -1137,6 +1147,33 @@ export default function StudiesList({
     return groups
   }
 
+  const getSharedStudies = async () => {
+    let authId = researcherId
+    let authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+    let bodyData = {
+      id: researcherId,
+    }
+    await fetchPostData(authString, authId, "sharedstudies", "researcher", "POST", bodyData).then((studyData) => {
+      // let newStudyId = studyData.data
+      console.log("shared studies from server", studyData)
+      Service.addData("sharedstudies", studyData.data)
+    })
+    const studyData = await fetchPostData(authString, authId, "sharedstudies", "researcher", "POST", bodyData)
+    const ownerStudiesMap = studyData.data.reduce((acc, s) => {
+      const owner = s.parent
+      if (!acc[owner]) {
+        acc[owner] = []
+      }
+      acc[owner].push({
+        ...s,
+        isShared: true,
+      })
+      return acc
+    }, {})
+    setSharedstudies(ownerStudiesMap)
+    Service.addData("sharedstudies", ownerStudiesMap)
+  }
+
   useInterval(
     () => {
       setLoading(true)
@@ -1149,20 +1186,40 @@ export default function StudiesList({
   useEffect(() => {
     getAllStudies()
     newAdddeStudy(newStudy)
+    getSharedStudies()
   }, [newStudy])
 
+  // useEffect(() => {
+  //   if ((studies || []).length > 0) setAllStudies(studies)
+  //   else setAllStudies([])
+  // }, [studies])
   useEffect(() => {
-    if ((studies || []).length > 0) setAllStudies(studies)
-    else setAllStudies([])
-  }, [studies])
+    combineStudies()
+  }, [studies, sharedStudies])
 
+  const combineStudies = () => {
+    let combinedStudies = [...(studies || [])]
+
+    // Add all shared studies to the combined list
+    Object.values(sharedStudies).forEach((studyArray) => {
+      combinedStudies = [...combinedStudies, ...(studyArray as any[])]
+    })
+
+    setAllStudies(combinedStudies)
+  }
   const searchFilterStudies = async () => {
     if (!!search && search !== "") {
       let studiesList: any = await Service.getAll("studies")
+      let sharedStudiesList = []
+      Object.values(sharedStudies).forEach((studyArray) => {
+        sharedStudiesList = [...sharedStudiesList, ...studyArray]
+      })
+      studiesList = [...studiesList, ...sharedStudiesList]
       let newStudies = studiesList.filter((i) => i.name?.toLowerCase()?.includes(search?.toLowerCase()))
       setAllStudies(newStudies)
     } else {
       getAllStudies()
+      combineStudies()
     }
     setLoading(false)
   }
@@ -1205,6 +1262,13 @@ export default function StudiesList({
       label: "PI Institution",
       value: (s) => s.piInstitution || "-",
       visible: false,
+      sortable: true,
+    },
+    {
+      id: "isShared",
+      label: "Ownership",
+      value: (s) => (s.isShared ? "Shared with me" : "Owner"),
+      visible: true,
       sortable: true,
     },
     { id: "adminNote", label: "Admin Notes", value: (s) => s.adminNote || "-", visible: false, sortable: true },
@@ -1290,7 +1354,7 @@ export default function StudiesList({
   }
 
   const TableView_Mod = () => {
-    const [sortConfig, setSortConfig] = useState({ field: "name", direction: "desc" })
+    const [sortConfig, setSortConfig] = useState({ field: null, direction: null })
     const [selectedRows, setSelectedRows] = useState([])
     const classes = useModularTableStyles()
     const currentStudy = expandedStudyId ? allStudies?.find((s) => s.id === expandedStudyId) : null
@@ -1431,7 +1495,17 @@ export default function StudiesList({
     const renderCell = (column: any, row: any) => {
       const columnKey = column.id
       const value = column.value(row)
-
+      if (columnKey === "isShared") {
+        return (
+          <div className={classes.cellContent}>
+            {row.isShared ? (
+              <Chip label="Shared with me" size="small" style={{ backgroundColor: "#E3F2FD", color: "#1976D2" }} />
+            ) : (
+              "Owner"
+            )}
+          </div>
+        )
+      }
       // Check if this cell should be editable
       const isEditable =
         editableColumns.includes(columnKey) && activeButton.action === "edit" && activeButton.id === row.id
@@ -1908,6 +1982,17 @@ export default function StudiesList({
                               <Typography className={studycardclasses.cardTitle}>
                                 {study.name || "No Name provided."}
                               </Typography>
+                              {study.isShared && (
+                                <Chip
+                                  label="Shared with me"
+                                  size="small"
+                                  style={{
+                                    backgroundColor: "#E3F2FD",
+                                    color: "#1976D2",
+                                    margin: "4px 0",
+                                  }}
+                                />
+                              )}
                             </Box>
                             <div className={studycardclasses.stateChip}>
                               {study.timestamps?.deletedAt && <DeletedIcon />}

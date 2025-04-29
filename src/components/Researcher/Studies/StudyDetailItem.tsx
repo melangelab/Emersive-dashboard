@@ -142,6 +142,8 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
   const { enqueueSnackbar } = useSnackbar()
   const [loading, setLoading] = useState(false)
   const [isDeveloperInfoEditing, setIsDeveloperInfoEditing] = useState(false)
+  const [collaboratingInstitutions, setCollaboratingInstitutions] = useState<string>("")
+
   console.log(study)
   // Form state
   const [editedValues, setEditedValues] = useState({
@@ -185,6 +187,29 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
       submittedOn: "",
     },
   })
+
+  useEffect(() => {
+    const fetchInstitutions = async () => {
+      const institutionsSet = new Set<string>()
+
+      await Promise.all(
+        editedValues.sub_researchers?.map(async (researcher) => {
+          try {
+            const res = (await LAMP.Researcher.view(researcher.ResearcherID)) as any
+            if (res?.institution) {
+              institutionsSet.add(res.institution)
+            }
+          } catch (error) {
+            console.error("Failed to fetch researcher:", error)
+          }
+        }) || []
+      )
+
+      setCollaboratingInstitutions(Array.from(institutionsSet).join(", "))
+    }
+
+    fetchInstitutions()
+  }, [editedValues.sub_researchers])
 
   // Define fields for the ViewItems component
   const fields: FieldConfig[] = [
@@ -259,7 +284,7 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
     {
       id: "collaboratingInstitutions",
       label: t("Collaborating Institutions"),
-      value: study?.collaboratingInstitutions?.join(", ") || "",
+      value: collaboratingInstitutions || "",
       editable: false,
       type: "multiline",
     },
@@ -302,7 +327,7 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
             <TextField
               fullWidth
               label={t("Funding Agency")}
-              value={editedValues.fundingAgency}
+              defaultValue={editedValues.fundingAgency}
               onChange={(e) => handleValueChange("fundingAgency", e.target.value)}
               disabled={!isEditing}
             />

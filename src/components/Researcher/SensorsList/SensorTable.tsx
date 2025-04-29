@@ -121,8 +121,8 @@ const SensorTable: React.FC<SensorTableProps> = ({
     const constraints = sensorConstraints[editingCellSensorSpec]
     const duration = editingSensorDuration || 0.1
 
-    if (constraints.min !== null && duration > 1 / constraints.min) return false
-    if (constraints.max !== null && duration < 1 / constraints.max) return false
+    // if (constraints.min !== null && duration > 1 / (constraints.min*60)) return false
+    if (constraints.max !== null && duration < 1 / (constraints.max * 60)) return false
     return true
   }
 
@@ -270,8 +270,12 @@ const SensorTable: React.FC<SensorTableProps> = ({
                     marginLeft: "auto",
                   }}
                   onChange={(e) => {
-                    const newSettings = { ...sensor.settings, frequency: e.target.value }
-                    setEditingSensorFrequency(e.target.value)
+                    let freq = null
+                    if (typeof e.target.value === "string") {
+                      freq = parseFloat(e.target.value)
+                    }
+                    const newSettings = { ...sensor.settings, frequency: freq }
+                    setEditingSensorFrequency(freq)
                     onCellValueChange(sensor.id, "settings", newSettings)
                   }}
                   helperText={
@@ -296,7 +300,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
                 {/* </div> */}
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <Box sx={{ width: "40%", fontWeight: 500 }}>Data Collection Duration(seconds):</Box>
+                <Box sx={{ width: "40%", fontWeight: 500 }}>Data Collection Duration(mins):</Box>
                 {editingCellSensorSpec && sensorConstraints[editingCellSensorSpec] && (
                   <Tooltip
                     title={
@@ -304,12 +308,12 @@ const SensorTable: React.FC<SensorTableProps> = ({
                         <Typography variant="body2">Value Range:</Typography>
                         <Typography variant="body2">
                           {sensorConstraints[editingCellSensorSpec].max !== null &&
-                            `Min: ${1 / sensorConstraints[editingCellSensorSpec].max}`}
-                          {sensorConstraints[editingCellSensorSpec].min !== null &&
+                            `Min: ${Math.round((1 / sensorConstraints[editingCellSensorSpec].max / 60) * 1000) / 1000}`}
+                          {/* {sensorConstraints[editingCellSensorSpec].min !== null &&
                             sensorConstraints[editingCellSensorSpec].max !== null &&
                             " | "}
                           {sensorConstraints[editingCellSensorSpec].min !== null &&
-                            `Max: ${1 / sensorConstraints[editingCellSensorSpec].min}`}
+                            `Max: ${Math.round(((1 / sensorConstraints[editingCellSensorSpec].min)/60) * 1000) / 1000}`} */}
                         </Typography>
                       </Box>
                     }
@@ -325,7 +329,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
                   size="small"
                   variant="outlined"
                   type="number"
-                  defaultValue={sensor.settings?.data_collection_duration ?? ""}
+                  defaultValue={sensor.settings?.data_collection_duration}
                   inputProps={{ inputMode: "decimal", min: 0, step: 1, style: { appearance: "textfield" } }}
                   error={!isDurationConstraintsSatisfied()}
                   style={{
@@ -336,24 +340,19 @@ const SensorTable: React.FC<SensorTableProps> = ({
                     marginLeft: "auto",
                   }}
                   onChange={(e) => {
-                    const newSettings = { ...sensor.settings, data_collection_duration: e.target.value || null }
+                    let duration = null
+                    if (typeof e.target.value === "string") {
+                      duration = parseFloat(e.target.value)
+                    }
+                    const newSettings = { ...sensor.settings, data_collection_duration: duration }
                     onCellValueChange(sensor.id, "settings", newSettings)
-                    setEditingSensorDuration(e.target.value)
+                    setEditingSensorDuration(duration)
                   }}
                   helperText={
                     !isDurationConstraintsSatisfied()
                       ? `Duration must be ${
                           sensorConstraints[editingCellSensorSpec]?.max !== null
-                            ? `>= ${1 / sensorConstraints[editingCellSensorSpec]?.max}`
-                            : ""
-                        }${
-                          sensorConstraints[editingCellSensorSpec]?.min !== null &&
-                          sensorConstraints[editingCellSensorSpec]?.max !== null
-                            ? " and "
-                            : ""
-                        }${
-                          sensorConstraints[editingCellSensorSpec]?.min !== null
-                            ? `<= ${1 / sensorConstraints[editingCellSensorSpec]?.min}`
+                            ? `>= ${Math.round((1 / sensorConstraints[editingCellSensorSpec].max / 60) * 1000) / 1000}`
                             : ""
                         }`
                       : ""
@@ -366,7 +365,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
                 <Box sx={{ width: "50%" }}>
                   <input
                     type="time"
-                    defaultValue={sensor.settings?.data_collection_timeperiod?.start_time ?? ""}
+                    defaultValue={sensor.settings?.data_collection_timeperiod?.start_time ?? null}
                     style={{
                       width: "100%",
                       padding: "4px",
@@ -395,7 +394,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
                 <Box sx={{ width: "50%" }}>
                   <input
                     type="time"
-                    defaultValue={sensor.settings?.data_collection_timeperiod?.end_time ?? ""}
+                    defaultValue={sensor.settings?.data_collection_timeperiod?.end_time}
                     style={{
                       width: "100%",
                       padding: "4px",

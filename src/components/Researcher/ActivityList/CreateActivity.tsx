@@ -348,11 +348,29 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
       })
 
       // Prepare data for local DB
+      // const newActivity = {
+      //   id: newActivityId,
+      //   ...activityData,
+      //   settings: editedValues.settings,
+      //   schedule: [],
+      //   description: editedValues.description,
+      //   formula4Fields: editedValues.formula4Fields,
+      //   photo: editedValues.photo,
+      //   showFeed: editedValues.showInFeed,
+      //   streak: editedValues.streak,
+      //   study_id: editedValues.study_id,
+      //   study_name: studies.find((s) => s.id === editedValues.study_id)?.name,
+      // }
+      // console.log("newActivity", newActivity)
+      // // Add to local DB
+      // await Service.addData("activities", [newActivity])
+
+      enqueueSnackbar(t("Activity created successfully"), { variant: "success" })
+      const activitydata = await LAMP.Activity.view(newActivityId)
       const newActivity = {
         id: newActivityId,
-        ...activityData,
+        ...activitydata,
         settings: editedValues.settings,
-        schedule: null,
         description: editedValues.description,
         formula4Fields: editedValues.formula4Fields,
         photo: editedValues.photo,
@@ -364,9 +382,8 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
       console.log("newActivity", newActivity)
       // Add to local DB
       await Service.addData("activities", [newActivity])
-
-      enqueueSnackbar(t("Activity created successfully"), { variant: "success" })
-      onSave(newActivity)
+      // await Service.addData("activities", [activitydata])
+      onSave(activitydata)
     } catch (error) {
       console.error("Error creating activity:", error)
       enqueueSnackbar(t("Failed to create activity"), { variant: "error" })

@@ -73,7 +73,7 @@ const useStyles = makeStyles((theme: Theme) =>
       backgroundColor: "#fff",
       boxShadow: "-2px 0px 4px rgba(0, 0, 0, 0.1)",
       gap: theme.spacing(1),
-      zIndex: 2,
+      zIndex: 1,
       minWidth: 160,
       "&::before": {
         content: '""',
@@ -84,6 +84,14 @@ const useStyles = makeStyles((theme: Theme) =>
         width: "1px",
         backgroundColor: "rgba(224, 224, 224,1)",
       },
+    },
+    actionCellHeader: {
+      position: "sticky",
+      right: 0,
+      backgroundColor: "#fff",
+      zIndex: 2,
+      boxShadow: "-2px 0px 4px rgba(0, 0, 0, 0.1)",
+      gap: theme.spacing(1),
     },
     actionButtons: {
       display: "flex",
