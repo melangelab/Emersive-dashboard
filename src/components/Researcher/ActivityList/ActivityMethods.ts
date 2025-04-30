@@ -1451,11 +1451,16 @@ export function spliceActivity({ raw, tag }) {
             question.options === null
               ? null
               : question.type !== "matrix" && question.type !== "time"
-              ? question.options?.map((z, idx2) => ({
-                  value: z,
-                  description: tag?.questions?.[idx]?.options?.[idx2],
-                }))
+              ? question.options?.map((z, idx2) =>
+                  typeof z === "object" && z !== null && "value" in z
+                    ? z // already in correct format
+                    : {
+                        value: z,
+                        description: tag?.questions?.[idx]?.options?.[idx2],
+                      }
+                )
               : question.options,
+          // extrasoptions: question.options,
           warnings: question.warnings,
         })),
   }

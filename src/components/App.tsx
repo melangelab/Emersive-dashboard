@@ -1315,6 +1315,7 @@ function AppRouter({ ...props }) {
                   setShowDemoMessage={(val) => {
                     setShowDemoMessage(val)
                   }}
+                  authType={state.authType}
                 />
               </NavigationLayout>
             </React.Fragment>

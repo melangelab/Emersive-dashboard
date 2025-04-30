@@ -57,6 +57,10 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
     setSchemaListObj(SchemaList())
   }, [])
 
+  useEffect(() => {
+    console.log("editedValues now : ", editedValues)
+  }, [editedValues])
+
   // Load default settings when spec changes
   useEffect(() => {
     if (editedValues.spec) {
@@ -310,12 +314,17 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
         } as any)) as any
         newActivityId = result.data ? result.data : result
       } else if (activityData.spec === "lamp.survey") {
-        const result = await saveSurveyActivity({
+        // const result = await saveSurveyActivity({
+        //   ...activityData,
+        //   studyID: editedValues.study_id,
+        // })
+        // newActivityId = result.data
+        const result = (await LAMP.Activity.create(editedValues.study_id, {
           ...activityData,
-          studyID: editedValues.study_id,
-        })
+          settings: editedValues.settings,
+        } as any)) as any
         console.log("result", result)
-        newActivityId = result.data
+        newActivityId = result.data ? result.data : result
       } else if (activityData.spec === "lamp.tips") {
         const result = await saveTipActivity({
           ...activityData,

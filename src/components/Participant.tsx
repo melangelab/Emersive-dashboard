@@ -125,6 +125,7 @@ export default function Participant({
   surveyDone: boolean
   submitSurvey: Function
   setShowDemoMessage: Function
+  authType?: string
 }) {
   const [activities, setActivities] = useState(null)
   const [visibleActivities, setVisibleActivities] = useState([])
@@ -149,7 +150,8 @@ export default function Participant({
 
   setInterval(async () => {
     const part = participant as any
-    if (!part.isLoggedIn) {
+    const auth = LAMP.Auth._auth as any
+    if (!part.isLoggedIn && props.authType && props.authType == "participant") {
       try {
         await LAMP.Participant.update(part.id, {
           ...part,
@@ -167,6 +169,7 @@ export default function Participant({
   }, 60000)
 
   window.addEventListener("beforeunload", async () => {
+    console.log("beforeunload", participant)
     const part = participant as any
     if (part.isLoggedIn) {
       try {
