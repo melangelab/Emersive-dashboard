@@ -164,12 +164,20 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
 
   const [state, setState] = useState({
     serverAddress:
-      lastDomain ?? (process.env.NODE_ENV === "development" && process.env.REACT_APP_PORT === "8000")
+      lastDomain ??
+      (process.env.NODE_ENV === "development" && process.env.REACT_APP_PORT === "8000"
         ? "192.168.21.214:8000"
-        : "emersive.io",
+        : "emersive.io"),
     id: undefined,
     password: undefined,
   })
+  console.log(
+    lastDomain,
+    process.env.NODE_ENV === "development" && process.env.REACT_APP_PORT === "8000",
+    process.env.NODE_ENV === "development" && process.env.REACT_APP_PORT === "8000"
+      ? "192.168.21.214:8000"
+      : "emersive.io"
+  )
   console.log("state and node env", state, process.env.NODE_ENV, process.env.REACT_APP_PORT)
   const [srcLocked, setSrcLocked] = useState(false)
   const [tryitMenu, setTryitMenu] = useState<Element>()
