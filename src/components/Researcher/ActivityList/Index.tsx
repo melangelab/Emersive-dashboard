@@ -550,8 +550,8 @@ export default function ActivityList({
           ids.map((id) => Service.getDataByKey("activities", [id], "id").then((data) => data[0]))
         )
         console.log("Detailed Activities:", detailedActivities)
-        const detailedLActivities = await Promise.all(ids.map((id) => LAMP.Activity.view(id)))
-        console.log("Detailed L Activities:", detailedLActivities)
+        // const detailedLActivities = await Promise.all(ids.map((id) => LAMP.Activity.view(id)))
+        // console.log("Detailed L Activities:", detailedLActivities)
 
         let filteredData = activitiesData || []
         if (filterParam) {
@@ -559,8 +559,8 @@ export default function ActivityList({
         } else if (!!searchTxt && searchTxt.trim?.().length > 0) {
           filteredData = filteredData.filter(
             (factivity) =>
-              factivity.name?.toLowerCase().includes(searchTxt?.toLowerCase()) ||
-              factivity.id?.toLowerCase().includes(searchTxt?.toLowerCase())
+              factivity.name?.toLowerCase().includes(searchTxt?.toLowerCase?.()) ||
+              factivity.id?.toLowerCase().includes(searchTxt?.toLowerCase?.())
           )
         }
         const sortedData = sortData(filteredData, selectedData, "name")
@@ -569,8 +569,8 @@ export default function ActivityList({
         const filteredCommunityActivities = fetchedCommunityActivities.filter(
           (activity) =>
             !searchTxt ||
-            activity.name?.toLowerCase().includes(searchTxt?.toLowerCase()) ||
-            activity.id?.toLowerCase().includes(searchTxt?.toLowerCase())
+            activity.name?.toLowerCase().includes(searchTxt?.toLowerCase?.()) ||
+            activity.id?.toLowerCase().includes(searchTxt?.toLowerCase?.())
         )
         const combinedActivities = [...sortedData, ...filteredCommunityActivities]
         setPaginatedActivities(combinedActivities.slice(page * rowCount, page * rowCount + rowCount))

@@ -134,6 +134,7 @@ export default function NotificationPage({ participant, activityId, mode, tab, .
               const tag = tags[0]
               data =
                 data.spec === "lamp.survey" ? spliceActivity({ raw: data, tag }) : spliceCTActivity({ raw: data, tag })
+              console.log("spliced activity", data)
               setActivity(data)
               setLoading(false)
             })
