@@ -556,7 +556,7 @@ export default function ActivityList({
         let filteredData = activitiesData || []
         if (filterParam) {
           filteredData = filteredData.filter((factivity) => factivity.id === filterParam)
-        } else if (!!searchTxt && searchTxt.trim().length > 0) {
+        } else if (!!searchTxt && searchTxt.trim?.().length > 0) {
           filteredData = filteredData.filter(
             (factivity) =>
               factivity.name?.toLowerCase().includes(searchTxt?.toLowerCase()) ||

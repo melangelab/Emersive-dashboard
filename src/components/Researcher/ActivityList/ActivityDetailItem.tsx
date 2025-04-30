@@ -1237,13 +1237,14 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
   // Create tab content for settings
   const SettingsContent = () => {
     const [localSettings, setLocalSettings] = useState(editedValues.settings || {})
+    const [localFBSettings, setLocalFBSettings] = useState(editedValues.settings || {})
     const [localFormula, setLocalFormula] = useState(editedValues.formula4Fields || "")
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
     const handleSaveSettings = () => {
       setEditedValues((prev) => ({
         ...prev,
         formula4Fields: localFormula,
-        settings: localSettings,
+        settings: editedValues.spec === "lamp.form_builder" ? localFBSettings : localSettings,
       }))
       setHasUnsavedChanges(false)
       enqueueSnackbar(t("Settings saved. Click Save at the bottom of the page to apply all changes."), {
@@ -1252,6 +1253,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     }
     useEffect(() => {
       setLocalSettings(editedValues.settings || {})
+      setLocalFBSettings(editedValues.settings || {})
       setLocalFormula(editedValues.formula4Fields || "")
       setHasUnsavedChanges(false)
     }, [editedValues.spec]) // Only update when spec changes to prevent loops
@@ -1286,7 +1288,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
               setLocalSettings(formData.fields)
               setHasUnsavedChanges(true)
             }}
-            formFieldsProp={localSettings}
+            formFieldsProp={localFBSettings}
             formula={localFormula}
           />
         ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
