@@ -880,7 +880,7 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
     //   id: "language",
     //   label: t("Language"),
     //   value: participant?.language || "en_US",
-    //   editable: true,
+    //   editable: true, style={{justifyContent:'center'}}
     //   type: "select",
     //   options: [
     //     { value: "en_US", label: t("English") },

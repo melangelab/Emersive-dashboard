@@ -56,6 +56,7 @@ import { ReactComponent as DeleteFilledIcon } from "../../../icons/NewIcons/tras
 import { ReactComponent as SaveIcon } from "../../../icons/NewIcons/floppy-disks.svg"
 import { ReactComponent as SaveFilledIcon } from "../../../icons/NewIcons/floppy-disks-filled.svg"
 import { studycardStyles } from "../Studies/Index"
+import { canEditActivity, canViewActivity } from "./Index"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -355,15 +356,23 @@ export default function ActivityTableRow({
   const [selectedStudyForDuplicate, setSelectedStudyForDuplicate] = useState("")
   const [duplicateLoading, setDuplicateLoading] = useState(false)
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
+  const canEdit = canEditActivity(activity, studies, researcherId, props.sharedstudies)
+  const canView = canViewActivity(activity, studies, researcherId, props.sharedstudies)
+
   const activitycardclasses = studycardStyles()
   const editableColumns = ["name", "groups"] // TODO
-  console.log("activity", activity)
   const [creatorName, setcreatorName] = useState(activity?.creator || "")
   useEffect(() => {
     const fetchname = async () => {
-      const res = await LAMP.Researcher.view(activity?.creator)
-      if (res) {
-        setcreatorName(res.name)
+      try {
+        const res = await LAMP.Researcher.view(activity?.creator)
+        if (res) {
+          setcreatorName(res.name)
+        }
+      } catch {
+        const creator = props.allresearchers.find((r) => r.id === activity?.creator)
+        const resname = props.allresearchers.find((r) => r.id === researcherId)
+        setcreatorName(creator?.name || resname?.name)
       }
     }
     fetchname()
@@ -853,48 +862,51 @@ export default function ActivityTableRow({
                     }}
                   />
                 )}
-                <ScheduleActivity
-                  activity={activity}
-                  setActivities={setActivities}
-                  activities={activities}
-                  activeButton={activeButton}
-                  setActiveButton={setActiveButton}
-                />
-                {activeButton.id === activity.id && activeButton.action === "edit" ? (
-                  <EditFilledIcon
-                    className={`${activitycardclasses.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "edit" })
-                      onEditActivity(activity)
-                    }}
-                  />
-                ) : (
-                  <EditIcon
-                    className={activitycardclasses.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "edit" })
-                      onEditActivity(activity)
-                    }}
-                  />
+                {canEdit && (
+                  <>
+                    <ScheduleActivity
+                      activity={activity}
+                      setActivities={setActivities}
+                      activities={activities}
+                      activeButton={activeButton}
+                      setActiveButton={setActiveButton}
+                    />
+                    {activeButton.id === activity.id && activeButton.action === "edit" ? (
+                      <EditFilledIcon
+                        className={`${activitycardclasses.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "edit" })
+                          onEditActivity(activity)
+                        }}
+                      />
+                    ) : (
+                      <EditIcon
+                        className={activitycardclasses.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "edit" })
+                          onEditActivity(activity)
+                        }}
+                      />
+                    )}
+                    {activeButton.id === activity.id && activeButton.action === "save" ? (
+                      <SaveFilledIcon
+                        className={`${activitycardclasses.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "save" })
+                          onSaveActivity(activity)
+                        }}
+                      />
+                    ) : (
+                      <SaveIcon
+                        className={activitycardclasses.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "save" })
+                          onSaveActivity(activity)
+                        }}
+                      />
+                    )}
+                  </>
                 )}
-                {activeButton.id === activity.id && activeButton.action === "save" ? (
-                  <SaveFilledIcon
-                    className={`${activitycardclasses.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "save" })
-                      onSaveActivity(activity)
-                    }}
-                  />
-                ) : (
-                  <SaveIcon
-                    className={activitycardclasses.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "save" })
-                      onSaveActivity(activity)
-                    }}
-                  />
-                )}
-
                 {/* <UpdateActivity
                   activity={activity}
                   activities={activities}
@@ -920,74 +932,86 @@ export default function ActivityTableRow({
                     }}
                   />
                 )}
-                {activeButton.id === activity.id && activeButton.action === "share" ? (
-                  !activity.shareTocommunity ? (
-                    <ShareCommunityFilledIcon
-                      className={`${activitycardclasses.actionIcon} active`}
-                      onClick={() => {
-                        setActiveButton({ id: activity.id, action: "history" })
-                        setShareDialogOpen(true)
-                      }}
-                    />
-                  ) : (
-                    <RemoveCommunityFilledIcon
-                      className={`${activitycardclasses.actionIcon} active`}
-                      onClick={() => {
-                        setActiveButton({ id: activity.id, action: "share" })
-                        setShareDialogOpen(true)
-                      }}
-                    />
-                  )
-                ) : activity.shareTocommunity ? (
-                  <RemoveCommunityIcon
-                    className={`${activitycardclasses.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "share" })
-                      setShareDialogOpen(true)
-                    }}
-                  />
-                ) : (
-                  <ShareCommunityIcon
-                    className={activitycardclasses.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "share" })
-                      setShareDialogOpen(true)
-                    }}
-                  />
+                {canEdit && !activity.isShared && (
+                  <>
+                    {activeButton.id === activity.id && activeButton.action === "share" ? (
+                      !activity.shareTocommunity ? (
+                        <ShareCommunityFilledIcon
+                          className={`${activitycardclasses.actionIcon} active`}
+                          onClick={() => {
+                            setActiveButton({ id: activity.id, action: "history" })
+                            setShareDialogOpen(true)
+                          }}
+                        />
+                      ) : (
+                        <RemoveCommunityFilledIcon
+                          className={`${activitycardclasses.actionIcon} active`}
+                          onClick={() => {
+                            setActiveButton({ id: activity.id, action: "share" })
+                            setShareDialogOpen(true)
+                          }}
+                        />
+                      )
+                    ) : activity.shareTocommunity ? (
+                      <RemoveCommunityIcon
+                        className={`${activitycardclasses.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "share" })
+                          setShareDialogOpen(true)
+                        }}
+                      />
+                    ) : (
+                      <ShareCommunityIcon
+                        className={activitycardclasses.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "share" })
+                          setShareDialogOpen(true)
+                        }}
+                      />
+                    )}
+                  </>
                 )}
-                {activeButton.id === activity.id && activeButton.action === "version" ? (
-                  <VersionThisFilledIcon
-                    className={`${activitycardclasses.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "version" })
-                      setConfirmationVersionDialog(true)
-                    }}
-                  />
-                ) : (
-                  <VersionThisIcon
-                    className={activitycardclasses.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "version" })
-                      setConfirmationVersionDialog(true)
-                    }}
-                  />
+                {canEdit && (
+                  <>
+                    {activeButton.id === activity.id && activeButton.action === "version" ? (
+                      <VersionThisFilledIcon
+                        className={`${activitycardclasses.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "version" })
+                          setConfirmationVersionDialog(true)
+                        }}
+                      />
+                    ) : (
+                      <VersionThisIcon
+                        className={activitycardclasses.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "version" })
+                          setConfirmationVersionDialog(true)
+                        }}
+                      />
+                    )}
+                  </>
                 )}
-                {activeButton.id === activity.id && activeButton.action === "delete" ? (
-                  <DeleteFilledIcon
-                    className={`${activitycardclasses.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "delete" })
-                      setConfirmationDialog(true)
-                    }}
-                  />
-                ) : (
-                  <DeleteIcon
-                    className={activitycardclasses.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "delete" })
-                      setConfirmationDialog(true)
-                    }}
-                  />
+                {!activity.isShared && (
+                  <>
+                    {activeButton.id === activity.id && activeButton.action === "delete" ? (
+                      <DeleteFilledIcon
+                        className={`${activitycardclasses.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "delete" })
+                          setConfirmationDialog(true)
+                        }}
+                      />
+                    ) : (
+                      <DeleteIcon
+                        className={activitycardclasses.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "delete" })
+                          setConfirmationDialog(true)
+                        }}
+                      />
+                    )}
+                  </>
                 )}
               </>
             )}

@@ -27,7 +27,7 @@ import LAMP from "lamp-core"
 import { useTranslation } from "react-i18next"
 import DuplicateActivity from "./DuplicateActivity"
 import { studycardStyles, useModularTableStyles } from "../Studies/Index"
-import { devLabCardStyles } from "./Index"
+import { canEditActivity, canViewActivity, devLabCardStyles, getActivityAccessLevel } from "./Index"
 import { ReactComponent as HistoryIcon } from "../../../icons/NewIcons/version-history.svg"
 import { ReactComponent as HistoryFilledIcon } from "../../../icons/NewIcons/version-history.svg"
 import { ReactComponent as ShareCommunityIcon } from "../../../icons/NewIcons/refer.svg"
@@ -91,6 +91,21 @@ const useStyles = makeStyles((theme: Theme) =>
       color: "#666",
       marginTop: "4px",
     },
+    sharedCard: {
+      background: "#F8F4FF",
+      border: "1px solid #d8aedf",
+      position: "relative",
+    },
+    sharedBadge: {
+      position: "absolute",
+      bottom: "8px",
+      right: "8px",
+      background: "#d8aedf",
+      color: "white",
+      padding: "2px 8px",
+      borderRadius: "12px",
+      fontSize: "0.75rem",
+    },
   })
 )
 export default function ActivityItem({
@@ -130,7 +145,19 @@ export default function ActivityItem({
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
   const [selectedVersion, setSelectedVersion] = useState(null)
   const [duplicateLoading, setDuplicateLoading] = useState(false)
+  const canEdit = canEditActivity(activity, studies, researcherId, props.sharedstudies)
+  const canView = canViewActivity(activity, studies, researcherId, props.sharedstudies)
 
+  const getParentResearcher = (parentResearcherId) => {
+    const researcher = props.allresearchers.find((r) => r.id === parentResearcherId)
+    return researcher ? researcher.name : parentResearcherId
+  }
+
+  const getCardClass = () => {
+    if (activity.isCommunityActivity) return classes.communityCard
+    if (activity.isShared) return classes.sharedCard
+    return ""
+  }
   const handlePreviewVersion = async (version) => {
     try {
       setPreviewDialogOpen(true)
@@ -271,17 +298,16 @@ export default function ActivityItem({
   }
 
   return (
-    <Paper
-      className={`${activitycardclasses.dhrCard} ${activity.isCommunityActivity ? classes.communityCard : ""}`}
-      elevation={3}
-    >
+    <Paper className={`${activitycardclasses.dhrCard} ${getCardClass()}`} elevation={3}>
       <Box display={"flex"} flexDirection={"row"}>
         {/* <Card className={`${classes.cardMain} ${activity.isCommunityActivity ? classes.communityCard : ""}`}> */}
         {activity.isCommunityActivity && <Box className={classes.communityBadge}>{t("Community")}</Box>}
+        {activity.isShared && <Box className={classes.sharedBadge}>{t("Shared")}</Box>}
         <Box display="flex" p={1}>
           {!activity.isCommunityActivity && (
             <Box>
               <Checkbox
+                disabled={activity.isShared && !canEdit}
                 checked={checked}
                 onChange={(event) => handleChange(activity, event)}
                 classes={{ checked: classes.checkboxActive }}
@@ -317,6 +343,14 @@ export default function ActivityItem({
               <strong className={customStyles.baseTypeDeveloperLabel}>{t("Developer")}:</strong>{" "}
               <span className={customStyles.baseTypeDeveloper}>{activity.creator}</span>
             </Typography>
+          )}
+          {activity.isShared && (
+            <>
+              <Typography className={activitycardclasses.cardSubtitle}>
+                <strong className={customStyles.baseTypeDeveloperLabel}>{t("Shared By")}:</strong>{" "}
+                <span className={customStyles.baseTypeDeveloper}>{getParentResearcher(activity.parentResearcher)}</span>
+              </Typography>
+            </>
           )}
         </Box>
         <Box>
@@ -375,13 +409,15 @@ export default function ActivityItem({
                 }}
               />
             )}
-            <ScheduleActivity
-              activity={activity}
-              setActivities={setActivities}
-              activities={activities}
-              activeButton={activeButton}
-              setActiveButton={setActiveButton}
-            />
+            {canEdit && (
+              <ScheduleActivity
+                activity={activity}
+                setActivities={setActivities}
+                activities={activities}
+                activeButton={activeButton}
+                setActiveButton={setActiveButton}
+              />
+            )}
             {/* <UpdateActivity
               activity={activity}
               activities={activities}
@@ -392,57 +428,65 @@ export default function ActivityItem({
               activeButton={activeButton}
               setActiveButton={setActiveButton}
             /> */}
-            {activeButton.id === activity.id && activeButton.action === "history" ? (
-              <HistoryFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "history" })
-                  setVersionHistoryOpen(true)
-                }}
-              />
-            ) : (
-              <HistoryIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "history" })
-                  setVersionHistoryOpen(true)
-                }}
-              />
+            {canView && (
+              <>
+                {activeButton.id === activity.id && activeButton.action === "history" ? (
+                  <HistoryFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "history" })
+                      setVersionHistoryOpen(true)
+                    }}
+                  />
+                ) : (
+                  <HistoryIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "history" })
+                      setVersionHistoryOpen(true)
+                    }}
+                  />
+                )}
+              </>
             )}
-            {activeButton.id === activity.id && activeButton.action === "share" ? (
-              !activity.shareTocommunity ? (
-                <ShareCommunityFilledIcon
-                  className={`${mtstyles.actionIcon} active`}
-                  onClick={() => {
-                    setActiveButton({ id: activity.id, action: "history" })
-                    setShareDialogOpen(true)
-                  }}
-                />
-              ) : (
-                <RemoveCommunityFilledIcon
-                  className={`${mtstyles.actionIcon} active`}
-                  onClick={() => {
-                    setActiveButton({ id: activity.id, action: "share" })
-                    setShareDialogOpen(true)
-                  }}
-                />
-              )
-            ) : activity.shareTocommunity ? (
-              <RemoveCommunityIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "share" })
-                  setShareDialogOpen(true)
-                }}
-              />
-            ) : (
-              <ShareCommunityIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "share" })
-                  setShareDialogOpen(true)
-                }}
-              />
+            {canEdit && !activity.isShared && (
+              <>
+                {activeButton.id === activity.id && activeButton.action === "share" ? (
+                  !activity.shareTocommunity ? (
+                    <ShareCommunityFilledIcon
+                      className={`${mtstyles.actionIcon} active`}
+                      onClick={() => {
+                        setActiveButton({ id: activity.id, action: "history" })
+                        setShareDialogOpen(true)
+                      }}
+                    />
+                  ) : (
+                    <RemoveCommunityFilledIcon
+                      className={`${mtstyles.actionIcon} active`}
+                      onClick={() => {
+                        setActiveButton({ id: activity.id, action: "share" })
+                        setShareDialogOpen(true)
+                      }}
+                    />
+                  )
+                ) : activity.shareTocommunity ? (
+                  <RemoveCommunityIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "share" })
+                      setShareDialogOpen(true)
+                    }}
+                  />
+                ) : (
+                  <ShareCommunityIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "share" })
+                      setShareDialogOpen(true)
+                    }}
+                  />
+                )}
+              </>
             )}
             {activeButton.id === activity.id && activeButton.action === "version" ? (
               <VersionThisFilledIcon
@@ -461,22 +505,26 @@ export default function ActivityItem({
                 }}
               />
             )}
-            {activeButton.id === activity.id && activeButton.action === "delete" ? (
-              <DeleteFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "delete" })
-                  setConfirmationDialog(true)
-                }}
-              />
-            ) : (
-              <DeleteIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "delete" })
-                  setConfirmationDialog(true)
-                }}
-              />
+            {!activity.isShared && (
+              <>
+                {activeButton.id === activity.id && activeButton.action === "delete" ? (
+                  <DeleteFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "delete" })
+                      setConfirmationDialog(true)
+                    }}
+                  />
+                ) : (
+                  <DeleteIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "delete" })
+                      setConfirmationDialog(true)
+                    }}
+                  />
+                )}
+              </>
             )}
           </>
         )}
