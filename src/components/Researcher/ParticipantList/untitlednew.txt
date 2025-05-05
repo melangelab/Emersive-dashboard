@@ -1,0 +1,53 @@
+// Move columns state inside useEffect that runs after researchers are loaded
+// This is the key part of the fix
+
+// 1. First, initialize columns without the ownership field that needs researchers data
+const [columns, setColumns] = useState<TableColumn[]>([
+  { id: "id", label: "ID", value: (p) => p.id, visible: true },
+  { id: "name", label: "Name", value: (p) => `${p.firstName} ${p.lastName}`, visible: true },
+  { id: "username", label: "Username", value: (p) => p.username, visible: true },
+  { id: "email", label: "Email", value: (p) => p.email, visible: true },
+  { id: "mobile", label: "Mobile", value: (p) => p.mobile, visible: true },
+  { id: "group", label: "Group", value: (p) => p.group_name || "-", visible: true },
+  { id: "study", label: "Study", value: (p) => p.study_name, visible: true },
+  { id: "userAge", label: "Age", value: (p) => p.userAge || "-", visible: false },
+  { id: "gender", label: "Gender", value: (p) => p.gender || "-", visible: false },
+  { id: "caregiverName", label: "Caregiver", value: (p) => p.caregiverName || "-", visible: false },
+  {
+    id: "lastLogin",
+    label: "Last Login",
+    value: (p) => (p.systemTimestamps?.lastLoginTime ? formatDate(p.systemTimestamps.lastLoginTime) : "-"),
+    visible: true,
+  },
+  { id: "isLoggedIn", label: "Login Status", value: (p) => p.isLoggedIn, visible: true },
+]);
+
+// 2. Update getParentResearcher to handle the case when researchers aren't loaded yet
+const getParentResearcher = (parentResearcherId) => {
+  if (!parentResearcherId) return "Unknown";
+  if (!allresearchers || allresearchers.length === 0) return parentResearcherId;
+  
+  const researcher = allresearchers.find(r => r.id === parentResearcherId);
+  return researcher ? researcher.name : parentResearcherId;
+};
+
+// 3. Add useEffect to update columns after researchers are loaded
+
+
+// 4. Improve the researcher fetching logic
+useEffect(() => {
+  const fetchResearchers = async () => {
+    try {
+      const authString = LAMP.Auth._auth.id + ':' + LAMP.Auth._auth.password;
+      const response = await fetchGetData(authString, `researcher/others/list`, 'researcher');
+      console.log("Researchers fetched:", response.data);
+      setAllResearchers(response.data);
+    } catch (error) {
+      console.error('Error fetching researchers:', error);
+      // Set a flag or state to indicate the fetch failed
+      // This could be useful for showing an error message or retrying
+    }
+  };
+  
+  fetchResearchers();
+}, []);  // Empty dependency array means this runs once on mount

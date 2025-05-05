@@ -315,7 +315,7 @@ export default function Header({
           <StudyFilterList
             studies={studies}
             researcherId={researcherId}
-            type="activities"
+            type="participants"
             showFilterStudies={showFilterStudies}
             selectedStudies={selectedStudies}
             setSelectedStudies={setSelectedStudies}

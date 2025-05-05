@@ -213,18 +213,19 @@ export default function Header({
           </Box>
         </Box>
       </Box>
-      {showFilterStudies && (
-        <Box>
-          <StudyFilterList
-            studies={studies}
-            researcherId={researcherId}
-            type="sensors"
-            showFilterStudies={showFilterStudies}
-            selectedStudies={selectedStudies}
-            setSelectedStudies={setSelectedStudies}
-          />
-        </Box>
-      )}
+      {/* {showFilterStudies && ( */}
+      <Box>
+        <StudyFilterList
+          studies={studies}
+          researcherId={researcherId}
+          type="sensors"
+          showFilterStudies={showFilterStudies}
+          selectedStudies={selectedStudies}
+          setSelectedStudies={setSelectedStudies}
+          updateCount={props.updateCount || 3}
+        />
+      </Box>
+      {/* )} */}
 
       {(selectedSensors || []).length > 0 && (
         <Box className={headerclasses.optionsMain}>

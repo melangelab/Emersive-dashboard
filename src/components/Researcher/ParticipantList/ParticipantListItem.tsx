@@ -59,6 +59,8 @@ import { ReactComponent as PasswordFilledIcon } from "../../../icons/NewIcons/pa
 import SetPassword from "../../SetPassword"
 import { formatLastUse, getItemFrequency } from "../../Utils"
 import { fetchResult } from "../SaveResearcherData"
+import { canEditParticipant, canViewParticipant } from "./Index"
+import { canViewActivity } from "../ActivityList/Index"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -135,6 +137,7 @@ export default function ParticipantListItem({
   researcherId,
   onViewParticipant,
   researcherName,
+  sharedstudies,
   ...props
 }) {
   const classes = useStyles()
@@ -148,13 +151,18 @@ export default function ParticipantListItem({
   const [confirmationDialog, setConfirmationDialog] = useState(false)
   const [user, setName] = useState(participant)
   const [openSettings, setOpenSettings] = useState(false)
-  const pStudy = studies.filter((study) => study.id === participant.study_id)[0]
+  // const pStudy = studies.filter((study) => study.id === participant.study_id)[0]
+  const pStudy =
+    studies.find((study) => study.id === participant.study_id) ||
+    (sharedstudies ? sharedstudies.find((study) => study.id === participant.study_id) : undefined)
   const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
   const [updatedPassword, setUpdatedPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [passwordError, setPasswordError] = useState("")
+  const canEdit = canEditParticipant(participant, studies, researcherId, sharedstudies)
+  const canView = canViewParticipant(participant, studies, researcherId, sharedstudies)
 
   const stats = (participant, study) => {
     return [
@@ -459,6 +467,7 @@ export default function ParticipantListItem({
             {participant.systemTimestamps?.suspensionTime && <SuspendedIcon />}
           </div>
         </Box>
+        {participant.isShared && <Box className={participantcardclasses.sharedBadge}>{t("Shared")}</Box>}
         <Divider className={participantcardclasses.titleDivider} />
         <Grid container className={participantcardclasses.statsGrid}>
           {stats(participant, pStudy).map((stat) => (
@@ -574,76 +583,83 @@ export default function ParticipantListItem({
               }}
             />
           )} */}
-          {activeButton?.id === participant.id && activeButton?.action === "credentials" ? (
-            <PasswordFilledIcon
-              className={`${participantcardclasses.actionIcon} active`}
-              onClick={() => {
-                setActiveButton?.({ id: participant.id, action: "credentials" })
-                setShowPasswordDialog(true)
-              }}
-            />
-          ) : (
-            <PasswordIcon
-              className={participantcardclasses.actionIcon}
-              onClick={() => {
-                setActiveButton?.({ id: participant.id, action: "credentials" })
-                setShowPasswordDialog(true)
-              }}
-            />
+          {canEdit && (
+            <>
+              {activeButton?.id === participant.id && activeButton?.action === "credentials" ? (
+                <PasswordFilledIcon
+                  className={`${participantcardclasses.actionIcon} active`}
+                  onClick={() => {
+                    setActiveButton?.({ id: participant.id, action: "credentials" })
+                    setShowPasswordDialog(true)
+                  }}
+                />
+              ) : (
+                <PasswordIcon
+                  className={participantcardclasses.actionIcon}
+                  onClick={() => {
+                    setActiveButton?.({ id: participant.id, action: "credentials" })
+                    setShowPasswordDialog(true)
+                  }}
+                />
+              )}
+              {/* <Credentials user={participant} activeButton={activeButton} setActiveButton={setActiveButton} /> */}
+              {!participant.systemTimestamps?.suspensionTime ? (
+                activeButton.id === participant.id && activeButton.action === "suspend" ? (
+                  <SuspendFilledIcon
+                    className={`${participantcardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: participant.id, action: "suspend" })
+                      props.onSuspend(participant, setActiveButton)
+                    }}
+                  />
+                ) : (
+                  <SuspendIcon
+                    className={participantcardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: participant.id, action: "suspend" })
+                      props.onSuspend(participant, setActiveButton)
+                    }}
+                  />
+                )
+              ) : activeButton.id === participant.id && activeButton.action === "suspend" ? (
+                <SuspendFilledIcon
+                  className={`${participantcardclasses.actionIcon} active`}
+                  onClick={() => {
+                    setActiveButton({ id: participant.id, action: "suspend" })
+                    props.onUnSuspend(participant, setActiveButton)
+                  }}
+                />
+              ) : (
+                <SuspendIcon
+                  className={participantcardclasses.actionIcon}
+                  onClick={() => {
+                    setActiveButton({ id: participant.id, action: "suspend" })
+                    props.onUnSuspend(participant, setActiveButton)
+                  }}
+                />
+              )}
+            </>
           )}
-          {/* <Credentials user={participant} activeButton={activeButton} setActiveButton={setActiveButton} /> */}
-          {!participant.systemTimestamps?.suspensionTime ? (
-            activeButton.id === participant.id && activeButton.action === "suspend" ? (
-              <SuspendFilledIcon
-                className={`${participantcardclasses.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: participant.id, action: "suspend" })
-                  props.onSuspend(participant, setActiveButton)
-                }}
-              />
-            ) : (
-              <SuspendIcon
-                className={participantcardclasses.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: participant.id, action: "suspend" })
-                  props.onSuspend(participant, setActiveButton)
-                }}
-              />
-            )
-          ) : activeButton.id === participant.id && activeButton.action === "suspend" ? (
-            <SuspendFilledIcon
-              className={`${participantcardclasses.actionIcon} active`}
-              onClick={() => {
-                setActiveButton({ id: participant.id, action: "suspend" })
-                props.onUnSuspend(participant, setActiveButton)
-              }}
-            />
-          ) : (
-            <SuspendIcon
-              className={participantcardclasses.actionIcon}
-              onClick={() => {
-                setActiveButton({ id: participant.id, action: "suspend" })
-                props.onUnSuspend(participant, setActiveButton)
-              }}
-            />
-          )}
-
-          {activeButton.id === participant.id && activeButton.action === "delete" ? (
-            <DeleteFilledIcon
-              className={`${participantcardclasses.actionIcon} active`}
-              onClick={() => {
-                setActiveButton({ id: participant.id, action: "delete" })
-                setConfirmationDialog(true)
-              }}
-            />
-          ) : (
-            <DeleteIcon
-              className={participantcardclasses.actionIcon}
-              onClick={() => {
-                setActiveButton({ id: participant.id, action: "delete" })
-                setConfirmationDialog(true)
-              }}
-            />
+          {!participant.isShared && (
+            <>
+              {activeButton.id === participant.id && activeButton.action === "delete" ? (
+                <DeleteFilledIcon
+                  className={`${participantcardclasses.actionIcon} active`}
+                  onClick={() => {
+                    setActiveButton({ id: participant.id, action: "delete" })
+                    setConfirmationDialog(true)
+                  }}
+                />
+              ) : (
+                <DeleteIcon
+                  className={participantcardclasses.actionIcon}
+                  onClick={() => {
+                    setActiveButton({ id: participant.id, action: "delete" })
+                    setConfirmationDialog(true)
+                  }}
+                />
+              )}
+            </>
           )}
           {/* {activeButton.id === participant.id && activeButton.action === "settings" ? (
             <CopyFilledIcon
