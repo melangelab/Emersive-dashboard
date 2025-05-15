@@ -16,6 +16,53 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create buildEnv.js file if missing
+        run: |
+          if [ ! -f buildEnv.js ]; then
+            cat > buildEnv.js << EOL
+            const fs = require('fs');
+            const path = require('path');
+
+            // Get environment argument
+            const env = process.argv[2] || 'dev';
+
+            // Define environment variables for different environments
+            const envVars = {
+              dev: {
+                REACT_APP_ENV: 'development',
+                // Add other development environment variables here
+              },
+              test: {
+                REACT_APP_ENV: 'test',
+                // Add test environment variables here
+              },
+              prod: {
+                REACT_APP_ENV: 'production',
+                // Add production environment variables here
+              }
+            };
+
+            // Create .env file content
+            const selectedEnv = envVars[env] || envVars.dev;
+            const envContent = Object.entries(selectedEnv)
+              .map(([key, value]) => \`\${key}=\${value}\`)
+              .join('\\n');
+
+            // Write to .env file
+            fs.writeFileSync(path.join(__dirname, '.env'), envContent);
+
+            console.log('.env file built successfully');
+            EOL
+          fi
+      
+      - name: Create resolutions.json
+        run: |
+          echo '{"ajv":"6.12.6"}' > resolutions.json
+      
+      - name: Fix package.json dependency
+        run: |
+          sed -i 's/"ajv": "\^8.12.0"/"ajv": "6.12.6"/g' package.json
+      
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
@@ -27,26 +74,81 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+          build-args: |
+            NODE_OPTIONS=--max-old-space-size=8192
+
   build_pages:
     if: startsWith(github.ref, 'refs/tags/')
+    needs: build_image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
       - uses: actions/setup-node@v3
         with:
           node-version: 16.x
           cache: 'npm'
+
+      - name: Create buildEnv.js file if missing
+        run: |
+          if [ ! -f buildEnv.js ]; then
+            cat > buildEnv.js << EOL
+            const fs = require('fs');
+            const path = require('path');
+
+            // Get environment argument
+            const env = process.argv[2] || 'dev';
+
+            // Define environment variables for different environments
+            const envVars = {
+              dev: {
+                REACT_APP_ENV: 'development',
+                // Add other development environment variables here
+              },
+              test: {
+                REACT_APP_ENV: 'test',
+                // Add test environment variables here
+              },
+              prod: {
+                REACT_APP_ENV: 'production',
+                // Add production environment variables here
+              }
+            };
+
+            // Create .env file content
+            const selectedEnv = envVars[env] || envVars.dev;
+            const envContent = Object.entries(selectedEnv)
+              .map(([key, value]) => \`\${key}=\${value}\`)
+              .join('\\n');
+
+            // Write to .env file
+            fs.writeFileSync(path.join(__dirname, '.env'), envContent);
+
+            console.log('.env file built successfully');
+            EOL
+          fi
+      
       - name: Create resolutions.json
         run: |
           echo '{"ajv":"6.12.6"}' > resolutions.json
+      
+      - name: Fix package.json dependency
+        run: |
+          sed -i 's/"ajv": "\^8.12.0"/"ajv": "6.12.6"/g' package.json
+      
       - name: Install dependencies
         run: |
           npm ci --legacy-peer-deps
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+      
       - name: Build
         run: |
           npm run build
         env:
           CI: false
+          NODE_OPTIONS: --max-old-space-size=8192
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
