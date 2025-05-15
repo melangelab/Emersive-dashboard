@@ -19,14 +19,6 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Create resolutions.json
-        run: |
-          echo '{"ajv":"6.12.6"}' > resolutions.json
-      
-      - name: Fix package.json dependency
-        run: |
-          sed -i 's/"ajv": "\^8.12.0"/"ajv": "6.12.6"/g' package.json
-      
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
@@ -52,13 +44,10 @@ jobs:
           node-version: 16.x
           cache: 'npm'
       
-      - name: Create resolutions.json
+      - name: Install ajv and ajv-keywords compatible versions
         run: |
-          echo '{"ajv":"6.12.6"}' > resolutions.json
-      
-      - name: Fix package.json dependency
-        run: |
-          sed -i 's/"ajv": "\^8.12.0"/"ajv": "6.12.6"/g' package.json
+          npm install ajv@6.12.6 --no-save
+          npm install ajv-keywords@3.5.2 --no-save
       
       - name: Install dependencies
         run: |
