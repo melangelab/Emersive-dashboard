@@ -448,7 +448,7 @@ function Download({ studies, target = "studies" }) {
 
     const link = document.createElement("a")
     link.href = url
-    link.download = `${target}_data.json`
+    link.download = `emersive_${target}_data.json`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -500,7 +500,7 @@ function Download({ studies, target = "studies" }) {
 
     const link = document.createElement("a")
     link.href = url
-    link.download = `${target}_data.csv`
+    link.download = `emersive_${target}_data.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -581,7 +581,7 @@ function Download({ studies, target = "studies" }) {
     }
 
     // Generate Excel file
-    XLSX.writeFile(workbook, `${target}_data.xlsx`)
+    XLSX.writeFile(workbook, `emersive_${target}_data.xlsx`)
   }
 
   const handleDownload = () => {
