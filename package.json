@@ -95,7 +95,10 @@
   "resolutions": {
     "glob-parent": "5.1.2",
     "resolve-url-loader": "4.0.0",
-    "ajv": "6.12.6"
+    "ajv": "6.12.6",
+    "@babel/plugin-proposal-private-methods": "@babel/plugin-transform-private-methods",
+    "@babel/plugin-proposal-private-property-in-object": "@babel/plugin-transform-private-property-in-object",
+    "@babel/plugin-proposal-numeric-separator": "@babel/plugin-transform-numeric-separator"
   },
   "overrides": {
     "nth-check": "2.1.1"
