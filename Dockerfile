@@ -14,11 +14,15 @@ RUN npm install --legacy-peer-deps
 # Copy all source files
 COPY . .
 
+# Ensure the buildEnv.js script runs correctly
+RUN chmod +x buildEnv.js
+
 # Explicitly set NODE_OPTIONS to increase memory limit
 ENV NODE_OPTIONS="--max-old-space-size=8192"
 
-# Run build
-RUN npm run build
+# Run build with explicit ajv version
+RUN sed -i 's/"ajv": "\^8\.12\.0"/"ajv": "6.12.6"/g' package.json && \
+    npm run build
 
 FROM nginx:alpine
 COPY --from=build /usr/src/app/build/ /usr/share/nginx/html
