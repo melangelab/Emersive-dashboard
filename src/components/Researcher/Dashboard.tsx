@@ -225,13 +225,14 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
   const [loading, setLoading] = useState(true)
   const layoutClasses = useLayoutStyles()
   const headerclasses = useHeaderStyles()
+  const [sharedstudies, setsharedStudies] = useState(null)
 
   useInterval(
     () => {
       setLoading(true)
       getDBStudies()
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    (!studies || studies.length === 0) && (!sharedstudies || sharedstudies.length === 0) ? 60000 : null,
     true
   )
 
@@ -265,11 +266,34 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
         setNotification(researcherNotification)
       })
     })
+    Service.getAll("sharedstudies").then((study_data) => {
+      setsharedStudies(sortStudies(study_data, order))
+    })
+    try {
+      const [studiesData, sharedStudiesData, researcherData] = await Promise.all([
+        Service.getAll("studies"),
+        Service.getAll("sharedstudies"),
+        Service.getAll("researcher"),
+      ])
+      setStudies(sortStudies(studiesData, order))
+      setsharedStudies(sortStudies(sharedStudiesData, order))
+
+      let researcherNotification = !!researcherData ? researcherData[0]?.notification ?? false : false
+      setNotification(researcherNotification)
+
+      setLoading(false)
+    } catch (error) {
+      console.error("Error fetching studies:", error)
+      setLoading(false)
+    }
   }
 
   const getAllStudies = async () => {
     Service.getAll("studies").then((studies) => {
       setStudies(sortStudies(studies, order))
+    })
+    Service.getAll("sharedstudies").then((study_data) => {
+      setsharedStudies(sortStudies(study_data, order))
     })
   }
 
@@ -278,18 +302,24 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
     getAllStudies()
   }, [order])
 
-  useEffect(() => {
-    filterStudies(studies)
-  }, [studies])
+  // useEffect(() => {
+  //   filterStudies(studies)
+  // }, [studies])
 
-  const filterStudies = async (studies) => {
+  useEffect(() => {
+    filterStudies(studies, sharedstudies)
+  }, [studies, sharedstudies])
+
+  const filterStudies = async (studies, sharedstudies) => {
     if (!!researcherId && studies !== null && (studies || []).length > 0) {
       let selected =
         localStorage.getItem("studies_" + researcherId) !== null
           ? JSON.parse(localStorage.getItem("studies_" + researcherId))
           : []
       if (selected.length > 0) {
-        let filtered = selected.filter((o) => studies.some(({ name }) => o === name))
+        let filteredstudies = selected.filter((o) => studies.some(({ name }) => o === name))
+        let filteredsharedstudies = selected.filter((o) => (sharedstudies || []).some(({ name }) => o === name))
+        let filtered = [...filteredstudies, ...filteredsharedstudies]
         selected =
           selected.length === 0 || filtered.length === 0
             ? (studies ?? []).map((study) => {
@@ -458,6 +488,8 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 goBack={props.goBack}
                 onLogout={props.onLogout}
                 resemail={researcher?.email}
+                sharedstudies={sharedstudies}
+                setSharedStudies={setsharedStudies}
               />
             )}
             {tab === "activities" && (
@@ -474,6 +506,8 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 ptitle={props.ptitle}
                 goBack={props.goBack}
                 onLogout={props.onLogout}
+                sharedstudies={sharedstudies}
+                setSharedStudies={setsharedStudies}
               />
             )}
             {tab === "sensors" && (
@@ -490,6 +524,8 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 ptitle={props.ptitle}
                 goBack={props.goBack}
                 onLogout={props.onLogout}
+                sharedstudies={sharedstudies}
+                setSharedStudies={setsharedStudies}
               />
             )}
             {tab === "studies" && (
@@ -507,6 +543,8 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                 goBack={props.goBack}
                 onLogout={props.onLogout}
                 resins={researcher?.institution}
+                sharedstudies={sharedstudies}
+                setSharedStudies={setsharedStudies}
               />
             )}
             {tab === "sharedstudies" && (

@@ -153,10 +153,11 @@
 
 .bottom-list.collapse {
   flex-direction: column;
+  display: flex;
   width: auto;
   margin-left: auto;
   gap: 4px;
-  min-width: 65px;
+  min-width: 105px;
   /* transform: translateX(-50%); */
 }
 

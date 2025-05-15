@@ -32,6 +32,8 @@ import CopySensor from "./CopySensor"
 import ConfirmationDialog from "../../ConfirmationDialog"
 import SensorChangesConfirmationSlide from "./SensorChangesConfirmationSlide"
 import SensorDetailItem from "./SensorDetailItem"
+import { fetchGetData } from "../SaveResearcherData"
+import { ACCESS_LEVELS, getResearcherAccessLevel } from "../Studies/Index"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -65,6 +67,33 @@ const useStyles = makeStyles((theme: Theme) =>
     },
   })
 )
+
+export const getSensorAccessLevel = (sensor, studies, researcherId, sharedStudies = []) => {
+  if (!sensor.isShared) return ACCESS_LEVELS.ALL // Owner has full rights
+  const sensorStudyId = sensor.study_id
+  let sensorStudy = studies.find((study) => study.id === sensorStudyId)
+  if (!sensorStudy && Array.isArray(sharedStudies)) {
+    sensorStudy = sharedStudies.find((study) => study.id === sensorStudyId)
+  }
+  if (!sensorStudy) {
+    console.log("Study not found for sensor", sensor.id, sensorStudyId)
+    return ACCESS_LEVELS.VIEW
+  }
+  const accessLevel = getResearcherAccessLevel(sensorStudy, researcherId)
+  return accessLevel
+}
+
+export const canEditSensor = (sensor, studies, researcherId, sharedStudies = []) => {
+  if (!sensor.isShared) return true // Owner has full rights
+  const accessLevel = getSensorAccessLevel(sensor, studies, researcherId, sharedStudies)
+  return accessLevel === ACCESS_LEVELS.EDIT || accessLevel === ACCESS_LEVELS.ALL
+}
+
+export const canViewSensor = (sensor, studies, researcherId, sharedStudies = []) => {
+  if (!sensor.isShared) return true // Owner has full rights
+  const accessLevel = getSensorAccessLevel(sensor, studies, researcherId, sharedStudies)
+  return accessLevel >= ACCESS_LEVELS.VIEW
+}
 
 export default function SensorsList({
   title,
@@ -112,13 +141,16 @@ export default function SensorsList({
   const [viewMode, setViewMode] = useState("grid")
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
   const { enqueueSnackbar, closeSnackbar } = useSnackbar()
+  const [allresearchers, setAllResearchers] = useState([])
 
   useInterval(
     () => {
       setLoading(true)
       getAllStudies()
+      setLoading(false)
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    // studies !== null && (studies || []).length > 0 ? null : 60000,
+    (!studies || studies.length === 0) && (!props.sharedstudies || props.sharedstudies.length === 0) ? 60000 : null,
     true
   )
 
@@ -141,6 +173,20 @@ export default function SensorsList({
     }
   }, [selected])
 
+  useEffect(() => {
+    const fetchResearchers = async () => {
+      try {
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        const response = await fetchGetData(authString, `researcher/others/list`, "researcher")
+        setAllResearchers(response.data)
+      } catch (error) {
+        console.error("Error fetching researchers:", error)
+      }
+    }
+
+    fetchResearchers()
+  }, [])
+
   const handleChange = (sensorData, checked) => {
     if (checked) {
       setSelectedSensors((prevState) => [...prevState, sensorData])
@@ -152,8 +198,12 @@ export default function SensorsList({
 
   const searchFilterSensors = (searchVal?: string) => {
     const searchTxt = searchVal ?? search
-    const selectedData = selected.filter((o) => studies.some(({ name }) => o === name))
-
+    // const selectedData = selected.filter((o) => studies.some(({ name }) => o === name))
+    const selectedstudiesData = selected.filter((o) => studies.some(({ name }) => o === name))
+    const selectedsharedData = props.sharedstudies
+      ? selected.filter((o) => props.sharedstudies?.some(({ name }) => o === name))
+      : []
+    const selectedData = [...selectedstudiesData, ...selectedsharedData]
     if (selectedData.length > 0) {
       setLoading(true)
       let result = []
@@ -504,7 +554,7 @@ export default function SensorsList({
             }
           }}
           onClose={handleCloseViewSensor}
-          disabledBtns={false}
+          disabledBtns={!canEditSensor(viewingSensor, studies, researcherId, props.sharedstudies)}
         />
       ) : (
         <Header
@@ -532,13 +582,6 @@ export default function SensorsList({
         style={{ overflowX: "hidden" }}
       >
         {viewingSensor ? (
-          // <SensorDetailView
-          //   sensor={viewingSensor}
-          //   isEditing={isEditing}
-          //   onSave={handleSaveComplete}
-          //   studies={studies}
-          //   triggerSave={triggerSave}
-          //   />
           <SensorDetailItem
             sensor={viewingSensor}
             isEditing={isEditing}
@@ -563,6 +606,8 @@ export default function SensorsList({
                           researcherId={researcherId}
                           formatDate={formatDate}
                           onViewSensor={handleViewSensor}
+                          allresearchers={allresearchers}
+                          sharedstudies={props.sharedstudies}
                         />
                       </Grid>
                     ))}
@@ -601,6 +646,10 @@ export default function SensorsList({
                       editableColumns={["name", "spec", "settings"]}
                       activeButton={activeButton}
                       setActiveButton={setActiveButton}
+                      allresearchers={allresearchers}
+                      sharedstudies={props.sharedstudies}
+                      studies={studies}
+                      researcherId={researcherId}
                     />
                     {editingSensor && (
                       <>
@@ -641,46 +690,9 @@ export default function SensorsList({
                       </>
                     )}
                   </>
-                  // <DynamicTableSensors
-                  //   columns={columnsConfig}
-                  //   selectedColumns={selectedColumns}
-                  //   setSelectedColumns={(newColumns: string[]) => {
-                  //     setColumns(prevColumns =>
-                  //       prevColumns.map(col => ({
-                  //         ...col,
-                  //         visible: newColumns.includes(col.id)
-                  //       }))
-                  //     )
-                  //   }}
-                  //   data={sensors}
-                  //   onRowClick={handleRowClick}
-                  //   refreshSensors={searchFilterSensors}
-                  //   editable_columns={["name", "settings"]}
-                  //   settingsInfo={settingsInfo}
-                  // />
                 )}
               </>
             ) : (
-              // <Grid container spacing={3}>
-              //   {(paginatedSensors ?? []).map((item, index) => (
-              //     <Grid item xs={12} sm={12} md={6} lg={5} key={item.id}>
-              //       <SensorListItem
-              //         sensor={item}
-              //         studies={studies}
-              //         handleSelectionChange={handleChange}
-              //         selectedSensors={selectedSensors}
-              //         setSensors={searchFilterSensors}
-              //       />
-              //     </Grid>
-              //   ))}
-              //   <Pagination
-              //     data={sensors}
-              //     updatePage={handleChangePage}
-              //     rowPerPage={[20, 40, 60, 80]}
-              //     currentPage={page}
-              //     currentRowCount={rowCount}
-              //   />
-              // </Grid>
               <Box className={classes.norecordsmain}>
                 <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
                   <Icon>info</Icon>

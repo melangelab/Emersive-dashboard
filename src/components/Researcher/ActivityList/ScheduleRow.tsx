@@ -150,9 +150,9 @@ import esLocale from "date-fns/locale/es"
 import enLocale from "date-fns/locale/en-US"
 import hiLocale from "date-fns/locale/hi"
 
-const userLanguages = ["en-US", "es-ES", "hi-IN", "de-DE", "da-DK", "fr-FR", "ko-KR", "it-IT", "zh-CN", "zh-HK"]
+export const userLanguages = ["en-US", "es-ES", "hi-IN", "de-DE", "da-DK", "fr-FR", "ko-KR", "it-IT", "zh-CN", "zh-HK"]
 
-const localeMap = {
+export const localeMap = {
   "en-US": enLocale,
   "es-ES": esLocale,
   "hi-IN": hiLocale,

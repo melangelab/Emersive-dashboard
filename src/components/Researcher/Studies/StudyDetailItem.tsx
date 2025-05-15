@@ -240,6 +240,13 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
       editable: true,
     },
     {
+      id: "gname",
+      label: t("Groups"),
+      value: study?.gname || "",
+      editable: true,
+      type: "multi-text",
+    },
+    {
       id: "mobile",
       label: t("Study Mobile"),
       value: study?.mobile || "",

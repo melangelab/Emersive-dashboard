@@ -41,6 +41,7 @@ import { slideStyles } from "../ParticipantList/AddButton"
 import { useSnackbar } from "notistack"
 import LAMP from "lamp-core"
 import CopySensor from "./CopySensor"
+import { canEditSensor, canViewSensor } from "./Index"
 
 interface CardStyles {
   activitycardclasses: any
@@ -57,6 +58,8 @@ interface ModularCardProps {
   item: any
   styles: CardStyles
   isCommunityItem?: boolean
+  isEditable?: boolean
+  isSharedItem?: boolean
   isSelected?: boolean
   onSelectionChange?: (item: any, checked: boolean) => void
   actions?: {
@@ -71,17 +74,21 @@ interface ModularCardProps {
   }
   activeButton?: { id: any; action: any }
   setActiveButton?: ({ id, action }) => void
+  getParentResearcher?: (parentResearcherId: string) => string
 }
 
 export const ModularCard: React.FC<ModularCardProps> = ({
   item,
   styles,
   isCommunityItem = false,
+  isSharedItem = false,
+  isEditable = false,
   isSelected = false,
   onSelectionChange,
   actions = {},
   activeButton,
   setActiveButton,
+  getParentResearcher,
 }) => {
   const { t } = useTranslation()
 
@@ -107,6 +114,7 @@ export const ModularCard: React.FC<ModularCardProps> = ({
           },
         })
   }
+  // ${isSharedItem ? styles.activitycardclasses.sharedCard : ""}
 
   return (
     <Paper
@@ -118,6 +126,7 @@ export const ModularCard: React.FC<ModularCardProps> = ({
     >
       <Box display="flex" flexDirection="row">
         {isCommunityItem && <Box className={styles.activitycardclasses.communityBadge}>{t("Community")}</Box>}
+        {isSharedItem && <Box className={styles.activitycardclasses.sharedBadge}>{t("Shared")}</Box>}
         <Box display="flex" p={1}>
           <Typography className={styles.activitycardclasses.cardTitle}>{item.name || "No Name provided."}</Typography>
           <Typography className={styles.customStyles.version}>{`${item.currentVersion?.name || "v1.0"}`}</Typography>
@@ -161,6 +170,16 @@ export const ModularCard: React.FC<ModularCardProps> = ({
               <span className={styles.customStyles.baseTypeDeveloper}>{item.creator}</span>
             </Typography>
           )}
+          {isSharedItem && (
+            <>
+              <Typography className={styles.activitycardclasses.cardSubtitle}>
+                <strong className={styles.customStyles.baseTypeDeveloperLabel}>{t("Shared By")}:</strong>{" "}
+                <span className={styles.customStyles.baseTypeDeveloper}>
+                  {getParentResearcher(item.parentResearcher)}
+                </span>
+              </Typography>
+            </>
+          )}
         </Box>
         <Box>
           <Typography className={styles.customStyles.studiesNumber}>
@@ -180,12 +199,15 @@ export const ModularCard: React.FC<ModularCardProps> = ({
           </>
         ) : (
           // Custom item actions
+
           <>
             {renderActionIcon(<ViewIcon />, <ViewFilledIcon />, "view", actions.onView || (() => {}))}
-            {actions.onUpdate &&
+            {isEditable &&
+              actions.onUpdate &&
               renderActionIcon(<EditIcon />, <EditFilledIcon />, "update", actions.onUpdate || (() => {}))}
             {actions.onCopy && renderActionIcon(<CopyIcon />, <CopyFilledIcon />, "copy", actions.onCopy || (() => {}))}
-            {actions.onDelete &&
+            {!isSharedItem &&
+              actions.onDelete &&
               renderActionIcon(<DeleteIcon />, <DeleteFilledIcon />, "delete", actions.onDelete || (() => {}))}
             {/* {actions.onDelete && renderActionIcon(
               <DeleteIcon />, 
@@ -234,6 +256,7 @@ const useStyles = makeStyles((theme: Theme) =>
 )
 
 export interface Sensors {
+  isShared: boolean
   id?: string
   study_id?: string
   name?: string
@@ -250,6 +273,8 @@ export default function SensorListItem({
   researcherId,
   formatDate,
   onViewSensor,
+  allresearchers,
+  sharedstudies,
   ...props
 }: {
   sensor?: Sensors
@@ -259,8 +284,9 @@ export default function SensorListItem({
   setSensors?: Function
   researcherId: string
   formatDate: Function
-
   onViewSensor?: Function
+  allresearchers?: any[]
+  sharedstudies?: any[]
 }) {
   const { t } = useTranslation()
   const classes = useStyles()
@@ -279,6 +305,9 @@ export default function SensorListItem({
   const sliderclasses = slideStyles()
   const [activeButton, setActiveButton] = useState<ActionButton>({ id: null, action: null })
   const [sensorView, setSensorView] = useState(false)
+  const canEdit = canEditSensor(sensor, studies, researcherId, sharedstudies)
+  const canView = canViewSensor(sensor, studies, researcherId, sharedstudies)
+
   const handleChange = (sensor, event) => {
     setChecked(event.target.checked)
     handleSelectionChange(sensor, event.target.checked)
@@ -294,6 +323,11 @@ export default function SensorListItem({
         setAllSensors(sensorObj)
       }
     })
+  }
+
+  const getParentResearcher = (parentResearcherId) => {
+    const researcher = allresearchers.find((r) => r.id === parentResearcherId)
+    return researcher ? researcher.name : parentResearcherId
   }
 
   const handleViewSensor = () => {
@@ -422,7 +456,9 @@ export default function SensorListItem({
           mtstyles,
         }}
         isCommunityItem={sensor.isCommunity}
+        isSharedItem={sensor.isShared}
         isSelected={checked}
+        isEditable={canEdit}
         onSelectionChange={handleChange}
         actions={{
           onView: handleViewSensor,
@@ -432,6 +468,7 @@ export default function SensorListItem({
         }}
         activeButton={activeButton}
         setActiveButton={setActiveButton}
+        getParentResearcher={getParentResearcher}
       />
       {/* <Backdrop className={sliderclasses.backdrop} open={sensorDialog} onClick={(e)=> handleCloseSensorDialog()} /> */}
       <SensorDialog

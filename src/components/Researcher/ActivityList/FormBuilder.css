@@ -1,0 +1,13 @@
+/* FormBuilder2.css */
+.formio-builder-container {
+  /* Form builder specific styles */
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  padding: 20px;
+}
+
+/* Override any conflicting Material-UI styles */
+.formio-builder-container .MuiPaper-root {
+  box-shadow: none !important;
+}

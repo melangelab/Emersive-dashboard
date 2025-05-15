@@ -47,7 +47,7 @@ import { useQuery } from "../../Utils"
 import { fetchGetData, fetchPostData, fetchResult } from "../SaveResearcherData"
 import ArrowUpwardIcon from "@material-ui/icons/ArrowUpward"
 import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward"
-import { useModularTableStyles } from "../Studies/Index"
+import { ACCESS_LEVELS, getResearcherAccessLevel, useModularTableStyles } from "../Studies/Index"
 import ItemViewHeader from "../SharedStyles/ItemViewHeader"
 import ActivityDetailItem from "./ActivityDetailItem"
 import CreateActivity from "./CreateActivity"
@@ -357,6 +357,33 @@ export const devLabCardStyles = makeStyles((theme: Theme) =>
   })
 )
 
+export const getActivityAccessLevel = (activity, studies, researcherId, sharedStudies = []) => {
+  if (!activity.isShared) return ACCESS_LEVELS.ALL // Owner has full rights
+  const activityStudyId = activity.study_id
+  let activityStudy = studies.find((study) => study.id === activityStudyId)
+  if (!activityStudy && Array.isArray(sharedStudies)) {
+    activityStudy = sharedStudies.find((study) => study.id === activityStudyId)
+  }
+  if (!activityStudy) {
+    console.log("Study not found for activity", activity.id, activityStudyId)
+    return ACCESS_LEVELS.VIEW
+  }
+  const accessLevel = getResearcherAccessLevel(activityStudy, researcherId)
+  return accessLevel
+}
+
+export const canEditActivity = (activity, studies, researcherId, sharedStudies = []) => {
+  if (!activity.isShared) return true // Owner has full rights
+  const accessLevel = getActivityAccessLevel(activity, studies, researcherId, sharedStudies)
+  return accessLevel === ACCESS_LEVELS.EDIT || accessLevel === ACCESS_LEVELS.ALL
+}
+
+export const canViewActivity = (activity, studies, researcherId, sharedStudies = []) => {
+  if (!activity.isShared) return true // Owner has full rights
+  const accessLevel = getActivityAccessLevel(activity, studies, researcherId, sharedStudies)
+  return accessLevel >= ACCESS_LEVELS.VIEW
+}
+
 interface TableColumn {
   id: string
   label: string
@@ -439,13 +466,15 @@ export default function ActivityList({
   const [editingActivity, setEditingActivity] = useState(null)
   const [editedValues, setEditedValues] = useState({})
   const [rowMode, setRowMode] = useState("view")
+  const [sharedActivities, setSharedActivities] = useState([])
+  const [allresearchers, setAllResearchers] = useState([])
 
   useInterval(
     () => {
       setLoading(true)
       getAllStudies()
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    (!studies || studies.length === 0) && (!props.sharedstudies || props.sharedstudies.length === 0) ? 60000 : null,
     true
   )
 
@@ -469,6 +498,25 @@ export default function ActivityList({
     }
   }, [selected])
 
+  useEffect(() => {
+    const fetchResearchers = async () => {
+      try {
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        const response = await fetchGetData(authString, `researcher/others/list`, "researcher")
+        setAllResearchers(response.data)
+      } catch (error) {
+        console.error("Error fetching researchers:", error)
+      }
+    }
+
+    fetchResearchers()
+  }, [])
+
+  const getParentResearcher = (parentResearcherId) => {
+    const researcher = allresearchers.find((r) => r.id === parentResearcherId)
+    return researcher ? researcher.name : parentResearcherId
+  }
+
   const handleChange = (activity, checked) => {
     if (checked) {
       setSelectedActivities((prevState) => [...prevState, activity])
@@ -478,66 +526,14 @@ export default function ActivityList({
     }
   }
 
-  // const searchActivities = (searchVal?: string) => {
-  //   const searchTxt = searchVal ?? search
-  //   const selectedData = selected.filter((o) => studies.some(({ name }) => o === name))
-  //   if (selectedData.length > 0) {
-  //     setLoading(true)
-  //     let result = []
-  //     Service.getAll("activities").then((activitiesData) => {
-  //       setAllActivities(activitiesData)
-  //       let filteredData = activitiesData || []
-  //       if (filterParam) {
-  //         filteredData = filteredData.filter(factivity => factivity.id === filterParam)
-  //       }
-  //       else if (!!searchTxt && searchTxt.trim().length > 0) {
-  //         filteredData = filteredData.filter(
-  //           (factivity) =>
-  //             factivity.name?.toLowerCase().includes(searchTxt?.toLowerCase()) ||
-  //           factivity.id?.toLowerCase().includes(searchTxt?.toLowerCase())
-  //         )
-  //       }
-  //       // if (!!searchTxt && searchTxt.trim().length > 0) {
-  //       //   result = result.concat(activitiesData)
-  //       //   result = result.filter((i) => i.name?.toLowerCase()?.includes(searchTxt?.toLowerCase()))
-  //       //   setActivities(sortData(result, selectedData, "name"))
-  //       // } else {
-  //       //   result = result.concat(activitiesData)
-  //       //   setActivities(sortData(result, selectedData, "name"))
-  //       // }
-
-  //       const sortedData = sortData(filteredData, selectedData, "name")
-  //       setActivities(sortedData)
-  //       // setPaginatedActivities(
-  //       //   // sortData(result, selectedData, "name").slice(page * rowCount, page * rowCount + rowCount)
-  //       //   sortedData.slice(page * rowCount, page * rowCount + rowCount)
-  //       // )
-  //       fetchCommunityActivities().then(() => {
-  //         const allActivities = [...sortedData, ...communityActivities]
-  //         const filteredCommunityActivities = communityActivities.filter(activity =>
-  //           !searchTxt ||
-  //           activity.name?.toLowerCase().includes(searchTxt?.toLowerCase()) ||
-  //           activity.id?.toLowerCase().includes(searchTxt?.toLowerCase())
-  //         )
-  //         const combinedActivities = [...sortedData, ...filteredCommunityActivities]
-  //         setPaginatedActivities(
-  //           combinedActivities.slice(page * rowCount, page * rowCount + rowCount)
-  //         )
-  //       })
-  //     setLoading(false)
-
-  //     })
-  //   } else {
-  //     setActivities([])
-  //     setPaginatedActivities([])
-  //     setLoading(false)
-  //   }
-  //   setSelectedActivities([])
-  // }
-
   const searchActivities = async (searchVal?: string) => {
     const searchTxt = searchVal ?? search
-    const selectedData = selected.filter((o) => studies.some(({ name }) => o === name))
+    // const selectedData = selected.filter((o) => studies.some(({ name }) => o === name))
+    const selectedstudiesData = selected?.filter((o) => studies?.some(({ name }) => o === name)) || []
+    const selectedsharedData = props.sharedstudies
+      ? selected.filter((o) => props.sharedstudies?.some(({ name }) => o === name))
+      : []
+    const selectedData = [...selectedstudiesData, ...selectedsharedData]
     if (selectedData.length > 0) {
       setLoading(true)
       try {
@@ -605,7 +601,13 @@ export default function ActivityList({
     setRowCount(rowCount)
     setPage(page)
     localStorage.setItem("activities", JSON.stringify({ page: page, rowCount: rowCount }))
-    const selectedData = selected.filter((o) => studies.some(({ name }) => o === name))
+    // const selectedData = selected.filter((o) => studies.some(({ name }) => o === name))
+    const selectedstudiesData = selected?.filter((o) => studies?.some(({ name }) => o === name)) || []
+    const selectedsharedData = props.sharedstudies
+      ? selected.filter((o) => props.sharedstudies?.some(({ name }) => o === name))
+      : []
+    const selectedData = [...selectedstudiesData, ...selectedsharedData]
+
     const combinedActivities = [...activities, ...communityActivities]
     setPaginatedActivities(
       sortData(combinedActivities, selectedData, "name").slice(page * rowCount, page * rowCount + rowCount)
@@ -615,6 +617,11 @@ export default function ActivityList({
 
   const handleUpdateActivity = async (activityId, updatedActivity) => {
     try {
+      const activity = activities.find((a) => a.id === activityId)
+      if (activity && !canEditActivity(activity, studies, researcherId, props.sharedStudies)) {
+        enqueueSnackbar(t("You don't have permission to update this activity"), { variant: "error" })
+        return
+      }
       setLoading(true)
       const currentActivity = activities.find((a) => a.id === activityId)
       // Update in LAMP backend
@@ -743,11 +750,23 @@ export default function ActivityList({
       visible: true,
       sortable: true,
     },
+    {
+      id: "ownership",
+      label: "Ownership",
+      // value: (a) => a.isShared ? `Shared` : "Owner",
+      value: (a) => getParentResearcher(a.parentResearcher) || getParentResearcher(researcherId),
+      visible: true,
+      sortable: true,
+    },
     // { id: 'studyId', label: 'Study', value: (a) => a.study_id, visible: true },
     { id: "device", label: "Device", value: (a) => a.device || "-", visible: false, sortable: true },
   ])
 
   const handleViewActivity = (activity) => {
+    if (!canViewActivity(activity, studies, researcherId, props.sharedstudies)) {
+      enqueueSnackbar(t("You don't have permission to view this activity"), { variant: "error" })
+      return
+    }
     setViewingActivity(activity)
     setIsEditing(false)
     setTriggerSave(false)
@@ -761,6 +780,11 @@ export default function ActivityList({
   }
 
   const handleEditActivity = () => {
+    if (!viewingActivity || !canEditActivity(viewingActivity, studies, researcherId, props.sharedstudies)) {
+      enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" })
+      return
+    }
+
     if (isEditing) {
       setIsEditing(false)
     } else {
@@ -770,6 +794,11 @@ export default function ActivityList({
   }
 
   const handleSaveActivity = () => {
+    if (!viewingActivity || !canEditActivity(viewingActivity, studies, researcherId, props.sharedstudies)) {
+      enqueueSnackbar(t("You don't have permission to save changes to this activity"), { variant: "error" })
+      return
+    }
+
     setTriggerSave(true)
   }
 
@@ -788,6 +817,10 @@ export default function ActivityList({
       setEditingActivity(null)
       setEditedValues({})
     } else {
+      if (!canEditActivity(activity, studies, researcherId, props.sharedStudies)) {
+        enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" })
+        return
+      }
       // Enter edit mode
       setEditingActivity(activity)
       setRowMode("edit")
@@ -850,6 +883,7 @@ export default function ActivityList({
     }
     const categorizeActivities = (activities) => {
       return {
+        // Shared: activities.filter((a) => a.isShared),
         Custom: activities.filter((a) => !a.isCommunityActivity),
         Community: activities.filter((a) => a.isCommunityActivity),
         Core: activities.filter((a) => !a.isCommunityActivity && a.category === "core"),
@@ -942,9 +976,6 @@ export default function ActivityList({
                         )}
                       </IconButton>
                     )}
-                    {/* <Box display="flex" alignItems="center">
-                    {column.label}
-                    <SortIcon column={column} /> */}
                   </Box>
                 </TableCell>
               ))}
@@ -972,6 +1003,7 @@ export default function ActivityList({
                         researcherId={researcherId}
                         studies={studies}
                         // onActivityUpdate={onActivityUpdate}
+                        sharedstudies={props.sharedstudies}
                         parentClasses={classes}
                         onActivityUpdate={handleUpdateActivity}
                         formatDate={formatDate}
@@ -992,31 +1024,15 @@ export default function ActivityList({
                           }))
                         }}
                         availableSpecs={availableActivitySpecs}
+                        allresearchers={allresearchers}
                       />
                     ))}
                   </React.Fragment>
                 )
             )}
-            {/* {activities?.map((activity) => (
-              <ActivityTableRow
-                key={activity.id}
-                activity={activity}
-                visibleColumns={columns.filter((c) => c.visible)}
-                selectedActivities={selectedActivities}
-                handleChange={handleChange}
-                researcherId={researcherId}
-                studies={studies}
-                onActivityUpdate={handleUpdateActivity}
-                formatDate={formatDate}
-                setActivities={setActivities}
-                activities={activities}
-                searchActivities={searchActivities}
-              />
-            ))} */}
           </TableBody>
         </Table>
       </TableContainer>
-      // <div className={modtabclasses.scrollShadow} />
     )
   }
 
@@ -1027,16 +1043,6 @@ export default function ActivityList({
       searchActivities()
     }
   }, [filterParam])
-  // useEffect(() => {
-  //   if ((selected || []).length > 0) {
-  //     searchActivities()
-  //     fetchCommunityActivities()
-  //   } else {
-  //     setActivities([])
-  //     setCommunityActivities([])
-  //     setLoading(false)
-  //   }
-  // }, [selected])
 
   return (
     <React.Fragment>
@@ -1071,7 +1077,10 @@ export default function ActivityList({
             }
           }}
           onClose={handleCloseViewActivity}
-          disabledBtns={viewingActivity.isCommunityActivity}
+          disabledBtns={
+            viewingActivity.isCommunityActivity ||
+            !canEditActivity(viewingActivity, studies, researcherId, props.sharedstudies)
+          }
         />
       ) : (
         <Header
@@ -1140,10 +1149,12 @@ export default function ActivityList({
                               selectedActivities={selectedActivities}
                               setActivities={searchActivities}
                               updateActivities={setActivities}
+                              sharedstudies={props.sharedstudies}
                               onActivityUpdate={handleUpdateActivity}
                               formatDate={formatDate}
                               searchActivities={searchActivities}
                               onViewActivity={handleViewActivity}
+                              allresearchers={allresearchers}
                             />
                           </Grid>
                         ))}

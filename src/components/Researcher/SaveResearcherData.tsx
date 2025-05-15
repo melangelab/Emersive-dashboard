@@ -36,7 +36,14 @@ interface StudyObject {
     suspendedAt?: Date
   }
   timestamp?: Date
+  isShared: boolean
+  parent: string
 }
+
+// interface SharedStudy extends StudyObject {
+//   isShared: boolean;
+//   parent: string;
+// }
 
 export const fetchGetData = async (authString, route, modalType) => {
   const baseUrl = "https://" + (!!LAMP.Auth._auth.serverAddress ? LAMP.Auth._auth.serverAddress : "api.lamp.digital")
@@ -91,12 +98,41 @@ export const fetchPostData = async (authString, id, type, modal, methodType, bod
   return result
 }
 
-const saveStudiesAndParticipants = (result, studies, researcherId) => {
+const fetchSharedStudies = async (researcherId) => {
+  try {
+    const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+    const bodyData = { id: researcherId }
+    const studyData = await fetchPostData(authString, researcherId, "sharedstudies", "researcher", "POST", bodyData)
+
+    // Mark shared studies with isShared flag
+    const processedSharedStudies = studyData.data.map((study) => ({
+      ...study,
+      isShared: true,
+      activity_count: study.activities.length,
+      sensor_count: study.sensors.length,
+      participant_count: study.participants.length,
+    }))
+
+    // Add to ServiceDB
+    try {
+      Service.addData("sharedstudies", processedSharedStudies)
+    } catch (error) {
+      console.error("Error adding shared studies to ServiceDB:", error)
+    }
+    console.log("Shared studies saved to ServiceDB:", processedSharedStudies)
+    return processedSharedStudies
+  } catch (error) {
+    console.error("Error fetching shared studies:", error)
+    return []
+  }
+}
+const saveStudiesAndParticipants = async (result, studies, researcherId) => {
   console.log("saveStudiesAndParticipants", result)
   let participants = []
   let activities = []
   let sensors = []
   let studiesList = []
+  let sharedStudiesList = []
   result.studies.map((study) => {
     participants = participants.concat(study.participants)
     activities = activities.concat(study.activities)
@@ -105,15 +141,6 @@ const saveStudiesAndParticipants = (result, studies, researcherId) => {
   studies.map((study) => {
     studiesList = studiesList.concat(study.name)
   })
-
-  let studiesSelected =
-    localStorage.getItem("studies_" + researcherId) !== null
-      ? JSON.parse(localStorage.getItem("studies_" + researcherId))
-      : []
-  if (studiesSelected.length === 0) {
-    localStorage.setItem("studies_" + researcherId, JSON.stringify(studiesList))
-    localStorage.setItem("studyFilter_" + researcherId, JSON.stringify(1))
-  }
   Service.addData("studies", studies)
   participants.map((p) => {
     Service.getDataByKey("participants", [p.id], "id").then((data) => {
@@ -152,6 +179,55 @@ const saveStudiesAndParticipants = (result, studies, researcherId) => {
       activityGuide: activity.activityGuide || null,
     }))
   )
+
+  // fetchSharedStudies(researcherId).then(sharedStudies => {
+  //   console.log("Shared studies fetched:", sharedStudies)
+  //   Service.addData("sharedstudies", sharedStudies)
+  // })
+  const sharedStudies = await fetchSharedStudies(researcherId)
+  sharedStudiesList = sharedStudies.map((study) => study.name)
+
+  let studiesSelected =
+    localStorage.getItem("studies_" + researcherId) !== null
+      ? JSON.parse(localStorage.getItem("studies_" + researcherId))
+      : []
+  if (studiesSelected.length === 0) {
+    localStorage.setItem("studies_" + researcherId, JSON.stringify([...studiesList, ...sharedStudiesList]))
+    localStorage.setItem("studyFilter_" + researcherId, JSON.stringify(1))
+  }
+  localStorage.setItem("sharedstudies_" + researcherId, JSON.stringify(sharedStudiesList))
+  if (sharedStudies && sharedStudies.length > 0) {
+    console.log("Shared studies fetched:", sharedStudies)
+    let sharedParticipants = []
+    let sharedActivities = []
+    let sharedSensors = []
+
+    sharedStudies.forEach((study) => {
+      const parentResearcher = study.parent || ""
+      if (study.participants && study.participants.length > 0) {
+        sharedParticipants = sharedParticipants.concat(
+          study.participants.map((p) => ({ ...p, isShared: true, parentResearcher }))
+        )
+      }
+      if (study.activities && study.activities.length > 0) {
+        sharedActivities = sharedActivities.concat(
+          study.activities.map((a) => ({ ...a, isShared: true, parentResearcher }))
+        )
+      }
+      if (study.sensors && study.sensors.length > 0) {
+        sharedSensors = sharedSensors.concat(study.sensors.map((s) => ({ ...s, isShared: true, parentResearcher })))
+      }
+    })
+    if (sharedParticipants.length > 0) Service.addData("participants", sharedParticipants)
+    if (sharedActivities.length > 0) Service.addData("activities", sharedActivities)
+    if (sharedSensors.length > 0) Service.addData("sensors", sharedSensors)
+    // Service.addData("studies", sharedStudies)
+    // const currentStudyFilter = localStorage.getItem("studyFilter_" + researcherId)
+    // if (currentStudyFilter) {
+    //   const allStudies = JSON.parse(localStorage.getItem("studies_" + researcherId) || "[]")
+    //   localStorage.setItem("studies_" + researcherId, JSON.stringify([...allStudies, ...sharedStudiesList]))
+    // }
+  }
 }
 
 export const saveStudyData = (result, type) => {

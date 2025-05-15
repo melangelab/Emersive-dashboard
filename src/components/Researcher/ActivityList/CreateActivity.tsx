@@ -11,6 +11,9 @@ import DynamicForm from "../../shared/DynamicForm"
 import { saveTipActivity, saveSurveyActivity, saveCTestActivity } from "./ActivityMethods"
 import cbtThoughtRecordInstance from "./CBTSettings"
 import FormBuilder from "./FormBuilder"
+import FormBuilder2 from "./FormBuilder2"
+import FormBuilderWrapper from "./FormBuilderWrapper"
+
 const useStyles = makeStyles((theme) => ({
   root: {
     padding: theme.spacing(3),
@@ -54,7 +57,19 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
   })
 
   useEffect(() => {
-    setSchemaListObj(SchemaList())
+    let isSubscribed = true
+
+    const loadSchemaList = () => {
+      if (isSubscribed) {
+        setSchemaListObj(SchemaList())
+      }
+    }
+
+    loadSchemaList()
+
+    return () => {
+      isSubscribed = false
+    }
   }, [])
 
   useEffect(() => {
@@ -241,6 +256,7 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
           {editedValues.spec === "lamp.form_builder" ? (
             <FormBuilder
               onChange={(formData) => {
+                console.log("FormBuilder data:", formData)
                 setEditedValues((prev) => ({
                   ...prev,
                   formula4Fields: formData.formula,
@@ -277,6 +293,7 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
     return editedValues.settings.length > 0 && editedValues.settings.every((field) => field.text?.trim())
   }
   const handleSave = async () => {
+    let isSubscribed = true
     // Validate required fields
     if (!editedValues.name || !editedValues.spec || !editedValues.study_id) {
       enqueueSnackbar(t("Please fill in all required fields"), { variant: "error" })
@@ -307,12 +324,14 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
       } as any
       let newActivityId
       if (activityData.spec === "lamp.form_builder") {
+        console.log("CREATING ACTIVIITY activityData", activityData)
         const result = (await LAMP.Activity.create(editedValues.study_id, {
           ...activityData,
-          settings: editedValues.settings,
-          formula4Fields: editedValues.formula4Fields,
+          // settings: editedValues.settings,
+          // formula4Fields: editedValues.formula4Fields,
         } as any)) as any
         newActivityId = result.data ? result.data : result
+        console.log("CREATED ACTIVITY", result.data)
       } else if (activityData.spec === "lamp.survey") {
         // const result = await saveSurveyActivity({
         //   ...activityData,
@@ -374,30 +393,40 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
       // // Add to local DB
       // await Service.addData("activities", [newActivity])
 
-      enqueueSnackbar(t("Activity created successfully"), { variant: "success" })
-      const activitydata = await LAMP.Activity.view(newActivityId)
-      const newActivity = {
-        id: newActivityId,
-        ...activitydata,
-        settings: editedValues.settings,
-        description: editedValues.description,
-        formula4Fields: editedValues.formula4Fields,
-        photo: editedValues.photo,
-        showFeed: editedValues.showInFeed,
-        streak: editedValues.streak,
-        study_id: editedValues.study_id,
-        study_name: studies.find((s) => s.id === editedValues.study_id)?.name,
+      if (isSubscribed) {
+        enqueueSnackbar(t("Activity created successfully"), { variant: "success" })
+        const activitydata = await LAMP.Activity.view(newActivityId)
+        const newActivity = {
+          id: newActivityId,
+          ...activitydata,
+          settings: editedValues.settings,
+          description: editedValues.description,
+          formula4Fields: editedValues.formula4Fields,
+          photo: editedValues.photo,
+          showFeed: editedValues.showInFeed,
+          streak: editedValues.streak,
+          study_id: editedValues.study_id,
+          study_name: studies.find((s) => s.id === editedValues.study_id)?.name,
+        }
+        console.log("newActivity", newActivity)
+        // Add to local DB
+        await Service.addData("activities", [newActivity])
+        // await Service.addData("activities", [activitydata])
+        onSave(activitydata)
       }
-      console.log("newActivity", newActivity)
-      // Add to local DB
-      await Service.addData("activities", [newActivity])
-      // await Service.addData("activities", [activitydata])
-      onSave(activitydata)
     } catch (error) {
-      console.error("Error creating activity:", error)
-      enqueueSnackbar(t("Failed to create activity"), { variant: "error" })
+      if (isSubscribed) {
+        console.error("Error creating activity:", error)
+        enqueueSnackbar(t("Failed to create activity"), { variant: "error" })
+      }
     } finally {
-      setLoading(false)
+      if (isSubscribed) {
+        setLoading(false)
+      }
+    }
+
+    return () => {
+      isSubscribed = false
     }
   }
 
@@ -410,6 +439,10 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
     </Box>
   )
 
+  const handleChange = (newValues: any) => {
+    console.log("newValues", newValues)
+  }
+
   return (
     <Paper className={classes.root}>
       <ViewItems
@@ -421,6 +454,8 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
         additionalContent={additionalContent}
         footerButtons={footerButtons}
       />
+      {/* <FormBuilder2 onChange={handleChange} initialComponents={[]}/> */}
+      {/* <FormBuilderWrapper /> */}
     </Paper>
   )
 }

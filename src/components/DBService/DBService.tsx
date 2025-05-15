@@ -173,7 +173,7 @@ class DBService {
       })
       .catch((error) => {
         // Do something?
-        console.log("error received", data, " E:", error)
+        console.log("error received", data, " E:", error, " T:", tablespace)
       })
   }
 

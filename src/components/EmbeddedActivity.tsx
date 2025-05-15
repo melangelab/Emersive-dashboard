@@ -90,7 +90,17 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
     let warnings = []
     if (e.data !== null) {
       try {
-        const data = JSON.parse(e.data)
+        let data
+        try {
+          if (typeof e.data === "string") {
+            data = JSON.parse(e.data)
+          } else {
+            data = e.data // Already an object
+          }
+        } catch (err) {
+          console.error("Error parsing JSON data:", err, e.data)
+          // return
+        }
         for (const [index, response] of data["temporal_slices"].entries()) {
           for (const warning of currentActivity.settings[index].warnings) {
             if (warning.answer === response.value) {
@@ -125,7 +135,18 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
         // data = JSON.parse(e.data)
 
         try {
-          data = JSON.parse(e.data)
+          // data = JSON.parse(e.data)
+          let data
+          try {
+            if (typeof e.data === "string") {
+              data = JSON.parse(e.data)
+            } else {
+              data = e.data // Already an object
+            }
+          } catch (err) {
+            console.error("Error parsing JSON data:", err, e.data)
+            // return
+          }
           if (!!data["timestamp"]) {
             setLoading(true)
             delete data["activity"]
@@ -202,6 +223,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
             activityTimestamp
           )
           setCurrentActivity(null)
+          // TODO audio video handling upon data submission
           LAMP.ActivityEvent.create(participant?.id ?? participant, data)
             .catch((e) => {
               enqueueSnackbar(`${t("An error occurred while saving the results.")}`, {

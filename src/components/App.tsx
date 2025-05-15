@@ -30,6 +30,7 @@ import GlobalHeader from "./GlobalHeader"
 import HeaderBar from "./HeaderBar"
 import SetPassword from "./SetPassword"
 import { identity } from "vega"
+import { StylesProvider } from "@material-ui/core/styles"
 
 function ErrorFallback({ error }) {
   const [trace, setTrace] = useState([])
@@ -1414,71 +1415,73 @@ function AppRouter({ ...props }) {
 export default function App({ ...props }) {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <ThemeProvider
-        theme={createTheme({
-          typography: {
-            fontFamily: ["Inter", "Roboto", "Helvetica", "Arial", "sans-serif"].join(","),
-          },
-          palette: {
-            primary: colors.blue,
-            secondary: {
-              main: "#333",
+      <StylesProvider injectFirst>
+        <ThemeProvider
+          theme={createTheme({
+            typography: {
+              fontFamily: ["Inter", "Roboto", "Helvetica", "Arial", "sans-serif"].join(","),
             },
-            background: {
-              default: "#fff",
-            },
-          },
-          overrides: {
-            MuiBottomNavigationAction: {
-              label: {
-                letterSpacing: `0.1em`,
-                textTransform: "uppercase",
+            palette: {
+              primary: colors.blue,
+              secondary: {
+                main: "#333",
+              },
+              background: {
+                default: "#fff",
               },
             },
-            MuiFilledInput: {
-              root: {
-                border: 0,
-                backgroundColor: "#f4f4f4",
-              },
-              underline: {
-                "&&&:before": {
-                  borderBottom: "none",
-                },
-                "&&:after": {
-                  borderBottom: "none",
+            overrides: {
+              MuiBottomNavigationAction: {
+                label: {
+                  letterSpacing: `0.1em`,
+                  textTransform: "uppercase",
                 },
               },
-            },
-            MuiTextField: {
-              root: { width: "100%" },
-            },
-            MuiTableCell: {
-              root: {
-                borderBottom: "#fff solid 1px",
-                padding: 10,
+              MuiFilledInput: {
+                root: {
+                  border: 0,
+                  backgroundColor: "#f4f4f4",
+                },
+                underline: {
+                  "&&&:before": {
+                    borderBottom: "none",
+                  },
+                  "&&:after": {
+                    borderBottom: "none",
+                  },
+                },
+              },
+              MuiTextField: {
+                root: { width: "100%" },
+              },
+              MuiTableCell: {
+                root: {
+                  borderBottom: "#fff solid 1px",
+                  padding: 10,
+                },
+              },
+              MuiTypography: {
+                h6: { fontSize: 16, fontWeight: 600 },
+              },
+              MuiDivider: {
+                root: { margin: "25px 0" },
+              },
+              MuiStepper: {
+                root: { paddingLeft: 8 },
               },
             },
-            MuiTypography: {
-              h6: { fontSize: 16, fontWeight: 600 },
-            },
-            MuiDivider: {
-              root: { margin: "25px 0" },
-            },
-            MuiStepper: {
-              root: { paddingLeft: 8 },
-            },
-          },
-        })}
-      >
-        <CssBaseline />
-        <MuiPickersUtilsProvider utils={DateFnsUtils}>
-          <SnackbarProvider>
-            <HashRouter>
-              <AppRouter {...props} />
-            </HashRouter>
-          </SnackbarProvider>
-        </MuiPickersUtilsProvider>
-      </ThemeProvider>
+          })}
+        >
+          <CssBaseline />
+          <MuiPickersUtilsProvider utils={DateFnsUtils}>
+            <SnackbarProvider>
+              <HashRouter>
+                <AppRouter {...props} />
+              </HashRouter>
+            </SnackbarProvider>
+          </MuiPickersUtilsProvider>
+        </ThemeProvider>
+      </StylesProvider>
     </ErrorBoundary>
   )
 }
