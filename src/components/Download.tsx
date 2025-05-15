@@ -12,6 +12,7 @@ import {
   FormControl,
   FormLabel,
   Button,
+  TextField,
 } from "@material-ui/core"
 import { makeStyles } from "@material-ui/core/styles"
 import { slideStyles } from "./Researcher/ParticipantList/AddButton"
@@ -140,7 +141,125 @@ const useStyles = makeStyles((theme) => ({
       backgroundColor: "rgba(6, 176, 240, 0.1)",
     },
   },
+  optionsContainer: {
+    padding: theme.spacing(2),
+    "& .MuiFormControl-root": {
+      marginBottom: theme.spacing(2),
+    },
+  },
+  dateRangeContainer: {
+    display: "flex",
+    gap: theme.spacing(2),
+    marginTop: theme.spacing(2),
+    "& .MuiTextField-root": {
+      flex: 1,
+    },
+  },
+  dateField: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: theme.spacing(0.5),
+  },
+  dateInput: {
+    width: "100%",
+    "& .MuiInputBase-root": {
+      backgroundColor: "#fff",
+    },
+    "& input": {
+      padding: theme.spacing(1),
+    },
+  },
+  dateDisplay: {
+    color: theme.palette.text.secondary,
+    marginLeft: theme.spacing(1),
+    fontSize: "0.875rem",
+  },
+  dateNote: {
+    display: "block",
+    marginTop: theme.spacing(1),
+    marginLeft: theme.spacing(2),
+    color: theme.palette.text.secondary,
+    fontSize: "0.875rem",
+    fontStyle: "italic",
+  },
 }))
+
+const ParticipantOptionsComponent = ({
+  selectedOption,
+  setSelectedOption,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
+  fileFormat,
+  handleFormatChange,
+}) => {
+  const classes = useStyles()
+
+  const formatDate = (date) => {
+    if (!date) return ""
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
+
+  return (
+    <div className={classes.optionsContainer}>
+      <FormControl component="fieldset">
+        <FormLabel component="legend">Select Download Option</FormLabel>
+        <RadioGroup value={selectedOption} onChange={(e) => setSelectedOption(e.target.value)}>
+          <FormControlLabel value="onlyParticipants" control={<Radio />} label="Only Participants" />
+          <FormControlLabel value="sensorEvents" control={<Radio />} label="Sensor Events" />
+          <FormControlLabel value="activityEvents" control={<Radio />} label="Activity Events" />
+        </RadioGroup>
+      </FormControl>
+
+      {(selectedOption === "sensorEvents" || selectedOption === "activityEvents") && (
+        <>
+          <div className={classes.dateRangeContainer}>
+            <div className={classes.dateField}>
+              <TextField
+                label="Start Date"
+                type="date"
+                value={startDate || ""}
+                onChange={(e) => setStartDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                className={classes.dateInput}
+              />
+              {startDate && (
+                <Typography variant="caption" className={classes.dateDisplay}>
+                  Selected: {formatDate(startDate)}
+                </Typography>
+              )}
+            </div>
+
+            <div className={classes.dateField}>
+              <TextField
+                label="End Date"
+                type="date"
+                value={endDate || ""}
+                onChange={(e) => setEndDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                className={classes.dateInput}
+              />
+              {endDate && (
+                <Typography variant="caption" className={classes.dateDisplay}>
+                  Selected: {formatDate(endDate)}
+                </Typography>
+              )}
+            </div>
+          </div>
+          <Typography variant="caption" color="textSecondary" className={classes.dateNote}>
+            Date range selection is optional. If not selected, all events will be included.
+          </Typography>
+        </>
+      )}
+    </div>
+  )
+}
 
 const studCols2NotDownload = ["sensors", "activities", "participants"]
 
@@ -154,6 +273,11 @@ function Download({ studies, target = "studies" }) {
   const [finalSelectedItems, setFinalSelectedItems] = useState([])
   const [fileFormat, setFileFormat] = useState("json")
   const [nextPage, setNextPage] = useState(false)
+
+  const [selectedOption, setSelectedOption] = useState("")
+  const [startDate, setStartDate] = useState(null)
+  const [endDate, setEndDate] = useState(null)
+  const [showOptionsPage, setShowOptionsPage] = useState(false)
 
   console.log("Logging studies from inside the Download", studies)
 
@@ -584,10 +708,58 @@ function Download({ studies, target = "studies" }) {
     XLSX.writeFile(workbook, `emersive_${target}_data.xlsx`)
   }
 
-  const handleDownload = () => {
-    console.log("Download clicked, items to download:", finalSelectedItems)
+  const fetchSensorEvents = async () => {
+    // Empty function as requested
+    console.log("Fetching sensor events...", {
+      participants: finalSelectedItems,
+      startDate,
+      endDate,
+    })
+  }
 
-    // If target is studies, handle downloading studies
+  const fetchActivityEvents = async () => {
+    // Empty function as requested
+    console.log("Fetching activity events...", {
+      participants: finalSelectedItems,
+      startDate,
+      endDate,
+    })
+  }
+
+  const handleDownload = async () => {
+    if (target === "participants") {
+      switch (selectedOption) {
+        case "onlyParticipants":
+          // Download participants data in selected format
+          switch (fileFormat) {
+            case "json":
+              downloadAsJSON(finalSelectedItems)
+              break
+            case "csv":
+              downloadAsCSV(finalSelectedItems)
+              break
+            case "excel":
+              downloadAsExcel(finalSelectedItems)
+              break
+            default:
+              console.error("Invalid file format selected")
+          }
+          break
+
+        case "sensorEvents":
+          await fetchSensorEvents()
+          break
+
+        case "activityEvents":
+          await fetchActivityEvents()
+          break
+
+        default:
+          console.error("Invalid option selected")
+          return
+      }
+    }
+
     const dataToDownload =
       target === "studies" ? studies.filter((study) => selectedStudies[study.id]) : finalSelectedItems
 
@@ -607,6 +779,8 @@ function Download({ studies, target = "studies" }) {
 
     setDownloadSlider(false)
     setNextPage(false)
+    setShowOptionsPage(false)
+    setSelectedOption("")
   }
 
   const showFormatSelector = () => {
@@ -625,12 +799,15 @@ function Download({ studies, target = "studies" }) {
         onClick={() => {
           setDownloadSlider(false)
           setNextPage(false)
+          setShowOptionsPage(false)
           setSelectedStudies({})
           setSelectedGnames({})
+          setSelectedOption("")
         }}
       />
       <Slide direction="left" in={downloadSlider} mountOnEnter unmountOnExit>
         <Box className={sliderclasses.slidePanel}>
+          {/* First Page - Study Selection */}
           {!nextPage ? (
             <>
               <div className={classes.headerContainer}>
@@ -652,6 +829,7 @@ function Download({ studies, target = "studies" }) {
                   </Button>
                 </div>
               </div>
+              {/* Study selection content */}
               <div className={classes.studiesWrapper}>
                 {studies.map((study) => (
                   <div key={study.id} className={classes.studyContainer}>
@@ -687,8 +865,72 @@ function Download({ studies, target = "studies" }) {
                   </div>
                 ))}
               </div>
+              <div className={classes.buttonsContainer}>
+                <Button
+                  className={`${classes.actionButton} ${classes.secondaryButton}`}
+                  onClick={() => {
+                    setSelectedStudies({})
+                    setSelectedGnames({})
+                  }}
+                >
+                  Clear selection
+                </Button>
+                <Button
+                  className={`${classes.actionButton} ${classes.primaryButton}`}
+                  onClick={() => setNextPage(true)}
+                  disabled={!Object.values(selectedStudies).some(Boolean)}
+                >
+                  Next
+                </Button>
+              </div>
+            </>
+          ) : target === "participants" ? (
+            !showOptionsPage ? (
+              /* Second Page - Participant Selection */
+              <>
+                <SelectTargetComponent
+                  target={target}
+                  studies={studies}
+                  selectedStudies={selectedStudies}
+                  selectedGroups={selectedGnames}
+                  finalSelectedItems={finalSelectedItems}
+                  setFinalSelectedItems={setFinalSelectedItems}
+                />
+                <div className={classes.buttonsContainer}>
+                  <Button
+                    className={`${classes.actionButton} ${classes.secondaryButton}`}
+                    onClick={() => setNextPage(false)}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    className={`${classes.actionButton} ${classes.primaryButton}`}
+                    onClick={() => setShowOptionsPage(true)}
+                    disabled={finalSelectedItems.length === 0}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </>
+            ) : (
+              /* Third Page - Download Options for Participants */
+              <>
+                <div className={classes.headerContainer}>
+                  <Typography variant="h5" component="h1" className={classes.title}>
+                    Select Download Option
+                  </Typography>
+                </div>
+                <ParticipantOptionsComponent
+                  selectedOption={selectedOption}
+                  setSelectedOption={setSelectedOption}
+                  startDate={startDate}
+                  setStartDate={setStartDate}
+                  endDate={endDate}
+                  setEndDate={setEndDate}
+                  fileFormat={fileFormat}
+                  handleFormatChange={handleFormatChange}
+                />
 
-              {showFormatSelector() && (
                 <FormControl component="fieldset" className={classes.formatSelector}>
                   <FormLabel component="legend">Select Download Format</FormLabel>
                   <RadioGroup row value={fileFormat} onChange={handleFormatChange}>
@@ -697,9 +939,26 @@ function Download({ studies, target = "studies" }) {
                     <FormControlLabel value="excel" control={<Radio color="primary" />} label="Excel" />
                   </RadioGroup>
                 </FormControl>
-              )}
-            </>
+
+                <div className={classes.buttonsContainer}>
+                  <Button
+                    className={`${classes.actionButton} ${classes.secondaryButton}`}
+                    onClick={() => setShowOptionsPage(false)}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    className={`${classes.actionButton} ${classes.primaryButton}`}
+                    onClick={handleDownload}
+                    disabled={!selectedOption || (selectedOption !== "onlyParticipants" && (!startDate || !endDate))}
+                  >
+                    Download
+                  </Button>
+                </div>
+              </>
+            )
           ) : (
+            /* Second Page - For non-participant targets */
             <>
               <SelectTargetComponent
                 target={target}
@@ -720,40 +979,8 @@ function Download({ studies, target = "studies" }) {
                   </RadioGroup>
                 </FormControl>
               )}
-            </>
-          )}
-          <div className={classes.buttonsContainer}>
-            {!nextPage ? (
-              <>
-                <Button
-                  className={`${classes.actionButton} ${classes.secondaryButton}`}
-                  onClick={() => {
-                    setSelectedStudies({})
-                    setSelectedGnames({})
-                  }}
-                >
-                  Clear selection
-                </Button>
-                {target === "studies" ? (
-                  <Button
-                    className={`${classes.actionButton} ${classes.primaryButton}`}
-                    onClick={handleDownload}
-                    disabled={!Object.values(selectedStudies).some(Boolean)}
-                  >
-                    Download
-                  </Button>
-                ) : (
-                  <Button
-                    className={`${classes.actionButton} ${classes.primaryButton}`}
-                    onClick={() => setNextPage(true)}
-                    disabled={!Object.values(selectedStudies).some(Boolean)}
-                  >
-                    Next
-                  </Button>
-                )}
-              </>
-            ) : (
-              <>
+
+              <div className={classes.buttonsContainer}>
                 <Button
                   className={`${classes.actionButton} ${classes.secondaryButton}`}
                   onClick={() => setNextPage(false)}
@@ -767,9 +994,9 @@ function Download({ studies, target = "studies" }) {
                 >
                   Download
                 </Button>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </Box>
       </Slide>
     </>
