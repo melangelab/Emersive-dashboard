@@ -20,6 +20,8 @@ import {
 import { Add as AddIcon, Delete as DeleteIcon, Description } from "@mui/icons-material"
 
 import QuestionLogic from "./QuestionLogic"
+import { descriptionId } from "@rjsf/utils"
+import { None } from "vega"
 
 const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
   const [formFields, setFormFields] = useState(formFieldsProp || [])
@@ -39,14 +41,21 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
     // if (onChange) {
     //   onChange({ fields: formFields, formula: fieldsFormula })
     // }
+    console.log("inside onChange useEffect")
     if (
       onChange &&
-      initializedRef.current &&
-      (JSON.stringify(prevFormFieldsRef.current) !== JSON.stringify(formFields) ||
-        prevFormFieldsRef.current !== formFields)
+      initializedRef.current
+      // (JSON.stringify(prevFormFieldsRef.current) !== JSON.stringify(formFields) ||
+      //   prevFormFieldsRef.current !== formFields)
     ) {
+      console.log("before useEffect onChange called")
       onChange({ fields: formFields, formula: fieldsFormula })
-      prevFormFieldsRef.current = formFields
+      if (
+        JSON.stringify(prevFormFieldsRef.current) !== JSON.stringify(formFields) ||
+        prevFormFieldsRef.current !== formFields
+      ) {
+        prevFormFieldsRef.current = formFields
+      }
     }
   }, [formFields, fieldsFormula])
 
@@ -119,25 +128,40 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
   }
 
   const updateField = (fieldId, updates) => {
+    // If the update includes useInCalculation and it's being turned on
+    if (Object.prototype.hasOwnProperty.call(updates, "useInCalculation") && updates.useInCalculation) {
+      const field = formFields.find((f) => f.id === fieldId)
+
+      // Check if the field has options
+      if (["dropdown", "checkbox", "radio"].includes(field.type)) {
+        // Validate that all options have non-null values
+        const hasInvalidOptions = field.options.some(
+          (option) => option.value === null || option.value === undefined || option.value === ""
+        )
+
+        if (hasInvalidOptions) {
+          // Show error message or alert
+          alert("All options must have values before using this field in calculations")
+          // Return early without updating
+          return
+        }
+      }
+    }
+
+    // Proceed with normal update if validation passes
     setFormFields(formFields.map((field) => (field.id === fieldId ? { ...field, ...updates } : field)))
 
-    // Only update fields4Calc if updates contain `useInCalculation`
+    // Update fields4Calc if necessary
     if (Object.prototype.hasOwnProperty.call(updates, "useInCalculation")) {
       setFields4Calc((prevFields4Calc) => {
         const isChecked = updates.useInCalculation
-
         const updatedField = formFields.find((field) => field.id === fieldId)
 
         if (isChecked) {
-          // Add the field if it's not already in fields4Calc
-          // if (!prevFields4Calc.includes(updatedField)) {
           return [...prevFields4Calc, updatedField]
-          // }
         } else {
-          // Remove the field if it exists in fields4Calc
           return prevFields4Calc.filter((field) => field.id !== updatedField.id)
         }
-        return prevFields4Calc
       })
     }
   }
@@ -148,7 +172,7 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
         if (field.id === fieldId) {
           return {
             ...field,
-            options: [...field.options, { id: Date.now(), label: "", value: "" }],
+            options: [...field.options, { id: Date.now(), label: "", value: null, description: "" }],
           }
         }
         return field
@@ -229,11 +253,42 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
               <Box key={option.id} sx={{ display: "flex", gap: 2, mt: 1 }}>
                 <TextField
                   size="small"
-                  label={`Option ${index + 1}`}
+                  label={`Option ${index + 1} label`}
                   value={option.label}
                   onChange={(e) => {
                     const newOptions = [...field.options]
                     newOptions[index] = { ...option, label: e.target.value }
+                    updateField(field.id, { options: newOptions })
+                  }}
+                />
+                <TextField
+                  size="small"
+                  type="number"
+                  label={`Option ${index + 1} value (number)`}
+                  // Allow empty string
+                  value={option.value === null ? "" : option.value}
+                  onChange={(e) => {
+                    const newOptions = [...field.options]
+                    // If empty string, set value to null
+                    const newValue = e.target.value === "" ? null : Number(e.target.value)
+                    newOptions[index] = { ...option, value: newValue }
+                    updateField(field.id, { options: newOptions })
+                  }}
+                  // If field is used in calculation, show error state for empty values
+                  error={field.useInCalculation && (option.value === null || option.value === "")}
+                  helperText={
+                    field.useInCalculation && (option.value === null || option.value === "")
+                      ? "Value required for calculations"
+                      : ""
+                  }
+                />
+                <TextField
+                  size="small"
+                  label={`Option ${index + 1} description`}
+                  value={option.description}
+                  onChange={(e) => {
+                    const newOptions = [...field.options]
+                    newOptions[index] = { ...option, description: e.target.value }
                     updateField(field.id, { options: newOptions })
                   }}
                 />

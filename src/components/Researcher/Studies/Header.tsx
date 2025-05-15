@@ -62,6 +62,7 @@ import { saveAs } from "file-saver"
 import * as XLSX from "xlsx"
 import { jsPDF } from "jspdf"
 import { DatePicker } from "@material-ui/pickers/DatePicker/DatePicker"
+import Download from "../../Download"
 
 function Profile({ title, authType }) {
   return (
@@ -446,6 +447,7 @@ export default function Header({
     }
     console.log("handleSlideOpen - clicked with", type)
   }
+
   const handleBackdropClick = () => {
     if (activeModal === "none") {
       setSlideOpen(false)
@@ -900,7 +902,8 @@ export default function Header({
                   className={classes.actionIcon}
                   // onClick={(event) => setPopover(event.currentTarget)}
                 /> */}
-                <DownloadIcon
+                <Download studies={studies} target="studies" />
+                {/* <DownloadIcon
                   className={classes.actionIcon}
                   onClick={(event) =>
                     setDownloadState({
@@ -908,7 +911,7 @@ export default function Header({
                       anchor: event.currentTarget,
                     })
                   }
-                />
+                /> */}
               </>
             )}
             <Box
@@ -1142,79 +1145,10 @@ export default function Header({
           <b style={{ color: colors.grey[600] }}>{t("Privacy Policy")}</b>
         </MenuItem>
       </Menu>
-      {/* <Menu
-        anchorEl={downloadMenu.anchor}
-        open={Boolean(downloadMenu.anchor)}
-        onClose={() => setDownloadMenu({...downloadMenu, anchor: null})}
-      >
-        <MenuItem>
-          <FormControl fullWidth>
-            <InputLabel>{t("Select Data Type")}</InputLabel>
-            <Select
-              value={downloadMenu.type}
-              onChange={(e: React.ChangeEvent<{ value: unknown }>) => 
-                setDownloadMenu({...downloadMenu, type: e.target.value as DownloadType})}
-            >
-              <MenuItem value="studies">{t("Studies")}</MenuItem>
-              <MenuItem value="activities">{t("Activities")}</MenuItem>
-              <MenuItem value="participants">{t("Participants")}</MenuItem>
-              <MenuItem value="sensors">{t("Sensors")}</MenuItem>
-              <MenuItem value="activity_events">{t("Activity Events")}</MenuItem>
-              <MenuItem value="sensor_events">{t("Sensor Events")}</MenuItem>
-            </Select>
-          </FormControl>
-        </MenuItem>
-
-        {(downloadMenu.type === 'activity_events' || downloadMenu.type === 'sensor_events') && (
-          <MenuItem>
-            <Box display="flex" flexDirection="column">
-              <DatePicker
-                label={t("Start Date")}
-                value={downloadMenu.startDate}
-                onChange={(date) => setDownloadMenu({...downloadMenu, startDate: date})}
-              />
-              <DatePicker
-                label={t("End Date")}
-                value={downloadMenu.endDate}
-                onChange={(date) => setDownloadMenu({...downloadMenu, endDate: date})}
-              />
-            </Box>
-          </MenuItem>
-        )}
-
-        <MenuItem>
-          <FormControl fullWidth>
-            <InputLabel>{t("Select Format")}</InputLabel>
-            <Select
-              value={downloadMenu.format}
-              onChange={(e: React.ChangeEvent<{ value: unknown }>) => 
-                setDownloadMenu({...downloadMenu, format: e.target.value as DownloadFormat})}
-            >
-              <MenuItem value="json">JSON</MenuItem>
-              <MenuItem value="csv">CSV</MenuItem>
-              <MenuItem value="excel">Excel</MenuItem>
-              <MenuItem value="pdf">PDF</MenuItem>
-            </Select>
-          </FormControl>
-        </MenuItem>
-
-        <MenuItem onClick={() => {
-          downloadData(
-            downloadMenu.type, 
-            downloadMenu.format,
-            downloadMenu.startDate,
-            downloadMenu.endDate
-          )
-          setDownloadMenu({...downloadMenu, anchor: null})
-        }}>
-          <Button fullWidth variant="contained" color="primary">
-            {t("Download")}
-          </Button>
-        </MenuItem>
-      </Menu> */}
       <Menu
         anchorEl={downloadState.anchor}
-        open={Boolean(downloadState.anchor)}
+        open={false}
+        // open={Boolean(downloadState.anchor)}
         onClose={() => setDownloadState({ ...downloadState, anchor: null })}
         PaperProps={{
           style: {
@@ -1338,7 +1272,6 @@ export default function Header({
           )
         })}
 
-        {/* Events Option */}
         <MenuItem>
           <FormControlLabel
             control={
@@ -1351,7 +1284,6 @@ export default function Header({
           />
         </MenuItem>
 
-        {/* Date Range (if events included) */}
         {downloadState.includeEvents && (
           <MenuItem>
             <Box display="flex" flexDirection="column" style={{ gap: 2 }}>
@@ -1379,7 +1311,6 @@ export default function Header({
           </MenuItem>
         )}
 
-        {/* Format Selection */}
         <MenuItem>
           <FormControl fullWidth>
             <InputLabel>{t("Download Format")}</InputLabel>

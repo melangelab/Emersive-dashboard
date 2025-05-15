@@ -361,8 +361,10 @@ export default function ParticipantList({
     () => {
       setLoading(true)
       getAllStudies()
+      setLoading(false)
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    // studies !== null && (studies || []).length > 0 ? null : 60000,
+    (!studies || studies.length === 0) && (!sharedstudies || sharedstudies.length === 0) ? 60000 : null,
     true
   )
 
@@ -432,6 +434,7 @@ export default function ParticipantList({
       setLoading(false)
     }
     setSelectedParticipants([])
+    setLoading(false)
   }
 
   const handleSearchData = (val: string) => {
@@ -900,6 +903,12 @@ export default function ParticipantList({
           }
           await LAMP.Type.setAttachment(selectedParticipant.id, "me", "lamp.name", null)
           await LAMP.Participant.delete(selectedParticipant.id)
+          await LAMP.Credential.list(selectedParticipant.id).then((cred) => {
+            cred = cred.filter((c) => c.hasOwnProperty("origin"))
+            cred.map((each) => {
+              LAMP.Credential.delete(selectedParticipant.id, each["access_key"])
+            })
+          })
           await Service.delete("participants", [selectedParticipant.id])
           await Service.updateCount("studies", selectedParticipant.study_id, "participant_count", 1, 1)
           enqueueSnackbar(t("Participant deleted successfully"), { variant: "success" })

@@ -380,6 +380,12 @@ export default function ParticipantListItem({
         }
         await LAMP.Type.setAttachment(participant.id, "me", "lamp.name", null)
         await LAMP.Participant.delete(participant.id)
+        await LAMP.Credential.list(participant.id).then((cred) => {
+          cred = cred.filter((c) => c.hasOwnProperty("origin"))
+          cred.map((each) => {
+            LAMP.Credential.delete(participant.id, each["access_key"])
+          })
+        })
         await Service.delete("participants", [participant.id])
         await Service.updateCount("studies", participant.study_id, "participant_count", 1, 1)
         // await props.searchActivities()

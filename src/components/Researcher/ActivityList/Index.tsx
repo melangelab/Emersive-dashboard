@@ -474,7 +474,7 @@ export default function ActivityList({
       setLoading(true)
       getAllStudies()
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    (!studies || studies.length === 0) && (!props.sharedstudies || props.sharedstudies.length === 0) ? 60000 : null,
     true
   )
 

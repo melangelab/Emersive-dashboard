@@ -232,7 +232,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
       setLoading(true)
       getDBStudies()
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    (!studies || studies.length === 0) && (!sharedstudies || sharedstudies.length === 0) ? 60000 : null,
     true
   )
 

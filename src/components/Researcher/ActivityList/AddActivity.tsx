@@ -329,7 +329,8 @@ export default function AddActivity({
                 ))}
             </React.Fragment>
           )}
-          {/* {activitySpecs.filter(
+          {/*           */}
+          {activitySpecs.filter(
             (x) => !["lamp.group", "lamp.survey", "lamp.form_builder", "lamp.cbt_thought_record"].includes(x.id)
           ).length > 0 && [
             <MenuItem divider key="head" disabled className={classes.borderTop}>
@@ -358,7 +359,7 @@ export default function AddActivity({
                   </Link>
                 </MenuItem>
               )),
-          ]} */}
+          ]}
         </Box>
       </Slide>
     </Box>

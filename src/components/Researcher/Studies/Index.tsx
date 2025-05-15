@@ -1102,46 +1102,7 @@ export default function StudiesList({
       enqueueSnackbar(t("Failed to update study: ") + err.message, { variant: "error" })
     }
   }
-  // const handleUpdateStudy = async (studyId, study) => {
-  //   try {
-  //     const updatedStudy = {
-  //       ...study,
-  //       ...(formState[studyId] || {})
-  //     }
-  //     const fieldsToUpdate = [ 'name', 'description', 'purpose', 'studyType', 'hasFunding', 'fundingAgency', 'hasEthicsPermission', 'ethicsPermissionDoc', 'mobile', 'email', 'state', 'piInstitution', 'collaboratingInstitutions', 'timestamps'
-  //     ]
-  //     LAMP.Study.update(studyId, updatedStudy)
-  //     .then((res) => {
-  //       Service.update("studies", {
-  //         studies: [{
-  //           id: studyId,
-  //           ...updatedStudy
-  //         }]
-  //       }, "name", "id")
-  //       Service.updateMultipleKeys(
-  //         "studies",
-  //         {
-  //           studies: [{
-  //             id: studyId,
-  //             ...updatedStudy  // This contains all updated fields
-  //           }]
-  //         },
-  //         fieldsToUpdate,
-  //         "id"
-  //       )
-  //       })
-  //     .catch((error) => {
-  //       console.log("error updating group to newly created study", error)
-  //     })
-  //     enqueueSnackbar(t("Study updated successfully"), { variant: "success" })
-  //     setEditStudyId(null)
-  //     setFormState({})
-  //     getAllStudies()
-  //     handleUpdatedStudyObject(study)
-  //   } catch (err) {
-  //     enqueueSnackbar(t("Failed to update study: ") + err.message, { variant: "error" })
-  //   }
-  // }
+
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
   const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
   const stats = (study) => {
@@ -1205,8 +1166,10 @@ export default function StudiesList({
     () => {
       setLoading(true)
       getAllStudies()
+      setLoading(false)
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    // studies !== null && (studies || []).length > 0 ? null : 60000,
+    (!studies || studies.length === 0) && (!props.sharedstudies || props.sharedstudies.length === 0) ? 60000 : null,
     true
   )
 
@@ -1904,33 +1867,6 @@ export default function StudiesList({
             }}
           />
         )}
-
-        {/* {currentStudy && (
-          <StudyDetailsDialog
-            study={currentStudy}
-            open={!!expandedStudyId}
-            onClose={() => setExpandedStudyId(null)}
-            onSave={(updatedStudy) => handleUpdateStudy(expandedStudyId, updatedStudy)}
-            editStudyId={expandedStudyId}
-            formatDate={formatDate}
-            researcherId={researcherId}
-          />
-        )} */}
-
-        {/* <StudyDetailsDialog
-          study={expandedStudyId ? allStudies.find(s => s.id === expandedStudyId) : null}
-          open={!!expandedStudyId}
-          onClose={() => setExpandedStudyId(null)}
-          onSave={(updatedStudy) => handleUpdateStudy(expandedStudyId, updatedStudy)}
-          editStudyId={expandedStudyId}
-          formatDate={formatDate}
-          researcherId={researcherId}
-          // study={study}
-          // open={expandedStudyId === study.id}
-          // onClose={() => setExpandedStudyId(null)}
-          // onSave={(updatedStudy) => handleUpdateStudy(study.id, updatedStudy)}
-          // editStudyId={study.id}
-        /> */}
         <Dialog
           open={suspendDialogOpen}
           onClose={handleCloseSuspendDialog}
@@ -2391,51 +2327,6 @@ export default function StudiesList({
                             )}
                           </Box>
                         </Paper>
-                        {/* </Grid>
- 
-                  <Grid item lg={6} xs={12} key={study.id}> */}
-                        {/* <Box display="flex" p={1} className={classes.studyMain}>
-                      <Box flexGrow={1}>
-                        <EditStudy
-                          study={study}
-                          upatedDataStudy={handleUpdatedStudyObject}
-                          allStudies={allStudies}
-                          researcherId={researcherId}
-                        />
-                      </Box>
-                      <AddSubResearcher
-                        study={study}
-                        upatedDataStudy={handleUpdatedStudyObject}
-                        researcherId={researcherId}
-                        handleShareUpdate={(studyid, updatedStudy) => handleUpdateStudy(studyid, updatedStudy)}
-                      />
-                      {props.authType == "admin" && (
-                        <DeleteStudy study={study} deletedStudy={handleDeletedStudy} researcherId={researcherId} />
-                      )}
-                      {props.authType == "admin" && (
-                        <Fab
-                          size="small"
-                          color="primary"
-                          classes={{ root: classes.btnWhite }}
-                          onClick={() => {
-                            handleOpenSuspendDialog(study)
-                          }}
-                        >
-                          <Icon> {"block_outline"} </Icon>
-                        </Fab>
-                      )}
-                      <Fab
-                        size="small"
-                        color="primary"
-                        classes={{ root: classes.btnWhite }}
-                        onClick={() => {
-                          toggleStudyDetails(study.id)
-                        }}
-                      >
-                        <Icon> visibility
-                        </Icon>
-                      </Fab>
-                    </Box> */}
                         {selectedStudyForDialog && (
                           <AddParticipantToStudy
                             study={selectedStudyForDialog}

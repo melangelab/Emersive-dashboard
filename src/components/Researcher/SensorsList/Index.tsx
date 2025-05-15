@@ -147,8 +147,10 @@ export default function SensorsList({
     () => {
       setLoading(true)
       getAllStudies()
+      setLoading(false)
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    // studies !== null && (studies || []).length > 0 ? null : 60000,
+    (!studies || studies.length === 0) && (!props.sharedstudies || props.sharedstudies.length === 0) ? 60000 : null,
     true
   )
 

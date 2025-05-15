@@ -960,6 +960,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         photo: editedValues.image,
         showFeed: showInFeed,
         streak: streakSettings,
+        formula4Fields: editedValues.formula4Fields,
       }
       // TODO Add more fields for updates
       const result = await LAMP.Activity.update(activity.id, updateData as any)
@@ -1240,17 +1241,52 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     const [localFBSettings, setLocalFBSettings] = useState(editedValues.settings || {})
     const [localFormula, setLocalFormula] = useState(editedValues.formula4Fields || "")
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-    const handleSaveSettings = () => {
+
+    const handleSaveSettings = async () => {
       setEditedValues((prev) => ({
         ...prev,
         formula4Fields: localFormula,
         settings: editedValues.spec === "lamp.form_builder" ? localFBSettings : localSettings,
       }))
       setHasUnsavedChanges(false)
-      enqueueSnackbar(t("Settings saved. Click Save at the bottom of the page to apply all changes."), {
-        variant: "success",
-      })
+      const updatedSettings = {
+        settings: editedValues.spec === "lamp.form_builder" ? localFBSettings : localSettings,
+        formula4Fields: localFormula,
+      }
+      try {
+        console.log("before calling update settings", updatedSettings)
+        const result = await LAMP.Activity.update(activity.id, updatedSettings as any)
+        await Service.updateMultipleKeys(
+          "activities",
+          {
+            activities: [
+              {
+                id: activity.id,
+                ...updatedSettings,
+              },
+            ],
+          },
+          Object.keys(updatedSettings),
+          "id"
+        )
+
+        onSave({
+          ...activity,
+          ...updatedSettings,
+        })
+        if (result) {
+          enqueueSnackbar(t("Settings saved."), {
+            variant: "success",
+          })
+        }
+      } catch (error) {
+        console.error("Error updating activity settings:", error)
+        enqueueSnackbar(t("An error occurred while updating the activity settings."), {
+          variant: "error",
+        })
+      }
     }
+
     useEffect(() => {
       setLocalSettings(editedValues.settings || {})
       setLocalFBSettings(editedValues.settings || {})
@@ -1284,6 +1320,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         {editedValues.spec === "lamp.form_builder" ? (
           <FormBuilder
             onChange={(formData) => {
+              console.log("INSIDE THE DETAILITEM Form data changed:", formData)
               setLocalFormula(formData.formula)
               setLocalSettings(formData.fields)
               setHasUnsavedChanges(true)

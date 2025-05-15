@@ -14,6 +14,8 @@ import {
   IconButton,
   Collapse,
   MenuItem,
+  MuiThemeProvider,
+  Button,
 } from "@material-ui/core"
 import ViewItems, { FieldConfig, TabConfig } from "../SensorsList/ViewItems"
 import { useTranslation } from "react-i18next"
@@ -28,6 +30,9 @@ import ExpandLessIcon from "@material-ui/icons/ExpandLess"
 import { ca } from "date-fns/locale"
 import DateFnsUtils from "@date-io/date-fns"
 import { MuiPickersUtilsProvider, KeyboardDatePicker } from "@material-ui/pickers"
+import { localeMap, userLanguages } from "../ActivityList/ScheduleRow"
+import locale_lang from "../../../locale_map.json"
+
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
@@ -134,6 +139,16 @@ const useStyles = makeStyles((theme: Theme) =>
       color: "rgba(0, 0, 0, 0.6)",
       fontSize: "0.875rem",
     },
+    datePicker: {
+      "& div": { paddingRight: 0, maxWidth: 175 },
+      "& p.MuiTypography-alignCenter": { textTransform: "capitalize" },
+      "& h4.MuiTypography-h4 ": { textTransform: "capitalize" },
+      "& span": { textTransform: "capitalize" },
+    },
+    datePickerDiv: {
+      "& h4.MuiTypography-h4": { textTransform: "capitalize" },
+      "& span.MuiPickersCalendarHeader-dayLabel": { textTransform: "capitalize" },
+    },
   })
 )
 
@@ -225,7 +240,18 @@ const AsyncStatsContent: React.FC<{
     new Date(new Date().setDate(new Date().getDate() - 1)) // Default to previous day
   )
   const [endDate, setEndDate] = useState<Date | null>(new Date()) // Default to today
+  const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(
+    new Date(new Date().setDate(new Date().getDate() - 1))
+  )
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(new Date())
+  const [applyFilter, setApplyFilter] = useState<boolean>(false)
+  const { t, i18n } = useTranslation()
   const [dateRangeEnabled, setDateRangeEnabled] = useState<boolean>(false)
+  const getSelectedLanguage = () => {
+    const matched_codes = Object.keys(locale_lang).filter((code) => code.startsWith(navigator.language))
+    const lang = matched_codes.length > 0 ? matched_codes[0] : "en-US"
+    return i18n.language ? i18n.language : userLanguages.includes(lang) ? lang : "en-US"
+  }
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -322,14 +348,53 @@ const AsyncStatsContent: React.FC<{
     }
 
     fetchStats()
-  }, [selectedTab, study, participant, dateRangeEnabled, startDate, endDate])
+  }, [selectedTab, study, participant, dateRangeEnabled, startDate, endDate, applyFilter])
 
   const handleStartDateChange = (date: Date | null) => {
-    setStartDate(date)
+    // setStartDate(date)
+    if (date && date.isValid && date.isValid()) {
+      const newDate = new Date(date.getTime())
+      newDate.setHours(0, 0, 0, 0)
+      setSelectedStartDate(newDate)
+      // setStartDate(newDate)
+    } else {
+      setSelectedStartDate(null)
+      // setStartDate(null)
+    }
   }
 
   const handleEndDateChange = (date: Date | null) => {
-    setEndDate(date)
+    // setEndDate(date)
+    if (date && date.isValid && date.isValid()) {
+      const newDate = new Date(date.getTime())
+      newDate.setHours(23, 59, 59, 999)
+      setSelectedEndDate(newDate)
+      // setEndDate(newDate)
+    } else {
+      setSelectedEndDate(null)
+      // setEndDate(null)
+    }
+  }
+
+  const handleToggleDateRange = (e) => {
+    const newEnabled = e.target.checked
+    setDateRangeEnabled(newEnabled)
+    if (newEnabled && (!startDate || !endDate)) {
+      setStartDate(selectedStartDate || new Date(new Date().setDate(new Date().getDate() - 1)))
+      setEndDate(selectedEndDate || new Date())
+      setApplyFilter((prev) => !prev) // Trigger filter when enabling date range
+    }
+  }
+  const handleApplyFilter = () => {
+    if (selectedStartDate && selectedEndDate) {
+      setStartDate(selectedStartDate)
+      setEndDate(selectedEndDate)
+      setApplyFilter((prev) => !prev) // Toggle to trigger useEffect
+    }
+  }
+
+  const isFilterReady = () => {
+    return dateRangeEnabled && selectedStartDate && selectedEndDate
   }
 
   const renderSensorData = (data: any) => {
@@ -365,7 +430,7 @@ const AsyncStatsContent: React.FC<{
   return (
     <Box className={classes.groupList}>
       <Box mb={2} display="flex" flexDirection="row" alignItems="center">
-        <MuiPickersUtilsProvider utils={DateFnsUtils}>
+        <MuiPickersUtilsProvider locale={localeMap[getSelectedLanguage()]} utils={DateFnsUtils}>
           <Box display="flex" alignItems="center" flexWrap="wrap">
             <Box mr={2} mb={1}>
               <KeyboardDatePicker
@@ -374,29 +439,56 @@ const AsyncStatsContent: React.FC<{
                 id="start-date-picker"
                 label="Start Date"
                 format="MM/dd/yyyy"
-                value={startDate}
+                value={selectedStartDate}
                 onChange={handleStartDateChange}
                 KeyboardButtonProps={{
                   "aria-label": "change start date",
                 }}
-                style={{ width: 180 }}
+                className={classes.datePicker}
+                variant="inline"
+                inputVariant="outlined"
+                clearable
+                autoOk
+                size="small"
+                error={dateRangeEnabled && !startDate}
+                helperText={dateRangeEnabled && !startDate ? "Please select a valid date" : ""}
               />
             </Box>
             <Box mr={2} mb={1}>
               <KeyboardDatePicker
                 disabled={!dateRangeEnabled}
                 margin="normal"
+                clearable
+                autoOk
+                variant="inline"
+                inputVariant="outlined"
+                className={classes.datePicker}
+                error={dateRangeEnabled && !endDate}
+                helperText={dateRangeEnabled && !endDate ? "Please select a valid date" : ""}
                 id="end-date-picker"
                 label="End Date"
                 format="MM/dd/yyyy"
-                value={endDate}
+                value={selectedEndDate}
                 onChange={handleEndDateChange}
                 KeyboardButtonProps={{
                   "aria-label": "change end date",
                 }}
-                style={{ width: 180 }}
+                size="small"
               />
             </Box>
+            {dateRangeEnabled && (
+              <Box ml={2} mb={1}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  onClick={handleApplyFilter}
+                  disabled={!isFilterReady()}
+                >
+                  {t("Apply Filter")}
+                </Button>
+              </Box>
+            )}
             <Box mb={1} display="flex" alignItems="center">
               <Box
                 component="label"
@@ -405,11 +497,12 @@ const AsyncStatsContent: React.FC<{
               >
                 <Typography variant="body2">Enable Date Range</Typography>
               </Box>
-              <input
+              <Switch
                 id="date-range-toggle"
-                type="checkbox"
                 checked={dateRangeEnabled}
-                onChange={(e) => setDateRangeEnabled(e.target.checked)}
+                onChange={handleToggleDateRange}
+                color="primary"
+                size="small"
               />
             </Box>
           </Box>

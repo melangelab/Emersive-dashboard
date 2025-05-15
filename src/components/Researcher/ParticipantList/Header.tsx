@@ -45,6 +45,7 @@ import { ReactComponent as ColumnsIcon } from "../../../icons/NewIcons/columns-3
 import { ReactComponent as FilterIcon } from "../../../icons/NewIcons/filters.svg"
 import { ReactComponent as PrintIcon } from "../../../icons/NewIcons/print.svg"
 import { ReactComponent as DownloadIcon } from "../../../icons/NewIcons/progress-download.svg"
+import Download from "../../Download"
 
 function Profile({ title, authType }) {
   return (
@@ -298,7 +299,7 @@ export default function Header({
                   onClick={(event) => setColumnMenuAnchor(event.currentTarget)}
                 />
                 <PrintIcon className={classes.actionIcon} />
-                <DownloadIcon className={classes.actionIcon} />
+                <Download studies={studies} target="participants" />
               </>
             )}
             <StudyFilter setShowFilterStudies={handleShowFilterStudies} setOrder={setOrder} order={order} />

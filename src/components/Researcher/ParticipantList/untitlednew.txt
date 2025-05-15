@@ -1,53 +1,429 @@
-// Move columns state inside useEffect that runs after researchers are loaded
-// This is the key part of the fix
+package ihub.aiims.emersive.sensor
 
-// 1. First, initialize columns without the ownership field that needs researchers data
-const [columns, setColumns] = useState<TableColumn[]>([
-  { id: "id", label: "ID", value: (p) => p.id, visible: true },
-  { id: "name", label: "Name", value: (p) => `${p.firstName} ${p.lastName}`, visible: true },
-  { id: "username", label: "Username", value: (p) => p.username, visible: true },
-  { id: "email", label: "Email", value: (p) => p.email, visible: true },
-  { id: "mobile", label: "Mobile", value: (p) => p.mobile, visible: true },
-  { id: "group", label: "Group", value: (p) => p.group_name || "-", visible: true },
-  { id: "study", label: "Study", value: (p) => p.study_name, visible: true },
-  { id: "userAge", label: "Age", value: (p) => p.userAge || "-", visible: false },
-  { id: "gender", label: "Gender", value: (p) => p.gender || "-", visible: false },
-  { id: "caregiverName", label: "Caregiver", value: (p) => p.caregiverName || "-", visible: false },
-  {
-    id: "lastLogin",
-    label: "Last Login",
-    value: (p) => (p.systemTimestamps?.lastLoginTime ? formatDate(p.systemTimestamps.lastLoginTime) : "-"),
-    visible: true,
-  },
-  { id: "isLoggedIn", label: "Login Status", value: (p) => p.isLoggedIn, visible: true },
-]);
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.database.Cursor
+import android.os.Handler
+import android.os.Looper
+import android.provider.CallLog
+import android.util.Log
+import digital.lamp.lamp_kotlin.lamp_core.models.DimensionData
+import digital.lamp.lamp_kotlin.lamp_core.models.SensorEvent
+import ihub.aiims.emersive.database.entity.entity.CollectionTime
+import ihub.aiims.emersive.utils.NetworkUtils
+import ihub.aiims.emersive.database.entity.entity.SensorSettings
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.util.*
 
-// 2. Update getParentResearcher to handle the case when researchers aren't loaded yet
-const getParentResearcher = (parentResearcherId) => {
-  if (!parentResearcherId) return "Unknown";
-  if (!allresearchers || allresearchers.length === 0) return parentResearcherId;
-  
-  const researcher = allresearchers.find(r => r.id === parentResearcherId);
-  return researcher ? researcher.name : parentResearcherId;
-};
+// Data class for Call Log Entry
+data class CallLogEntry(
+    val name: String?,
+    val number: String,
+    val type: String,
+    val duration: Long,
+    val timestamp: Long
+)
 
-// 3. Add useEffect to update columns after researchers are loaded
-
-
-// 4. Improve the researcher fetching logic
-useEffect(() => {
-  const fetchResearchers = async () => {
-    try {
-      const authString = LAMP.Auth._auth.id + ':' + LAMP.Auth._auth.password;
-      const response = await fetchGetData(authString, `researcher/others/list`, 'researcher');
-      console.log("Researchers fetched:", response.data);
-      setAllResearchers(response.data);
-    } catch (error) {
-      console.error('Error fetching researchers:', error);
-      // Set a flag or state to indicate the fetch failed
-      // This could be useful for showing an error message or retrying
+// Wrapper class for Call Logs
+class CallLogsWrapper(val callLogs: List<CallLogEntry>) {
+    fun toDimensionData(batteryLevel: Float?, source: Any? = null): DimensionData {
+        return DimensionData(
+            x = null, y = null, z = null,
+            rotation = null, motion = null, gravity = null, magnetic = null,
+            longitude = null, latitude = null, altitude = null,
+            accuracy = null, representation = null,
+            battery_level = batteryLevel,
+            address = null, name = null, strength = null,
+            steps = null, systolic = null, diastolic = null,
+            unit = null, value = callLogs, type = "call_logs",
+            activity = null, source = source, duration = null
+        )
     }
-  };
-  
-  fetchResearchers();
-}, []);  // Empty dependency array means this runs once on mount
+}
+
+// Interface for Sensor Listener
+// Main Call Logs Data Class
+class CallLogsData constructor(
+    private val sensorListener: SensorListener,
+    private val context: Context,
+    private val settings: SensorSettings? = null
+) {
+    companion object {
+        private const val TAG = "LAMP::CallLogs"
+        private val istZone = TimeZone.getTimeZone("Asia/Kolkata")
+        private val istFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS 'IST'").apply {
+            timeZone = istZone
+        }
+
+        private fun getCurrentISTTime(): String = istFormatter.format(Date())
+
+        private fun getISTTimestamp(timestamp: Long): String {
+            return istFormatter.format(Date(timestamp))
+        }
+
+        private fun convertToISTTimestamp(epochMillis: Long): Long {
+            val instant = Instant.ofEpochMilli(epochMillis)
+            val istDateTime = ZonedDateTime.ofInstant(instant, ZoneId.of("Asia/Kolkata"))
+            return istDateTime.toInstant().toEpochMilli()
+        }
+    }
+
+    private var LAST_TS: Long = 0
+    private val defaultFrequency = 30.0 // 30 seconds as default
+    private var collectionStartTime: Long = 0
+    private var shouldCollectData: Boolean = true
+    private var isInCooldownPeriod: Boolean = false
+
+    // Fix 1: Use a single Handler instance
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    // Fix 2: Use separate callbacks for tracking different scheduled tasks
+    private var collectionCallback: Runnable? = null
+    private var cooldownCallback: Runnable? = null
+    private var nextCycleCallback: Runnable? = null
+
+    private val logTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
+    private fun getTimestamp(): String = "[${logTimeFormat.format(Date())}]"
+
+    init {
+        try {
+            val initTime = getCurrentISTTime()
+            Log.d(
+                TAG,
+                "[$initTime] Initializing Call Logs Sensor with settings: ${settings?.toString()}"
+            )
+
+            // Fix 3: Correct field name reference
+            settings?.data_collection_timeperiod?.let { collectionTime ->
+                shouldCollectData = isWithinCollectionTimeWindow(collectionTime)
+                Log.d(
+                    TAG,
+                    "[$initTime] Initial collection window check: shouldCollectData=$shouldCollectData"
+                )
+            }
+
+            if (shouldCollectData) {
+                Log.d(TAG, "[$initTime] Starting call logs data collection")
+
+                settings?.data_collection_duration?.let { duration ->
+                    startCollectionCycle(duration)
+                } ?: run {
+                    // If no duration specified, start a default collection cycle
+                    startCollectionCycle(60) // Default 60 minutes
+                }
+            } else {
+                Log.d(
+                    TAG,
+                    "[${getCurrentISTTime()}] Not starting call logs collection due to time window restrictions"
+                )
+
+                // Fix 4: Schedule a check to start collection when within time window
+                scheduleTimeWindowCheck()
+            }
+        } catch (ex: Exception) {
+            Log.e(TAG, "[${getCurrentISTTime()}] Error in CallLogsData initialization", ex)
+            ex.printStackTrace()
+        }
+    }
+
+    // Fix 5: Add method to check time window periodically
+    private fun scheduleTimeWindowCheck() {
+        // Clear any existing callbacks
+        clearCallbacks()
+
+        // Create a new runnable to check time window
+        val timeWindowCheckRunnable = Runnable {
+            val currentTime = getCurrentISTTime()
+            Log.d(TAG, "[$currentTime] Checking if within collection time window")
+
+            settings?.data_collection_timeperiod?.let { collectionTime ->
+                if (isWithinCollectionTimeWindow(collectionTime)) {
+                    Log.d(TAG, "[$currentTime] Now within collection time window, starting collection")
+                    shouldCollectData = true
+                    settings.data_collection_duration?.let { duration ->
+                        startCollectionCycle(duration)
+                    } ?: run {
+                        startCollectionCycle(60) // Default 60 minutes
+                    }
+                } else {
+                    // Still outside window, check again in 5 minutes
+                    Log.d(TAG, "[$currentTime] Still outside collection time window, checking again in 5 minutes")
+                    mainHandler.postDelayed(this, 5 * 60 * 1000)
+                }
+            }
+        }
+
+        // Schedule the check for 5 minutes later
+        mainHandler.postDelayed(timeWindowCheckRunnable, 5 * 60 * 1000)
+    }
+
+    fun startCallLogsReading() {
+        val currentTime = getCurrentISTTime()
+        Log.d(TAG, "[$currentTime] Call to startCallLogsReading()")
+
+        // Fix 6: Clear any existing collection callback
+        collectionCallback?.let { mainHandler.removeCallbacks(it) }
+
+        if (!shouldCollectData) {
+            Log.d(TAG, "[$currentTime] Not collecting data due to global flag")
+            return
+        }
+
+        if (isInCooldownPeriod) {
+            Log.d(TAG, "[$currentTime] In cooldown period, skipping collection")
+            return
+        }
+
+        val timeWindowAllowed = settings?.data_collection_timeperiod?.let {
+            isWithinCollectionTimeWindow(it)
+        } ?: true
+
+        if (!timeWindowAllowed) {
+            Log.d(TAG, "[$currentTime] Outside collection time window")
+            shouldCollectData = false
+            scheduleTimeWindowCheck()
+            return
+        }
+
+        if (!hasCallLogPermission()) {
+            Log.e(TAG, "[$currentTime] Call log permission not granted")
+            return
+        }
+
+        // Fix 7: Check frequency before attempting to read logs
+        val currentTimeStamp = System.currentTimeMillis()
+        val frequency = settings?.frequency ?: defaultFrequency
+        val interval = ((1.0 / frequency) * 1000).toLong()
+
+        if (currentTimeStamp - LAST_TS < interval) {
+            Log.d(
+                TAG,
+                "[$currentTime] Skipping due to frequency constraint, interval: (${interval}ms)"
+            )
+
+            // Schedule next collection at exact interval
+            val delayToNextCollection = interval - (currentTimeStamp - LAST_TS)
+
+            collectionCallback = Runnable { startCallLogsReading() }
+            mainHandler.postDelayed(collectionCallback!!, delayToNextCollection)
+            return
+        }
+
+        // Update timestamp before reading to prevent race conditions
+        LAST_TS = currentTimeStamp
+
+        // Read logs
+        readCallLogs()
+
+        // Schedule next collection based on frequency
+        collectionCallback = Runnable { startCallLogsReading() }
+        mainHandler.postDelayed(collectionCallback!!, interval)
+    }
+
+    private fun startCollectionCycle(duration: Int) {
+        // Fix 8: Clear all existing callbacks before starting a new cycle
+        clearCallbacks()
+
+        collectionStartTime = System.currentTimeMillis()
+        val istStartTime = getISTTimestamp(collectionStartTime)
+        Log.d(TAG, "[${getCurrentISTTime()}] Starting new collection cycle")
+        Log.d(TAG, "[$istStartTime] Setting up collection duration timer for $duration minutes")
+
+        isInCooldownPeriod = false
+        shouldCollectData = true
+
+        val durationInMillis = duration * 60 * 1000L
+
+        // Start the initial data collection
+        startCallLogsReading()
+
+        // Schedule the cooldown period
+        cooldownCallback = Runnable {
+            val cooldownStartTime = getCurrentISTTime()
+            Log.d(TAG, "[$cooldownStartTime] Starting cooldown period for $duration minutes")
+            isInCooldownPeriod = true
+
+            // Fix 9: Clear collection callback when entering cooldown
+            collectionCallback?.let { mainHandler.removeCallbacks(it) }
+            collectionCallback = null
+
+            // Schedule the next collection cycle
+            nextCycleCallback = Runnable {
+                val nextCycleTime = getCurrentISTTime()
+                Log.d(
+                    TAG,
+                    "[$nextCycleTime] Cooldown period complete, starting next collection cycle"
+                )
+                startCollectionCycle(duration)
+            }
+            mainHandler.postDelayed(nextCycleCallback!!, durationInMillis)
+        }
+        mainHandler.postDelayed(cooldownCallback!!, durationInMillis)
+    }
+
+    // Fix 10: Method to clear all callbacks
+    private fun clearCallbacks() {
+        collectionCallback?.let { mainHandler.removeCallbacks(it) }
+        cooldownCallback?.let { mainHandler.removeCallbacks(it) }
+        nextCycleCallback?.let { mainHandler.removeCallbacks(it) }
+
+        collectionCallback = null
+        cooldownCallback = null
+        nextCycleCallback = null
+    }
+
+    // Fix 11: Single implementation of time window checking
+    private fun isWithinCollectionTimeWindow(collectionTime: CollectionTime?): Boolean {
+        val currentISTTime = getCurrentISTTime()
+
+        if (collectionTime == null || collectionTime.start_time == null || collectionTime.end_time == null) {
+            Log.d(
+                TAG,
+                "[$currentISTTime] No collection time window specified, allowing data collection"
+            )
+            return true
+        }
+
+        try {
+            val currentTime = LocalTime.now(ZoneId.of("Asia/Kolkata"))
+            val startTime = LocalTime.parse(collectionTime.start_time)
+            val endTime = LocalTime.parse(collectionTime.end_time)
+
+            Log.d(
+                TAG, "[$currentISTTime] Checking time window - " +
+                        "Current(IST): $currentTime, " +
+                        "Start: $startTime, " +
+                        "End: $endTime"
+            )
+
+            val isWithinWindow = if (startTime <= endTime) {
+                // Normal case (e.g., 9:00 to 17:00)
+                currentTime in startTime..endTime
+            } else {
+                // Overnight case (e.g., 22:00 to 6:00)
+                currentTime >= startTime || currentTime <= endTime
+            }
+
+            Log.d(TAG, "[$currentISTTime] Time window check result: $isWithinWindow")
+            return isWithinWindow
+        } catch (e: Exception) {
+            Log.e(TAG, "[$currentISTTime] Error parsing time window: ${e.message}")
+            return true // On error, default to allowing collection
+        }
+    }
+
+    private fun shouldUpload(): Boolean {
+        return settings?.cellular_upload ?: true // Default to true if not specified
+    }
+
+    private fun hasCallLogPermission(): Boolean {
+        return context.checkSelfPermission(Manifest.permission.READ_CALL_LOG) ==
+                PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun readCallLogs() {
+        val currentTime = getCurrentISTTime()
+        Log.d(TAG, "[$currentTime] Reading call logs")
+
+        val projection = arrayOf(
+            CallLog.Calls.CACHED_NAME,
+            CallLog.Calls.NUMBER,
+            CallLog.Calls.TYPE,
+            CallLog.Calls.DURATION,
+            CallLog.Calls.DATE
+        )
+
+        try {
+            context.contentResolver.query(
+                CallLog.Calls.CONTENT_URI,
+                projection,
+                null,
+                null,
+                "${CallLog.Calls.DATE} DESC"
+            )?.use { cursor ->
+                processCallLogsCursor(cursor)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "[$currentTime] Error reading call logs: ${e.message}")
+        }
+    }
+
+    private fun processCallLogsCursor(cursor: Cursor) {
+        val currentTime = getCurrentISTTime()
+        try {
+            val nameIndex = cursor.getColumnIndexOrThrow(CallLog.Calls.CACHED_NAME)
+            val numberIndex = cursor.getColumnIndexOrThrow(CallLog.Calls.NUMBER)
+            val typeIndex = cursor.getColumnIndexOrThrow(CallLog.Calls.TYPE)
+            val durationIndex = cursor.getColumnIndexOrThrow(CallLog.Calls.DURATION)
+            val dateIndex = cursor.getColumnIndexOrThrow(CallLog.Calls.DATE)
+
+            val batteryPercentage = NetworkUtils.getBatteryPercentage(context).toFloat() / 100
+            val callLogs = mutableListOf<CallLogEntry>()
+
+            while (cursor.moveToNext()) {
+                try {
+                    callLogs.add(
+                        CallLogEntry(
+                            name = cursor.getString(nameIndex),
+                            number = cursor.getString(numberIndex),
+                            type = getCallType(cursor.getInt(typeIndex)),
+                            duration = cursor.getLong(durationIndex),
+                            timestamp = cursor.getLong(dateIndex)
+                        )
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "[$currentTime] Error processing individual call log entry: ${e.message}")
+                    // Continue with next entry instead of breaking the entire loop
+                    continue
+                }
+            }
+            if (callLogs.isNotEmpty()) {
+                val wrapper = CallLogsWrapper(callLogs)
+                val dimensionData = wrapper.toDimensionData(batteryPercentage)
+
+                val currentTimestamp = System.currentTimeMillis()
+                val istTimestamp = convertToISTTimestamp(currentTimestamp)
+
+                val sensorEventData = SensorEvent(
+                    dimensionData,
+                    "lamp.call_log",
+                    istTimestamp.toDouble()
+                )
+
+                Log.d(TAG, "[$currentTime] Sending ${callLogs.size} call logs to listener")
+                sensorListener.getCallLogs(sensorEventData)
+            } else {
+                Log.d(TAG, "[$currentTime] No call logs to process")
+            }
+
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "[$currentTime] Column not found in cursor: ${e.message}")
+        } catch (e: Exception) {
+            Log.e(TAG, "[$currentTime] Error processing cursor: ${e.message}")
+        }
+    }
+
+    private fun getCallType(type: Int): String = when (type) {
+        CallLog.Calls.INCOMING_TYPE -> "INCOMING"
+        CallLog.Calls.OUTGOING_TYPE -> "OUTGOING"
+        CallLog.Calls.MISSED_TYPE -> "MISSED"
+        CallLog.Calls.VOICEMAIL_TYPE -> "VOICEMAIL"
+        CallLog.Calls.REJECTED_TYPE -> "REJECTED"
+        CallLog.Calls.BLOCKED_TYPE -> "BLOCKED"
+        else -> "UNKNOWN"
+    }
+
+    // Fix 12: Add method to handle cleanup when sensor is no longer needed
+    fun cleanup() {
+        val currentTime = getCurrentISTTime()
+        Log.d(TAG, "[$currentTime] Cleaning up CallLogsData resources")
+        clearCallbacks()
+        shouldCollectData = false
+        isInCooldownPeriod = false
+    }
+}
