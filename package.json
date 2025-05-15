@@ -39,7 +39,7 @@
     "@rjsf/material-ui": "^5.8.1",
     "@rjsf/utils": "^5.8.1",
     "@rjsf/validator-ajv8": "^5.8.1",
-    "ajv": "^8.12.0",
+    "ajv": "6.12.6",
     "ajv-keywords": "^5.1.0",
     "axios": "^1.7.9",
     "classnames": "^2.3.1",
@@ -105,12 +105,12 @@
   },
   "scripts": {
     "preinstall": "npx npm-force-resolutions",
-    "start": "node buildEnv dev && react-scripts start",
-    "build-test": "node buildEnv test && react-scripts build",
-    "start-test": "node buildEnv test && react-scripts start",
+    "start": "node buildEnv.js dev && react-scripts start",
+    "build-test": "node buildEnv.js test && react-scripts build",
+    "start-test": "node buildEnv.js test && react-scripts start",
     "start-sw": "http-server -p 3000 ./build",
     "test": "echo \"no tests configured\"",
-    "build": "node --max-old-space-size=8192 buildEnv prod && node --max-old-space-size=8192 node_modules/react-scripts/scripts/build.js",
+    "build": "node --max-old-space-size=8192 buildEnv.js prod && node --max-old-space-size=8192 node_modules/react-scripts/scripts/build.js",
     "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx,json,css,scss}'"
   },
   "husky": {
