@@ -88,8 +88,9 @@ export default function SharedStudiesList({
       setLoading(true)
       getAllStudies()
       getSharedStudies()
+      setLoading(false)
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    studies !== null && (studies || []).length > 0 ? null : 60000,
     true
   )
 

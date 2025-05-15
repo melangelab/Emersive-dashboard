@@ -620,7 +620,13 @@ export default function PatientStudyCreator({
                 </Typography>
                 <Divider light />
 
-                <Box display="flex" justifyContent="space-between" my={1}>
+                <Box
+                  display="grid"
+                  style={{
+                    gridTemplateColumns: "200px 1fr",
+                    rowGap: 2,
+                  }}
+                >
                   <Typography variant="body2" color="textPrimary">
                     {t("Purpose")}
                   </Typography>
@@ -640,18 +646,14 @@ export default function PatientStudyCreator({
                       }
                     })()}
                   </Typography>
-                </Box>
 
-                <Box display="flex" justifyContent="space-between" my={1}>
                   <Typography variant="body2" color="textPrimary">
                     {t("PI Institution")}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
                     {studyDetails.piInstitution}
                   </Typography>
-                </Box>
 
-                <Box display="flex" justifyContent="space-between" my={1}>
                   <Typography variant="body2" color="textPrimary">
                     {t("Study State")}
                   </Typography>
@@ -669,30 +671,28 @@ export default function PatientStudyCreator({
                       }
                     })()}
                   </Typography>
-                </Box>
-              </Box>
 
-              <Box my={2}>
-                <Typography variant="subtitle1" color="textSecondary">
-                  {t("Groups")}
-                </Typography>
-                <Divider light />
-                {groupNames.map((group, index) => (
-                  <Chip key={index} label={group} variant="outlined" style={{ margin: "4px" }} />
-                ))}
-              </Box>
-              {studyDetails.description && (
-                <Box my={2}>
-                  <Typography variant="subtitle1" color="textSecondary">
-                    {t("Description")}
+                  {studyDetails.description && (
+                    <>
+                      <Typography variant="body2" color="textPrimary">
+                        {t("Description")}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary" style={{ whiteSpace: "pre-line" }}>
+                        {studyDetails.description}
+                      </Typography>
+                    </>
+                  )}
+
+                  <Typography variant="body2" color="textPrimary">
+                    {t("Groups")}
                   </Typography>
-                  <Divider light />
                   <Typography variant="body2" color="textSecondary">
-                    {studyDetails.description}
+                    {groupNames.join(", ")}
                   </Typography>
                 </Box>
-              )}
+              </Box>
             </Box>
+
             <Button
               variant="contained"
               color="primary"

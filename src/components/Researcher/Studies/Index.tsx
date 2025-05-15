@@ -46,7 +46,7 @@ import DeleteStudy from "./DeleteStudy"
 import EditStudy from "./EditStudy"
 import { Service } from "../../DBService/DBService"
 import useInterval from "../../useInterval"
-import AddSubResearcher from "./AddSubResearcher"
+import AddSubResearcher, { getAccessLevelLabel } from "./AddSubResearcher"
 import { useLayoutStyles } from "../../GlobalStyles"
 import LAMP from "lamp-core"
 import { useSnackbar } from "notistack"
@@ -77,7 +77,7 @@ import ItemViewHeader from "../SharedStyles/ItemViewHeader"
 import StudyDetailItem from "./StudyDetailItem"
 import { ReactComponent as SaveIcon } from "../../../icons/NewIcons/floppy-disks.svg"
 import { ReactComponent as SaveFilledIcon } from "../../../icons/NewIcons/floppy-disks-filled.svg"
-import { fetchPostData } from "../SaveResearcherData"
+import { fetchGetData, fetchPostData } from "../SaveResearcherData"
 
 export const studycardStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -382,6 +382,21 @@ export const studycardStyles = makeStyles((theme: Theme) =>
       "&.active path": {
         fill: "#215F9A",
       },
+    },
+    sharedCard: {
+      background: "#F8F4FF", // Light purple background
+      border: "1px solid #d8aedf ",
+      position: "relative",
+    },
+    sharedBadge: {
+      position: "absolute",
+      bottom: "8px",
+      right: "8px",
+      background: "#d8aedf",
+      color: "white",
+      padding: "2px 8px",
+      borderRadius: "12px",
+      fontSize: "0.75rem",
     },
   })
 )
@@ -767,6 +782,29 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
+export const ACCESS_LEVELS = {
+  VIEW: 1,
+  EDIT: 2,
+  ALL: 4,
+}
+
+export const getResearcherAccessLevel = (study, researcherId) => {
+  const researcher = study.sub_researchers?.find((r) => r.ResearcherID === researcherId)
+  return researcher?.access_scope || null
+}
+
+export const canEditStudy = (study, researcherId) => {
+  if (!study.isShared) return true // Owner has full rights
+  const accessLevel = getResearcherAccessLevel(study, researcherId)
+  return accessLevel === ACCESS_LEVELS.EDIT || accessLevel === ACCESS_LEVELS.ALL
+}
+
+export const canViewStudy = (study, researcherId) => {
+  if (!study.isShared) return true // Owner has full rights
+  const accessLevel = getResearcherAccessLevel(study, researcherId)
+  return accessLevel >= ACCESS_LEVELS.VIEW
+}
+
 export const ModularTable = ({
   data,
   columns,
@@ -905,7 +943,7 @@ export default function StudiesList({
   const [search, setSearch] = useState(null)
   const [allStudies, setAllStudies] = useState(null)
   const [newStudy, setNewStudy] = useState(null)
-  const [sharedStudies, setSharedstudies] = useState<{ [key: string]: any[] }>({})
+  const [sharedStudies, setSharedStudies] = useState<Array<any>>([])
   const [loading, setLoading] = useState(true)
   const layoutClasses = useLayoutStyles()
   // const [showDetails, setShowDetails] = useState(false)
@@ -932,6 +970,7 @@ export default function StudiesList({
   const [viewingStudy, setViewingStudy] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [triggerSave, setTriggerSave] = useState(false)
+  const [allresearchers, setAllResearchers] = useState([])
 
   const handleOpenSuspendDialog = (study) => {
     setStudyToSuspend(study)
@@ -1000,6 +1039,11 @@ export default function StudiesList({
   }
   const handleUpdateStudy = async (studyId, updatedStudy) => {
     try {
+      const study = allStudies.find((s) => s.id === studyId)
+      if (!canEditStudy(study, researcherId)) {
+        enqueueSnackbar(t("You don't have permission to update this study"), { variant: "error" })
+        return
+      }
       setLoading(true)
       LAMP.Study.update(studyId, updatedStudy)
         .then((res) => {
@@ -1058,46 +1102,7 @@ export default function StudiesList({
       enqueueSnackbar(t("Failed to update study: ") + err.message, { variant: "error" })
     }
   }
-  // const handleUpdateStudy = async (studyId, study) => {
-  //   try {
-  //     const updatedStudy = {
-  //       ...study,
-  //       ...(formState[studyId] || {})
-  //     }
-  //     const fieldsToUpdate = [ 'name', 'description', 'purpose', 'studyType', 'hasFunding', 'fundingAgency', 'hasEthicsPermission', 'ethicsPermissionDoc', 'mobile', 'email', 'state', 'piInstitution', 'collaboratingInstitutions', 'timestamps'
-  //     ]
-  //     LAMP.Study.update(studyId, updatedStudy)
-  //     .then((res) => {
-  //       Service.update("studies", {
-  //         studies: [{
-  //           id: studyId,
-  //           ...updatedStudy
-  //         }]
-  //       }, "name", "id")
-  //       Service.updateMultipleKeys(
-  //         "studies",
-  //         {
-  //           studies: [{
-  //             id: studyId,
-  //             ...updatedStudy  // This contains all updated fields
-  //           }]
-  //         },
-  //         fieldsToUpdate,
-  //         "id"
-  //       )
-  //       })
-  //     .catch((error) => {
-  //       console.log("error updating group to newly created study", error)
-  //     })
-  //     enqueueSnackbar(t("Study updated successfully"), { variant: "success" })
-  //     setEditStudyId(null)
-  //     setFormState({})
-  //     getAllStudies()
-  //     handleUpdatedStudyObject(study)
-  //   } catch (err) {
-  //     enqueueSnackbar(t("Failed to update study: ") + err.message, { variant: "error" })
-  //   }
-  // }
+
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
   const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
   const stats = (study) => {
@@ -1148,38 +1153,23 @@ export default function StudiesList({
   }
 
   const getSharedStudies = async () => {
-    let authId = researcherId
-    let authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
-    let bodyData = {
-      id: researcherId,
+    try {
+      const sharedStudiesData = await Service.getAll("sharedstudies")
+      setSharedStudies(sharedStudiesData || [])
+    } catch (error) {
+      console.error("Error getting shared studies from ServiceDB:", error)
+      setSharedStudies([])
     }
-    await fetchPostData(authString, authId, "sharedstudies", "researcher", "POST", bodyData).then((studyData) => {
-      // let newStudyId = studyData.data
-      console.log("shared studies from server", studyData)
-      Service.addData("sharedstudies", studyData.data)
-    })
-    const studyData = await fetchPostData(authString, authId, "sharedstudies", "researcher", "POST", bodyData)
-    const ownerStudiesMap = studyData.data.reduce((acc, s) => {
-      const owner = s.parent
-      if (!acc[owner]) {
-        acc[owner] = []
-      }
-      acc[owner].push({
-        ...s,
-        isShared: true,
-      })
-      return acc
-    }, {})
-    setSharedstudies(ownerStudiesMap)
-    Service.addData("sharedstudies", ownerStudiesMap)
   }
 
   useInterval(
     () => {
       setLoading(true)
       getAllStudies()
+      setLoading(false)
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    // studies !== null && (studies || []).length > 0 ? null : 60000,
+    (!studies || studies.length === 0) && (!props.sharedstudies || props.sharedstudies.length === 0) ? 60000 : null,
     true
   )
 
@@ -1197,25 +1187,38 @@ export default function StudiesList({
     combineStudies()
   }, [studies, sharedStudies])
 
+  useEffect(() => {
+    const fetchResearchers = async () => {
+      try {
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        const response = await fetchGetData(authString, `researcher/others/list`, "researcher")
+        setAllResearchers(response.data)
+      } catch (error) {
+        console.error("Error fetching researchers:", error)
+      }
+    }
+
+    fetchResearchers()
+  }, [])
+
+  const getparent = (parent) => {
+    const researcher = allresearchers.find((r) => r.id === parent)
+    return researcher ? researcher.name : parent
+    // fallback to ID if name not found
+  }
   const combineStudies = () => {
-    let combinedStudies = [...(studies || [])]
-
-    // Add all shared studies to the combined list
-    Object.values(sharedStudies).forEach((studyArray) => {
-      combinedStudies = [...combinedStudies, ...(studyArray as any[])]
-    })
-
+    const combinedStudies = [...(studies || []).map((study) => ({ ...study, isShared: false })), ...sharedStudies]
     setAllStudies(combinedStudies)
   }
   const searchFilterStudies = async () => {
     if (!!search && search !== "") {
-      let studiesList: any = await Service.getAll("studies")
-      let sharedStudiesList = []
-      Object.values(sharedStudies).forEach((studyArray) => {
-        sharedStudiesList = [...sharedStudiesList, ...studyArray]
-      })
-      studiesList = [...studiesList, ...sharedStudiesList]
-      let newStudies = studiesList.filter((i) => i.name?.toLowerCase()?.includes(search?.toLowerCase()))
+      const studiesList = await Service.getAll("studies")
+      const sharedStudiesList = await Service.getAll("sharedstudies")
+      const allStudiesList = [
+        ...(studiesList || []).map((study) => ({ ...study, isShared: false })),
+        ...(sharedStudiesList || []),
+      ]
+      let newStudies = allStudiesList.filter((i) => i.name?.toLowerCase()?.includes(search?.toLowerCase()))
       setAllStudies(newStudies)
     } else {
       getAllStudies()
@@ -1267,7 +1270,7 @@ export default function StudiesList({
     {
       id: "isShared",
       label: "Ownership",
-      value: (s) => (s.isShared ? "Shared with me" : "Owner"),
+      value: (s) => (s.isShared ? `Shared by ${getparent(s.parent)}` : "Owner"),
       visible: true,
       sortable: true,
     },
@@ -1320,6 +1323,10 @@ export default function StudiesList({
   }, [allStudies])
 
   const handleViewStudy = (study) => {
+    if (!canViewStudy(study, researcherId)) {
+      enqueueSnackbar(t("You don't have permission to view this study"), { variant: "error" })
+      return
+    }
     console.log(study)
     setViewingStudy(study)
     setIsEditing(false)
@@ -1334,6 +1341,11 @@ export default function StudiesList({
   }
 
   const handleEditStudy = () => {
+    if (!viewingStudy || !canEditStudy(viewingStudy, researcherId)) {
+      enqueueSnackbar(t("You don't have permission to edit this study"), { variant: "error" })
+      return
+    }
+
     if (isEditing) {
       setIsEditing(false)
     } else {
@@ -1343,6 +1355,10 @@ export default function StudiesList({
   }
 
   const handleSaveStudy = () => {
+    if (!viewingStudy || !canEditStudy(viewingStudy, researcherId)) {
+      enqueueSnackbar(t("You don't have permission to save changes to this study"), { variant: "error" })
+      return
+    }
     setTriggerSave(true)
   }
 
@@ -1493,13 +1509,21 @@ export default function StudiesList({
     }
 
     const renderCell = (column: any, row: any) => {
+      const hasEditAccess = canEditStudy(row, researcherId)
+      console.log("hasEditAccess", hasEditAccess)
       const columnKey = column.id
       const value = column.value(row)
       if (columnKey === "isShared") {
         return (
           <div className={classes.cellContent}>
             {row.isShared ? (
-              <Chip label="Shared with me" size="small" style={{ backgroundColor: "#E3F2FD", color: "#1976D2" }} />
+              <Chip
+                label={`Shared by ${getparent(row.parent)}(${getAccessLevelLabel(
+                  getResearcherAccessLevel(row, researcherId)
+                )})`}
+                size="small"
+                style={{ backgroundColor: "#E3F2FD", color: "#1976D2" }}
+              />
             ) : (
               "Owner"
             )}
@@ -1508,7 +1532,10 @@ export default function StudiesList({
       }
       // Check if this cell should be editable
       const isEditable =
-        editableColumns.includes(columnKey) && activeButton.action === "edit" && activeButton.id === row.id
+        editableColumns.includes(columnKey) &&
+        activeButton.action === "edit" &&
+        activeButton.id === row.id &&
+        hasEditAccess
       // const isEditable = editableColumns.includes(columnKey) &&
       // activeButton.id === row.id &&
       // activeButton.action === "edit" &&
@@ -1641,80 +1668,87 @@ export default function StudiesList({
             />
           )}
         </Box>
-        <Box component="span" className={classes.actionIcon}>
-          {activeButton.id === study.id && activeButton.action === "edit" ? (
-            <EditFilledIcon
-              className="active"
+        {canEditStudy(study, researcherId) && (
+          <>
+            <Box component="span" className={classes.actionIcon}>
+              {activeButton.id === study.id && activeButton.action === "edit" ? (
+                <EditFilledIcon
+                  className="active"
+                  onClick={() => {
+                    handleEditClick(study)
+                  }}
+                />
+              ) : (
+                <EditIcon
+                  onClick={() => {
+                    handleEditClick(study)
+                  }}
+                />
+              )}
+            </Box>
+            <Box component="span" className={classes.actionIcon}>
+              {activeButton.id === study.id && activeButton.action === "save" ? (
+                <SaveFilledIcon
+                  className="active"
+                  onClick={() => {
+                    setActiveButton({ id: study.id, action: "save" })
+                    if (Object.keys(editedData).length > 0) {
+                      handleSaveClick(study)
+                    } else {
+                      enqueueSnackbar("No changes made for updating.", { variant: "info", autoHideDuration: 1000 })
+                    }
+                    setActiveButton({ id: null, action: null })
+                  }}
+                />
+              ) : (
+                <SaveIcon
+                  className={!Object.keys(editedData).length ? classes.disabledIcon : ""}
+                  onClick={() => {
+                    setActiveButton({ id: study.id, action: "save" })
+                    if (Object.keys(editedData).length > 0) {
+                      handleSaveClick(study)
+                    } else {
+                      enqueueSnackbar("No changes made for updating.", { variant: "info", autoHideDuration: 1000 })
+                    }
+                    setActiveButton({ id: null, action: null })
+                  }}
+                />
+              )}
+            </Box>
+          </>
+        )}
+        {canEditStudy(study, researcherId) && (
+          <>
+            <Box component="span" className={classes.actionIcon}>
+              {studyToSuspend?.id === study.id ? (
+                <SuspendFilledIcon
+                  className="selected"
+                  onClick={() => {
+                    setActiveButton({ id: study.id, action: "suspend" })
+                    handleOpenSuspendDialog(study)
+                  }}
+                />
+              ) : (
+                <SuspendIcon
+                  onClick={() => {
+                    setActiveButton({ id: study.id, action: "suspend" })
+                    handleOpenSuspendDialog(study)
+                  }}
+                />
+              )}
+            </Box>
+          </>
+        )}
+        {!study.isShared && (
+          <Box component="span" className={classes.actionIcon}>
+            <DeleteIcon
               onClick={() => {
-                handleEditClick(study)
+                setActiveButton({ id: study.id, action: "delete" })
+                handleOpenDialog(study, "delete")
               }}
             />
-          ) : (
-            <EditIcon
-              onClick={() => {
-                handleEditClick(study)
-              }}
-            />
-          )}
-        </Box>
-        <Box component="span" className={classes.actionIcon}>
-          {activeButton.id === study.id && activeButton.action === "save" ? (
-            <SaveFilledIcon
-              className="active"
-              onClick={() => {
-                setActiveButton({ id: study.id, action: "save" })
-                if (Object.keys(editedData).length > 0) {
-                  handleSaveClick(study)
-                } else {
-                  enqueueSnackbar("No changes made for updating.", { variant: "info", autoHideDuration: 1000 })
-                }
-                setActiveButton({ id: null, action: null })
-              }}
-            />
-          ) : (
-            <SaveIcon
-              className={!Object.keys(editedData).length ? classes.disabledIcon : ""}
-              onClick={() => {
-                setActiveButton({ id: study.id, action: "save" })
-                if (Object.keys(editedData).length > 0) {
-                  handleSaveClick(study)
-                } else {
-                  enqueueSnackbar("No changes made for updating.", { variant: "info", autoHideDuration: 1000 })
-                }
-                setActiveButton({ id: null, action: null })
-              }}
-            />
-          )}
-        </Box>
-        <Box component="span" className={classes.actionIcon}>
-          {studyToSuspend?.id === study.id ? (
-            <SuspendFilledIcon
-              className="selected"
-              onClick={() => {
-                setActiveButton({ id: study.id, action: "suspend" })
-                handleOpenSuspendDialog(study)
-              }}
-            />
-          ) : (
-            <SuspendIcon
-              onClick={() => {
-                setActiveButton({ id: study.id, action: "suspend" })
-                handleOpenSuspendDialog(study)
-              }}
-            />
-          )}
-        </Box>
-
-        {/* {props.authType === "admin" && ( */}
-        <Box component="span" className={classes.actionIcon}>
-          <DeleteIcon
-            onClick={() => {
-              setActiveButton({ id: study.id, action: "delete" })
-              handleOpenDialog(study, "delete")
-            }}
-          />
-        </Box>
-        {/* )} */}
+          </Box>
+        )}
 
         <Box component="span" className={classes.actionIcon}>
           {props.activeButton?.id === study.id && props.activeButton?.action === "share" ? (
@@ -1833,33 +1867,6 @@ export default function StudiesList({
             }}
           />
         )}
-
-        {/* {currentStudy && (
-          <StudyDetailsDialog
-            study={currentStudy}
-            open={!!expandedStudyId}
-            onClose={() => setExpandedStudyId(null)}
-            onSave={(updatedStudy) => handleUpdateStudy(expandedStudyId, updatedStudy)}
-            editStudyId={expandedStudyId}
-            formatDate={formatDate}
-            researcherId={researcherId}
-          />
-        )} */}
-
-        {/* <StudyDetailsDialog
-          study={expandedStudyId ? allStudies.find(s => s.id === expandedStudyId) : null}
-          open={!!expandedStudyId}
-          onClose={() => setExpandedStudyId(null)}
-          onSave={(updatedStudy) => handleUpdateStudy(expandedStudyId, updatedStudy)}
-          editStudyId={expandedStudyId}
-          formatDate={formatDate}
-          researcherId={researcherId}
-          // study={study}
-          // open={expandedStudyId === study.id}
-          // onClose={() => setExpandedStudyId(null)}
-          // onSave={(updatedStudy) => handleUpdateStudy(study.id, updatedStudy)}
-          // editStudyId={study.id}
-        /> */}
         <Dialog
           open={suspendDialogOpen}
           onClose={handleCloseSuspendDialog}
@@ -1927,16 +1934,27 @@ export default function StudiesList({
             onPrevious={() => {
               const currentIndex = allStudies.findIndex((s) => s.id === viewingStudy.id)
               if (currentIndex > 0) {
-                setViewingStudy(allStudies[currentIndex - 1])
+                const previousStudy = allStudies[currentIndex - 1]
+                if (canViewStudy(previousStudy, researcherId)) {
+                  setViewingStudy(allStudies[currentIndex - 1])
+                } else {
+                  enqueueSnackbar(t("You don't have permission to view this study"), { variant: "error" })
+                }
               }
             }}
             onNext={() => {
               const currentIndex = allStudies.findIndex((s) => s.id === viewingStudy.id)
               if (currentIndex < allStudies.length - 1) {
-                setViewingStudy(allStudies[currentIndex + 1])
+                const nextStudy = allStudies[currentIndex + 1]
+                if (canViewStudy(nextStudy, researcherId)) {
+                  setViewingStudy(allStudies[currentIndex + 1])
+                } else {
+                  enqueueSnackbar(t("You don't have permission to view this study"), { variant: "error" })
+                }
               }
             }}
             onClose={handleCloseViewStudy}
+            disabledBtns={!canEditStudy(viewingStudy, researcherId)}
           />
         ) : (
           <Header
@@ -1984,7 +2002,9 @@ export default function StudiesList({
                               </Typography>
                               {study.isShared && (
                                 <Chip
-                                  label="Shared with me"
+                                  label={`Shared by ${getparent(study.parent)}(${getAccessLevelLabel(
+                                    getResearcherAccessLevel(study, researcherId)
+                                  )})`}
                                   size="small"
                                   style={{
                                     backgroundColor: "#E3F2FD",
@@ -2235,33 +2255,38 @@ export default function StudiesList({
                                 }}
                               />
                             )}
-                            {studyToSuspend?.id === study.id ? (
-                              <SuspendFilledIcon
-                                className={`${studycardclasses.actionIcon} selected`}
-                                onClick={() => {
-                                  setActiveButton({ id: study.id, action: "suspend" })
-                                  handleOpenSuspendDialog(study)
-                                }}
-                              />
-                            ) : (
-                              <SuspendIcon
-                                className={`${studycardclasses.actionIcon} ${
-                                  studyToSuspend?.id === study.id ? "selected" : ""
-                                }`}
-                                onClick={() => {
-                                  setActiveButton({ id: study.id, action: "suspend" })
-                                  handleOpenSuspendDialog(study)
-                                }}
-                              />
+                            {canEditStudy(study, researcherId) && (
+                              <>
+                                {studyToSuspend?.id === study.id ? (
+                                  <SuspendFilledIcon
+                                    className={`${studycardclasses.actionIcon} selected`}
+                                    onClick={() => {
+                                      setActiveButton({ id: study.id, action: "suspend" })
+                                      handleOpenSuspendDialog(study)
+                                    }}
+                                  />
+                                ) : (
+                                  <SuspendIcon
+                                    className={`${studycardclasses.actionIcon} ${
+                                      studyToSuspend?.id === study.id ? "selected" : ""
+                                    }`}
+                                    onClick={() => {
+                                      setActiveButton({ id: study.id, action: "suspend" })
+                                      handleOpenSuspendDialog(study)
+                                    }}
+                                  />
+                                )}
+                              </>
                             )}
                             {/* {props.authType == "admin" && ( */}
-                            <DeleteStudy
-                              study={study}
-                              deletedStudy={handleDeletedStudy}
-                              researcherId={researcherId}
-                              setActiveButton={setActiveButton}
-                            />
-                            {/* )} */}
+                            {!study.isShared && (
+                              <DeleteStudy
+                                study={study}
+                                deletedStudy={handleDeletedStudy}
+                                researcherId={researcherId}
+                                setActiveButton={setActiveButton}
+                              />
+                            )}
                             {activeButton.id === study.id && activeButton.action === "share" ? (
                               <SRAddFilledIcon
                                 className={`${studycardclasses.actionIcon} active`}
@@ -2302,51 +2327,6 @@ export default function StudiesList({
                             )}
                           </Box>
                         </Paper>
-                        {/* </Grid>
- 
-                  <Grid item lg={6} xs={12} key={study.id}> */}
-                        {/* <Box display="flex" p={1} className={classes.studyMain}>
-                      <Box flexGrow={1}>
-                        <EditStudy
-                          study={study}
-                          upatedDataStudy={handleUpdatedStudyObject}
-                          allStudies={allStudies}
-                          researcherId={researcherId}
-                        />
-                      </Box>
-                      <AddSubResearcher
-                        study={study}
-                        upatedDataStudy={handleUpdatedStudyObject}
-                        researcherId={researcherId}
-                        handleShareUpdate={(studyid, updatedStudy) => handleUpdateStudy(studyid, updatedStudy)}
-                      />
-                      {props.authType == "admin" && (
-                        <DeleteStudy study={study} deletedStudy={handleDeletedStudy} researcherId={researcherId} />
-                      )}
-                      {props.authType == "admin" && (
-                        <Fab
-                          size="small"
-                          color="primary"
-                          classes={{ root: classes.btnWhite }}
-                          onClick={() => {
-                            handleOpenSuspendDialog(study)
-                          }}
-                        >
-                          <Icon> {"block_outline"} </Icon>
-                        </Fab>
-                      )}
-                      <Fab
-                        size="small"
-                        color="primary"
-                        classes={{ root: classes.btnWhite }}
-                        onClick={() => {
-                          toggleStudyDetails(study.id)
-                        }}
-                      >
-                        <Icon> visibility
-                        </Icon>
-                      </Fab>
-                    </Box> */}
                         {selectedStudyForDialog && (
                           <AddParticipantToStudy
                             study={selectedStudyForDialog}

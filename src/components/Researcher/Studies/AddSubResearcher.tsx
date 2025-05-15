@@ -28,6 +28,7 @@ import { fetchGetData, fetchPostData } from "../SaveResearcherData"
 import { ReactComponent as SRAddIcon } from "../../../icons/NewIcons/users-alt.svg"
 import { ReactComponent as SRAddFilledIcon } from "../../../icons/NewIcons/users-alt-filled.svg"
 import { slideStyles } from "../ParticipantList/AddButton"
+import { ACCESS_LEVELS, getResearcherAccessLevel } from "./Index"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -75,6 +76,19 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
+export const getAccessLevelLabel = (scope) => {
+  switch (scope) {
+    case 1:
+      return "View"
+    case 2:
+      return "Edit"
+    case 4:
+      return "All"
+    default:
+      return "Unknown"
+  }
+}
+
 export default function AddSubResearcher({ study, upatedDataStudy, researcherId, open, onclose, ...props }) {
   const { enqueueSnackbar } = useSnackbar()
   const classes = useStyles()
@@ -86,6 +100,7 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
   const [confirmationOpen, setConfirmationOpen] = useState(false)
   const [changes, setChanges] = useState([])
   const [originalResearchers, setOriginalResearchers] = useState<{ [id: string]: { accessScope: number } }>({})
+  const [hasEditAccess, setHasEditAccess] = useState(false)
 
   // console.log("Study ID for adding sub-researcher:", study)
   useEffect(() => {
@@ -110,6 +125,9 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
         console.log("subResearchersWithAccessScope", subResearchersWithAccessScope)
         setOriginalResearchers(JSON.parse(JSON.stringify(subResearchersWithAccessScope)))
         setSelectedResearchers(JSON.parse(JSON.stringify(subResearchersWithAccessScope)))
+        const accessLevel = getResearcherAccessLevel(study, researcherId)
+        const canEdit = !study.isShared || accessLevel === ACCESS_LEVELS.EDIT || accessLevel === ACCESS_LEVELS.ALL
+        setHasEditAccess(canEdit)
         setLoading(false)
       } catch (error) {
         console.error("Error fetching researchers:", error)
@@ -155,28 +173,18 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
   }
 
   const handleSelect = (id, checked) => {
+    if (!hasEditAccess) return
     setSelectedResearchers((prev) => ({
       ...prev,
       [id]: checked ? { accessScope: 1 } : undefined, // Default access scope: 'view'
     }))
   }
   const handleAccessScopeChange = (id, scope) => {
+    if (!hasEditAccess) return
     setSelectedResearchers((prev) => ({
       ...prev,
       [id]: { ...prev[id], accessScope: scope },
     }))
-  }
-  const getAccessLevelLabel = (scope) => {
-    switch (scope) {
-      case 1:
-        return "View"
-      case 2:
-        return "Edit"
-      case 4:
-        return "All"
-      default:
-        return "Unknown"
-    }
   }
 
   const handleConfirmChanges = async () => {
@@ -301,6 +309,11 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
               <SRAddFilledIcon />
             </Box>
             <Typography variant="h6">ADD SUB-RESEARCHERS</Typography>
+            {!hasEditAccess && (
+              <Typography variant="body2" color="textSecondary" style={{ marginTop: 8 }}>
+                {t("You have view-only access. Changes cannot be made.")}
+              </Typography>
+            )}
             <Divider className={sliderclasses.divider} />
             <Box className={sliderclasses.content}>
               {loading ? (
@@ -317,6 +330,7 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
                           checked={!!selectedResearchers[researcher.id]}
                           onChange={(e) => handleSelect(researcher.id, e.target.checked)}
                           className={sliderclasses.checkbox}
+                          disabled={!hasEditAccess}
                         />
                       }
                       label={researcher.name || t("Unknown Researcher")}
@@ -326,6 +340,7 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
                         value={selectedResearchers[researcher.id].accessScope}
                         onChange={(e) => handleAccessScopeChange(researcher.id, e.target.value)}
                         className={sliderclasses.select}
+                        disabled={!hasEditAccess}
                       >
                         <MenuItem value={1}>{t("View")}</MenuItem>
                         <MenuItem value={2}>{t("Edit")}</MenuItem>
@@ -345,7 +360,7 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
                 onClick={handleAddResearchers}
                 color="primary"
                 variant="contained"
-                disabled={Object.keys(selectedResearchers).length === 0}
+                disabled={Object.keys(selectedResearchers).length === 0 || !hasEditAccess}
               >
                 {t("Review Changes")}
               </Button>
@@ -364,21 +379,15 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
               CONFIRM CHANGES
             </Typography>
             <Divider className={sliderclasses.divider} />
-
+            {!hasEditAccess && (
+              <Typography variant="body2" color="textSecondary" style={{ marginTop: 8 }}>
+                {t("You have view-only access. Changes cannot be made.")}
+              </Typography>
+            )}
             <Box className={sliderclasses.diffContainer}>
               <Typography variant="subtitle1" gutterBottom>
                 The following changes will be applied:
               </Typography>
-
-              {/* {changes.map((change, index) => (
-                <Box key={index} className={sliderclasses.diffRow} bgcolor="#e6ffed" p={2} borderRadius={1} mb={1}>
-                  <Typography variant="body2" style={{ fontFamily: "monospace" }}>
-                    <span style={{ color: "#22863a" }}>
-                      + Adding {change.researcher} with {change.accessLevel} access
-                    </span>
-                  </Typography>
-                </Box>
-              ))} */}
               {changes.length === 0 ? (
                 <Typography variant="body2">No changes to apply</Typography>
               ) : (
@@ -414,7 +423,11 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
             </Box>
 
             <Box className={sliderclasses.buttonContainer}>
-              <Button className={sliderclasses.button} onClick={() => setConfirmationOpen(false)}>
+              <Button
+                className={sliderclasses.button}
+                disabled={!hasEditAccess}
+                onClick={() => setConfirmationOpen(false)}
+              >
                 {t("Back")}
               </Button>
               <Button className={sliderclasses.submitbutton} onClick={handleConfirmChanges}>

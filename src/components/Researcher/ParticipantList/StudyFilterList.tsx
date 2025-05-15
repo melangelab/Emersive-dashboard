@@ -6,6 +6,7 @@ import MultipleSelect from "../../MultipleSelect"
 import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
+import { fetchGetData } from "../SaveResearcherData"
 
 export interface NewStudy {
   id?: string
@@ -82,25 +83,64 @@ export default function StudyFilterList({
   const [allStudies, setAllStudies] = useState([])
   const [selectAll, setSelectAll] = useState(false)
   const [deSelectAll, setDeselectAll] = useState(false)
-
+  const [researchers, setResearchers] = useState([])
   const headerClasses = useHeaderStyles()
 
   useEffect(() => {
-    refreshStudies()
+    // refreshStudies()
+    Promise.all([Service.getAll("studies"), Service.getAll("sharedstudies")]).then(
+      ([localStudiesData, sharedStudiesData]) => {
+        updateStudiesState(localStudiesData || [], sharedStudiesData || [])
+      }
+    )
   }, [])
 
+  // useEffect(() => {
+  //   refreshStudies()
+  // }, [studies])
+
   useEffect(() => {
-    refreshStudies()
-  }, [studies])
+    fetchResearchers()
+  }, [])
+
+  const fetchResearchers = async () => {
+    try {
+      const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+      const response = await fetchGetData(authString, `researcher/others/list`, "researcher")
+      setResearchers(response.data || [])
+    } catch (e) {
+      console.error("Failed to fetch researchers", e)
+    }
+  }
+
+  const updateStudiesState = (localStudies, sharedStudies) => {
+    const all = [...localStudies, ...sharedStudies]
+    setStuds(all)
+    const studiesArray = all.map((obj) => obj.name)
+    setAllStudies(studiesArray)
+
+    // Update counts immediately after studies are updated
+    const studiesData = filterStudyData(all)
+    setStudiesCount(studiesData)
+
+    console.log(all, studiesArray, "Updated studies state")
+  }
 
   const refreshStudies = () => {
-    Service.getAll("studies").then((data: any) => {
-      setStuds(data || [])
-      let studiesArray = (data || []).map(function (obj) {
-        return obj.name
+    Promise.all([Service.getAll("studies"), Service.getAll("sharedstudies")])
+      .then(([localStudiesData, sharedStudiesData]) => {
+        // const localStudies = localStudiesData || [];
+        // const sharedStudies = sharedStudiesData || [];
+        // const all = [...localStudies, ...sharedStudies];
+        // setStuds(all);
+        // const studiesArray = all.map((obj) => obj.name);
+        // setAllStudies(studiesArray);
+        // console.log(all, studiesArray, sharedStudies, "Filter all studies");
+        updateStudiesState(localStudiesData || [], sharedStudiesData || [])
       })
-      setAllStudies(studiesArray)
-    })
+      .catch((error) => {
+        console.error("Error fetching studies:", error)
+      })
   }
 
   useEffect(() => {
@@ -112,7 +152,10 @@ export default function StudyFilterList({
   }, [updateCount])
 
   useEffect(() => {
-    let studiesData = filterStudyData(studs)
+    // let studiesData = filterStudyData(studs)
+    // console.log("Filter study data", updateCount, type, studiesData)
+    let studiesData = studs ? filterStudyData(studs) : {}
+    console.log("Filter study data in studies change effect", updateCount, type, studiesData)
     setStudiesCount(studiesData)
   }, [studs])
 
@@ -121,11 +164,13 @@ export default function StudyFilterList({
       {},
       ...dataArray.map((item) => ({
         [item.name]:
-          type === "activities" || updateCount === 2
+          type === "participants" || updateCount === 1
+            ? item.participant_count
+            : type === "activities" || updateCount === 2
             ? item.activity_count
             : type === "sensors" || updateCount === 3
             ? item.sensor_count
-            : item.participant_count,
+            : 0,
       }))
     )
   }
@@ -170,7 +215,7 @@ export default function StudyFilterList({
                   color={
                     (getFilterTypeStorage() === 1 &&
                       item === "Select All" &&
-                      selectedStudies.length === studies.length) ||
+                      selectedStudies.length === studs.length) ||
                     (getFilterTypeStorage() === 2 && item === "Deselect All" && selectedStudies.length === 0) ||
                     (item === "Deselect All" && selectedStudies.length === 0)
                       ? "primary"

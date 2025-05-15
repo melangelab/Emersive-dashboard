@@ -59,7 +59,7 @@ import { useSnackbar } from "notistack"
 import ParticipantTableRow from "./ParticipantTableRow"
 import { Link } from "@material-ui/core"
 import { useQuery, formatDate_alph } from "../../Utils"
-import { ModularTable, useModularTableStyles } from "../Studies/Index"
+import { ACCESS_LEVELS, getResearcherAccessLevel, ModularTable, useModularTableStyles } from "../Studies/Index"
 import { ReactComponent as ArrowDropDownIcon } from "../../../icons/NewIcons/sort-circle-down.svg"
 import { ReactComponent as ArrowDropUpIcon } from "../../../icons/NewIcons/sort-circle-up.svg"
 import ParticipantName from "./ParticipantName"
@@ -83,6 +83,7 @@ import { ReactComponent as SaveIcon } from "../../../icons/NewIcons/floppy-disks
 import { ReactComponent as SaveFilledIcon } from "../../../icons/NewIcons/floppy-disks-filled.svg"
 import { ReactComponent as VisualiseIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
 import { ReactComponent as VisualiseFilledIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
+import { fetchGetData } from "../SaveResearcherData"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -237,6 +238,33 @@ export function getTimeAgo(language) {
   return new TimeAgo(currentLanguage)
 }
 
+export const getParticipantAccessLevel = (Participant, studies, researcherId, sharedStudies = []) => {
+  if (!Participant.isShared) return ACCESS_LEVELS.ALL // Owner has full rights
+  const ParticipantStudyId = Participant.study_id
+  let ParticipantStudy = studies.find((study) => study.id === ParticipantStudyId)
+  if (!ParticipantStudy && Array.isArray(sharedStudies)) {
+    ParticipantStudy = sharedStudies.find((study) => study.id === ParticipantStudyId)
+  }
+  if (!ParticipantStudy) {
+    console.log("Study not found for Participant", Participant.id, ParticipantStudyId)
+    return ACCESS_LEVELS.VIEW
+  }
+  const accessLevel = getResearcherAccessLevel(ParticipantStudy, researcherId)
+  return accessLevel
+}
+
+export const canEditParticipant = (Participant, studies, researcherId, sharedStudies = []) => {
+  if (!Participant.isShared) return true // Owner has full rights
+  const accessLevel = getParticipantAccessLevel(Participant, studies, researcherId, sharedStudies)
+  return accessLevel === ACCESS_LEVELS.EDIT || accessLevel === ACCESS_LEVELS.ALL
+}
+
+export const canViewParticipant = (Participant, studies, researcherId, sharedStudies = []) => {
+  if (!Participant.isShared) return true // Owner has full rights
+  const accessLevel = getParticipantAccessLevel(Participant, studies, researcherId, sharedStudies)
+  return accessLevel >= ACCESS_LEVELS.VIEW
+}
+
 // TODO: Traffic Lights with Last Survey Date + Login+device + # completed events
 export default function ParticipantList({
   studies,
@@ -250,6 +278,7 @@ export default function ParticipantList({
   mode,
   setOrder,
   order,
+  sharedstudies,
   ...props
 }) {
   const classes = useStyles()
@@ -276,6 +305,8 @@ export default function ParticipantList({
   const { t } = useTranslation()
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
   const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
+  const [allresearchers, setAllResearchers] = useState([])
+  console.log("sharedstudies", sharedstudies)
   const stats = (participant, study) => {
     return [
       {
@@ -299,6 +330,25 @@ export default function ParticipantList({
     ]
   }
 
+  const getParentResearcher = (parentResearcherId) => {
+    const researcher = allresearchers.find((r) => r.id === parentResearcherId)
+    // console.log("researcher", researcher, allresearchers)
+    return researcher ? researcher.name : parentResearcherId
+  }
+
+  useEffect(() => {
+    const fetchResearchers = async () => {
+      try {
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        const response = await fetchGetData(authString, `researcher/others/list`, "researcher")
+        setAllResearchers(response.data)
+      } catch (error) {
+        console.error("Error fetching researchers:", error)
+      }
+    }
+    fetchResearchers()
+  }, [])
+
   useEffect(() => {
     const fetchresearchername = async () => {
       const res = await LAMP.Researcher.view(researcherId)
@@ -311,8 +361,10 @@ export default function ParticipantList({
     () => {
       setLoading(true)
       getAllStudies()
+      setLoading(false)
     },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
+    // studies !== null && (studies || []).length > 0 ? null : 60000,
+    (!studies || studies.length === 0) && (!sharedstudies || sharedstudies.length === 0) ? 60000 : null,
     true
   )
 
@@ -346,20 +398,15 @@ export default function ParticipantList({
 
   const searchParticipants = (searchVal?: string) => {
     let searchTxt = searchVal ?? search
-    const selectedData = selected.filter((o) => studies.some(({ name }) => o === name))
+    const selectedstudiesData = selected.filter((o) => studies.some(({ name }) => o === name))
+    const selectedsharedData = sharedstudies
+      ? selected.filter((o) => sharedstudies?.some(({ name }) => o === name))
+      : []
+    const selectedData = [...selectedstudiesData, ...selectedsharedData]
     if (selectedData.length > 0) {
       setLoading(true)
       Service.getAll("participants").then((participantData) => {
         let filteredData = participantData || []
-        // // participantData = (participantData || []).filter((p) => p.is_deleted != true)
-        // if (!!searchTxt && searchTxt.trim().length > 0) {
-        //   participantData = (participantData || []).filter(
-        //     (i) => i.name?.includes(searchTxt) || i.id?.includes(searchTxt)
-        //   )
-        //   setParticipants(sortData(participantData, selectedData, "id"))
-        // } else {
-        //   setParticipants(sortData(participantData, selectedData, "id"))
-        // }
         if (filterParam) {
           filteredData = filteredData.filter((participant) => participant.id === filterParam)
         } else if (!!searchTxt && searchTxt.trim().length > 0) {
@@ -370,6 +417,8 @@ export default function ParticipantList({
           )
         }
         const sortedData = sortData(filteredData, selectedData, "id")
+        console.log("sortedData", sortedData)
+        console.log("participantData", participantData)
         setParticipants(sortedData)
         setPaginatedParticipants(sortedData.slice(page * rowCount, page * rowCount + rowCount))
         // setPaginatedParticipants(
@@ -385,6 +434,7 @@ export default function ParticipantList({
       setLoading(false)
     }
     setSelectedParticipants([])
+    setLoading(false)
   }
 
   const handleSearchData = (val: string) => {
@@ -425,6 +475,11 @@ export default function ParticipantList({
     setParticipantToUnSuspend(null)
   }
   const handleUpdateParticipant = async (pid, up) => {
+    const participant = participants.find((a) => a.id === pid)
+    if (participant && !canEditParticipant(participant, studies, researcherId, sharedstudies)) {
+      enqueueSnackbar(t("You don't have permission to update this activity"), { variant: "error" })
+      return
+    }
     try {
       setLoading(true)
       LAMP.Participant.update(pid, up)
@@ -534,6 +589,14 @@ export default function ParticipantList({
     { id: "mobile", label: "Mobile", value: (p) => p.mobile, visible: true },
     { id: "group", label: "Group", value: (p) => p.group_name || "-", visible: true },
     { id: "study", label: "Study", value: (p) => p.study_name, visible: true },
+    {
+      id: "ownership",
+      label: "Ownership",
+      // value: (a) => a.isShared ? `Shared` : "Owner",
+      value: (p) => getParentResearcher(p.parentResearcher) || getParentResearcher(researcherId),
+      visible: true,
+      sortable: true,
+    },
     { id: "userAge", label: "Age", value: (p) => p.userAge || "-", visible: false },
     { id: "gender", label: "Gender", value: (p) => p.gender || "-", visible: false },
     { id: "caregiverName", label: "Caregiver", value: (p) => p.caregiverName || "-", visible: false },
@@ -545,6 +608,40 @@ export default function ParticipantList({
     },
     { id: "isLoggedIn", label: "Login Status", value: (p) => p.isLoggedIn, visible: true },
   ])
+
+  useEffect(() => {
+    if (allresearchers && allresearchers.length > 0) {
+      setColumns((prevColumns) => {
+        // Find if ownership column already exists
+        const ownershipColIndex = prevColumns.findIndex((col) => col.id === "ownership")
+
+        if (ownershipColIndex >= 0) {
+          // Update existing ownership column
+          const updatedColumns = [...prevColumns]
+          updatedColumns[ownershipColIndex] = {
+            id: "ownership",
+            label: "Ownership",
+            value: (p) => getParentResearcher(p.parentResearcher) || getParentResearcher(researcherId),
+            visible: true,
+            sortable: true,
+          }
+          return updatedColumns
+        } else {
+          // Add ownership column
+          return [
+            ...prevColumns,
+            {
+              id: "ownership",
+              label: "Ownership",
+              value: (p) => getParentResearcher(p.parentResearcher) || getParentResearcher(researcherId),
+              visible: true,
+              sortable: true,
+            },
+          ]
+        }
+      })
+    }
+  }, [allresearchers])
 
   // and here we provide them here custom view for selected columns ps are we really doing that edit on click :/
   const ColumnSelector = ({ columns, setColumns }) => {
@@ -600,135 +697,6 @@ export default function ParticipantList({
       : "Not available"
   }
 
-  // old table view - shizz 2015
-  // const TableView = ({ participants, handleChange, selectedParticipants, ...props }) => (
-  //   <TableContainer component={Paper}>
-  //     <Table>
-  //       <TableHead>
-  //         <TableRow>
-  //           <TableCell>ID</TableCell>
-  //           <TableCell>Name</TableCell>
-  //           <TableCell>Study</TableCell>
-  //           <TableCell>Group</TableCell>
-  //           <TableCell>Last Active</TableCell>
-  //           <TableCell>Actions</TableCell>
-  //         </TableRow>
-  //       </TableHead>
-  //       <TableBody>
-  //         {participants?.map((participant) => (
-  //           <TableRow key={participant.id}>
-  //             <TableCell>{participant.id}</TableCell>
-  //             <TableCell>{participant.name}</TableCell>
-  //             <TableCell>{participant.study_name}</TableCell>
-  //             <TableCell>{participant.group_name || '-'}</TableCell>
-  //             <TableCell>{getTimeAgo(participant.timestamp)}</TableCell>
-  //             <TableCell>
-  //               <Box display="flex">
-  //                 <Fab
-  //                   size="small"
-  //                   className={classes.btnWhite}
-  //                   onClick={() => onParticipantSelect(participant)}
-  //                 >
-  //                   <Icon>visibility</Icon>
-  //                 </Fab>
-  //               </Box>
-  //             </TableCell>
-  //           </TableRow>
-  //         ))}
-  //       </TableBody>
-  //     </Table>
-  //   </TableContainer>
-  // )
-
-  // fw New TableView
-  // const TableView = ({ participants, handleChange, selectedParticipants, onParticipantSelect }) => (
-  //   <Box sx={{ width: "100%", overflow: "hidden" }}>
-  //     <ColumnSelector columns={columns} setColumns={setColumns} />
-  //     <TableContainer component={Paper} style={{ maxHeight: 440 }}>
-  //       <Table stickyHeader>
-  //         <TableHead>
-  //           <TableRow>
-  //             {columns
-  //               .filter((column) => column.visible)
-  //               .map((column) => (
-  //                 <TableCell key={column.id}>{column.label}</TableCell>
-  //               ))}
-  //             <TableCell
-  //               style={{
-  //                 position: "sticky",
-  //                 right: 0,
-  //                 background: "white",
-  //                 zIndex: 2,
-  //               }}
-  //             >
-  //               Actions
-  //             </TableCell>
-  //           </TableRow>
-  //         </TableHead>
-  //         <TableBody>
-  //           {participants?.map((participant) => (
-  //             <TableRow key={participant.id}>
-  //               {columns
-  //                 .filter((column) => column.visible)
-  //                 .map((column) => (
-  //                   <TableCell key={column.id}>{column.value(participant)}</TableCell>
-  //                 ))}
-  //               <TableCell
-  //                 style={{
-  //                   position: "sticky",
-  //                   right: 0,
-  //                   background: "white",
-  //                   zIndex: 1,
-  //                 }}
-  //               >
-  //                 <Box display="flex">
-  //                   <Fab
-  //                     size="small"
-  //                     className={classes.btnWhite}
-  //                     onClick={() => {
-  //                       console.log(participant)
-  //                       onParticipantSelect(participant.id)
-  //                     }}
-  //                   >
-  //                     <Icon>visibility</Icon>
-  //                   </Fab>
-  //                   <Credentials user={participant} participant={participant.id} />
-  //                   {props.authType === "admin" && !participant.systemTimestamps?.suspensionTime ? (
-  //                     <Fab
-  //                       size="small"
-  //                       className={classes.btnWhite}
-  //                       onClick={() => handleOpenSuspendDialog(participant)}
-  //                     >
-  //                       {/* <Icon>block</Icon> */}
-  //                       <Icon> {"block_outline"} </Icon>
-  //                     </Fab>
-  //                   ) : null}
-  //                 </Box>
-  //                 <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
-  //                   <DialogTitle>Suspend Study</DialogTitle>
-  //                   <DialogContent>
-  //                     <Typography>
-  //                       Are you sure you want to suspend the study "{participantToSuspend?.name}"?
-  //                     </Typography>
-  //                   </DialogContent>
-  //                   <DialogActions>
-  //                     <Button onClick={handleCloseSuspendDialog} color="secondary">
-  //                       Cancel
-  //                     </Button>
-  //                     <Button onClick={confirmSuspend} color="primary">
-  //                       Suspend
-  //                     </Button>
-  //                   </DialogActions>
-  //                 </Dialog>
-  //               </TableCell>
-  //             </TableRow>
-  //           ))}
-  //         </TableBody>
-  //       </Table>
-  //     </TableContainer>
-  //   </Box>
-  // )
-
   const [selectAll, setSelectAll] = useState(false)
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
@@ -757,6 +725,10 @@ export default function ParticipantList({
   }
 
   const handleEditParticipant = () => {
+    if (!viewingParticipant || !canEditParticipant(viewingParticipant, studies, researcherId, sharedstudies)) {
+      enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" })
+      return
+    }
     if (isEditing) {
       setIsEditing(false)
     } else {
@@ -766,6 +738,10 @@ export default function ParticipantList({
   }
 
   const handleSaveParticipant = () => {
+    if (!viewingParticipant || !canEditParticipant(viewingParticipant, studies, researcherId, sharedstudies)) {
+      enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" })
+      return
+    }
     setTriggerSave(true)
   }
 
@@ -802,6 +778,7 @@ export default function ParticipantList({
   }, [participants])
 
   const TableView_Mod = () => {
+    console.log("sharedstudies table", sharedstudies)
     const [sortConfig, setSortConfig] = useState({ field: "index", direction: "asc" })
     const [selectedRows, setSelectedRows] = useState([])
     const classes = useModularTableStyles()
@@ -834,6 +811,10 @@ export default function ParticipantList({
     }
 
     const handleEditClick = (participant) => {
+      if (!canEditParticipant(participant, studies, researcherId, sharedstudies)) {
+        enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" })
+        return
+      }
       if (activeButton.id === participant.id && activeButton.action === "edit") {
         // Cancel edit mode
         setEditingParticipant(null)
@@ -848,6 +829,10 @@ export default function ParticipantList({
     }
 
     const handleSaveClick = async (participant) => {
+      if (!canEditParticipant(participant, studies, researcherId, sharedstudies)) {
+        enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" })
+        return
+      }
       if (Object.keys(editedData).length > 0) {
         const errors = validateFields(editedData)
 
@@ -898,6 +883,10 @@ export default function ParticipantList({
       console.log("confirmation dialog  value ", confirmationDialog, selectedParticipant)
     }, [confirmationDialog])
     const handleDeleteClick = (participant) => {
+      if (!canEditParticipant(participant, studies, researcherId, sharedstudies)) {
+        enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" })
+        return
+      }
       setSelectedParticipant(participant)
       setConfirmationDialog(true)
       setActiveButton({ id: participant.id, action: "delete" })
@@ -914,6 +903,12 @@ export default function ParticipantList({
           }
           await LAMP.Type.setAttachment(selectedParticipant.id, "me", "lamp.name", null)
           await LAMP.Participant.delete(selectedParticipant.id)
+          await LAMP.Credential.list(selectedParticipant.id).then((cred) => {
+            cred = cred.filter((c) => c.hasOwnProperty("origin"))
+            cred.map((each) => {
+              LAMP.Credential.delete(selectedParticipant.id, each["access_key"])
+            })
+          })
           await Service.delete("participants", [selectedParticipant.id])
           await Service.updateCount("studies", selectedParticipant.study_id, "participant_count", 1, 1)
           enqueueSnackbar(t("Participant deleted successfully"), { variant: "success" })
@@ -963,7 +958,8 @@ export default function ParticipantList({
         editableColumns.includes(columnKey) &&
         // editingParticipant?.id === row.id &&
         activeButton.id === row.id &&
-        activeButton.action === "edit"
+        activeButton.action === "edit" &&
+        canEditParticipant(row, studies, researcherId, sharedstudies)
 
       if (!isEditable) {
         // Handle special non-editable displays
@@ -1133,70 +1129,80 @@ export default function ParticipantList({
               />
             )}
           </Box>
-          <Box component="span" className={classes.actionIcon}>
-            {activeButton.id === participant.id && activeButton.action === "edit" ? (
-              <EditFilledIcon className="active" onClick={() => handleEditClick(participant)} />
-            ) : (
-              <EditIcon onClick={() => handleEditClick(participant)} />
-            )}
-          </Box>
-          <Box component="span" className={classes.actionIcon}>
-            <SaveIcon
-              className={!Object.keys(editedData).length ? classes.disabledIcon : ""}
-              onClick={() => {
-                if (Object.keys(editedData).length > 0) {
-                  handleSaveClick(participant)
-                } else {
-                  enqueueSnackbar("No changes to save.", { variant: "info", autoHideDuration: 1000 })
-                }
-              }}
-            />
-          </Box>
-          <Box component="span" className={classes.actionIcon}>
-            <Credentials user={participant} />
-          </Box>
-          <Box component="span" className={classes.actionIcon}>
-            {!participant.systemTimestamps?.suspensionTime ? (
-              activeButton.id === participant.id && activeButton.action === "suspend" ? (
-                <SuspendFilledIcon
-                  className="active"
+
+          {canEditParticipant(participant, studies, researcherId, sharedstudies) && (
+            <>
+              <Box component="span" className={classes.actionIcon}>
+                {activeButton.id === participant.id && activeButton.action === "edit" ? (
+                  <EditFilledIcon className="active" onClick={() => handleEditClick(participant)} />
+                ) : (
+                  <EditIcon onClick={() => handleEditClick(participant)} />
+                )}
+              </Box>
+              <Box component="span" className={classes.actionIcon}>
+                <SaveIcon
+                  className={!Object.keys(editedData).length ? classes.disabledIcon : ""}
                   onClick={() => {
-                    setActiveButton({ id: participant.id, action: "suspend" })
-                    handleOpenSuspendDialog(participant, setActiveButton)
+                    if (Object.keys(editedData).length > 0) {
+                      handleSaveClick(participant)
+                    } else {
+                      enqueueSnackbar("No changes to save.", { variant: "info", autoHideDuration: 1000 })
+                    }
                   }}
                 />
-              ) : (
-                <SuspendIcon
-                  onClick={() => {
-                    setActiveButton({ id: participant.id, action: "suspend" })
-                    handleOpenSuspendDialog(participant, setActiveButton)
-                  }}
-                />
-              )
-            ) : activeButton.id === participant.id && activeButton.action === "suspend" ? (
-              <SuspendFilledIcon
-                className="active"
-                onClick={() => {
-                  setActiveButton({ id: participant.id, action: "suspend" })
-                  handleOpenUnSuspendDialog(participant, setActiveButton)
-                }}
-              />
-            ) : (
-              <SuspendIcon
-                onClick={() => {
-                  setActiveButton({ id: participant.id, action: "suspend" })
-                  handleOpenUnSuspendDialog(participant, setActiveButton)
-                }}
-              />
-            )}
-          </Box>
-          <Box component="span" className={classes.actionIcon}>
-            {activeButton.id === participant.id && activeButton.action === "delete" ? (
-              <DeleteFilledIcon className="active" onClick={() => handleDeleteClick(participant)} />
-            ) : (
-              <DeleteIcon onClick={() => handleDeleteClick(participant)} />
-            )}
-          </Box>
+              </Box>
+              <Box component="span" className={classes.actionIcon}>
+                <Credentials user={participant} />
+              </Box>
+              <Box component="span" className={classes.actionIcon}>
+                {!participant.systemTimestamps?.suspensionTime ? (
+                  activeButton.id === participant.id && activeButton.action === "suspend" ? (
+                    <SuspendFilledIcon
+                      className="active"
+                      onClick={() => {
+                        setActiveButton({ id: participant.id, action: "suspend" })
+                        handleOpenSuspendDialog(participant, setActiveButton)
+                      }}
+                    />
+                  ) : (
+                    <SuspendIcon
+                      onClick={() => {
+                        setActiveButton({ id: participant.id, action: "suspend" })
+                        handleOpenSuspendDialog(participant, setActiveButton)
+                      }}
+                    />
+                  )
+                ) : activeButton.id === participant.id && activeButton.action === "suspend" ? (
+                  <SuspendFilledIcon
+                    className="active"
+                    onClick={() => {
+                      setActiveButton({ id: participant.id, action: "suspend" })
+                      handleOpenUnSuspendDialog(participant, setActiveButton)
+                    }}
+                  />
+                ) : (
+                  <SuspendIcon
+                    onClick={() => {
+                      setActiveButton({ id: participant.id, action: "suspend" })
+                      handleOpenUnSuspendDialog(participant, setActiveButton)
+                    }}
+                  />
+                )}
+              </Box>
+            </>
+          )}
+
+          {!participant.isShared && (
+            <>
+              <Box component="span" className={classes.actionIcon}>
+                {activeButton.id === participant.id && activeButton.action === "delete" ? (
+                  <DeleteFilledIcon className="active" onClick={() => handleDeleteClick(participant)} />
+                ) : (
+                  <DeleteIcon onClick={() => handleDeleteClick(participant)} />
+                )}
+              </Box>
+            </>
+          )}
           {/* <Box component="span" className={classes.actionIcon}>
             {activeButton.id === participant.id && activeButton.action === "settings" ? (
               <CopyFilledIcon
@@ -1444,7 +1450,12 @@ export default function ParticipantList({
                           onSuspend={handleOpenSuspendDialog}
                           onUnSuspend={handleOpenUnSuspendDialog}
                           refreshParticipants={searchParticipants}
-                          researcherName={researcherName}
+                          researcherName={
+                            !eachParticipant.isShared
+                              ? researcherName
+                              : getParentResearcher(eachParticipant.parentResearcher)
+                          }
+                          sharedstudies={sharedstudies}
                         />
                       </Grid>
                     ))}

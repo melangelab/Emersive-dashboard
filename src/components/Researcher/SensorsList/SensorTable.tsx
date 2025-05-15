@@ -28,6 +28,7 @@ import LAMP from "lamp-core"
 import DetailModal from "./DetailModal"
 import { sensorConstraints } from "./SensorDialog"
 import { set } from "date-fns"
+import { canEditSensor } from "./Index"
 
 export interface SensorTableProps {
   sensors: any[]
@@ -47,6 +48,10 @@ export interface SensorTableProps {
   activeButton: any
   setActiveButton: any
   mode?: string
+  allresearchers?: any[]
+  studies?: Array<Object>
+  sharedstudies?: any[]
+  researcherId: string
 }
 
 const SensorTable: React.FC<SensorTableProps> = ({
@@ -67,6 +72,10 @@ const SensorTable: React.FC<SensorTableProps> = ({
   editableColumns,
   activeButton,
   setActiveButton,
+  allresearchers,
+  studies,
+  sharedstudies,
+  researcherId,
 }) => {
   const theme = useTheme()
   const mtstyles = useModularTableStyles()
@@ -79,6 +88,11 @@ const SensorTable: React.FC<SensorTableProps> = ({
   const [editingSensorFrequency, setEditingSensorFrequency] = useState(null)
   const [editingSensorDuration, setEditingSensorDuration] = useState(null)
   const [editingCellSensorSpec, setEditingCellSensorSpec] = useState(null)
+
+  const getParentResearcher = (parentResearcherId) => {
+    const researcher = allresearchers.find((r) => r.id === parentResearcherId)
+    return researcher ? researcher.name : parentResearcherId
+  }
 
   useEffect(() => {
     if (!sensorSpecs.length || editingSensor) {
@@ -485,6 +499,14 @@ const SensorTable: React.FC<SensorTableProps> = ({
         visible: true,
         sortable: true,
       },
+      ,
+      {
+        id: "ownership",
+        label: "Ownership",
+        getValue: (sensor) => getParentResearcher(sensor.parentResearcher) || getParentResearcher(researcherId),
+        visible: true,
+        sortable: true,
+      },
       {
         id: "statusInUsers",
         label: "Status in Participants",
@@ -558,7 +580,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
       return allColumns
         .map((col) => ({
           ...col,
-          visible: visibleColumns.includes(col.id) || col.id == "index",
+          visible: visibleColumns.includes(col.id) || col.id == "index" || col.id == "ownership",
         }))
         .filter((col) => col.visible)
     }
@@ -575,6 +597,8 @@ const SensorTable: React.FC<SensorTableProps> = ({
 
   // Action buttons for sensors
   const sensorActions = (sensor) => {
+    const canEdit = canEditSensor(sensor, studies, researcherId, sharedstudies)
+
     return (
       <>
         {sensor.isCommunity ? (
@@ -637,47 +661,49 @@ const SensorTable: React.FC<SensorTableProps> = ({
               />
             )}
 
-            {activeButton.id === sensor.id && activeButton.action === "edit" ? (
-              <EditFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: null, action: null })
-                  setEditingCellSensorSpec(null)
-                  setEditingSensorDuration(null)
-                  setEditingSensorFrequency(null)
-                  onEditSensor(sensor)
-                  // setEditingCellSensorSpec(sensor.spec)
-                }}
-              />
-            ) : (
-              <EditIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "edit" })
-                  onEditSensor(sensor)
-                  setEditingCellSensorSpec(sensor.spec)
-                }}
-              />
+            {canEdit && (
+              <>
+                {activeButton.id === sensor.id && activeButton.action === "edit" ? (
+                  <EditFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: null, action: null })
+                      setEditingCellSensorSpec(null)
+                      setEditingSensorDuration(null)
+                      setEditingSensorFrequency(null)
+                      onEditSensor(sensor)
+                      // setEditingCellSensorSpec(sensor.spec)
+                    }}
+                  />
+                ) : (
+                  <EditIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "edit" })
+                      onEditSensor(sensor)
+                      setEditingCellSensorSpec(sensor.spec)
+                    }}
+                  />
+                )}
+                {activeButton.id === sensor.id && activeButton.action === "save" ? (
+                  <SaveFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "save" })
+                      onSaveSensor(sensor)
+                    }}
+                  />
+                ) : (
+                  <SaveIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "save" })
+                      onSaveSensor(sensor)
+                    }}
+                  />
+                )}
+              </>
             )}
-
-            {activeButton.id === sensor.id && activeButton.action === "save" ? (
-              <SaveFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "save" })
-                  onSaveSensor(sensor)
-                }}
-              />
-            ) : (
-              <SaveIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "save" })
-                  onSaveSensor(sensor)
-                }}
-              />
-            )}
-
             {activeButton.id === sensor.id && activeButton.action === "copy" ? (
               <CopyFilledIcon
                 className={`${mtstyles.actionIcon} active`}
@@ -696,22 +722,26 @@ const SensorTable: React.FC<SensorTableProps> = ({
               />
             )}
 
-            {activeButton.id === sensor.id && activeButton.action === "delete" ? (
-              <DeleteFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "delete" })
-                  onDeleteSensor(sensor)
-                }}
-              />
-            ) : (
-              <DeleteIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "delete" })
-                  onDeleteSensor(sensor)
-                }}
-              />
+            {!sensor.isShared && (
+              <>
+                {activeButton.id === sensor.id && activeButton.action === "delete" ? (
+                  <DeleteFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "delete" })
+                      onDeleteSensor(sensor)
+                    }}
+                  />
+                ) : (
+                  <DeleteIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "delete" })
+                      onDeleteSensor(sensor)
+                    }}
+                  />
+                )}
+              </>
             )}
           </>
         )}

@@ -69,6 +69,24 @@ interface LampDB extends DBSchema {
     }
     indexes: { study_name: string; id: string }
   }
+  sharedstudies: {
+    key: string
+    value: {
+      id: string
+      name: string
+      participant_count: number
+      activity_count: number
+      sensor_count: number
+      gname: Array<string>
+      isShared: boolean
+      parent: string
+      sub_researchers?: {
+        ResearcherID: string
+        access_scope: number
+      }[]
+    }
+    indexes: { id: string }
+  }
 }
 
 export const dbPromise = idb.openDB<LampDB>(DATABASE_NAME, 1, {
@@ -95,6 +113,10 @@ export const dbPromise = idb.openDB<LampDB>(DATABASE_NAME, 1, {
       const sensors = lampDb.createObjectStore("sensors", { keyPath: "id" })
       sensors.createIndex("id", "id")
       sensors.createIndex("study_name", "study_name")
+    }
+    if (!lampDb.objectStoreNames.contains("sharedstudies")) {
+      const sharedstudies = lampDb.createObjectStore("sharedstudies", { keyPath: "id" })
+      sharedstudies.createIndex("id", "id", { unique: true })
     }
   },
 })

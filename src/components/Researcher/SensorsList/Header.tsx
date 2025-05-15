@@ -41,6 +41,7 @@ import { ReactComponent as TableViewFilledIcon } from "../../../icons/NewIcons/t
 import { ReactComponent as ColumnsIcon } from "../../../icons/NewIcons/columns-3.svg"
 import { ReactComponent as PrintIcon } from "../../../icons/NewIcons/print.svg"
 import { ReactComponent as DownloadIcon } from "../../../icons/NewIcons/progress-download.svg"
+import Download from "../../Download"
 
 function Profile({ title, authType }) {
   return (
@@ -196,7 +197,7 @@ export default function Header({
                 onClick={(event) => setColumnMenuAnchor(event.currentTarget)}
               />
               <PrintIcon className={headerclasses.actionIcon} />
-              <DownloadIcon className={headerclasses.actionIcon} />
+              <Download studies={studies} target="sensors" />
             </>
           )}
           <AddSensor
@@ -213,18 +214,19 @@ export default function Header({
           </Box>
         </Box>
       </Box>
-      {showFilterStudies && (
-        <Box>
-          <StudyFilterList
-            studies={studies}
-            researcherId={researcherId}
-            type="sensors"
-            showFilterStudies={showFilterStudies}
-            selectedStudies={selectedStudies}
-            setSelectedStudies={setSelectedStudies}
-          />
-        </Box>
-      )}
+      {/* {showFilterStudies && ( */}
+      <Box>
+        <StudyFilterList
+          studies={studies}
+          researcherId={researcherId}
+          type="sensors"
+          showFilterStudies={showFilterStudies}
+          selectedStudies={selectedStudies}
+          setSelectedStudies={setSelectedStudies}
+          updateCount={props.updateCount || 3}
+        />
+      </Box>
+      {/* )} */}
 
       {(selectedSensors || []).length > 0 && (
         <Box className={headerclasses.optionsMain}>
