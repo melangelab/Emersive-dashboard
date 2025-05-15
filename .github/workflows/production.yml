@@ -19,45 +19,6 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Create buildEnv.js file if missing
-        run: |
-          if [ ! -f buildEnv.js ]; then
-            cat > buildEnv.js << EOL
-            const fs = require('fs');
-            const path = require('path');
-
-            // Get environment argument
-            const env = process.argv[2] || 'dev';
-
-            // Define environment variables for different environments
-            const envVars = {
-              dev: {
-                REACT_APP_ENV: 'development',
-                // Add other development environment variables here
-              },
-              test: {
-                REACT_APP_ENV: 'test',
-                // Add test environment variables here
-              },
-              prod: {
-                REACT_APP_ENV: 'production',
-                // Add production environment variables here
-              }
-            };
-
-            // Create .env file content
-            const selectedEnv = envVars[env] || envVars.dev;
-            const envContent = Object.entries(selectedEnv)
-              .map(([key, value]) => \`\${key}=\${value}\`)
-              .join('\\n');
-
-            // Write to .env file
-            fs.writeFileSync(path.join(__dirname, '.env'), envContent);
-
-            console.log('.env file built successfully');
-            EOL
-          fi
-      
       - name: Create resolutions.json
         run: |
           echo '{"ajv":"6.12.6"}' > resolutions.json
@@ -90,45 +51,6 @@ jobs:
         with:
           node-version: 16.x
           cache: 'npm'
-      
-      - name: Create buildEnv.js file if missing
-        run: |
-          if [ ! -f buildEnv.js ]; then
-            cat > buildEnv.js << EOL
-            const fs = require('fs');
-            const path = require('path');
-
-            // Get environment argument
-            const env = process.argv[2] || 'dev';
-
-            // Define environment variables for different environments
-            const envVars = {
-              dev: {
-                REACT_APP_ENV: 'development',
-                // Add other development environment variables here
-              },
-              test: {
-                REACT_APP_ENV: 'test',
-                // Add test environment variables here
-              },
-              prod: {
-                REACT_APP_ENV: 'production',
-                // Add production environment variables here
-              }
-            };
-
-            // Create .env file content
-            const selectedEnv = envVars[env] || envVars.dev;
-            const envContent = Object.entries(selectedEnv)
-              .map(([key, value]) => \`\${key}=\${value}\`)
-              .join('\\n');
-
-            // Write to .env file
-            fs.writeFileSync(path.join(__dirname, '.env'), envContent);
-
-            console.log('.env file built successfully');
-            EOL
-          fi
       
       - name: Create resolutions.json
         run: |
