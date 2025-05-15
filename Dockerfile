@@ -1,6 +1,9 @@
 FROM node:16 as build
 WORKDIR /usr/src/app
 
+# Install jq first
+RUN apt-get update && apt-get install -y jq && apt-get clean
+
 # Copy package files first for better caching
 COPY package.json package-lock.json ./
 
