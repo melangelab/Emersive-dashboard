@@ -18,6 +18,8 @@ import { makeStyles } from "@material-ui/core/styles"
 import { slideStyles } from "./Researcher/ParticipantList/AddButton"
 import * as XLSX from "xlsx"
 import Papa from "papaparse"
+import { CircularProgress } from "@material-ui/core"
+import LAMP from "lamp-core"
 
 const useStyles = makeStyles((theme) => ({
   actionIcon: {
@@ -183,6 +185,44 @@ const useStyles = makeStyles((theme) => ({
     fontSize: "0.875rem",
     fontStyle: "italic",
   },
+  downloadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+  },
+  loadingSpinner: {
+    color: "#06B0F0",
+  },
+  downloadingText: {
+    color: theme.palette.text.secondary,
+    marginTop: theme.spacing(2),
+    textAlign: "center",
+  },
+  backdropFixed: {
+    pointerEvents: "none",
+  },
+  buttonLoadingContainer: {
+    display: "flex",
+    alignItems: "center",
+    gap: theme.spacing(1),
+  },
+  buttonProgress: {
+    color: "white",
+    position: "relative",
+  },
+  errorMessage: {
+    color: theme.palette.error.main,
+    textAlign: "center",
+    margin: theme.spacing(2),
+  },
 }))
 
 const ParticipantOptionsComponent = ({
@@ -278,6 +318,9 @@ function Download({ studies, target = "studies" }) {
   const [startDate, setStartDate] = useState(null)
   const [endDate, setEndDate] = useState(null)
   const [showOptionsPage, setShowOptionsPage] = useState(false)
+
+  const [downloadLoading, setDownloadLoading] = useState(false)
+  const [fetchedData, setFetchedData] = useState(null)
 
   console.log("Logging studies from inside the Download", studies)
 
@@ -383,6 +426,8 @@ function Download({ studies, target = "studies" }) {
   }) => {
     console.log("Selected studies:", selectedStudies)
     console.log("Selected groups:", selectedGroups)
+
+    const [downloadLoading, setDownloadLoading] = useState(false)
 
     // Initialize selectedItems based on finalSelectedItems
     const [selectedItems, setSelectedItems] = useState(() => {
@@ -572,7 +617,17 @@ function Download({ studies, target = "studies" }) {
 
     const link = document.createElement("a")
     link.href = url
-    link.download = `emersive_${target}_data.json`
+    if (target === "participants") {
+      if (selectedOption === "sensorEvents") {
+        link.download = `emersive_participants_sensor_events_data.json`
+      } else if (selectedOption === "activityEvents") {
+        link.download = `emersive_participants_activity_events_data.json`
+      } else {
+        link.download = `emersive_participants_data.json`
+      }
+    } else {
+      link.download = `emersive_${target}_data.json`
+    }
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -581,6 +636,7 @@ function Download({ studies, target = "studies" }) {
 
   // Function to download data as CSV with proper formatting
   const downloadAsCSV = (data) => {
+    console.log("Data to download as CSV:", data)
     // If downloading studies, filter out the fields that should not be downloaded
     if (target === "studies") {
       data = data.map((study) => {
@@ -624,14 +680,23 @@ function Download({ studies, target = "studies" }) {
 
     const link = document.createElement("a")
     link.href = url
-    link.download = `emersive_${target}_data.csv`
+    if (target === "participants") {
+      if (selectedOption === "sensorEvents") {
+        link.download = `emersive_participants_sensor_events_data.csv`
+      } else if (selectedOption === "activityEvents") {
+        link.download = `emersive_participants_activity_events_data.csv`
+      } else {
+        link.download = `emersive_participants_data.csv`
+      }
+    } else {
+      link.download = `emersive_${target}_data.csv`
+    }
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
   }
 
-  // Function to download data as Excel with proper formatting
   const downloadAsExcel = (data) => {
     // If downloading studies, filter out the fields that should not be downloaded
     if (target === "studies") {
@@ -653,30 +718,27 @@ function Download({ studies, target = "studies" }) {
         if (Array.isArray(item[key])) {
           flattened[key] = item[key].join(", ")
         } else if (typeof item[key] === "object" && item[key] !== null) {
-          flattened[key] = JSON.stringify(item[key])
+          // Handle nested objects - Truncate if needed to avoid Excel's 32767 character limit
+          const stringified = JSON.stringify(item[key])
+          flattened[key] = stringified.length > 32000 ? stringified.substring(0, 32000) + "..." : stringified
         } else {
-          flattened[key] = item[key]
+          // For primitive values, ensure they're strings and truncate if needed
+          const stringValue = String(item[key] || "")
+          flattened[key] = stringValue.length > 32000 ? stringValue.substring(0, 32000) + "..." : stringValue
         }
       }
 
       return flattened
     })
 
+    // Create worksheet with chunked data to avoid Excel's limits
     const worksheet = XLSX.utils.json_to_sheet(flattenedData)
 
     // Set column widths for better formatting
     const columnWidths = []
     for (const key in flattenedData[0] || {}) {
-      // Calculate the maximum width needed for this column
-      let maxWidth = key.length // Start with header width
-
-      // Check width of all values in this column
-      flattenedData.forEach((row) => {
-        const valueStr = String(row[key] || "")
-        maxWidth = Math.max(maxWidth, Math.min(50, valueStr.length)) // Cap at 50 chars
-      })
-
-      columnWidths.push({ wch: maxWidth + 2 }) // Add padding
+      // Set a reasonable default column width (don't try to match content exactly)
+      columnWidths.push({ wch: 30 }) // Fixed width for all columns
     }
 
     // Apply column widths
@@ -704,17 +766,87 @@ function Download({ studies, target = "studies" }) {
       }
     }
 
+    let fileName = ""
+
+    if (target === "participants") {
+      if (selectedOption === "sensorEvents") {
+        fileName = `emersive_participants_sensor_events_data.xlsx`
+      } else if (selectedOption === "activityEvents") {
+        fileName = `emersive_participants_activity_events_data.xlsx`
+      } else {
+        fileName = `emersive_participants_data.xlsx`
+      }
+    } else {
+      fileName = `emersive_${target}_data.xlsx`
+    }
+
     // Generate Excel file
-    XLSX.writeFile(workbook, `emersive_${target}_data.xlsx`)
+    XLSX.writeFile(workbook, fileName)
   }
 
   const fetchSensorEvents = async () => {
-    // Empty function as requested
-    console.log("Fetching sensor events...", {
-      participants: finalSelectedItems,
-      startDate,
-      endDate,
+    // Build participantsId from finalSelectedItems
+    const participantsId = finalSelectedItems.map((item) => item.id)
+
+    // Build sensorSpecs from selectedStudyObjects
+    const selectedStudyObjects = studies.filter((study) => selectedStudies[study.id])
+    console.log("Selected study objects:", selectedStudyObjects)
+
+    let sensorSpecsSet = new Set()
+    selectedStudyObjects.forEach((study) => {
+      const sensors =
+        study.sensors?.filter((sensor) => {
+          return !Object.keys(selectedGnames).length || (sensor.group && selectedGnames[`${study.id}-${sensor.group}`])
+        }) || []
+
+      sensors.forEach((sensor) => {
+        if (sensor.spec) {
+          sensorSpecsSet.add(sensor.spec)
+        }
+      })
     })
+
+    const sensorSpecs = Array.from(sensorSpecsSet)
+
+    if (participantsId.length === 0 || sensorSpecs.length === 0) {
+      alert("Please select at least one participant and one sensor type")
+      return
+    }
+
+    try {
+      const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+      const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+
+      // Build the query parameters
+      const params = new URLSearchParams()
+      params.append("participant_ids", participantsId.join(","))
+      params.append("sensors", sensorSpecs.join(","))
+      if (startDate) params.append("start_date", startDate)
+      if (endDate) params.append("end_date", endDate)
+
+      const response = await fetch(`${baseURL}/participant-sensor-events?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Basic " + btoa(authString),
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const mainData = data.data
+      console.log("Fetched sensor events data:", mainData)
+      // setFetchedData(mainData) // Set the fetched data here
+      return mainData
+    } catch (err) {
+      console.error("Error fetching sensor events:", err)
+      alert(`Failed to fetch sensor data: ${err.message}`)
+    } finally {
+      // setLoading(false)
+    }
   }
 
   const fetchActivityEvents = async () => {
@@ -724,42 +856,74 @@ function Download({ studies, target = "studies" }) {
       startDate,
       endDate,
     })
+    return []
   }
 
   const handleDownload = async () => {
     if (target === "participants") {
-      switch (selectedOption) {
-        case "onlyParticipants":
-          // Download participants data in selected format
-          switch (fileFormat) {
-            case "json":
-              downloadAsJSON(finalSelectedItems)
-              break
-            case "csv":
-              downloadAsCSV(finalSelectedItems)
-              break
-            case "excel":
-              downloadAsExcel(finalSelectedItems)
-              break
-            default:
-              console.error("Invalid file format selected")
-          }
-          break
+      let dataToDownload = finalSelectedItems
 
-        case "sensorEvents":
-          await fetchSensorEvents()
-          break
+      try {
+        setDownloadLoading(true)
 
-        case "activityEvents":
-          await fetchActivityEvents()
-          break
+        switch (selectedOption) {
+          case "onlyParticipants":
+            dataToDownload = finalSelectedItems
+            break
 
-        default:
-          console.error("Invalid option selected")
-          return
+          case "sensorEvents":
+            dataToDownload = await fetchSensorEvents() // Wait for the data
+            break
+
+          case "activityEvents":
+            dataToDownload = await fetchActivityEvents()
+            break
+
+          default:
+            console.error("Invalid option selected")
+            return
+        }
+
+        // Verify we have data before proceeding
+        if (!dataToDownload) {
+          throw new Error("No data available for download")
+        }
+
+        // Download the appropriate data
+        switch (fileFormat) {
+          case "json":
+            downloadAsJSON(dataToDownload)
+            break
+          case "csv":
+            downloadAsCSV(dataToDownload)
+            break
+          case "excel":
+            downloadAsExcel(dataToDownload)
+            break
+          default:
+            console.error("Invalid file format selected")
+        }
+      } catch (error) {
+        console.error("Error during download:", error)
+        alert("An error occurred during download: " + error.message)
+      } finally {
+        setDownloadLoading(false)
+        setDownloadSlider(false)
+        setNextPage(false)
+        setShowOptionsPage(false)
+        setSelectedOption("")
+        setFetchedData(null)
+        setSelectedGnames({})
+        setSelectedStudies({})
+        setFinalSelectedItems([])
+        setStartDate(null)
+        setEndDate(null)
+        setFileFormat("json")
       }
+      return
     }
 
+    // For target === "studies"
     const dataToDownload =
       target === "studies" ? studies.filter((study) => selectedStudies[study.id]) : finalSelectedItems
 
@@ -794,20 +958,32 @@ function Download({ studies, target = "studies" }) {
     <>
       <DownloadIcon className={classes.actionIcon} onClick={() => setDownloadSlider(true)} />
       <Backdrop
-        className={sliderclasses.backdrop}
+        className={`${sliderclasses.backdrop} ${downloadLoading ? classes.backdropFixed : ""}`}
         open={downloadSlider}
         onClick={() => {
-          setDownloadSlider(false)
-          setNextPage(false)
-          setShowOptionsPage(false)
-          setSelectedStudies({})
-          setSelectedGnames({})
-          setSelectedOption("")
+          if (!downloadLoading) {
+            setDownloadSlider(false)
+            setNextPage(false)
+            setShowOptionsPage(false)
+            setSelectedStudies({})
+            setSelectedGnames({})
+            setSelectedOption("")
+          }
         }}
       />
       <Slide direction="left" in={downloadSlider} mountOnEnter unmountOnExit>
         <Box className={sliderclasses.slidePanel}>
-          {/* First Page - Study Selection */}
+          {downloadLoading && (
+            <div className={classes.downloadingOverlay}>
+              <CircularProgress className={classes.loadingSpinner} />
+              <Typography variant="h6" className={classes.downloadingText}>
+                Preparing your download...
+              </Typography>
+              <Typography variant="body2" className={classes.downloadingText}>
+                Please wait while we process your request
+              </Typography>
+            </div>
+          )}
           {!nextPage ? (
             <>
               <div className={classes.headerContainer}>
@@ -818,18 +994,19 @@ function Download({ studies, target = "studies" }) {
                   <Button
                     className={`${classes.actionButton} ${classes.secondaryButton} ${classes.selectAllButton}`}
                     onClick={handleSelectAll}
+                    disabled={downloadLoading}
                   >
                     Select All
                   </Button>
                   <Button
                     className={`${classes.actionButton} ${classes.secondaryButton} ${classes.selectAllButton}`}
                     onClick={handleDeselectAll}
+                    disabled={downloadLoading}
                   >
                     Deselect All
                   </Button>
                 </div>
               </div>
-              {/* Study selection content */}
               <div className={classes.studiesWrapper}>
                 {studies.map((study) => (
                   <div key={study.id} className={classes.studyContainer}>
@@ -840,6 +1017,7 @@ function Download({ studies, target = "studies" }) {
                             checked={selectedStudies[study.id] || false}
                             onChange={() => handleStudySelect(study.id)}
                             color="primary"
+                            disabled={downloadLoading}
                           />
                         }
                         label={`${study.name} (ID: ${study.id})`}
@@ -855,6 +1033,7 @@ function Download({ studies, target = "studies" }) {
                                 checked={selectedGnames[`${study.id}-${gname}`] || false}
                                 onChange={() => handleGnameSelect(study.id, gname)}
                                 color="primary"
+                                disabled={downloadLoading}
                               />
                             }
                             label={gname}
@@ -872,13 +1051,14 @@ function Download({ studies, target = "studies" }) {
                     setSelectedStudies({})
                     setSelectedGnames({})
                   }}
+                  disabled={downloadLoading}
                 >
                   Clear selection
                 </Button>
                 <Button
                   className={`${classes.actionButton} ${classes.primaryButton}`}
                   onClick={() => setNextPage(true)}
-                  disabled={!Object.values(selectedStudies).some(Boolean)}
+                  disabled={!Object.values(selectedStudies).some(Boolean) || downloadLoading}
                 >
                   Next
                 </Button>
@@ -886,7 +1066,6 @@ function Download({ studies, target = "studies" }) {
             </>
           ) : target === "participants" ? (
             !showOptionsPage ? (
-              /* Second Page - Participant Selection */
               <>
                 <SelectTargetComponent
                   target={target}
@@ -900,20 +1079,20 @@ function Download({ studies, target = "studies" }) {
                   <Button
                     className={`${classes.actionButton} ${classes.secondaryButton}`}
                     onClick={() => setNextPage(false)}
+                    disabled={downloadLoading}
                   >
                     Back
                   </Button>
                   <Button
                     className={`${classes.actionButton} ${classes.primaryButton}`}
                     onClick={() => setShowOptionsPage(true)}
-                    disabled={finalSelectedItems.length === 0}
+                    disabled={finalSelectedItems.length === 0 || downloadLoading}
                   >
                     Next
                   </Button>
                 </div>
               </>
             ) : (
-              /* Third Page - Download Options for Participants */
               <>
                 <div className={classes.headerContainer}>
                   <Typography variant="h5" component="h1" className={classes.title}>
@@ -930,35 +1109,52 @@ function Download({ studies, target = "studies" }) {
                   fileFormat={fileFormat}
                   handleFormatChange={handleFormatChange}
                 />
-
                 <FormControl component="fieldset" className={classes.formatSelector}>
                   <FormLabel component="legend">Select Download Format</FormLabel>
                   <RadioGroup row value={fileFormat} onChange={handleFormatChange}>
-                    <FormControlLabel value="json" control={<Radio color="primary" />} label="JSON" />
-                    <FormControlLabel value="csv" control={<Radio color="primary" />} label="CSV" />
-                    <FormControlLabel value="excel" control={<Radio color="primary" />} label="Excel" />
+                    <FormControlLabel
+                      value="json"
+                      control={<Radio color="primary" disabled={downloadLoading} />}
+                      label="JSON"
+                    />
+                    <FormControlLabel
+                      value="csv"
+                      control={<Radio color="primary" disabled={downloadLoading} />}
+                      label="CSV"
+                    />
+                    <FormControlLabel
+                      value="excel"
+                      control={<Radio color="primary" disabled={downloadLoading} />}
+                      label="Excel"
+                    />
                   </RadioGroup>
                 </FormControl>
-
                 <div className={classes.buttonsContainer}>
                   <Button
                     className={`${classes.actionButton} ${classes.secondaryButton}`}
                     onClick={() => setShowOptionsPage(false)}
+                    disabled={downloadLoading}
                   >
                     Back
                   </Button>
                   <Button
                     className={`${classes.actionButton} ${classes.primaryButton}`}
                     onClick={handleDownload}
-                    disabled={!selectedOption || (selectedOption !== "onlyParticipants" && (!startDate || !endDate))}
+                    disabled={!selectedOption || downloadLoading}
                   >
-                    Download
+                    {downloadLoading ? (
+                      <div className={classes.buttonLoadingContainer}>
+                        <CircularProgress size={20} className={classes.buttonProgress} />
+                        <span>Downloading...</span>
+                      </div>
+                    ) : (
+                      "Download"
+                    )}
                   </Button>
                 </div>
               </>
             )
           ) : (
-            /* Second Page - For non-participant targets */
             <>
               <SelectTargetComponent
                 target={target}
@@ -968,31 +1164,49 @@ function Download({ studies, target = "studies" }) {
                 finalSelectedItems={finalSelectedItems}
                 setFinalSelectedItems={setFinalSelectedItems}
               />
-
               {finalSelectedItems.length > 0 && (
                 <FormControl component="fieldset" className={classes.formatSelector}>
                   <FormLabel component="legend">Select Download Format</FormLabel>
                   <RadioGroup row value={fileFormat} onChange={handleFormatChange}>
-                    <FormControlLabel value="json" control={<Radio color="primary" />} label="JSON" />
-                    <FormControlLabel value="csv" control={<Radio color="primary" />} label="CSV" />
-                    <FormControlLabel value="excel" control={<Radio color="primary" />} label="Excel" />
+                    <FormControlLabel
+                      value="json"
+                      control={<Radio color="primary" disabled={downloadLoading} />}
+                      label="JSON"
+                    />
+                    <FormControlLabel
+                      value="csv"
+                      control={<Radio color="primary" disabled={downloadLoading} />}
+                      label="CSV"
+                    />
+                    <FormControlLabel
+                      value="excel"
+                      control={<Radio color="primary" disabled={downloadLoading} />}
+                      label="Excel"
+                    />
                   </RadioGroup>
                 </FormControl>
               )}
-
               <div className={classes.buttonsContainer}>
                 <Button
                   className={`${classes.actionButton} ${classes.secondaryButton}`}
                   onClick={() => setNextPage(false)}
+                  disabled={downloadLoading}
                 >
                   Back
                 </Button>
                 <Button
                   className={`${classes.actionButton} ${classes.primaryButton}`}
                   onClick={handleDownload}
-                  disabled={finalSelectedItems.length === 0}
+                  disabled={finalSelectedItems.length === 0 || downloadLoading}
                 >
-                  Download
+                  {downloadLoading ? (
+                    <div className={classes.buttonLoadingContainer}>
+                      <CircularProgress size={20} className={classes.buttonProgress} />
+                      <span>Downloading...</span>
+                    </div>
+                  ) : (
+                    "Download"
+                  )}
                 </Button>
               </div>
             </>

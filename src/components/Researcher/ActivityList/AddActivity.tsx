@@ -285,7 +285,7 @@ export default function AddActivity({
             </Grid>
           </MenuItem>
           {activitySpecs.filter((x) =>
-            ["lamp.group", "lamp.form_builder", "lamp.survey", "lamp.cbt_thought_record"].includes(x.id)
+            ["lamp.group", "lamp.form_builder", "lamp.survey", "lamp.cbt_thought_record", "lamp.stories"].includes(x.id)
           ).length > 0 && (
             <React.Fragment>
               <MenuItem disabled divider>
@@ -293,7 +293,13 @@ export default function AddActivity({
               </MenuItem>
               {activitySpecs
                 .filter((x) =>
-                  ["lamp.group", "lamp.form_builder", "lamp.survey", "lamp.cbt_thought_record"].includes(x.id)
+                  [
+                    "lamp.group",
+                    "lamp.form_builder",
+                    "lamp.survey",
+                    "lamp.cbt_thought_record",
+                    "lamp.stories",
+                  ].includes(x.id)
                 )
                 .map((x) => (
                   <MenuItem
@@ -331,7 +337,10 @@ export default function AddActivity({
           )}
           {/*           */}
           {activitySpecs.filter(
-            (x) => !["lamp.group", "lamp.survey", "lamp.form_builder", "lamp.cbt_thought_record"].includes(x.id)
+            (x) =>
+              !["lamp.group", "lamp.survey", "lamp.form_builder", "lamp.cbt_thought_record", "lamp.stories"].includes(
+                x.id
+              )
           ).length > 0 && [
             <MenuItem divider key="head" disabled className={classes.borderTop}>
               <b>{`${t("Smartphone Cognitive Tests")}`}</b>

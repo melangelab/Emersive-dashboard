@@ -51,6 +51,7 @@ const demoActivities = {
   "lamp.dcog": "d-cog",
   "lamp.cbt_thought_record": "cbtThoughtRecord",
   "lamp.form_builder": "formBuilder2",
+  "lamp.stories": "stories",
 }
 
 export default function EmbeddedActivity({ participant, activity, name, onComplete, noBack, tab, ...props }) {
@@ -90,17 +91,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
     let warnings = []
     if (e.data !== null) {
       try {
-        let data
-        try {
-          if (typeof e.data === "string") {
-            data = JSON.parse(e.data)
-          } else {
-            data = e.data // Already an object
-          }
-        } catch (err) {
-          console.error("Error parsing JSON data:", err, e.data)
-          // return
-        }
+        const data = JSON.parse(e.data)
         for (const [index, response] of data["temporal_slices"].entries()) {
           for (const warning of currentActivity.settings[index].warnings) {
             if (warning.answer === response.value) {
@@ -135,18 +126,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
         // data = JSON.parse(e.data)
 
         try {
-          // data = JSON.parse(e.data)
-          let data
-          try {
-            if (typeof e.data === "string") {
-              data = JSON.parse(e.data)
-            } else {
-              data = e.data // Already an object
-            }
-          } catch (err) {
-            console.error("Error parsing JSON data:", err, e.data)
-            // return
-          }
+          data = JSON.parse(e.data)
           if (!!data["timestamp"]) {
             setLoading(true)
             delete data["activity"]
@@ -223,7 +203,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
             activityTimestamp
           )
           setCurrentActivity(null)
-          // TODO audio video handling upon data submission
+          // TODO : check what is being sent here
           LAMP.ActivityEvent.create(participant?.id ?? participant, data)
             .catch((e) => {
               enqueueSnackbar(`${t("An error occurred while saving the results.")}`, {
@@ -264,7 +244,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
         noBack: noBack,
       })
 
-      if (["lamp.cbt_thought_record", "lamp.form_builder"].includes(currentActivity.spec)) {
+      if (["lamp.cbt_thought_record", "lamp.form_builder", "lamp.stories"].includes(currentActivity.spec)) {
         console.log("Inside the cbt activity fetch")
         // const filePath = "/home/temp1/LampCode/test-build/dist/out/cbt_thought_record_3.html.b64"
         // const filePath = "http://192.168.21.214:3009/CBT_Thought_Record_3/dist.html.b64"

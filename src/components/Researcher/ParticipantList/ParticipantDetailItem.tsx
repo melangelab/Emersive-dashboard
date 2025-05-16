@@ -535,9 +535,9 @@ const AsyncStatsContent: React.FC<{
                         <Typography variant="body2" color="textPrimary">
                           <strong>Timestamp:</strong> {event.timestamp}
                         </Typography>
-                        {selectedTab.tab === "activities" && event.temporal_slices && (
+                        {selectedTab.tab === "activities" && (
                           <Box mt={1} pl={2}>
-                            {event.temporal_slices.map((slice: any, sliceIdx: number) => (
+                            {event.temporal_slices?.map((slice: any, sliceIdx: number) => (
                               <Box key={sliceIdx} mb={1}>
                                 <Typography variant="body2" color="textPrimary">
                                   <strong>Item:</strong> {slice.item}
@@ -558,6 +558,54 @@ const AsyncStatsContent: React.FC<{
                                 </Typography>
                               </Box>
                             ))}
+                            {/* Show static data if present */}
+                            {event.static_data && (
+                              <Box mt={2}>
+                                <Typography variant="subtitle2" color="textPrimary">
+                                  <strong>Responses:</strong>
+                                </Typography>
+
+                                {/* Story Responses */}
+                                {event.static_data.story_responses && (
+                                  <Box ml={2} mt={1}>
+                                    {Object.entries(event.static_data.story_responses).map(([key, value]) => (
+                                      <Typography key={key} variant="body2" color="textSecondary">
+                                        <strong>{key}:</strong> {value}
+                                      </Typography>
+                                    ))}
+                                  </Box>
+                                )}
+
+                                {/* Sentiment if present */}
+                                {event.static_data.sentiment && (
+                                  <Typography variant="body2" color="textSecondary">
+                                    <strong>Sentiment:</strong> {event.static_data.sentiment}
+                                  </Typography>
+                                )}
+
+                                {/* Audio Recordings */}
+                                {event.static_data.audio_recordings && (
+                                  <Box mt={2}>
+                                    <Typography variant="subtitle2" color="textPrimary">
+                                      <strong>Audio Recordings:</strong>
+                                    </Typography>
+                                    <Box ml={2}>
+                                      {Object.entries(event.static_data.audio_recordings).map(([key, value]) => (
+                                        <Box key={key} mt={1}>
+                                          <Typography variant="body2" color="textSecondary">
+                                            <strong>{key}:</strong>
+                                          </Typography>
+                                          <audio controls>
+                                            <source src={value as string} type="audio/mpeg" />
+                                            Your browser does not support the audio element.
+                                          </audio>
+                                        </Box>
+                                      ))}
+                                    </Box>
+                                  </Box>
+                                )}
+                              </Box>
+                            )}
                           </Box>
                         )}
                         {selectedTab.tab === "sensors" && (
