@@ -1332,6 +1332,57 @@ export const SchemaList = () => {
         },
       },
     },
+    "lamp.stories": {
+      type: "object",
+      properties: {
+        settings: {
+          title: i18n.t("Story Details"),
+          type: "array",
+          items: {
+            type: "object",
+            required: ["title", "text", "moral"],
+            minItems: 1,
+            properties: {
+              title: {
+                title: i18n.t("Story Title"),
+                type: "string",
+                minLength: 1,
+              },
+              text: {
+                title: i18n.t("Story Content"),
+                type: "string",
+                minLength: 1,
+                "ui:widget": "textarea",
+                "ui:options": {
+                  rows: 8,
+                },
+              },
+              moral: {
+                title: i18n.t("Story Moral/Lesson"),
+                type: "string",
+                minLength: 1,
+                "ui:widget": "textarea",
+                "ui:options": {
+                  rows: 3,
+                },
+              },
+              image: {
+                title: i18n.t("Story Image"),
+                description: i18n.t(
+                  "Images should be in the format .jpeg/.png/.gif/.svg and the size should not exceed 4 MB."
+                ),
+                type: "string",
+                format: "data-url",
+                "ui:widget": "file",
+                "ui:options": {
+                  accept: ".gif,.jpg,.png,.svg",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     "lamp.tips": {
       type: "object",
       properties: {
