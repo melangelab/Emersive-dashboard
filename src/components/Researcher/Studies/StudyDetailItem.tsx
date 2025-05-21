@@ -22,7 +22,19 @@ import {
   MenuItem,
   InputLabel,
   CircularProgress,
+  InputAdornment,
+  Chip,
 } from "@material-ui/core"
+import {
+  AttachMoney,
+  MoneyOff,
+  Business,
+  CheckCircle,
+  Cancel,
+  CloudUpload,
+  Visibility,
+  Description,
+} from "@material-ui/icons"
 import ViewItems, { FieldConfig, TabConfig } from "../SensorsList/ViewItems"
 import { useTranslation } from "react-i18next"
 import { useSnackbar } from "notistack"
@@ -31,8 +43,8 @@ import { Service } from "../../DBService/DBService"
 import { DeveloperInfo, fetchUserIp } from "../ActivityList/ActivityDetailItem"
 import { ImageUploader } from "../../ImageUploader"
 import { useHistory } from "react-router-dom"
-import { fetchGetData } from "../SaveResearcherData"
-
+import { fetchGetData, fetchPostData } from "../SaveResearcherData"
+import clsx from "clsx"
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     rootContainer: {
@@ -74,8 +86,77 @@ const useStyles = makeStyles((theme: Theme) =>
       fontWeight: 600,
       marginBottom: theme.spacing(2),
     },
+    documentViewer: {
+      marginTop: theme.spacing(2),
+      padding: theme.spacing(2),
+      border: `1px solid ${theme.palette.divider}`,
+      borderRadius: theme.spacing(1),
+    },
+    documentControls: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: theme.spacing(2),
+    },
+    ethicsSection: {
+      backgroundColor: "#f8f9fa",
+      borderRadius: theme.spacing(2),
+      padding: theme.spacing(3),
+      marginBottom: theme.spacing(3),
+    },
+    uploadSection: {
+      border: `2px dashed ${theme.palette.grey[300]}`,
+      borderRadius: theme.spacing(1),
+      padding: theme.spacing(3),
+      textAlign: "center",
+      marginTop: theme.spacing(2),
+      backgroundColor: "#ffffff",
+      transition: "border-color 0.3s ease",
+      "&:hover": {
+        borderColor: theme.palette.primary.main,
+      },
+    },
+    fileInput: {
+      display: "none",
+    },
+    uploadButton: {
+      margin: theme.spacing(1),
+    },
+    viewButton: {
+      backgroundColor: "#ffffff",
+      "&:hover": {
+        backgroundColor: theme.palette.primary.light,
+        color: "#ffffff",
+      },
+    },
+    buttonLabel: {
+      marginLeft: theme.spacing(1),
+    },
+    statusChip: {
+      margin: theme.spacing(1),
+    },
+    description: {
+      fontSize: 48,
+      color: theme.palette.grey[400],
+    },
+    buttonBase: {
+      "&.selected": {
+        backgroundColor: "#1976d2",
+        color: "#ffffff",
+      },
+      "&.unselected": {
+        backgroundColor: "transparent",
+        color: "#1976d2",
+      },
+      "&.disabled": {
+        opacity: 0.7,
+      },
+    },
   })
 )
+const getButtonClasses = (isSelected: boolean, isDisabled: boolean, classes: any) => {
+  return clsx(classes.buttonBase, isSelected ? "selected" : "unselected", isDisabled && "disabled")
+}
 
 function getAccessScope(value: any) {
   const scopes = []
@@ -144,6 +225,8 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
   const [loading, setLoading] = useState(false)
   const [isDeveloperInfoEditing, setIsDeveloperInfoEditing] = useState(false)
   const [collaboratingInstitutions, setCollaboratingInstitutions] = useState<string>("")
+  const [documentUrl, setDocumentUrl] = useState<string | null>(null)
+  const [isDocumentLoading, setIsDocumentLoading] = useState(false)
 
   console.log(study)
   // Form state
@@ -319,7 +402,150 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
   ]
 
   // Create tab contents
+
   const FundingAndEthicsContent = () => (
+    <Box className={classes.tabContent}>
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Paper className={classes.ethicsSection} elevation={0}>
+            <Typography variant="h6" className={classes.sectionTitle}>
+              {t("Funding Status")}
+            </Typography>
+            <ButtonGroup variant="contained" color="primary" className={classes.buttonGroup}>
+              <Button
+                variant={editedValues.hasFunding ? "contained" : "outlined"}
+                className={getButtonClasses(editedValues.hasFunding, !isEditing, classes)}
+                onClick={() => handleValueChange("hasFunding", true)}
+                disabled={!isEditing}
+                // startIcon={<AttachMoney />}
+              >
+                {t("Has Funding")}
+              </Button>
+              <Button
+                variant={!editedValues.hasFunding ? "contained" : "outlined"}
+                className={getButtonClasses(!editedValues.hasFunding, !isEditing, classes)}
+                onClick={() => handleValueChange("hasFunding", false)}
+                disabled={!isEditing}
+                // startIcon={<MoneyOff />}
+              >
+                {t("No Funding")}
+              </Button>
+            </ButtonGroup>
+          </Paper>
+        </Grid>
+
+        {editedValues.hasFunding && (
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              label={t("Funding Agency")}
+              value={editedValues.fundingAgency}
+              onChange={(e) => handleValueChange("fundingAgency", e.target.value)}
+              disabled={!isEditing}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Business color="primary" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+        )}
+
+        <Grid item xs={12}>
+          <Paper className={classes.ethicsSection} elevation={0}>
+            <Typography variant="h6" className={classes.sectionTitle}>
+              {t("Ethics Permission")}
+            </Typography>
+            <ButtonGroup variant="contained" color="primary" className={classes.buttonGroup}>
+              <Button
+                variant={editedValues.hasEthicsPermission ? "contained" : "outlined"}
+                // color={editedValues.hasEthicsPermission ? "primary" : "default"}
+                className={getButtonClasses(editedValues.hasEthicsPermission, !isEditing, classes)}
+                onClick={() => handleValueChange("hasEthicsPermission", true)}
+                disabled={!isEditing}
+                // startIcon={<CheckCircle />}
+              >
+                {t("Has Permission")}
+              </Button>
+              <Button
+                variant={!editedValues.hasEthicsPermission ? "contained" : "outlined"}
+                // color={!editedValues.hasEthicsPermission ? "primary" : "default"}
+                className={getButtonClasses(!editedValues.hasEthicsPermission, !isEditing, classes)}
+                onClick={() => handleValueChange("hasEthicsPermission", false)}
+                disabled={!isEditing}
+                // startIcon={<Cancel />}
+              >
+                {t("No Permission")}
+              </Button>
+            </ButtonGroup>
+
+            {editedValues.hasEthicsPermission && (
+              <Box className={classes.uploadSection}>
+                <input
+                  accept=".pdf,.doc,.docx"
+                  className={classes.fileInput}
+                  id="ethics-file-input"
+                  type="file"
+                  onChange={(e) => {
+                    const EPfile = e.target.files?.[0]
+                    if (EPfile) uploadDoc(EPfile)
+                  }}
+                  disabled={!isEditing}
+                />
+
+                <Box display="flex" flexDirection="column" alignItems="center">
+                  <Description className={classes.description} />
+                  <Typography variant="body1" color="textSecondary">
+                    {t("Drag and drop your ethics permission document here or click to browse")}
+                  </Typography>
+
+                  <Box>
+                    <label htmlFor="ethics-file-input">
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        component="span"
+                        disabled={!isEditing}
+                        className={classes.uploadButton}
+                        startIcon={<CloudUpload />}
+                      >
+                        {t("Upload Document")}
+                      </Button>
+                    </label>
+
+                    {editedValues.ethicsPermissionDoc && (
+                      <Button
+                        variant="outlined"
+                        className={classes.viewButton}
+                        onClick={fetchEthicsDocument}
+                        disabled={isDocumentLoading}
+                        startIcon={isDocumentLoading ? <CircularProgress size={20} /> : <Visibility />}
+                      >
+                        {isDocumentLoading ? t("Loading...") : t("View Document")}
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+
+                {editedValues.ethicsPermissionDoc && (
+                  <Chip
+                    label={t("Document uploaded")}
+                    color="primary"
+                    icon={<CheckCircle />}
+                    className={classes.statusChip}
+                  />
+                )}
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
+    </Box>
+  )
+  const FundingAndEthicsContent_prev = () => (
     <Box className={classes.tabContent}>
       <Grid container spacing={2}>
         <Grid item xs={12}>
@@ -375,17 +601,24 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
             </Button>
           </ButtonGroup>
           {editedValues.hasEthicsPermission && (
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              disabled={!isEditing}
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) {
-                  handleValueChange("ethicsPermissionDoc", file)
-                }
-              }}
-            />
+            <Box>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                disabled={!isEditing}
+                onChange={(e) => {
+                  const EPfile = e.target.files?.[0]
+                  if (EPfile) {
+                    uploadDoc(EPfile)
+                  }
+                }}
+              />
+              {editedValues.ethicsPermissionDoc && (
+                <Button variant="outlined" size="small" onClick={fetchEthicsDocument} disabled={isDocumentLoading}>
+                  {isDocumentLoading ? t("Loading...") : t("View Document")}
+                </Button>
+              )}
+            </Box>
           )}
         </Grid>
       </Grid>
@@ -697,6 +930,110 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
       enqueueSnackbar(t("Failed to update developer info"), { variant: "error" })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchEthicsDocument = async () => {
+    setIsDocumentLoading(true)
+    try {
+      const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+      const baseUrl =
+        "https://" + (!!LAMP.Auth._auth.serverAddress ? LAMP.Auth._auth.serverAddress : "api.lamp.digital")
+      const response = await fetch(`${baseUrl}/study/${study.id}/ethicsPermissionDoc`, {
+        headers: {
+          Authorization: "Basic " + btoa(authString),
+        },
+      })
+      console.log("fetchEthicsDocument", response)
+      if (!response.ok) throw new Error("Failed to fetch document")
+      const contentType = response.headers.get("content-type")
+      let fileExtension = ".pdf"
+      if (contentType) {
+        switch (contentType) {
+          case "application/pdf":
+            fileExtension = ".pdf"
+            break
+          case "application/msword":
+            fileExtension = ".doc"
+            break
+          case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            fileExtension = ".docx"
+            break
+        }
+      }
+
+      const blob = await response.blob()
+      const fileName = `study-${study.id}-ethics${fileExtension}`
+      if (contentType === "application/pdf") {
+        const blobUrl = URL.createObjectURL(blob)
+        if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
+          const iframe = document.createElement("iframe")
+          iframe.style.display = "none"
+          document.body.appendChild(iframe)
+
+          iframe.contentWindow?.document.write(
+            `<html><body style="margin:0;"><embed width="100%" height="100%" src="${blobUrl}" type="application/pdf"></body></html>`
+          )
+
+          const newWindow = window.open(blobUrl, "_blank")
+          if (newWindow) {
+            newWindow.document.title = fileName
+          }
+
+          setTimeout(() => {
+            document.body.removeChild(iframe)
+          }, 100)
+        } else {
+          const newWindow = window.open(blobUrl, "_blank")
+          if (newWindow) {
+            newWindow.document.title = fileName
+          }
+        }
+      } else {
+        // For non-PDF files, trigger download with proper filename
+        const a = document.createElement("a")
+        a.href = URL.createObjectURL(blob)
+        a.download = fileName
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      }
+      setDocumentUrl(null)
+      // const url = URL.createObjectURL(blob);
+      // setDocumentUrl(url);
+      // window.open(url, '_blank');
+    } catch (error) {
+      console.error("Failed to fetch document:", error)
+      enqueueSnackbar(t("Failed to fetch document"), { variant: "error" })
+    } finally {
+      setIsDocumentLoading(false)
+    }
+  }
+
+  const uploadDoc = async (EPfile: File) => {
+    const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+    const baseUrl = "https://" + (!!LAMP.Auth._auth.serverAddress ? LAMP.Auth._auth.serverAddress : "api.lamp.digital")
+
+    // Create FormData for file upload
+    const formData = new FormData()
+    formData.append("file", EPfile)
+    try {
+      const response = await fetch(`${baseUrl}/study/${study.id}/uploadEthicsPermissionDoc`, {
+        method: "POST",
+        headers: {
+          Authorization: "Basic " + btoa(authString),
+        },
+        body: formData, // Don't set Content-Type - browser will set it with boundary for FormData
+      })
+      const result = await response.json()
+      console.log("result", result, result.data.ethicsPermissionDoc)
+      if (!response.ok) {
+        throw new Error(result.error || "Upload failed")
+      }
+      handleValueChange("ethicsPermissionDoc", result.data.ethicsPermissionDoc)
+    } catch (error) {
+      console.error("Failed to upload document:", error)
+      enqueueSnackbar(t("Failed to upload document: ") + error.message, { variant: "error" })
     }
   }
 

@@ -225,6 +225,7 @@ interface ParticipantDetailItemProps {
   studies: Array<any>
   triggerSave?: boolean
   stats?: (participant: any, study: any) => any[]
+  sharedstudies: Array<any>
 }
 
 const AsyncStatsContent: React.FC<{
@@ -262,7 +263,8 @@ const AsyncStatsContent: React.FC<{
         const endpoint = dateRangeEnabled
           ? `participant/mode/6?from_date=${startDate?.getTime()}&to_date=${endDate?.getTime()}`
           : "participant/mode/5"
-        const result = await fetchResult(authString, study.id, endpoint, "study")
+        const studyID = study?.id ? study.id : participant.study_id
+        const result = await fetchResult(authString, studyID, endpoint, "study")
         // const result = await fetchResult(authString, study.id, "participant/mode/5", "study")
         const participantData = result.participants?.find((p) => p.id === participant.id)
         console.log("participantData", participantData, endpoint)
@@ -427,6 +429,13 @@ const AsyncStatsContent: React.FC<{
   }
 
   console.log("items", items)
+  console.log(
+    "Items with static_data:",
+    items.filter(
+      (item) => item.lastEvent && item.lastEvent.static_data && Object.keys(item.lastEvent.static_data).length > 0
+    )
+  )
+  console.log("Last events with static_data:", items.map((item) => item.lastEvent?.static_data).filter(Boolean))
   return (
     <Box className={classes.groupList}>
       <Box mb={2} display="flex" flexDirection="row" alignItems="center">
@@ -564,9 +573,38 @@ const AsyncStatsContent: React.FC<{
                                 <Typography variant="subtitle2" color="textPrimary">
                                   <strong>Responses:</strong>
                                 </Typography>
+                                <Box ml={2} mt={1}>
+                                  {Object.keys(event.static_data.story_responses || {}).map((storyKey) => {
+                                    const storyIndex = storyKey.replace("story_", "")
+                                    const audioKey = `story_${storyIndex}_audio`
+                                    const audioValue = event.static_data.audio_recordings?.[audioKey]
 
-                                {/* Story Responses */}
-                                {event.static_data.story_responses && (
+                                    return (
+                                      <Box key={storyKey} mb={2}>
+                                        <Typography variant="body2" color="textSecondary">
+                                          <strong>Story {storyIndex}:</strong>
+                                        </Typography>
+                                        <Box ml={2}>
+                                          <Typography variant="body2" color="textSecondary">
+                                            <strong>Response:</strong> {event.static_data.story_responses[storyKey]}
+                                          </Typography>
+                                          {audioValue && (
+                                            <Box mt={1}>
+                                              <Typography variant="body2" color="textSecondary">
+                                                <strong>Audio:</strong>
+                                              </Typography>
+                                              <audio controls>
+                                                <source src={audioValue} type="audio/mpeg" />
+                                                Your browser does not support the audio element.
+                                              </audio>
+                                            </Box>
+                                          )}
+                                        </Box>
+                                      </Box>
+                                    )
+                                  })}
+                                </Box>
+                                {/* {event.static_data.story_responses && (
                                   <Box ml={2} mt={1}>
                                     {Object.entries(event.static_data.story_responses).map(([key, value]) => (
                                       <Typography key={key} variant="body2" color="textSecondary">
@@ -574,17 +612,13 @@ const AsyncStatsContent: React.FC<{
                                       </Typography>
                                     ))}
                                   </Box>
-                                )}
-
-                                {/* Sentiment if present */}
-                                {event.static_data.sentiment && (
+                                )} */}
+                                {/* {event.static_data.sentiment && (
                                   <Typography variant="body2" color="textSecondary">
                                     <strong>Sentiment:</strong> {event.static_data.sentiment}
                                   </Typography>
-                                )}
-
-                                {/* Audio Recordings */}
-                                {event.static_data.audio_recordings && (
+                                )} */}
+                                {/* {event.static_data.audio_recordings && (
                                   <Box mt={2}>
                                     <Typography variant="subtitle2" color="textPrimary">
                                       <strong>Audio Recordings:</strong>
@@ -603,7 +637,7 @@ const AsyncStatsContent: React.FC<{
                                       ))}
                                     </Box>
                                   </Box>
-                                )}
+                                )} */}
                               </Box>
                             )}
                           </Box>
@@ -633,7 +667,6 @@ const AsyncStatsContent: React.FC<{
                   <Typography variant="subtitle2" color="textSecondary">
                     Last Event: {item.lastEvent.timestamp}
                   </Typography>
-                  {/* {item.lastEvent.temporal_slices && ( */}
                   <IconButton
                     size="small"
                     onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
@@ -645,7 +678,6 @@ const AsyncStatsContent: React.FC<{
                       <ExpandMoreIcon fontSize="small" />
                     )}
                   </IconButton>
-                  {/* )} */}
                 </Box>
                 {/* {selectedTab.tab === "activities" && item.lastEvent.temporal_slices && (
               <Box mt={1} pl={2} borderLeft="3px solid #ccc">
@@ -670,7 +702,7 @@ const AsyncStatsContent: React.FC<{
               </Box>
             )} */}
                 <Collapse in={expandedIndex === index} timeout="auto" unmountOnExit>
-                  {selectedTab.tab === "activities" && item.lastEvent.temporal_slices && (
+                  {selectedTab.tab === "activities" && (
                     <Box mt={1} pl={2} borderLeft="3px solid #ccc">
                       {item.lastEvent.temporal_slices.map((slice: any, idx: number) => (
                         <Box key={idx} mb={1}>
@@ -693,6 +725,79 @@ const AsyncStatsContent: React.FC<{
                           </Typography>
                         </Box>
                       ))}
+                      {item.lastEvent.static_data && (
+                        <Box mt={2}>
+                          <Typography variant="subtitle2" color="textPrimary">
+                            <strong>Responses:</strong>
+                          </Typography>
+                          <Box ml={2} mt={1}>
+                            {Object.keys(item.lastEvent.static_data.story_responses || {}).map((storyKey) => {
+                              const storyIndex = storyKey.replace("story_", "")
+                              const audioKey = `story_${storyIndex}_audio`
+                              const audioValue = item.lastEvent.static_data.audio_recordings?.[audioKey]
+
+                              return (
+                                <Box key={storyKey} mb={2}>
+                                  <Typography variant="body2" color="textSecondary">
+                                    <strong>Story {Number(storyIndex) + 1}:</strong>
+                                  </Typography>
+                                  <Box ml={2}>
+                                    <Typography variant="body2" color="textSecondary">
+                                      <strong>Response:</strong> {item.lastEvent.static_data.story_responses[storyKey]}
+                                    </Typography>
+                                    {audioValue && (
+                                      <Box mt={1}>
+                                        <Typography variant="body2" color="textSecondary">
+                                          <strong>Audio:</strong>
+                                        </Typography>
+                                        <audio controls>
+                                          <source src={audioValue} type="audio/mpeg" />
+                                          Your browser does not support the audio element.
+                                        </audio>
+                                      </Box>
+                                    )}
+                                  </Box>
+                                </Box>
+                              )
+                            })}
+                          </Box>
+
+                          {/* {item.lastEvent.static_data.story_responses && (
+                            <Box ml={2} mt={1}>
+                              {Object.entries(item.lastEvent.static_data.story_responses).map(([key, value]) => (
+                                <Typography key={key} variant="body2" color="textSecondary">
+                                  <strong>{key}:</strong> {value}
+                                </Typography>
+                              ))}
+                            </Box>
+                          )}
+                          {item.lastEvent.static_data.sentiment && (
+                            <Typography variant="body2" color="textSecondary">
+                              <strong>Sentiment:</strong> {item.lastEvent.static_data.sentiment}
+                            </Typography>
+                          )}
+                          {item.lastEvent.static_data.audio_recordings && (
+                            <Box mt={2}>
+                              <Typography variant="subtitle2" color="textPrimary">
+                                <strong>Audio Recordings:</strong>
+                              </Typography>
+                              <Box ml={2}>
+                                {Object.entries(item.lastEvent.static_data.audio_recordings).map(([key, value]) => (
+                                  <Box key={key} mt={1}>
+                                    <Typography variant="body2" color="textSecondary">
+                                      <strong>{key}:</strong>
+                                    </Typography>
+                                    <audio controls>
+                                      <source src={value as string} type="audio/mpeg" />
+                                      Your browser does not support the audio element.
+                                    </audio>
+                                  </Box>
+                                ))}
+                              </Box>
+                            </Box>
+                          )} */}
+                        </Box>
+                      )}
                     </Box>
                   )}
                   {selectedTab.tab === "sensors" && item.lastEvent.data && (
@@ -720,6 +825,7 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
   studies,
   triggerSave,
   stats,
+  sharedstudies,
 }) => {
   const classes = useStyles()
   const { t } = useTranslation()
@@ -1193,7 +1299,10 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
             )} */}
           <AsyncStatsContent
             selectedTab={selectedTab}
-            study={studies.find((s) => s.id === participant.study_id)}
+            study={
+              studies.find((s) => s.id === participant.study_id) ||
+              sharedstudies.find((s) => s.id === participant.study_id)
+            }
             participant={participant}
             classes={classes}
           />

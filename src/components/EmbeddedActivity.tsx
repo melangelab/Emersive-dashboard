@@ -52,6 +52,7 @@ const demoActivities = {
   "lamp.cbt_thought_record": "cbtThoughtRecord",
   "lamp.form_builder": "formBuilder2",
   "lamp.stories": "stories",
+  "lamp.mood_tracker": "moodtracker",
 }
 
 export default function EmbeddedActivity({ participant, activity, name, onComplete, noBack, tab, ...props }) {

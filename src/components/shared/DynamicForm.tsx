@@ -59,6 +59,21 @@ const widgets: RegistryWidgetsType = {
   FileWidget: CustomFileWidget,
 }
 
+const getWidgets = (viewMode: boolean): RegistryWidgetsType => ({
+  FileWidget: (props) => <CustomFileWidget {...props} disabled={viewMode} readonly={viewMode} />,
+  // Add custom handling for other widget types
+  SliderWidget: (props) => (
+    <div style={{ pointerEvents: viewMode ? "none" : "auto" }}>
+      <props.registry.widgets.SliderWidget {...props} />
+    </div>
+  ),
+  RadioWidget: (props) => (
+    <div style={{ pointerEvents: viewMode ? "none" : "auto" }}>
+      <props.registry.widgets.RadioWidget {...props} />
+    </div>
+  ),
+})
+
 const ObjectFieldTemplate = ({
   description,
   title,
@@ -148,7 +163,13 @@ function ArrayFieldTemplate(props: ArrayFieldTemplateProps) {
         <Grid container={true} alignItems="center">
           <Grid item={true} xs style={{ overflow: "auto" }}>
             <Box mb={2}>
-              <Paper elevation={2}>
+              <Paper
+                elevation={2}
+                style={{
+                  backgroundColor: props.disabled ? "#fafafa" : undefined,
+                  pointerEvents: props.disabled ? "none" : undefined,
+                }}
+              >
                 <Box p={2}>{element.children}</Box>
               </Paper>
             </Box>
@@ -197,7 +218,7 @@ function ArrayFieldTemplate(props: ArrayFieldTemplateProps) {
       ))}
       {props.canAdd && (
         <Box display="flex" justifyContent="flex-end" width={1}>
-          <Button type="button" onClick={props.onAddClick} className={classes.addbtn}>
+          <Button type="button" onClick={props.onAddClick} className={classes.addbtn} disabled={props.disabled}>
             <Icon>add</Icon>
             {`${t("Add Item")}`}
           </Button>
@@ -224,7 +245,7 @@ function _extract(schema) {
 
 // A wrapper Form component to add support for things not available out of the box in RJSF.
 // NOTE: Do not keep resetting the value of `initialData`! Only set this once.
-export default function DynamicForm({ schema, initialData, onChange, ...props }) {
+export default function DynamicForm({ schema, initialData, onChange, viewMode = false, ...props }) {
   const { t, i18n } = useTranslation()
 
   const getSelectedLanguage = () => {
@@ -270,20 +291,86 @@ export default function DynamicForm({ schema, initialData, onChange, ...props })
     languageObjects[getSelectedLanguage()]
   )
 
+  const getEnhancedUiSchema = (schema: any, viewMode: boolean) => {
+    const baseUiSchema = _extract(schema)
+    if (!viewMode) return baseUiSchema
+
+    const viewModeUiSchema = {
+      "ui:readonly": true,
+      "ui:disabled": true,
+      // Disable drag-n-drop for arrays
+      "ui:orderable": false,
+      "ui:addable": false,
+      "ui:removable": false,
+      // Disable file uploads
+      "ui:options": {
+        ...baseUiSchema?.["ui:options"],
+        accept: undefined,
+        uploadable: false,
+      },
+    }
+
+    return Object.keys(schema?.properties || {}).reduce(
+      (acc, key) => ({
+        ...acc,
+        [key]: {
+          ...baseUiSchema?.[key],
+          ...viewModeUiSchema,
+          // Handle nested objects
+          ...(schema.properties[key].type === "object" && {
+            "ui:disabled": true,
+            "ui:readonly": true,
+          }),
+          // Handle arrays
+          ...(schema.properties[key].type === "array" && {
+            "ui:options": {
+              ...baseUiSchema?.[key]?.["ui:options"],
+              addable: false,
+              orderable: false,
+              removable: false,
+            },
+          }),
+        },
+      }),
+      baseUiSchema
+    )
+  }
+
   return (
     <MuiThemeProvider theme={formTheme}>
       <Form
         // liveValidate
         children={true}
         schema={schema}
-        uiSchema={_extract(schema)}
+        // uiSchema={_extract(schema)}
+        // uiSchema={{
+        //   ...Object.fromEntries(
+        //     viewMode ? Object.keys(schema?.properties || {}).map(key => [
+        //       key,
+        //       { "ui:disabled": true }
+        //     ]) : []
+        //   ),
+        //   ..._extract(schema)
+        // }}
+        uiSchema={getEnhancedUiSchema(schema, viewMode)}
         formData={initialData}
         onChange={(x) => {
-          onChange(x.formData)
+          // onChange(x.formData)
+          if (!viewMode) {
+            onChange(x.formData)
+          }
         }}
         validator={validator}
-        templates={{ ArrayFieldTemplate, ObjectFieldTemplate, TitleFieldTemplate }}
-        widgets={widgets}
+        // templates={{ ArrayFieldTemplate, ObjectFieldTemplate, TitleFieldTemplate }}
+        templates={{
+          ArrayFieldTemplate: (props) => <ArrayFieldTemplate {...props} disabled={viewMode} />,
+          ObjectFieldTemplate,
+          TitleFieldTemplate,
+        }}
+        // widgets={widgets}
+        widgets={getWidgets(viewMode)}
+        disabled={viewMode}
+        readonly={viewMode}
       />
     </MuiThemeProvider>
   )

@@ -1426,6 +1426,7 @@ export default function ParticipantList({
             studies={studies}
             triggerSave={triggerSave}
             stats={stats}
+            sharedstudies={sharedstudies}
           />
         ) : (
           <>

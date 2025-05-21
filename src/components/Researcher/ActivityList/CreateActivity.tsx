@@ -28,9 +28,17 @@ interface CreateActivityProps {
   researcherId: string
   onSave: (newActivity: any) => void
   onCancel: () => void
+  sharedstudies?: Array<any>
 }
 
-const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, researcherId, onSave, onCancel }) => {
+const CreateActivity: React.FC<CreateActivityProps> = ({
+  studies,
+  selectedSpec,
+  researcherId,
+  onSave,
+  onCancel,
+  sharedstudies,
+}) => {
   const classes = useStyles()
   const { enqueueSnackbar } = useSnackbar()
   const { t } = useTranslation()
@@ -131,10 +139,17 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
       value: editedValues.study_id,
       editable: true,
       type: "select",
-      options: studies.map((study) => ({
-        value: study.id,
-        label: study.name,
-      })),
+      options: studies
+        .map((study) => ({
+          value: study.id,
+          label: study.name,
+        }))
+        .concat(
+          sharedstudies.map((study) => ({
+            value: study.id,
+            label: study.name,
+          }))
+        ),
     },
     {
       id: "groups",
@@ -143,13 +158,14 @@ const CreateActivity: React.FC<CreateActivityProps> = ({ studies, selectedSpec, 
       editable: true,
       type: "multiselect",
       options:
-        studies
-          .find((s) => s.id === editedValues.study_id)
-          ?.gname.map((group) => ({
-            value: group,
-            label: group,
-            disabled: false,
-          })) || [],
+        (
+          studies.find((s) => s.id === editedValues.study_id) ||
+          sharedstudies.find((s) => s.id === editedValues.study_id)
+        )?.gname.map((group) => ({
+          value: group,
+          label: group,
+          disabled: false,
+        })) || [],
     },
 
     {
