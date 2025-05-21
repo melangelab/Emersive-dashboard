@@ -1254,7 +1254,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         formula4Fields: localFormula,
       }
       try {
-        console.log("before calling update settings", updatedSettings)
+        console.log("before calling update settings", updatedSettings, localFBSettings, localSettings)
         const result = await LAMP.Activity.update(activity.id, updatedSettings as any)
         await Service.updateMultipleKeys(
           "activities",
@@ -1323,10 +1323,12 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
               console.log("INSIDE THE DETAILITEM Form data changed:", formData)
               setLocalFormula(formData.formula)
               setLocalSettings(formData.fields)
+              setLocalFBSettings(formData.fields)
               setHasUnsavedChanges(true)
             }}
             formFieldsProp={localFBSettings}
             formula={localFormula}
+            // viewMode={!isEditing}
           />
         ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
           <DynamicForm
@@ -1340,6 +1342,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
               setLocalSettings(x.settings || {})
               setHasUnsavedChanges(true)
             }}
+            viewMode={!isEditing}
           />
         ) : (
           <Box className={classes.codeBlock}>

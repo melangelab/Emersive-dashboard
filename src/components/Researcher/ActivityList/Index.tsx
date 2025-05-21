@@ -803,6 +803,7 @@ export default function ActivityList({
   }
 
   const handleSaveComplete = (updatedActivity) => {
+    console.log("Save complete:", updatedActivity)
     setViewingActivity(updatedActivity)
     setIsEditing(false)
     setTriggerSave(false)
@@ -1129,6 +1130,7 @@ export default function ActivityList({
               setCreatingActivity(false)
             }}
             onCancel={() => setCreatingActivity(false)}
+            sharedstudies={props.sharedstudies}
           />
         ) : (
           <>

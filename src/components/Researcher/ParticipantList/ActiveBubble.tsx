@@ -33,7 +33,7 @@ export default function Active({ participant, ...props }) {
   const [active, setActive] = useState(null)
   const { t, i18n } = useTranslation()
   const timeAgo = getTimeAgo(i18n.language)
-
+  console.log("Active", participant)
   useEffect(() => {
     let isCancelled = false
     setTimeout(() => {
