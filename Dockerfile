@@ -13,7 +13,6 @@ RUN jq '.dependencies["ajv-keywords"] = "3.5.2" | .dependencies["ajv"] = "6.12.6
 
 # Clean and install dependencies with force to resolve conflicts
 RUN npm cache clean -f
-RUN npm install @babel/plugin-transform-private-property-in-object@7.21.11 --no-save --legacy-peer-deps
 RUN npm install --legacy-peer-deps
 
 # Copy all source files
