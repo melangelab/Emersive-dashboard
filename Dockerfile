@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y jq && apt-get clean
 COPY package.json package-lock.json ./
 
 # Create a temporary modified package.json with correct dependencies
-RUN jq '.dependencies["ajv-keywords"] = "3.5.2" | .dependencies["ajv"] = "6.12.6"' package.json > temp.json && \
+RUN jq '.dependencies["ajv-keywords"] = "3.5.2" | .dependencies["ajv"] = "6.12.6" | .dependencies["@babel/plugin-transform-private-property-in-object"] = "7.14.5"' package.json > temp.json && \
     mv temp.json package.json
 
 # Clean and install dependencies with force to resolve conflicts
