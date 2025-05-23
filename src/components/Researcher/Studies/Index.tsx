@@ -1164,12 +1164,13 @@ export default function StudiesList({
 
   useInterval(
     () => {
+      console.log("loading.. recurring")
       setLoading(true)
       getAllStudies()
       setLoading(false)
     },
     // studies !== null && (studies || []).length > 0 ? null : 60000,
-    (!studies || studies.length === 0) && (!props.sharedstudies || props.sharedstudies.length === 0) ? 60000 : null,
+    (!studies || studies.length === 0) && (!props.sharedstudies || props.sharedstudies.length === 0) ? 1000 : null,
     true
   )
 

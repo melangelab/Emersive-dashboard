@@ -299,6 +299,7 @@ export default function AddActivity({
                     "lamp.survey",
                     "lamp.cbt_thought_record",
                     "lamp.stories",
+                    "lamp.mood_tracker",
                   ].includes(x.id)
                 )
                 .map((x) => (
@@ -315,32 +316,20 @@ export default function AddActivity({
                       ? `${t(activitiesObj[x.id])}`
                       : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
                   </MenuItem>
-                  // <MenuItem
-                  //   key={x.id}
-                  //   onClick={() => {
-                  //     window.location.href = `/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`
-                  //     setSlideOpen(false)
-                  //   }}
-                  //   className={sliderclasses.menuLinks}
-                  // >
-                  //   <Link
-                  //     href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}
-                  //     underline="none"
-                  //   >
-                  //     {activitiesObj[x.id]
-                  //       ? `${t(activitiesObj[x.id])}`
-                  //       : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
-                  //   </Link>
-                  // </MenuItem>
                 ))}
             </React.Fragment>
           )}
           {/*           */}
           {activitySpecs.filter(
             (x) =>
-              !["lamp.group", "lamp.survey", "lamp.form_builder", "lamp.cbt_thought_record", "lamp.stories"].includes(
-                x.id
-              )
+              ![
+                "lamp.group",
+                "lamp.survey",
+                "lamp.form_builder",
+                "lamp.cbt_thought_record",
+                "lamp.stories",
+                "lamp.mood_tracker",
+              ].includes(x.id)
           ).length > 0 && [
             <MenuItem divider key="head" disabled className={classes.borderTop}>
               <b>{`${t("Smartphone Cognitive Tests")}`}</b>
