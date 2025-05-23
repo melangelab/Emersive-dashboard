@@ -48,6 +48,7 @@ import { useStyles as ViewItemsStyles } from "../SensorsList/ViewItems"
 import { SchemaList } from "./ActivityMethods"
 import DynamicForm from "../../shared/DynamicForm"
 import FormBuilder from "./FormBuilder"
+import MoodTrackerBuilder from "./MoodTrackerBuilder"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -597,7 +598,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     }
   }
 
-  const handleAudioUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAudioUpload_old = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       const reader = new FileReader()
@@ -1330,6 +1331,16 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
             formula={localFormula}
             // viewMode={!isEditing}
           />
+        ) : editedValues.spec === "lamp.mood_tracker" ? (
+          <MoodTrackerBuilder
+            oldFields={localFBSettings}
+            onChange={(formData) => {
+              console.log("INSIDE THE DETAILITEM Form data changed:", formData)
+              setLocalSettings([formData])
+              setLocalFBSettings([formData])
+              setHasUnsavedChanges(true)
+            }}
+          />
         ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
           <DynamicForm
             schema={schemaListObj[editedValues.spec]}
@@ -1980,10 +1991,12 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
           // Save to activity guide
           const reader = new FileReader()
           reader.onloadend = () => {
+            const dataUrl = reader.result as string
+            const correctedDataUrl = dataUrl.replace("data:video/webm", "data:audio/webm")
             const updatedActivityGuide = {
               ...editedValues.activityGuide,
               audio: {
-                data: reader.result,
+                data: dataUrl,
                 fileType: "webm",
                 uploadedAt: new Date(),
               },
@@ -1993,6 +2006,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
               ...prev,
               activityGuide: updatedActivityGuide,
             }))
+            console.log("Audio file uploaded:", updatedActivityGuide, dataUrl, correctedDataUrl)
           }
           reader.readAsDataURL(audioBlob)
         }
@@ -2053,6 +2067,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
             ...prev,
             activityGuide: updatedActivityGuide,
           }))
+          console.log("Audio file uploaded:", updatedActivityGuide, file)
         }
         reader.readAsDataURL(file)
       } catch (err) {
@@ -2517,8 +2532,11 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
                   }}
                 >
                   {editedValues.activityGuide?.audio?.data ? (
-                    <audio controls style={{ flexGrow: 1 }} src={editedValues.activityGuide.audio.data}>
-                      <source type={getAudioMimeType(editedValues.activityGuide.audio.fileType)} />
+                    <audio controls style={{ flexGrow: 1 }}>
+                      <source
+                        src={editedValues.activityGuide.audio.data}
+                        type={getAudioMimeType(editedValues.activityGuide.audio.fileType)}
+                      />
                       {t("Your browser does not support the audio element.")}
                     </audio>
                   ) : audioPreviewUrl ? (
@@ -2534,10 +2552,11 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
                       onClick={() => {
                         const audioUrl = editedValues.activityGuide?.audio?.data || audioPreviewUrl
                         if (!audioUrl) return
-
                         const link = document.createElement("a")
                         link.href = audioUrl
-                        link.download = `audio_guide_${activity.id}_${new Date().getTime()}.webm`
+                        const extension = editedValues.activityGuide?.audio?.fileType || "webm"
+                        link.download = `audio_guide_${activity.id}_${new Date().getTime()}.${extension}`
+                        // link.type = `audio/${extension}`
                         document.body.appendChild(link)
                         link.click()
                         document.body.removeChild(link)
@@ -2602,116 +2621,6 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     )
   }
 
-  // Create tab content for activity guide
-  const ActivityGuideContent_prev = () => (
-    <Box>
-      {editedValues.activityGuide && (
-        <>
-          {editedValues.activityGuide.text && (
-            <Box mb={3}>
-              <Typography variant="subtitle1" gutterBottom>
-                {t("Text Guide")}
-              </Typography>
-              <Paper elevation={0} className={classes.codeBlock}>
-                <Typography variant="body2">{editedValues.activityGuide.text}</Typography>
-              </Paper>
-            </Box>
-          )}
-
-          {editedValues.activityGuide.video?.data && (
-            <Box mb={3}>
-              <Typography variant="subtitle1" gutterBottom>
-                {t("Video Guide")}
-              </Typography>
-              <Box className={classes.videoPreview}>
-                <video width="100%" height="auto" controls style={{ borderRadius: 8, maxHeight: 300 }}>
-                  <source
-                    src={editedValues.activityGuide.video.data}
-                    type={getVideoMimeType(editedValues.activityGuide.video.fileType)}
-                  />
-                  {t("Your browser does not support the video tag.")}
-                </video>
-                <Box className={classes.mediaControls}>
-                  <Button
-                    startIcon={<VideocamOutlined />}
-                    onClick={() =>
-                      handleViewMedia(
-                        "video",
-                        editedValues.activityGuide.video.data,
-                        getVideoMimeType(editedValues.activityGuide.video.fileType)
-                      )
-                    }
-                  >
-                    {t("View Full Screen")}
-                  </Button>
-                  <IconButton
-                    onClick={() => {
-                      const link = document.createElement("a")
-                      link.href = editedValues.activityGuide.video.data
-                      link.download = `video_guide_${activity.id}_${new Date().getTime()}.${
-                        editedValues.activityGuide.video.fileType || "webm"
-                      }`
-                      document.body.appendChild(link)
-                      link.click()
-                      document.body.removeChild(link)
-                    }}
-                  >
-                    <GetApp />
-                  </IconButton>
-                </Box>
-              </Box>
-            </Box>
-          )}
-
-          {editedValues.activityGuide.audio?.data && (
-            <Box mb={3}>
-              <Typography variant="subtitle1" gutterBottom>
-                {t("Audio Guide")}
-              </Typography>
-              <Box className={classes.audioPreview}>
-                <audio controls style={{ width: "100%" }}>
-                  <source
-                    src={editedValues.activityGuide.audio.data}
-                    type={getAudioMimeType(editedValues.activityGuide.audio.fileType)}
-                  />
-                  {t("Your browser does not support the audio element.")}
-                </audio>
-                <Box className={classes.mediaControls}>
-                  <Typography variant="caption">
-                    {t("Uploaded")}: {new Date(editedValues.activityGuide.audio.uploadedAt).toLocaleString()}
-                  </Typography>
-                  <IconButton
-                    onClick={() => {
-                      const link = document.createElement("a")
-                      link.href = editedValues.activityGuide.audio.data
-                      link.download = `audio_guide_${activity.id}_${new Date().getTime()}.${
-                        editedValues.activityGuide.audio.fileType || "webm"
-                      }`
-                      document.body.appendChild(link)
-                      link.click()
-                      document.body.removeChild(link)
-                    }}
-                  >
-                    <GetApp />
-                  </IconButton>
-                </Box>
-              </Box>
-            </Box>
-          )}
-
-          {!editedValues.activityGuide.text &&
-            !editedValues.activityGuide.video?.data &&
-            !editedValues.activityGuide.audio?.data && (
-              <Box display="flex" justifyContent="center" alignItems="center" py={4}>
-                <Typography variant="body1" color="textSecondary">
-                  {t("No activity guide available")}
-                </Typography>
-              </Box>
-            )}
-        </>
-      )}
-    </Box>
-  )
   const ScoreInterpretationContent = () => (
     <Box>
       {isEditing && (

@@ -11,8 +11,7 @@ import DynamicForm from "../../shared/DynamicForm"
 import { saveTipActivity, saveSurveyActivity, saveCTestActivity } from "./ActivityMethods"
 import cbtThoughtRecordInstance from "./CBTSettings"
 import FormBuilder from "./FormBuilder"
-import FormBuilder2 from "./FormBuilder2"
-import FormBuilderWrapper from "./FormBuilderWrapper"
+import MoodTrackerBuilder from "./MoodTrackerBuilder"
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -282,6 +281,13 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
               formFieldsProp={Array.isArray(editedValues.settings) || []}
               formula={editedValues.formula4Fields}
             />
+          ) : editedValues.spec === "lamp.mood_tracker" ? (
+            <MoodTrackerBuilder
+              onChange={(data) => {
+                setEditedValues((prev) => ({ ...prev, settings: data }))
+              }}
+              oldFields={Array.isArray(editedValues.settings) || []}
+            />
           ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
             <DynamicForm
               schema={schemaListObj[editedValues.spec]}
@@ -315,9 +321,23 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
       enqueueSnackbar(t("Please fill in all required fields"), { variant: "error" })
       return
     }
-    // if (editedValues.spec === "lamp.form_builder") {
-    //  if(!validateFormBuilder()) return
-    // }
+
+    console.log(
+      "IN THE HANDLE SAVE",
+      editedValues.spec === "lamp.mood_tracker",
+      editedValues.settings[0].options.length === 0,
+      editedValues.settings[0].settings.upperRatingLimit === ""
+    )
+
+    if (editedValues.spec === "lamp.mood_tracker") {
+      if (editedValues.settings[0].options.length === 0) {
+        enqueueSnackbar(t("Please select at least one emotion/upper rate limit"), { variant: "error" })
+        return
+      } else if (editedValues.settings[0].settings.upperRatingLimit === "") {
+        enqueueSnackbar(t("Please select upper rate limit"), { variant: "error" })
+        return
+      }
+    }
 
     setLoading(true)
     try {
@@ -470,8 +490,6 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
         additionalContent={additionalContent}
         footerButtons={footerButtons}
       />
-      {/* <FormBuilder2 onChange={handleChange} initialComponents={[]}/> */}
-      {/* <FormBuilderWrapper /> */}
     </Paper>
   )
 }

@@ -440,8 +440,8 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
               fullWidth
               variant="outlined"
               label={t("Funding Agency")}
-              value={editedValues.fundingAgency}
-              onChange={(e) => handleValueChange("fundingAgency", e.target.value)}
+              defaultValue={editedValues.fundingAgency}
+              onBlur={(e) => handleValueChange("fundingAgency", e.target.value)}
               disabled={!isEditing}
               InputProps={{
                 startAdornment: (
