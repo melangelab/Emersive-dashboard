@@ -117,7 +117,7 @@ const MoodTrackerBuilder = ({ oldFields, onChange }) => {
             <MenuItem value="" disabled>
               Select Emotion
             </MenuItem>
-            {EmotionsAvailable.filter((e) => !field.options.includes(e)).map((emotion) => (
+            {EmotionsAvailable.filter((e) => !field.options?.includes(e)).map((emotion) => (
               <MenuItem key={emotion} value={emotion}>
                 {emotion}
               </MenuItem>
