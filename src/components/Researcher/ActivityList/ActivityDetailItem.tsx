@@ -1247,11 +1247,17 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
       setEditedValues((prev) => ({
         ...prev,
         formula4Fields: localFormula,
-        settings: editedValues.spec === "lamp.form_builder" ? localFBSettings : localSettings,
+        settings:
+          editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
+            ? localFBSettings
+            : localSettings,
       }))
       setHasUnsavedChanges(false)
       const updatedSettings = {
-        settings: editedValues.spec === "lamp.form_builder" ? localFBSettings : localSettings,
+        settings:
+          editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
+            ? localFBSettings
+            : localSettings,
         formula4Fields: localFormula,
       }
       try {
@@ -1321,7 +1327,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         {editedValues.spec === "lamp.form_builder" ? (
           <FormBuilder
             onChange={(formData) => {
-              console.log("INSIDE THE DETAILITEM Form data changed:", formData)
+              console.log("INSIDE THE DETAIL ITEM Form data changed:", formData)
               setLocalFormula(formData.formula)
               setLocalSettings(formData.fields)
               setLocalFBSettings(formData.fields)
@@ -1336,8 +1342,8 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
             oldFields={localFBSettings}
             onChange={(formData) => {
               console.log("INSIDE THE DETAILITEM Form data changed:", formData)
-              setLocalSettings([formData])
-              setLocalFBSettings([formData])
+              setLocalSettings(formData)
+              setLocalFBSettings(formData)
               setHasUnsavedChanges(true)
             }}
           />
