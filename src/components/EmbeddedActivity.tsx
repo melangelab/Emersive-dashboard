@@ -53,6 +53,7 @@ const demoActivities = {
   "lamp.form_builder": "formBuilder2",
   "lamp.stories": "stories",
   "lamp.mood_tracker": "moodTracker",
+  "lamp.video_recording": "videoRecording",
 }
 
 export default function EmbeddedActivity({ participant, activity, name, onComplete, noBack, tab, ...props }) {
@@ -240,15 +241,20 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
       setSettings({
         ...settings,
         activity: currentActivity,
+        // participantId: participant?.id ?? participant,
         configuration: { language: i18n.language },
         autoCorrect: !(exist === "true"),
         noBack: noBack,
       })
 
       if (
-        ["lamp.cbt_thought_record", "lamp.form_builder", "lamp.stories", "lamp.mood_tracker"].includes(
-          currentActivity.spec
-        )
+        [
+          "lamp.cbt_thought_record",
+          "lamp.form_builder",
+          "lamp.stories",
+          "lamp.mood_tracker",
+          "lamp.video_recording",
+        ].includes(currentActivity.spec)
       ) {
         console.log("Inside the cbt activity fetch")
         // const filePath = "/home/temp1/LampCode/test-build/dist/out/cbt_thought_record_3.html.b64"

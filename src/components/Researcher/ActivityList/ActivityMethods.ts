@@ -1383,6 +1383,36 @@ export const SchemaList = () => {
         },
       },
     },
+    "lamp.video_recording": {
+      type: "object",
+      properties: {
+        settings: {
+          title: i18n.t("Voice Recording Details"),
+          type: "array",
+          items: {
+            type: "object",
+            required: ["heading", "description"],
+            minItems: 1,
+            properties: {
+              heading: {
+                title: i18n.t("Heading"),
+                type: "string",
+                minLength: 1,
+              },
+              description: {
+                title: i18n.t("Description"),
+                type: "string",
+                minLength: 1,
+                "ui:widget": "textarea",
+                "ui:options": {
+                  rows: 8,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     "lamp.tips": {
       type: "object",
       properties: {

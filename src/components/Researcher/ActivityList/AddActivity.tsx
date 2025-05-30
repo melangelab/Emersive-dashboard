@@ -300,6 +300,7 @@ export default function AddActivity({
                     "lamp.cbt_thought_record",
                     "lamp.stories",
                     "lamp.mood_tracker",
+                    "lamp.video_recording",
                   ].includes(x.id)
                 )
                 .map((x) => (
@@ -329,6 +330,7 @@ export default function AddActivity({
                 "lamp.cbt_thought_record",
                 "lamp.stories",
                 "lamp.mood_tracker",
+                "lamp.video_recording",
               ].includes(x.id)
           ).length > 0 && [
             <MenuItem divider key="head" disabled className={classes.borderTop}>
