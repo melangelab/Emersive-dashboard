@@ -1268,7 +1268,7 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
       <Box className={classes.statsGrid}>
         {stats(
           participant,
-          studies.find((s) => s.id === participant.study_id)
+          studies.find((s) => s.id === participant.study_id) || sharedstudies.find((s) => s.id === participant.study_id)
         ).map((stat) => (
           <Box
             key={stat.key}

@@ -708,7 +708,17 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
                   window.location.href = `/#/researcher/${researcherId}/users?filter=${participant.id}`
                 }}
               >
-                <ListItemText primary={participant.name} />
+                <ListItemText
+                  primary={
+                    participant.name
+                      ? participant.name
+                      : participant.username
+                      ? participant.username
+                      : participant.firstName || participant.lastName
+                      ? `${participant.firstName || ""} ${participant.lastName || ""}`.trim()
+                      : participant.id
+                  }
+                />
               </ListItem>
             ))}
           </List>
@@ -869,7 +879,9 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
       // }
 
       enqueueSnackbar(t("Study updated successfully"), { variant: "success" })
-      onSave(studyData)
+      // onSave(studyData)
+      const updatedStudyobj = await LAMP.Study.view(study.id)
+      onSave(updatedStudyobj)
     } catch (error) {
       console.error("Error updating study:", error)
       enqueueSnackbar(t("Failed to update study: ") + error.message, { variant: "error" })
