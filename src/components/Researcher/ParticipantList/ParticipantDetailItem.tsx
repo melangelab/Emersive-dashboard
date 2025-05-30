@@ -261,7 +261,9 @@ const AsyncStatsContent: React.FC<{
         const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
         let newItems: any[] = []
         const endpoint = dateRangeEnabled
-          ? `participant/mode/6?from_date=${startDate?.getTime()}&to_date=${endDate?.getTime()}`
+          ? `participant/mode/6?from_date=${startDate?.getTime()}&to_date=${endDate?.getTime()}&participant_id=${
+              participant.id
+            }`
           : "participant/mode/5"
         const studyID = study?.id ? study.id : participant.study_id
         const result = await fetchResult(authString, studyID, endpoint, "study")
