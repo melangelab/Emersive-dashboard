@@ -28,7 +28,7 @@ const MoodTrackerBuilder = ({ oldFields, onChange }) => {
             description: "",
             required: false,
             type: "mood",
-            options: [],
+            options: ["Happy", "Sad"],
             settings: {
               upperRatingLimit: "",
             },
@@ -133,14 +133,18 @@ const MoodTrackerBuilder = ({ oldFields, onChange }) => {
         </Typography>
 
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
-          {field.options.map((emotion) => (
-            <Chip
-              key={emotion}
-              label={emotion}
-              onDelete={() => handleRemoveEmotion(field.id, emotion)}
-              color="primary"
-            />
-          ))}
+          {field.options.map((emotion) =>
+            ["Happy", "Sad"].includes(emotion) ? (
+              <Chip key={emotion} label={emotion} color="primary" />
+            ) : (
+              <Chip
+                key={emotion}
+                label={emotion}
+                onDelete={() => handleRemoveEmotion(field.id, emotion)}
+                color="primary"
+              />
+            )
+          )}
         </Box>
 
         <Typography variant="subtitle1" gutterBottom>

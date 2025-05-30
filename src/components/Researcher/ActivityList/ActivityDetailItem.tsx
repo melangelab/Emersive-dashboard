@@ -312,15 +312,6 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     title: activity?.streak?.title || "",
     description: activity?.streak?.description || "",
   })
-  // const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null)
-  // const [isPreviewReady, setIsPreviewReady] = useState(false)
-  // const [videoData, setVideoData] = useState({
-  //   stream: null,
-  //   chunks: [],
-  //   previewUrl: null,
-  // })
-  // const [videoPreviewBlob, setVideoPreviewBlob] = useState<Blob | null>(null)
-  // const [videoStreamActive, setVideoStreamActive] = useState(false)
 
   // Form state
   const [editedValues, setEditedValues] = useState<{
@@ -376,202 +367,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     }
     fetchname()
   }, [activity])
-  // Video recording functions
-  // const startCamera = async () => {
-  //   if (!window.navigator.mediaDevices || !window.navigator.mediaDevices.getUserMedia) {
-  //     enqueueSnackbar("Camera access not supported in this browser or insecure context.", { variant: "error" })
-  //     return
-  //   }
-  //   try {
-  //     const mediaStream = await window.navigator.mediaDevices.getUserMedia({
-  //       video: true,
-  //       audio: audioEnabled,
-  //     })
-  //     setStream(mediaStream)
-  //     setVideoStreamActive(true)
-  //     if (videoRef.current) {
-  //       videoRef.current.srcObject = mediaStream
-  //       videoRef.current.play().catch((err) => console.error("Error playing video:", err))
-  //     }
-  //   } catch (err) {
-  //     console.error("Error accessing camera:", err)
-  //     enqueueSnackbar(`Error accessing camera: ${err.message || err}`, { variant: "error" })
-  //   }
-  // }
 
-  // const stopCamera = () => {
-  //   if (stream) {
-  //     stream.getTracks().forEach((track) => track.stop())
-  //     setStream(null)
-  //     setVideoStreamActive(false)
-  //     if (videoRef.current) {
-  //       videoRef.current.srcObject = null
-  //     }
-  //   }
-  // }
-
-  // const toggleRecording = () => {
-  //   if (!recording) {
-  //     startRecording()
-  //   } else {
-  //     stopRecording()
-  //   }
-  // }
-
-  // const startRecording = () => {
-  //   if (!stream || !videoStreamActive) {
-  //     enqueueSnackbar("Camera stream not available", { variant: "error" })
-  //     return
-  //   }
-  //   if (stream) {
-  //     const updatedActivityGuide = {
-  //       ...editedValues.activityGuide,
-  //       video: null,
-  //     }
-
-  //     setEditedValues((prev) => ({
-  //       ...prev,
-  //       activityGuide: updatedActivityGuide,
-  //     }))
-
-  //     const recorder = new MediaRecorder(stream)
-  //     setMediaRecorder(recorder)
-  //     const chunks: Blob[] = []
-
-  //     recorder.ondataavailable = (e) => {
-  //       if (e.data.size > 0) {
-  //         chunks.push(e.data)
-  //       }
-  //     }
-
-  //     recorder.onstop = () => {
-  //       const videoBlob = new Blob(chunks, { type: "video/webm" })
-
-  //       setVideoPreviewBlob(videoBlob)
-  //       const videoURL = URL.createObjectURL(videoBlob)
-
-  //       setRecordedChunks(chunks)
-  //       const stableVideoURL = URL.createObjectURL(videoBlob)
-  //       setVideoPreviewUrl(stableVideoURL) // Add new state for video URL
-
-  //       // if (previewRef.current) {
-  //       //   previewRef.current.src = stableVideoURL
-  //       //   previewRef.current.load()
-  //       //   previewRef.current.onloadeddata = () => {
-  //       //     console.log(previewRef.current)
-  //       //     previewRef.current?.play()
-  //       //   }
-  //       // }
-
-  //       const reader = new FileReader()
-  //       reader.onloadend = () => {
-  //         const updatedActivityGuide = {
-  //           ...editedValues.activityGuide,
-  //           video: {
-  //             data: reader.result,
-  //             fileType: "webm",
-  //             uploadedAt: new Date(),
-  //           },
-  //         }
-
-  //         setEditedValues((prev) => ({
-  //           ...prev,
-  //           activityGuide: updatedActivityGuide,
-  //         }))
-  //       }
-  //       reader.readAsDataURL(videoBlob)
-  //       // return () => {
-  //       //   URL.revokeObjectURL(stableVideoURL);
-  //       // };
-  //     }
-
-  //     recorder.start()
-  //     setRecording(true)
-  //     setRecordingTime(0)
-  //   }
-  // }
-
-  // const stopRecording = () => {
-  //   if (mediaRecorder && mediaRecorder.state !== "inactive") {
-  //     mediaRecorder.stop()
-  //     setRecording(false)
-  //   }
-  // }
-
-  // const toggleMic = () => {
-  //   setAudioEnabled(!audioEnabled)
-  //   if (stream) {
-  //     stream.getAudioTracks().forEach((track) => {
-  //       track.enabled = !audioEnabled
-  //     })
-  //   }
-  // }
-
-  // Audio recording functions
-  // const startAudioRecording = async () => {
-  //   try {
-  //     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-  //     setAudioStream(stream)
-
-  //     const recorder = new MediaRecorder(stream)
-  //     setAudioRecorder(recorder)
-  //     const chunks: Blob[] = []
-
-  //     recorder.ondataavailable = (e) => {
-  //       if (e.data.size > 0) {
-  //         chunks.push(e.data)
-  //       }
-  //     }
-
-  //     recorder.onstop = () => {
-  //       const blob = new Blob(chunks, { type: "audio/webm" })
-  //       const audioURL = URL.createObjectURL(blob)
-  //       if (audioPreviewRef.current) {
-  //         audioPreviewRef.current.src = audioURL
-  //         audioPreviewRef.current.load()
-  //       }
-  //       setAudioChunks(chunks)
-
-  //       const reader = new FileReader()
-  //       reader.onloadend = () => {
-  //         const updatedActivityGuide = {
-  //           ...editedValues.activityGuide,
-  //           audio: {
-  //             data: reader.result,
-  //             fileType: "webm",
-  //             uploadedAt: new Date(),
-  //           },
-  //         }
-
-  //         setEditedValues((prev) => ({
-  //           ...prev,
-  //           activityGuide: updatedActivityGuide,
-  //         }))
-  //       }
-  //       reader.readAsDataURL(blob)
-  //     }
-
-  //     recorder.start()
-  //     setAudioRecording(true)
-  //     setAudioRecordingTime(0)
-  //   } catch (err) {
-  //     console.error("Error accessing microphone:", err)
-  //     enqueueSnackbar(`Error accessing microphone: ${err.message || err}`, { variant: "error" })
-  //   }
-  // }
-
-  // const stopAudioRecording = () => {
-  //   if (audioRecorder && audioRecorder.state !== "inactive") {
-  //     audioRecorder.stop()
-  //     setAudioRecording(false)
-  //     if (audioStream) {
-  //       audioStream.getTracks().forEach((track) => track.stop())
-  //       setAudioStream(null)
-  //     }
-  //   }
-  // }
-
-  // File upload handlers
   const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -655,51 +451,6 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     })
   }
 
-  // Initialize form data
-  // useEffect(() => {
-  //   if (activity) {
-  //     setSelectedStudy(activity.study_id);
-  //     setSelectedGroups(activity.groups || []);
-  //   }
-  //   // Load saved developer info from tags
-  //   // LAMP.Type.getAttachment(activity.id, "emersive.activity.developer_info").then((res:any)=>{ console.log("emersive.activity.developer_info", res); })
-  //   // LAMP.Type.getAttachment(activity.id, "emersive.activity.details").then((res:any)=>{ console.log("emersive.activity.details", res); })
-  //   if (activity?.id) {
-  //     const devres = await LAMP.Type.getAttachment(activity.id, "emersive.activity.developer_info")
-  //     let developer_info = null;
-  //     if (devres.error === undefined && devres.data) {
-  //       developer_info = devres.data;
-  //     }
-  //     let activity_description = null;
-  //     const res = await LAMP.Type.getAttachment(activity.id, "emersive.activity.details")
-  //     if (res.data) {
-  //       const attachmentData = res.data;
-  //       activity_description =  attachmentData.description
-  //       setActivityImage(attachmentData.photo)
-  //       setStreakSettings(attachmentData.streak || {
-  //         enabled: false,
-  //         title: "",
-  //         description: ""
-  //       })
-  //       setShowInFeed(attachmentData.showInFeed ?? true)
-  //       console.log("Loaded activity details:", attachmentData);
-  //     }
-  //     setEditedValues({
-  //       name: activity?.name || "",
-  //       description: activity?.description || activity_description || "",
-  //       spec: activity?.spec || "",
-  //       study: activity.study_id || "",
-  //       groups: activity.groups || [],
-  //       image: activity.photo || null,
-  //       settings: activity?.settings || {},
-  //       activityGuide: activity?.activityGuide || {},
-  //       category: activity?.category || [],
-  //       schedule: activity?.schedule || [],
-  //       scoreInterpretation: activity?.scoreInterpretation || {},
-  //       developer_info: developer_info || {}
-  //     });
-  //   }
-  // }, [activity]);
   useEffect(() => {
     setSchemaListObj(SchemaList())
   }, [])
@@ -708,11 +459,8 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
       if (!activity?.id) return
 
       try {
-        // Set initial basic values
         setSelectedStudy(activity.study_id)
         setSelectedGroups(activity.groups || [])
-
-        // Fetch developer info
         let developer_info = null
         const devRes = (await LAMP.Type.getAttachment(activity.id, "emersive.activity.developer_info")) as any
         if (devRes.error == undefined && devRes.data) {
@@ -720,7 +468,6 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         }
         console.log("devRes", devRes, developer_info)
 
-        // Fetch activity details
         let activity_description = activity?.description
         let activity_image = activity?.photo
         let activity_streak = {
@@ -791,50 +538,6 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
       handleSave()
     }
   }, [triggerSave])
-
-  // useEffect(() => {
-  //   let interval: NodeJS.Timeout
-  //   if (recording) {
-  //     interval = setInterval(() => {
-  //       setRecordingTime((prev) => prev + 1)
-  //     }, 1000)
-  //   }
-  //   return () => clearInterval(interval)
-  // }, [recording])
-
-  // useEffect(() => {
-  //   let interval: NodeJS.Timeout
-  //   if (audioRecording) {
-  //     interval = setInterval(() => {
-  //       setAudioRecordingTime((prev) => prev + 1)
-  //     }, 1000)
-  //   }
-  //   return () => clearInterval(interval)
-  // }, [audioRecording])
-
-  // useEffect(() => {
-  //   // Handle camera initialization
-  //   if (guideTab === 1 && isEditing) {
-  //     startCamera()
-  //   }
-
-  //   return () => {
-  //     // Cleanup
-  //     stopCamera()
-  //     if (videoPreviewUrl) {
-  //       URL.revokeObjectURL(videoPreviewUrl)
-  //     }
-  //     setVideoPreviewBlob(null)
-  //     setVideoPreviewUrl(null)
-  //     setIsPreviewReady(false)
-  //   }
-  // }, [guideTab, isEditing])
-
-  // useEffect(() => {
-  //   if (previewRef.current && videoPreviewUrl) {
-  //     previewRef.current.load()
-  //   }
-  // }, [videoPreviewUrl])
 
   const handleSaveDeveloperInfo = async () => {
     setLoading(true)
@@ -1080,18 +783,6 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
       value: activity?.study_name || "",
       editable: false,
     },
-    // {
-    //   id: "study",
-    //   label: t("Choose Study"),
-    //   value: selectedStudy,
-    //   editable: true,
-    //   hide: true,
-    //   type: "select",
-    //   options: studies.map((study) => ({
-    //     value: study.id,
-    //     label: study.name,
-    //   })),
-    // },
     {
       id: "groups",
       label: t("Groups"),
@@ -1116,7 +807,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     {
       id: "category",
       label: t("Customize which Tab this Activity appears in"),
-      value: activity?.category || [], // Should be an array
+      value: activity?.category || [],
       editable: true,
       type: "multiselect",
       options: [
@@ -1370,356 +1061,6 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     )
   }
 
-  // const ActivityGuideContent = () => (
-  //   <Box>
-  //     <Tabs
-  //       value={guideTab}
-  //       onChange={(e, newValue) => setGuideTab(newValue)}
-  //       indicatorColor="primary"
-  //       textColor="primary"
-  //       style={{ marginBottom: 16 }}
-  //     >
-  //       <Tab icon={<DescriptionOutlined />} label={t("Text")} />
-  //       <Tab icon={<VideocamOutlined />} label={t("Video")} />
-  //       <Tab icon={<AudiotrackOutlined />} label={t("Audio")} />
-  //     </Tabs>
-
-  //     {guideTab === 0 && (
-  //       <TextField
-  //         fullWidth
-  //         multiline
-  //         rows={4}
-  //         variant="outlined"
-  //         label={t("Text Guide")}
-  //         value={editedValues.activityGuide?.text || ""}
-  //         disabled={!isEditing}
-  //         onChange={(e) => {
-  //           const updatedActivityGuide = {
-  //             ...editedValues.activityGuide,
-  //             text: e.target.value,
-  //           }
-
-  //           setEditedValues((prev) => ({
-  //             ...prev,
-  //             activityGuide: updatedActivityGuide,
-  //           }))
-  //         }}
-  //         placeholder={t("Enter instructions or description for the activity...")}
-  //       />
-  //     )}
-
-  //     {guideTab === 1 && (
-  //       <Box className={classes.videoContainer || ""}>
-  //         {isEditing ? (
-  //           <>
-  //             <Box className={classes.videoPreviewBox || ""}>
-  //               <video ref={videoRef} className={classes.videoFeed || ""} autoPlay muted playsInline
-  //                 style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
-  //                 />
-  //               {recording && (
-  //                 <Typography className={classes.timer || ""}>
-  //                   {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
-  //                 </Typography>
-  //               )}
-  //             </Box>
-  //             <Box className={classes.controlsContainer || ""}>
-  //               {/* {recordedChunks.length > 0 && (
-  //                 <Box
-  //                   className={classes.previewThumbnail || ""}
-  //                   onClick={() => handleViewMedia("video", previewRef.current?.src || "", "video/webm")}
-  //                 >
-  //                   <video ref={previewRef} autoPlay muted loop />
-  //                 </Box>
-  //               )} */}
-  //               {videoPreviewBlob && (
-  //                 <Box className={classes.previewThumbnail}>
-  //                   <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-  //                     <video
-  //                       ref={previewRef}
-  //                       key={videoPreviewUrl || 'preview'} // Add key to force remount
-  //                       src={videoPreviewUrl}
-  //                       autoPlay
-  //                       muted
-  //                       loop
-  //                       playsInline
-  //                       controls={false}
-  //                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
-  //                       onLoadedData={() => setIsPreviewReady(true)}
-  //                     />
-  //                     {!isPreviewReady && (
-  //                       <div style={{
-  //                         position: 'absolute',
-  //                         top: 0,
-  //                         left: 0,
-  //                         right: 0,
-  //                         bottom: 0,
-  //                         display: 'flex',
-  //                         justifyContent: 'center',
-  //                         alignItems: 'center',
-  //                         backgroundColor: 'rgba(0,0,0,0.3)'
-  //                       }}>
-  //                         <CircularProgress size={24} color="secondary" />
-  //                       </div>
-  //                     )}
-  //                   </div>
-  //                 </Box>
-  //               )}
-  //               <Box
-  //                 onClick={toggleRecording}
-  //                 style={{
-  //                   width: 64,
-  //                   height: 64,
-  //                   backgroundColor: "#f44336",
-  //                   borderRadius: recording ? 8 : "50%",
-  //                   display: "flex",
-  //                   justifyContent: "center",
-  //                   alignItems: "center",
-  //                   cursor: "pointer",
-  //                 }}
-  //               >
-  //                 {recording ? <Stop /> : null}
-  //               </Box>
-  //               <Box
-  //                 onClick={toggleMic}
-  //                 style={{
-  //                   width: 48,
-  //                   height: 48,
-  //                   backgroundColor: audioEnabled ? "#fff" : "#e0e0e0",
-  //                   borderRadius: "50%",
-  //                   display: "flex",
-  //                   justifyContent: "center",
-  //                   alignItems: "center",
-  //                   cursor: "pointer",
-  //                 }}
-  //               >
-  //                 {audioEnabled ? <Mic /> : <MicOff />}
-  //               </Box>
-  //             </Box>
-
-  //             <Box
-  //               style={{
-  //                 backgroundColor: "#f5f5f5",
-  //                 borderRadius: 8,
-  //                 textAlign: "center",
-  //                 border: "2px dashed #ccc",
-  //                 cursor: "pointer",
-  //                 marginTop: 24,
-  //                 padding: 16,
-  //               }}
-  //               onClick={() => videoInputRef.current?.click()}
-  //             >
-  //               <Typography variant="subtitle1" gutterBottom>
-  //                 {t("Or upload a video file:")}
-  //               </Typography>
-  //               <input
-  //                 type="file"
-  //                 hidden
-  //                 ref={videoInputRef}
-  //                 accept="video/*"
-  //                 onChange={handleVideoUpload}
-  //                 disabled={!isEditing}
-  //               />
-  //               <VideocamOutlined style={{ fontSize: 48, color: "#666" }} />
-  //               <Typography>{t("Click to upload video guide")}</Typography>
-  //             </Box>
-  //           </>
-  //         ) : editedValues.activityGuide?.video?.data ? (
-  //           <Box className={classes.videoPreview}>
-  //             <video
-  //               width="100%"
-  //               height="auto"
-  //               controls
-  //               style={{
-  //                 borderRadius: 8,
-  //                 backgroundColor: "#f5f5f5",
-  //                 maxHeight: 300,
-  //               }}
-  //             >
-  //               <source
-  //                 src={editedValues.activityGuide.video.data}
-  //                 type={getVideoMimeType(editedValues.activityGuide.video.fileType)}
-  //               />
-  //               {t("Your browser does not support the video tag.")}
-  //             </video>
-  //             <Box className={classes.mediaControls}>
-  //               <Button
-  //                 startIcon={<VideocamOutlined />}
-  //                 onClick={() =>
-  //                   handleViewMedia(
-  //                     "video",
-  //                     editedValues.activityGuide.video.data,
-  //                     getVideoMimeType(editedValues.activityGuide.video.fileType)
-  //                   )
-  //                 }
-  //               >
-  //                 {t("View Full Screen")}
-  //               </Button>
-  //               <IconButton
-  //                 onClick={() => {
-  //                   const link = document.createElement("a")
-  //                   link.href = editedValues.activityGuide.video.data
-  //                   link.download = `video_guide_${activity.id}_${new Date().getTime()}.${
-  //                     editedValues.activityGuide.video.fileType || "webm"
-  //                   }`
-  //                   document.body.appendChild(link)
-  //                   link.click()
-  //                   document.body.removeChild(link)
-  //                 }}
-  //               >
-  //                 <GetApp />
-  //               </IconButton>
-  //             </Box>
-  //           </Box>
-  //         ) : (
-  //           <Box display="flex" justifyContent="center" alignItems="center" py={4}>
-  //             <Typography variant="body1" color="textSecondary">
-  //               {t("No video guide available")}
-  //             </Typography>
-  //           </Box>
-  //         )}
-  //       </Box>
-  //     )}
-
-  //     {guideTab === 2 && (
-  //       <Box className={classes.videoContainer || ""}>
-  //         {isEditing ? (
-  //           <>
-  //             <Box
-  //               style={{
-  //                 display: "flex",
-  //                 justifyContent: "center",
-  //                 marginBottom: 32,
-  //               }}
-  //             >
-  //               <Box
-  //                 onClick={() => (audioRecording ? stopAudioRecording() : startAudioRecording())}
-  //                 style={{
-  //                   width: 80,
-  //                   height: 80,
-  //                   backgroundColor: "#e74c3c",
-  //                   borderRadius: audioRecording ? 8 : "50%",
-  //                   display: "flex",
-  //                   justifyContent: "center",
-  //                   alignItems: "center",
-  //                   cursor: "pointer",
-  //                 }}
-  //               >
-  //                 {audioRecording ? <Stop /> : <Mic style={{ fontSize: 32 }} />}
-  //               </Box>
-  //               {audioRecording && (
-  //                 <Typography variant="h6" style={{ position: "absolute", top: "-30px" }}>
-  //                   {new Date(audioRecordingTime * 1000).toISOString().substr(14, 5)}
-  //                 </Typography>
-  //               )}
-  //             </Box>
-
-  //             <Box
-  //               style={{
-  //                 backgroundColor: "#f5f5f5",
-  //                 borderRadius: 8,
-  //                 textAlign: "center",
-  //                 border: "2px dashed #ccc",
-  //                 cursor: "pointer",
-  //                 marginTop: 24,
-  //                 padding: 16,
-  //               }}
-  //               onClick={() => audioInputRef.current?.click()}
-  //             >
-  //               <Typography variant="subtitle1" align="center" gutterBottom>
-  //                 {t("Or upload an audio file:")}
-  //               </Typography>
-  //               <input type="file" hidden ref={audioInputRef} accept="audio/*" onChange={handleAudioUpload} />
-  //               <AudiotrackOutlined style={{ fontSize: 48, color: "#666" }} />
-  //               <Typography>{t("Click to upload audio guide")}</Typography>
-  //             </Box>
-  //           </>
-  //         ) : null}
-
-  //         {(editedValues.activityGuide?.audio?.data || audioChunks.length > 0) && (
-  //           <Box sx={{ mt: 3, p: 2, bgcolor: "#f5f5f5", borderRadius: 1 }}>
-  //             <Box
-  //               style={{
-  //                 display: "flex",
-  //                 alignItems: "center",
-  //                 gap: 5,
-  //                 width: "100%",
-  //               }}
-  //             >
-  //               {editedValues.activityGuide?.audio?.data ? (
-  //                 <audio controls style={{ flexGrow: 1 }}>
-  //                   <source
-  //                     src={editedValues.activityGuide.audio.data}
-  //                     type={getAudioMimeType(editedValues.activityGuide.audio.fileType)}
-  //                   />
-  //                   {t("Your browser does not support the audio element.")}
-  //                 </audio>
-  //               ) : audioChunks.length > 0 ? (
-  //                 <audio
-  //                   controls
-  //                   src={URL.createObjectURL(new Blob(audioChunks))}
-  //                   style={{ flexGrow: 1 }}
-  //                   ref={audioPreviewRef}
-  //                 />
-  //               ) : (
-  //                 <Typography variant="body2" color="textSecondary">
-  //                   {t("No audio available")}
-  //                 </Typography>
-  //               )}
-
-  //               <IconButton
-  //                 style={{ width: "auto" }}
-  //                 onClick={() => {
-  //                   const audioUrl =
-  //                     editedValues.activityGuide?.audio?.data ||
-  //                     (audioChunks.length > 0 ? URL.createObjectURL(new Blob(audioChunks)) : "")
-  //                   const link = document.createElement("a")
-  //                   link.href = audioUrl
-  //                   link.download = `audio_guide_${activity.id}_${new Date().getTime()}.webm`
-  //                   document.body.appendChild(link)
-  //                   link.click()
-  //                   document.body.removeChild(link)
-  //                 }}
-  //                 size="small"
-  //               >
-  //                 <GetApp />
-  //               </IconButton>
-
-  //               {isEditing && (
-  //                 <Button
-  //                   variant="outlined"
-  //                   size="small"
-  //                   onClick={() => {
-  //                     const updatedActivityGuide = {
-  //                       ...editedValues.activityGuide,
-  //                       audio: null,
-  //                     }
-
-  //                     setEditedValues((prev) => ({
-  //                       ...prev,
-  //                       activityGuide: updatedActivityGuide,
-  //                     }))
-  //                     setAudioChunks([])
-  //                   }}
-  //                 >
-  //                   {t("Remove Audio")}
-  //                 </Button>
-  //               )}
-  //             </Box>
-  //           </Box>
-  //         )}
-
-  //         {!editedValues.activityGuide?.audio?.data && audioChunks.length === 0 && !isEditing && (
-  //           <Box display="flex" justifyContent="center" alignItems="center" py={4}>
-  //             <Typography variant="body1" color="textSecondary">
-  //               {t("No audio guide available")}
-  //             </Typography>
-  //           </Box>
-  //         )}
-  //       </Box>
-  //     )}
-  //   </Box>
-  // )
-
   const ActivityGuideContent = () => {
     // References for media elements
     const videoRef = useRef(null)
@@ -1748,6 +1089,10 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     const [audioRecordingTime, setAudioRecordingTime] = useState(0)
     const [audioPreviewUrl, setAudioPreviewUrl] = useState(null)
 
+    useEffect(() => {
+      console.log("videoPreviewUrl changed : ", videoPreviewUrl)
+    }, [videoPreviewUrl])
+
     // Initialize camera when tab changes to video
     useEffect(() => {
       if (guideTab === 1 && isEditing) {
@@ -1757,10 +1102,10 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
       return () => {
         // Clean up resources when component unmounts or tab changes
         stopCamera()
-        if (videoPreviewUrl) {
+        if (guideTab === 1 && videoPreviewUrl) {
           URL.revokeObjectURL(videoPreviewUrl)
         }
-        if (audioPreviewUrl) {
+        if (guideTab === 2 && audioPreviewUrl) {
           URL.revokeObjectURL(audioPreviewUrl)
         }
       }
