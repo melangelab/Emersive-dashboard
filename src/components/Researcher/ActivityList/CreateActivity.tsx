@@ -322,13 +322,6 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
       return
     }
 
-    console.log(
-      "IN THE HANDLE SAVE",
-      editedValues.spec === "lamp.mood_tracker",
-      editedValues.settings[0].options.length === 0,
-      editedValues.settings[0].settings.upperRatingLimit === ""
-    )
-
     if (editedValues.spec === "lamp.mood_tracker") {
       if (editedValues.settings[0].options.length === 0) {
         enqueueSnackbar(t("Please select at least one emotion/upper rate limit"), { variant: "error" })

@@ -241,7 +241,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
       setSettings({
         ...settings,
         activity: currentActivity,
-        // participantId: participant?.id ?? participant,
+        participantId: participant?.id ?? participant,
         configuration: { language: i18n.language },
         autoCorrect: !(exist === "true"),
         noBack: noBack,
@@ -254,6 +254,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
           "lamp.stories",
           "lamp.mood_tracker",
           "lamp.video_recording",
+          "lamp.tips",
         ].includes(currentActivity.spec)
       ) {
         console.log("Inside the cbt activity fetch")
