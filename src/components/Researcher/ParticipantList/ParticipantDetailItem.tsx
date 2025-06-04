@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import {
   Box,
   Typography,
@@ -16,6 +16,12 @@ import {
   MenuItem,
   MuiThemeProvider,
   Button,
+  AccordionDetails,
+  Accordion,
+  AccordionSummary,
+  Card,
+  CardContent,
+  Chip,
 } from "@material-ui/core"
 import ViewItems, { FieldConfig, TabConfig } from "../SensorsList/ViewItems"
 import { useTranslation } from "react-i18next"
@@ -32,6 +38,7 @@ import DateFnsUtils from "@date-io/date-fns"
 import { MuiPickersUtilsProvider, KeyboardDatePicker } from "@material-ui/pickers"
 import { localeMap, userLanguages } from "../ActivityList/ScheduleRow"
 import locale_lang from "../../../locale_map.json"
+import { VariableSizeList as List } from "react-window"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -228,7 +235,759 @@ interface ParticipantDetailItemProps {
   sharedstudies: Array<any>
 }
 
+interface EventItemData {
+  events: any[]
+  selectedTab: string
+  onToggleExpanded: (index: number) => void
+  expandedItems: Set<number>
+}
+
+// Virtualized Event Item Component
+const EventItem: React.FC<{
+  index: number
+  style: React.CSSProperties
+  data: EventItemData
+}> = React.memo(({ index, style, data }) => {
+  const { events, selectedTab, onToggleExpanded, expandedItems } = data
+  const event = events[index]
+  const isExpanded = expandedItems.has(index)
+
+  if (!event) {
+    return (
+      <div style={style}>
+        <Card variant="outlined" style={{ margin: "4px 8px", height: "60px", overflow: "hidden" }}>
+          <CardContent style={{ padding: "8px" }}>
+            <Typography variant="body2" color="textSecondary">
+              Loading...
+            </Typography>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div style={style}>
+      <Card variant="outlined" style={{ margin: "4px 8px", minHeight: "60px" }}>
+        <CardContent style={{ padding: "8px" }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box flex={1}>
+              <Typography variant="body2" color="textPrimary">
+                <strong>#{index + 1}</strong> - {event.timestamp}
+              </Typography>
+              {selectedTab === "sensors" && (
+                <Typography variant="caption" color="textSecondary">
+                  Sensor: {event.sensor}
+                </Typography>
+              )}
+            </Box>
+            <IconButton size="small" onClick={() => onToggleExpanded(index)}>
+              {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            </IconButton>
+          </Box>
+
+          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+            <Box mt={1} pt={1} borderTop="1px solid #eee">
+              {selectedTab === "activities" && event.temporal_slices && <ActivityEventDetails event={event} />}
+              {selectedTab === "sensors" && event.data && <SensorEventDetails event={event} />}
+            </Box>
+          </Collapse>
+        </CardContent>
+      </Card>
+    </div>
+  )
+})
+
+// Activity Event Details Component
+const ActivityEventDetails: React.FC<{ event: any }> = React.memo(({ event }) => (
+  <Box pl={1} maxHeight={400} overflow="auto" width="100%" boxSizing="border-box">
+    <Typography variant="subtitle2" color="primary" gutterBottom>
+      Activity Details:
+    </Typography>
+    {event.temporal_slices?.map((slice: any, sliceIdx: number) => (
+      <Box key={sliceIdx} mb={2} pl={2} bgcolor="#f9f9f9" borderRadius={1} borderLeft="3px solid #1976d2">
+        <Typography variant="body2">
+          <strong>Item:</strong> {slice.item}
+        </Typography>
+        <Typography variant="body2" color="textSecondary" style={{ marginTop: 4 }}>
+          <strong>Value:</strong> {slice.value || "N/A"}
+        </Typography>
+        {slice.emotions && Object.keys(slice.emotions).length > 0 && (
+          <Box mt={1}>
+            <Typography variant="caption" color="textSecondary">
+              <strong>Emotions:</strong>
+            </Typography>
+            <Box display="flex" flexWrap="wrap" mt={0.5} style={{ gap: 4 }}>
+              {Object.entries(slice.emotions).map(([emotion, value]) => (
+                <Chip key={emotion} label={`${emotion}: ${value}`} size="small" variant="outlined" />
+              ))}
+            </Box>
+          </Box>
+        )}
+        <Typography variant="caption" color="textSecondary" style={{ marginTop: 4, display: "block" }}>
+          <strong>Duration:</strong> {slice.duration} ms
+        </Typography>
+      </Box>
+    ))}
+
+    {event.static_data?.story_responses && <StaticDataDetails staticData={event.static_data} />}
+  </Box>
+))
+
+// Sensor Event Details Component
+const SensorEventDetails: React.FC<{ event: any }> = React.memo(({ event }) => {
+  const renderDataValue = useCallback((key: string, value: any) => {
+    if (typeof value === "object" && value !== null) {
+      if (Array.isArray(value)) {
+        return (
+          <Box key={key} mb={1}>
+            <Typography variant="body2">
+              <strong>{key}:</strong> Array ({value.length} items)
+            </Typography>
+            <Box ml={2}>
+              {value.map((item, idx) => (
+                <Typography key={idx} variant="caption" display="block">
+                  [{idx}]: {typeof item === "object" ? JSON.stringify(item) : String(item)}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        )
+      } else {
+        const entries = Object.entries(value)
+        return (
+          <Box key={key} mb={1}>
+            <Typography variant="body2">
+              <strong>{key}:</strong>
+            </Typography>
+            <Box ml={2}>
+              {entries.map(([subKey, subValue]) => (
+                <Typography key={subKey} variant="caption" display="block">
+                  {subKey}: {String(subValue).substring(0, 50)}
+                  {String(subValue).length > 50 ? "..." : ""}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+        )
+      }
+    }
+
+    return (
+      <Typography key={key} variant="body2">
+        <strong>{key}:</strong> {String(value)}
+      </Typography>
+    )
+  }, [])
+
+  return (
+    <Box pl={1} maxHeight={400} overflow="auto" width="100%" boxSizing="border-box">
+      <Typography variant="subtitle2" color="primary" gutterBottom>
+        Sensor Data:
+      </Typography>
+      {event.data && typeof event.data === "object" ? (
+        Object.entries(event.data).map(([key, value]) => renderDataValue(key, value))
+      ) : (
+        <Typography variant="body2">{String(event.data)}</Typography>
+      )}
+    </Box>
+  )
+})
+
+// Static Data Details Component
+const StaticDataDetails: React.FC<{ staticData: any }> = React.memo(({ staticData }) => (
+  <Box mt={2} pt={2} borderTop="1px solid #e0e0e0">
+    <Typography variant="subtitle2" color="primary">
+      <strong>Responses:</strong>
+    </Typography>
+    <Box ml={2} mt={1}>
+      {Object.keys(staticData.story_responses || {}).map((storyKey) => {
+        const storyIndex = storyKey.replace("story_", "")
+        const audioKey = `story_${storyIndex}_audio`
+        const audioValue = staticData.audio_recordings?.[audioKey]
+
+        return (
+          <Box key={storyKey} mb={2} p={2} bgcolor="#f5f5f5" borderRadius={1}>
+            <Typography variant="body2" color="textPrimary" gutterBottom>
+              <strong>Story {Number(storyIndex) + 1}:</strong>
+            </Typography>
+            <Box ml={2}>
+              <Typography variant="body2" color="textSecondary" style={{ marginBottom: 8 }}>
+                <strong>Response:</strong> {staticData.story_responses[storyKey]}
+              </Typography>
+              {audioValue && (
+                <Box mt={1}>
+                  <Typography variant="body2" color="textSecondary" style={{ marginBottom: 4 }}>
+                    <strong>Audio:</strong>
+                  </Typography>
+                  <audio controls style={{ width: "100%", maxWidth: "300px" }}>
+                    <source src={audioValue} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )
+      })}
+    </Box>
+  </Box>
+))
+
+// Main Item Component (for sensors/activities list)
+const ItemCard: React.FC<{
+  item: any
+  index: number
+  selectedTab: string
+  onToggleItem: (index: number) => void
+  expandedItems: Set<number>
+}> = React.memo(({ item, index, selectedTab, onToggleItem, expandedItems }) => {
+  const isExpanded = expandedItems.has(index)
+  const eventCount = item.events?.length || (item.lastEvent ? 1 : 0)
+
+  const getIcon = () => {
+    switch (selectedTab) {
+      // case 'sensors': return <SensorsIcon color="primary" />
+      // case 'activities': return <ActivityIcon color="primary" />
+      // case 'assessments': return <AssessmentIcon color="primary" />
+      default:
+        return null
+    }
+  }
+
+  return (
+    <Accordion expanded={isExpanded} onChange={() => onToggleItem(index)}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Box display="flex" alignItems="center" width="100%">
+          {/* {getIcon()} */}
+          <Box ml={2} flex={1}>
+            <Typography variant="h6">{item.name}</Typography>
+            <Typography variant="body2" color="textSecondary">
+              {item.spec}
+            </Typography>
+            <Box display="flex" alignItems="center" mt={0.5}>
+              <Chip
+                label={`${eventCount} events`}
+                size="small"
+                color={eventCount > 0 ? "primary" : "default"}
+                variant="outlined"
+              />
+              {item.lastEvent && (
+                <Chip
+                  label={`Last: ${item.lastEvent.timestamp}`}
+                  size="small"
+                  variant="outlined"
+                  style={{ marginLeft: 8 }}
+                />
+              )}
+            </Box>
+          </Box>
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails>
+        <Box width="100%">
+          <VirtualizedEventList item={item} selectedTab={selectedTab} />
+        </Box>
+      </AccordionDetails>
+    </Accordion>
+  )
+})
+
+// Virtualized Event List Component
+const VirtualizedEventList: React.FC<{
+  item: any
+  selectedTab: string
+}> = React.memo(({ item, selectedTab }) => {
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
+  const listRef = useRef<any>(null) // Add ref for the List component
+
+  const events = useMemo(() => {
+    if (item.events && item.events.length > 0) {
+      return item.events
+    } else if (item.lastEvent) {
+      return [item.lastEvent]
+    }
+    return []
+  }, [item.events, item.lastEvent])
+
+  const handleToggleExpanded = useCallback((index: number) => {
+    setExpandedItems((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
+
+    // Reset item sizes when expansion state changes
+    if (listRef.current) {
+      listRef.current.resetAfterIndex(0)
+    }
+  }, [])
+
+  // Calculate dynamic item height based on expanded state and content
+  const getItemSize = useCallback(
+    (index: number) => {
+      const baseHeight = 80
+      if (!expandedItems.has(index)) {
+        return baseHeight
+      }
+
+      const event = events[index]
+      if (!event) return baseHeight
+
+      if (selectedTab === "sensors") {
+        const dataEntries = event.data ? Object.keys(event.data).length : 0
+        const arrayDataCount = event.data
+          ? Object.values(event.data).reduce((count: number, val: any) => {
+              return count + (Array.isArray(val) ? val.length : 0)
+            }, 0)
+          : 0
+        const hasNestedData =
+          event.data &&
+          Object.values(event.data).some((val: any) => typeof val === "object" && val !== null && !Array.isArray(val))
+
+        let expandedHeight = 150
+        expandedHeight += dataEntries * 25
+        expandedHeight += (arrayDataCount as number) * 20
+        if (hasNestedData) expandedHeight += 50
+
+        return Math.min(expandedHeight, 800)
+      } else if (selectedTab === "activities") {
+        const sliceCount = event.temporal_slices?.length || 0
+        const hasStaticData = event.static_data?.story_responses
+        const staticDataCount = hasStaticData ? Object.keys(event.static_data.story_responses).length : 0
+
+        let expandedHeight = 150 // Base expanded height
+
+        // Calculate height for temporal slices (more accurate)
+        expandedHeight += sliceCount * 100 // Each slice needs about 140px
+
+        // Add height for emotions in slices
+        if (event.temporal_slices) {
+          event.temporal_slices.forEach((slice: any) => {
+            if (slice.emotions && Object.keys(slice.emotions).length > 0) {
+              expandedHeight += 50 // Extra height for emotion chips
+            }
+          })
+        }
+
+        // Calculate height for static data (more accurate)
+        if (hasStaticData) {
+          expandedHeight += 100 // Header and padding
+          expandedHeight += staticDataCount * 120 // Each story response
+
+          // Add extra height if audio is present
+          Object.keys(event.static_data.story_responses).forEach((storyKey) => {
+            const storyIndex = storyKey.replace("story_", "")
+            const audioKey = `story_${storyIndex}_audio`
+            if (event.static_data.audio_recordings?.[audioKey]) {
+              expandedHeight += 80 // Audio player height
+            }
+          })
+        }
+
+        return Math.min(expandedHeight, 500) // Increased max height for activities
+      }
+
+      return 200
+    },
+    [expandedItems, selectedTab, events]
+  )
+
+  const itemData: EventItemData = useMemo(
+    () => ({
+      events,
+      selectedTab,
+      expandedItems,
+      onToggleExpanded: handleToggleExpanded,
+    }),
+    [events, selectedTab, expandedItems, handleToggleExpanded]
+  )
+
+  if (events.length === 0) {
+    return (
+      <Typography variant="body2" color="textSecondary">
+        No events found.
+      </Typography>
+    )
+  }
+
+  // Calculate total height more accurately
+  const totalHeight = Math.min(
+    events.reduce((total, _, index) => total + getItemSize(index), 0),
+    800 // Maximum container height
+  )
+
+  return (
+    <Box>
+      <Typography variant="subtitle1" gutterBottom>
+        Events ({events.length})
+      </Typography>
+      <Box height={totalHeight} width="100%">
+        <List
+          ref={listRef} // Add ref
+          height={totalHeight}
+          itemCount={events.length}
+          itemSize={getItemSize}
+          itemData={itemData}
+          overscanCount={3} // Reduce overscan for better performance
+        >
+          {EventItem}
+        </List>
+      </Box>
+    </Box>
+  )
+})
+
 const AsyncStatsContent: React.FC<{
+  selectedTab: any
+  study: any
+  participant: any
+  classes: any
+}> = ({ selectedTab, study, participant, classes }) => {
+  const [items, setItems] = useState<any[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
+  const [startDate, setStartDate] = useState<Date | null>(new Date(new Date().setDate(new Date().getDate() - 1)))
+  const [endDate, setEndDate] = useState<Date | null>(new Date())
+  const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(
+    new Date(new Date().setDate(new Date().getDate() - 1))
+  )
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(new Date())
+  const [applyFilter, setApplyFilter] = useState<boolean>(false)
+  const { t, i18n } = useTranslation()
+  const [dateRangeEnabled, setDateRangeEnabled] = useState<boolean>(false)
+
+  const getSelectedLanguage = () => {
+    const matched_codes = Object.keys(locale_lang).filter((code) => code.startsWith(navigator.language))
+    const lang = matched_codes.length > 0 ? matched_codes[0] : "en-US"
+    return i18n.language ? i18n.language : userLanguages.includes(lang) ? lang : "en-US"
+  }
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setLoading(true)
+      try {
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        let newItems: any[] = []
+        const endpoint = dateRangeEnabled
+          ? `participant/mode/6?from_date=${startDate?.getTime()}&to_date=${endDate?.getTime()}&participant_id=${
+              participant.id
+            }&tab=${selectedTab.tab}`
+          : "participant/mode/5"
+        const studyID = study?.id ? study.id : participant.study_id
+        const result = await fetchResult(authString, studyID, endpoint, "study")
+        const participantData = result.participants?.find((p: any) => p.id === participant.id)
+        console.log("participantData", participantData, endpoint)
+
+        if (selectedTab.tab === "assessments") {
+          newItems = study.activities?.filter((a: any) => a.category?.includes("assess")) || []
+        } else if (selectedTab.tab === "activities") {
+          if (dateRangeEnabled && participantData?.activity_events) {
+            const activityMap = new Map()
+            ;(study.activities || []).forEach((activity: any) => {
+              activityMap.set(activity.id, { ...activity, events: [] })
+            })
+
+            participantData.activity_events.forEach((event: any) => {
+              if (activityMap.has(event.activity)) {
+                const activity = activityMap.get(event.activity)
+                activity.events.push({
+                  ...event,
+                  timestamp: new Date(event.timestamp).toLocaleString(),
+                })
+              }
+            })
+
+            newItems = Array.from(activityMap.values())
+          } else {
+            newItems = (study.activities || []).map((activity: any) => {
+              const activityEvent = participantData?.last_activity_events?.find(
+                (e: any) => e.activity_id === activity.id
+              )
+              return {
+                ...activity,
+                lastEvent: activityEvent?.last_event
+                  ? {
+                      ...activityEvent.last_event,
+                      timestamp: new Date(activityEvent.last_event.timestamp).toLocaleString(),
+                    }
+                  : null,
+              }
+            })
+          }
+        } else if (selectedTab.tab === "sensors") {
+          if (dateRangeEnabled && participantData?.sensor_events) {
+            const sensorMap = new Map()
+            ;(study.sensors || []).forEach((sensor: any) => {
+              sensorMap.set(sensor.spec, { ...sensor, events: [] })
+            })
+
+            participantData.sensor_events.forEach((event: any) => {
+              if (sensorMap.has(event.sensor)) {
+                const sensor = sensorMap.get(event.sensor)
+                sensor.events.push({
+                  ...event,
+                  timestamp: new Date(event.timestamp).toLocaleString(),
+                })
+              }
+            })
+
+            newItems = Array.from(sensorMap.values())
+          } else {
+            newItems = (study.sensors || []).map((sensor: any) => {
+              const sensorEvent = participantData?.last_sensor_events?.find((s: any) => s.sensor_spec === sensor.spec)
+              console.log("sensorEvent", sensorEvent)
+              return {
+                ...sensor,
+                lastEvent: sensorEvent?.last_event
+                  ? {
+                      ...sensorEvent.last_event,
+                      timestamp: new Date(sensorEvent.last_event.timestamp).toLocaleString(),
+                    }
+                  : null,
+              }
+            })
+          }
+        }
+        setItems(newItems)
+      } catch (err) {
+        console.error("Failed to fetch stats:", err)
+        setItems([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [selectedTab, study, participant, dateRangeEnabled, startDate, endDate, applyFilter])
+
+  const handleStartDateChange = (date: Date | null) => {
+    if (date && date.isValid && date.isValid()) {
+      const newDate = new Date(date.getTime())
+      newDate.setHours(0, 0, 0, 0)
+      setSelectedStartDate(newDate)
+    } else {
+      setSelectedStartDate(null)
+    }
+  }
+
+  const handleEndDateChange = (date: Date | null) => {
+    if (date && date.isValid && date.isValid()) {
+      const newDate = new Date(date.getTime())
+      newDate.setHours(23, 59, 59, 999)
+      setSelectedEndDate(newDate)
+    } else {
+      setSelectedEndDate(null)
+    }
+  }
+
+  const handleToggleDateRange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEnabled = e.target.checked
+    setDateRangeEnabled(newEnabled)
+    if (newEnabled && (!startDate || !endDate)) {
+      setStartDate(selectedStartDate || new Date(new Date().setDate(new Date().getDate() - 1)))
+      setEndDate(selectedEndDate || new Date())
+      setApplyFilter((prev) => !prev)
+    }
+  }
+
+  const handleApplyFilter = () => {
+    if (selectedStartDate && selectedEndDate) {
+      setStartDate(selectedStartDate)
+      setEndDate(selectedEndDate)
+      setApplyFilter((prev) => !prev)
+    }
+  }
+
+  const isFilterReady = () => {
+    return dateRangeEnabled && selectedStartDate && selectedEndDate
+  }
+
+  const handleToggleItem = useCallback((index: number) => {
+    setExpandedItems((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
+  }, [])
+
+  if (loading) {
+    return <Typography className={classes.groupName}>Loading...</Typography>
+  }
+
+  if (items.length === 0) {
+    return <Typography className={classes.groupName}>{`No ${selectedTab.tab} present at this moment.`}</Typography>
+  }
+
+  // Performance logging (same as original)
+  if (selectedTab.tab === "sensors" && items.length > 0) {
+    console.log("=== RECENT 5 SENSOR ITEMS ===")
+    const sensorSummary = items.map((sensor) => {
+      let recentItems: any[] = []
+
+      if (dateRangeEnabled && sensor.events) {
+        recentItems = sensor.events.slice(0, 5).map((event: any) => {
+          if (event.sensor === "lamp.call_log" && event.data?.value?.length > 0) {
+            const trimmedValue = event.data.value.sort((a: any, b: any) => b.timestamp - a.timestamp).slice(0, 5)
+
+            return {
+              timestamp: event.timestamp,
+              sensor: event.sensor,
+              data: {
+                ...event.data,
+                value: trimmedValue,
+              },
+            }
+          }
+
+          return {
+            timestamp: event.timestamp,
+            sensor: event.sensor,
+            data: event.data,
+          }
+        })
+      } else if (sensor.lastEvent) {
+        let eventData = sensor.lastEvent.data
+        if (sensor.spec === "lamp.call_log" && eventData?.value?.length > 0) {
+          eventData = {
+            ...eventData,
+            value: eventData.value.sort((a: any, b: any) => b.timestamp - a.timestamp).slice(0, 5),
+          }
+        }
+
+        recentItems = [
+          {
+            timestamp: sensor.lastEvent.timestamp,
+            sensor: sensor.spec,
+            data: eventData,
+          },
+        ]
+      }
+
+      return {
+        sensorName: sensor.name,
+        sensorSpec: sensor.spec,
+        totalEvents: dateRangeEnabled ? sensor.events?.length || 0 : sensor.lastEvent ? 1 : 0,
+        recentItems: recentItems,
+      }
+    })
+
+    console.log(JSON.stringify(sensorSummary, null, 2))
+  }
+
+  return (
+    <Box className={classes.groupList}>
+      <Box mb={2} display="flex" flexDirection="row" alignItems="center">
+        <MuiPickersUtilsProvider locale={localeMap[getSelectedLanguage()]} utils={DateFnsUtils}>
+          <Box display="flex" alignItems="center" flexWrap="wrap">
+            <Box mr={2} mb={1}>
+              <KeyboardDatePicker
+                disabled={!dateRangeEnabled}
+                margin="normal"
+                id="start-date-picker"
+                label="Start Date"
+                format="MM/dd/yyyy"
+                value={selectedStartDate}
+                onChange={handleStartDateChange}
+                KeyboardButtonProps={{
+                  "aria-label": "change start date",
+                }}
+                className={classes.datePicker}
+                variant="inline"
+                inputVariant="outlined"
+                clearable
+                autoOk
+                size="small"
+                error={dateRangeEnabled && !startDate}
+                helperText={dateRangeEnabled && !startDate ? "Please select a valid date" : ""}
+              />
+            </Box>
+            <Box mr={2} mb={1}>
+              <KeyboardDatePicker
+                disabled={!dateRangeEnabled}
+                margin="normal"
+                clearable
+                autoOk
+                variant="inline"
+                inputVariant="outlined"
+                className={classes.datePicker}
+                error={dateRangeEnabled && !endDate}
+                helperText={dateRangeEnabled && !endDate ? "Please select a valid date" : ""}
+                id="end-date-picker"
+                label="End Date"
+                format="MM/dd/yyyy"
+                value={selectedEndDate}
+                onChange={handleEndDateChange}
+                KeyboardButtonProps={{
+                  "aria-label": "change end date",
+                }}
+                size="small"
+              />
+            </Box>
+            {dateRangeEnabled && (
+              <Box ml={2} mb={1}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  onClick={handleApplyFilter}
+                  disabled={!isFilterReady()}
+                >
+                  {t("Apply Filter")}
+                </Button>
+              </Box>
+            )}
+            <Box mb={1} display="flex" alignItems="center">
+              <Box component="label" mr={1}>
+                <Typography variant="body2">Enable Date Range</Typography>
+              </Box>
+              <Switch
+                id="date-range-toggle"
+                checked={dateRangeEnabled}
+                onChange={handleToggleDateRange}
+                color="primary"
+                size="small"
+              />
+            </Box>
+          </Box>
+        </MuiPickersUtilsProvider>
+      </Box>
+      <Divider style={{ marginBottom: 16 }} />
+
+      {/* Performance Stats */}
+      <Box mb={2} p={2} bgcolor="#f5f5f5" borderRadius={1}>
+        <Typography variant="subtitle2" color="textSecondary">
+          Performance Stats: {items.length} items loaded,{" "}
+          {items.reduce((total, item) => total + (item.events?.length || (item.lastEvent ? 1 : 0)), 0)} total events
+        </Typography>
+      </Box>
+
+      {/* Virtualized Items List */}
+      <Box>
+        {items.map((item, index) => (
+          <ItemCard
+            key={`${item.spec || item.id}-${index}`}
+            item={item}
+            index={index}
+            selectedTab={selectedTab.tab}
+            onToggleItem={handleToggleItem}
+            expandedItems={expandedItems}
+          />
+        ))}
+      </Box>
+    </Box>
+  )
+}
+
+const AsyncStatsContent_prev: React.FC<{
   selectedTab: any
   study: any
   participant: any
@@ -438,6 +1197,66 @@ const AsyncStatsContent: React.FC<{
     )
   )
   console.log("Last events with static_data:", items.map((item) => item.lastEvent?.static_data).filter(Boolean))
+
+  if (selectedTab.tab === "sensors" && items.length > 0) {
+    console.log("=== RECENT 5 SENSOR ITEMS ===")
+
+    const sensorSummary = items.map((sensor) => {
+      let recentItems = []
+
+      if (dateRangeEnabled && sensor.events) {
+        // Sort events by timestamp (most recent first) and take top 5
+        recentItems = sensor.events.slice(0, 5).map((event) => {
+          // Special handling for lamp.call_log
+          if (event.sensor === "lamp.call_log" && event.data?.value?.length > 0) {
+            // Sort and slice value array inside data
+            const trimmedValue = event.data.value.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5)
+
+            return {
+              timestamp: event.timestamp,
+              sensor: event.sensor,
+              data: {
+                ...event.data,
+                value: trimmedValue,
+              },
+            }
+          }
+
+          return {
+            timestamp: event.timestamp,
+            sensor: event.sensor,
+            data: event.data,
+          }
+        })
+      } else if (sensor.lastEvent) {
+        // Handle lastEvent
+        let eventData = sensor.lastEvent.data
+        if (sensor.spec === "lamp.call_log" && eventData?.value?.length > 0) {
+          eventData = {
+            ...eventData,
+            value: eventData.value.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5),
+          }
+        }
+
+        recentItems = [
+          {
+            timestamp: sensor.lastEvent.timestamp,
+            sensor: sensor.spec,
+            data: eventData,
+          },
+        ]
+      }
+
+      return {
+        sensorName: sensor.name,
+        sensorSpec: sensor.spec,
+        totalEvents: dateRangeEnabled ? sensor.events?.length || 0 : sensor.lastEvent ? 1 : 0,
+        recentItems: recentItems,
+      }
+    })
+
+    console.log(JSON.stringify(sensorSummary, null, 2))
+  }
   return (
     <Box className={classes.groupList}>
       <Box mb={2} display="flex" flexDirection="row" alignItems="center">
@@ -606,40 +1425,6 @@ const AsyncStatsContent: React.FC<{
                                     )
                                   })}
                                 </Box>
-                                {/* {event.static_data.story_responses && (
-                                  <Box ml={2} mt={1}>
-                                    {Object.entries(event.static_data.story_responses).map(([key, value]) => (
-                                      <Typography key={key} variant="body2" color="textSecondary">
-                                        <strong>{key}:</strong> {value}
-                                      </Typography>
-                                    ))}
-                                  </Box>
-                                )} */}
-                                {/* {event.static_data.sentiment && (
-                                  <Typography variant="body2" color="textSecondary">
-                                    <strong>Sentiment:</strong> {event.static_data.sentiment}
-                                  </Typography>
-                                )} */}
-                                {/* {event.static_data.audio_recordings && (
-                                  <Box mt={2}>
-                                    <Typography variant="subtitle2" color="textPrimary">
-                                      <strong>Audio Recordings:</strong>
-                                    </Typography>
-                                    <Box ml={2}>
-                                      {Object.entries(event.static_data.audio_recordings).map(([key, value]) => (
-                                        <Box key={key} mt={1}>
-                                          <Typography variant="body2" color="textSecondary">
-                                            <strong>{key}:</strong>
-                                          </Typography>
-                                          <audio controls>
-                                            <source src={value as string} type="audio/mpeg" />
-                                            Your browser does not support the audio element.
-                                          </audio>
-                                        </Box>
-                                      ))}
-                                    </Box>
-                                  </Box>
-                                )} */}
                               </Box>
                             )}
                           </Box>
@@ -681,28 +1466,6 @@ const AsyncStatsContent: React.FC<{
                     )}
                   </IconButton>
                 </Box>
-                {/* {selectedTab.tab === "activities" && item.lastEvent.temporal_slices && (
-              <Box mt={1} pl={2} borderLeft="3px solid #ccc">
-                {item.lastEvent.temporal_slices.map((slice: any, idx: number) => (
-                  <Box key={idx} mb={1}>
-                    <Typography variant="body2" color="textPrimary">
-                      <strong>Item:</strong> {slice.item}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Value:</strong> {slice.value || "N/A"}
-                    </Typography>
-                    {Object.keys(slice.emotions || {}).length > 0 && (
-                      <Typography variant="body2" color="textSecondary">
-                        <strong>Emotions:</strong> {Object.entries(slice.emotions).map(([k, v]) => `${k}: ${v}`).join(", ")}
-                      </Typography>
-                    )}
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Duration:</strong> {slice.duration} ms
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            )} */}
                 <Collapse in={expandedIndex === index} timeout="auto" unmountOnExit>
                   {selectedTab.tab === "activities" && (
                     <Box mt={1} pl={2} borderLeft="3px solid #ccc">
@@ -763,41 +1526,6 @@ const AsyncStatsContent: React.FC<{
                               )
                             })}
                           </Box>
-
-                          {/* {item.lastEvent.static_data.story_responses && (
-                            <Box ml={2} mt={1}>
-                              {Object.entries(item.lastEvent.static_data.story_responses).map(([key, value]) => (
-                                <Typography key={key} variant="body2" color="textSecondary">
-                                  <strong>{key}:</strong> {value}
-                                </Typography>
-                              ))}
-                            </Box>
-                          )}
-                          {item.lastEvent.static_data.sentiment && (
-                            <Typography variant="body2" color="textSecondary">
-                              <strong>Sentiment:</strong> {item.lastEvent.static_data.sentiment}
-                            </Typography>
-                          )}
-                          {item.lastEvent.static_data.audio_recordings && (
-                            <Box mt={2}>
-                              <Typography variant="subtitle2" color="textPrimary">
-                                <strong>Audio Recordings:</strong>
-                              </Typography>
-                              <Box ml={2}>
-                                {Object.entries(item.lastEvent.static_data.audio_recordings).map(([key, value]) => (
-                                  <Box key={key} mt={1}>
-                                    <Typography variant="body2" color="textSecondary">
-                                      <strong>{key}:</strong>
-                                    </Typography>
-                                    <audio controls>
-                                      <source src={value as string} type="audio/mpeg" />
-                                      Your browser does not support the audio element.
-                                    </audio>
-                                  </Box>
-                                ))}
-                              </Box>
-                            </Box>
-                          )} */}
                         </Box>
                       )}
                     </Box>

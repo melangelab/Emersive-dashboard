@@ -207,6 +207,8 @@ export default function AddActivity({
     "lamp.emotion_recognition": `${t("Emotion Recognition")}`,
     "lamp.symbol_digit_substitution": `${t("Symbol-digit Substitution")}`,
     "lamp.dcog": `${t("D-Cog")}`,
+    "lamp.video_recording": `${t("Video Recording")}`,
+    "lamp.mood_tracker": `${t("Mood Tracker")}`,
   }
 
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
@@ -338,7 +340,14 @@ export default function AddActivity({
             </MenuItem>,
             ...activitySpecs
               .filter(
-                (x) => !["lamp.group", "lamp.survey", "lamp.form_builder", "lamp.cbt_thought_record"].includes(x.id)
+                (x) =>
+                  ![
+                    "lamp.group",
+                    "lamp.survey",
+                    "lamp.form_builder",
+                    "lamp.cbt_thought_record",
+                    "lamp.video_recording",
+                  ].includes(x.id)
               )
               .map((x) => (
                 <MenuItem

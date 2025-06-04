@@ -82,6 +82,7 @@
     "react-pdf": "^9.2.1",
     "react-router-dom": "^5.2.1",
     "react-vega": "^7.5.1",
+    "react-window": "^1.8.11",
     "recharts": "^2.15.1",
     "remark-emoji": "^3.0.2",
     "remark-gfm": "^3.0.1",
