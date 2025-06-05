@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { Box, Button, FormControlLabel, Paper, Switch, TextField, Typography } from "@material-ui/core"
 import { makeStyles } from "@material-ui/core/styles"
 import { useSnackbar } from "notistack"
@@ -65,7 +65,7 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
 
   useEffect(() => {
     let isSubscribed = true
-
+    console.log("CreateActivity mounted")
     const loadSchemaList = () => {
       if (isSubscribed) {
         setSchemaListObj(SchemaList())
@@ -80,7 +80,7 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
   }, [])
 
   useEffect(() => {
-    console.log("editedValues now : ", editedValues)
+    console.log("editedValues after changes : ", editedValues)
   }, [editedValues])
 
   // Load default settings when spec changes
@@ -94,6 +94,7 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
         }))
       }
     }
+    console.log("editedValues.spec changed:", editedValues.spec)
   }, [editedValues.spec])
 
   useEffect(() => {
@@ -107,8 +108,24 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
         }))
       }
     }
+    console.log("editedValues.study_id changed:", editedValues.study_id)
   }, [editedValues.study_id, studies])
 
+  // Memoize the DynamicForm onChange handler
+  const handleDynamicFormChange = useCallback((x) => {
+    console.log("Settings updated:", x)
+    setEditedValues((prev) => {
+      // Only update if settings actually changed
+      const newSettings = x.settings || {}
+      if (JSON.stringify(prev.settings) !== JSON.stringify(newSettings)) {
+        return {
+          ...prev,
+          settings: newSettings,
+        }
+      }
+      return prev
+    })
+  }, [])
   // Define fields for ViewItems
   const fields: FieldConfig[] = [
     {
@@ -190,124 +207,139 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
   ]
 
   // Additional settings content
-  const additionalContent = (
-    <Box>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={editedValues.showInFeed}
-            onChange={(e) =>
-              setEditedValues((prev) => ({
-                ...prev,
-                showInFeed: e.target.checked,
-              }))
-            }
-          />
-        }
-        label={t("Show in Participant Feed")}
-      />
-      {editedValues.showInFeed && (
-        <Box mt={2}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={editedValues.streak.enabled}
-                onChange={(e) =>
-                  setEditedValues((prev) => ({
-                    ...prev,
-                    streak: {
-                      ...prev.streak,
-                      enabled: e.target.checked,
-                    },
-                  }))
-                }
-              />
-            }
-            label={t("Enable Streak")}
-          />
-          {editedValues.streak.enabled && (
-            <>
-              <TextField
-                fullWidth
-                label={t("Streak Title")}
-                value={editedValues.streak.title}
-                onChange={(e) =>
-                  setEditedValues((prev) => ({
-                    ...prev,
-                    streak: {
-                      ...prev.streak,
-                      title: e.target.value,
-                    },
-                  }))
-                }
-                margin="normal"
-              />
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label={t("Streak Description")}
-                value={editedValues.streak.description}
-                onChange={(e) =>
-                  setEditedValues((prev) => ({
-                    ...prev,
-                    streak: {
-                      ...prev.streak,
-                      description: e.target.value,
-                    },
-                  }))
-                }
-                margin="normal"
-              />
-            </>
-          )}
-        </Box>
-      )}
-      {editedValues.spec && (
-        <Box mt={3}>
-          <Typography variant="h6" gutterBottom>
-            {t("Activity Settings")}
-          </Typography>
-          {editedValues.spec === "lamp.form_builder" ? (
-            <FormBuilder
-              onChange={(formData) => {
-                console.log("FormBuilder data:", formData)
+  const additionalContent = useMemo(
+    () => (
+      <Box>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={editedValues.showInFeed}
+              onChange={(e) =>
                 setEditedValues((prev) => ({
                   ...prev,
-                  formula4Fields: formData.formula,
-                  settings: formData.fields,
+                  showInFeed: e.target.checked,
                 }))
-              }}
-              formFieldsProp={Array.isArray(editedValues.settings) || []}
-              formula={editedValues.formula4Fields}
+              }
             />
-          ) : editedValues.spec === "lamp.mood_tracker" ? (
-            <MoodTrackerBuilder
-              onChange={(data) => {
-                setEditedValues((prev) => ({ ...prev, settings: data }))
-              }}
-              oldFields={Array.isArray(editedValues.settings) || []}
+          }
+          label={t("Show in Participant Feed")}
+        />
+        {editedValues.showInFeed && (
+          <Box mt={2}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={editedValues.streak.enabled}
+                  onChange={(e) =>
+                    setEditedValues((prev) => ({
+                      ...prev,
+                      streak: {
+                        ...prev.streak,
+                        enabled: e.target.checked,
+                      },
+                    }))
+                  }
+                />
+              }
+              label={t("Enable Streak")}
             />
-          ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
-            <DynamicForm
-              schema={schemaListObj[editedValues.spec]}
-              initialData={{
-                settings: editedValues.settings,
-                spec: editedValues.spec,
-              }}
-              onChange={(x) => {
-                console.log("Settings updated:", x)
-                setEditedValues((prev) => ({
-                  ...prev,
-                  settings: x.settings || {},
-                }))
-              }}
-            />
-          ) : null}
-        </Box>
-      )}
-    </Box>
+            {editedValues.streak.enabled && (
+              <>
+                <TextField
+                  fullWidth
+                  label={t("Streak Title")}
+                  value={editedValues.streak.title}
+                  onChange={(e) =>
+                    setEditedValues((prev) => ({
+                      ...prev,
+                      streak: {
+                        ...prev.streak,
+                        title: e.target.value,
+                      },
+                    }))
+                  }
+                  margin="normal"
+                />
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label={t("Streak Description")}
+                  value={editedValues.streak.description}
+                  onChange={(e) =>
+                    setEditedValues((prev) => ({
+                      ...prev,
+                      streak: {
+                        ...prev.streak,
+                        description: e.target.value,
+                      },
+                    }))
+                  }
+                  margin="normal"
+                />
+              </>
+            )}
+          </Box>
+        )}
+        {editedValues.spec && (
+          <Box mt={3}>
+            <Typography variant="h6" gutterBottom>
+              {t("Activity Settings")}
+            </Typography>
+            {editedValues.spec === "lamp.form_builder" ? (
+              <FormBuilder
+                onChange={(formData) => {
+                  console.log("FormBuilder data:", formData)
+                  setEditedValues((prev) => ({
+                    ...prev,
+                    formula4Fields: formData.formula,
+                    settings: formData.fields,
+                  }))
+                }}
+                formFieldsProp={Array.isArray(editedValues.settings) || []}
+                formula={editedValues.formula4Fields}
+              />
+            ) : editedValues.spec === "lamp.mood_tracker" ? (
+              <MoodTrackerBuilder
+                onChange={(data) => {
+                  setEditedValues((prev) => ({ ...prev, settings: data }))
+                }}
+                oldFields={Array.isArray(editedValues.settings) || []}
+              />
+            ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
+              <DynamicForm
+                schema={schemaListObj[editedValues.spec]}
+                initialData={{
+                  settings: editedValues.settings,
+                  spec: editedValues.spec,
+                }}
+                // onChange={(x) => {
+                //   console.log("Settings updated:", x)
+                //   setEditedValues((prev) => ({
+                //     ...prev,
+                //     settings: x.settings || {},
+                //   }))
+                //   console.log("editedValues after settings change:", editedValues)
+                // }}
+                onChange={handleDynamicFormChange}
+              />
+            ) : null}
+          </Box>
+        )}
+      </Box>
+    ),
+    [
+      editedValues.showInFeed,
+      editedValues.streak,
+      editedValues.spec,
+      editedValues.settings,
+      editedValues.formula4Fields,
+      schemaListObj,
+      handleDynamicFormChange,
+      t,
+    ]
   )
+
   const validateFormBuilder = () => {
     if (!editedValues.settings || !Array.isArray(editedValues.settings)) {
       return false

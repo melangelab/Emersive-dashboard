@@ -26,7 +26,7 @@ import { useSnackbar } from "notistack"
 import { useModularTableStyles } from "../Studies/Index"
 import LAMP from "lamp-core"
 import DetailModal from "./DetailModal"
-import { sensorConstraints } from "./SensorDialog"
+import { sensorConstraints, defaultSensorSettings } from "./SensorDialog"
 import { set } from "date-fns"
 import { canEditSensor } from "./Index"
 
@@ -243,24 +243,33 @@ const SensorTable: React.FC<SensorTableProps> = ({
             <Box sx={{ width: "100%", padding: "8px" }}>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <Box sx={{ width: "40%", fontWeight: 500 }}>Frequency(Hz):</Box>
-                {editingCellSensorSpec && sensorConstraints[editingCellSensorSpec] && (
+                {editingCellSensorSpec && (
                   <Tooltip
                     title={
                       <Box p={1}>
-                        <Typography variant="body2">Constraints:</Typography>
+                        {sensorConstraints[editingCellSensorSpec] && (
+                          <>
+                            <Typography variant="body2">Constraints:</Typography>
+                            <Typography variant="body2" style={{ marginBottom: "10px" }}>
+                              {sensorConstraints[editingCellSensorSpec].min !== null &&
+                              sensorConstraints[editingCellSensorSpec].min === 0
+                                ? `Min > ${sensorConstraints[editingCellSensorSpec].min}`
+                                : `Min: ${sensorConstraints[editingCellSensorSpec].min}`}
+                              {sensorConstraints[editingCellSensorSpec].min !== null &&
+                                sensorConstraints[editingCellSensorSpec].max !== null &&
+                                " | "}
+                              {sensorConstraints[editingCellSensorSpec].max !== null &&
+                                `Max: ${sensorConstraints[editingCellSensorSpec].max}`}
+                            </Typography>{" "}
+                          </>
+                        )}
                         <Typography variant="body2">
-                          {sensorConstraints[editingCellSensorSpec].min !== null &&
-                            `Min: ${sensorConstraints[editingCellSensorSpec].min}`}
-                          {sensorConstraints[editingCellSensorSpec].min !== null &&
-                            sensorConstraints[editingCellSensorSpec].max !== null &&
-                            " | "}
-                          {sensorConstraints[editingCellSensorSpec].max !== null &&
-                            `Max: ${sensorConstraints[editingCellSensorSpec].max}`}
+                          Default Value: {defaultSensorSettings[editingCellSensorSpec].frequency}
                         </Typography>
                       </Box>
                     }
                     style={{ marginLeft: "10px" }}
-                    placement="right"
+                    placement="top"
                   >
                     <IconButton size="small">
                       <Icon>info</Icon>
@@ -296,7 +305,9 @@ const SensorTable: React.FC<SensorTableProps> = ({
                     !isConstraintsSatisfied()
                       ? `Frequency must be ${
                           sensorConstraints[editingCellSensorSpec]?.min !== null
-                            ? `>= ${sensorConstraints[editingCellSensorSpec]?.min}`
+                            ? sensorConstraints[editingCellSensorSpec]?.min !== 0
+                              ? `>= ${sensorConstraints[editingCellSensorSpec]?.min}`
+                              : `> ${sensorConstraints[editingCellSensorSpec]?.min}`
                             : ""
                         }${
                           sensorConstraints[editingCellSensorSpec]?.min !== null &&
@@ -315,30 +326,43 @@ const SensorTable: React.FC<SensorTableProps> = ({
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <Box sx={{ width: "40%", fontWeight: 500 }}>Data Collection Duration(mins):</Box>
-                {editingCellSensorSpec && sensorConstraints[editingCellSensorSpec] && (
-                  <Tooltip
-                    title={
-                      <Box p={1}>
-                        <Typography variant="body2">Value Range:</Typography>
-                        <Typography variant="body2">
-                          {sensorConstraints[editingCellSensorSpec].max !== null &&
-                            `Min: ${Math.round((1 / sensorConstraints[editingCellSensorSpec].max / 60) * 1000) / 1000}`}
-                          {/* {sensorConstraints[editingCellSensorSpec].min !== null &&
+                {editingCellSensorSpec &&
+                  (defaultSensorSettings[editingCellSensorSpec]?.data_collection_duration !== undefined ||
+                    sensorConstraints[editingCellSensorSpec]) && (
+                    <Tooltip
+                      title={
+                        <Box p={1}>
+                          {sensorConstraints[editingCellSensorSpec] && (
+                            <>
+                              <Typography variant="body2">Value Range:</Typography>
+                              <Typography variant="body2" style={{ marginBottom: "10px" }}>
+                                {sensorConstraints[editingCellSensorSpec].max !== null &&
+                                  `Min: ${
+                                    Math.round((1 / sensorConstraints[editingCellSensorSpec].max / 60) * 1000) / 1000
+                                  }`}
+                                {/* {sensorConstraints[editingCellSensorSpec].min !== null &&
                             sensorConstraints[editingCellSensorSpec].max !== null &&
                             " | "}
                           {sensorConstraints[editingCellSensorSpec].min !== null &&
                             `Max: ${Math.round(((1 / sensorConstraints[editingCellSensorSpec].min)/60) * 1000) / 1000}`} */}
-                        </Typography>
-                      </Box>
-                    }
-                    style={{ marginLeft: "10px" }}
-                    placement="right"
-                  >
-                    <IconButton size="small">
-                      <Icon>info</Icon>
-                    </IconButton>
-                  </Tooltip>
-                )}
+                              </Typography>
+                            </>
+                          )}
+                          {defaultSensorSettings[editingCellSensorSpec]?.data_collection_duration && (
+                            <Typography variant="body2">
+                              Default value: {defaultSensorSettings[editingCellSensorSpec]?.data_collection_duration}
+                            </Typography>
+                          )}
+                        </Box>
+                      }
+                      style={{ marginLeft: "10px" }}
+                      placement="top"
+                    >
+                      <IconButton size="small">
+                        <Icon>info</Icon>
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 <TextField
                   size="small"
                   variant="outlined"

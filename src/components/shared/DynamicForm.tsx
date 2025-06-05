@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useMemo } from "react"
 import { Grid, Button, Icon, MuiThemeProvider, Box, Paper, makeStyles, createStyles, Theme } from "@material-ui/core"
 import Form from "@rjsf/material-ui"
 import {
@@ -254,41 +254,49 @@ export default function DynamicForm({ schema, initialData, onChange, viewMode = 
     return i18n.language ? i18n.language : userLanguages.includes(lang) ? lang : "en-US"
   }
 
-  const formTheme = createTheme(
-    {
-      props: {
-        MuiTextField: {
-          variant: "filled",
-        },
-        MuiPaper: {
-          variant: "outlined",
-        },
-      },
+  // Memoize the selected language to prevent theme recreation
+  const selectedLanguage = useMemo(() => getSelectedLanguage(), [i18n.language])
 
-      overrides: {
-        MuiFilledInput: {
-          root: {
-            border: 0,
-            backgroundColor: "#f4f4f4",
-            "& textarea": {
-              resize: "vertical",
+  // Memoize the theme to prevent recreation on every render
+  const formTheme = useMemo(
+    () =>
+      createTheme(
+        {
+          props: {
+            MuiTextField: {
+              variant: "filled",
+            },
+            MuiPaper: {
+              variant: "outlined",
             },
           },
-          underline: {
-            "&&&:before": {
-              borderBottom: "none",
+
+          overrides: {
+            MuiFilledInput: {
+              root: {
+                border: 0,
+                backgroundColor: "#f4f4f4",
+                "& textarea": {
+                  resize: "vertical",
+                },
+              },
+              underline: {
+                "&&&:before": {
+                  borderBottom: "none",
+                },
+                "&&:after": {
+                  borderBottom: "none",
+                },
+              },
             },
-            "&&:after": {
-              borderBottom: "none",
+            MuiTypography: {
+              h5: { fontSize: 16, fontWeight: 600, marginBottom: 10 },
             },
           },
         },
-        MuiTypography: {
-          h5: { fontSize: 16, fontWeight: 600, marginBottom: 10 },
-        },
-      },
-    },
-    languageObjects[getSelectedLanguage()]
+        languageObjects[selectedLanguage]
+      ),
+    [selectedLanguage]
   )
 
   const getEnhancedUiSchema = (schema: any, viewMode: boolean) => {
@@ -336,6 +344,22 @@ export default function DynamicForm({ schema, initialData, onChange, viewMode = 
     )
   }
 
+  // Memoize the enhanced UI schema
+  const enhancedUiSchema = useMemo(() => getEnhancedUiSchema(schema, viewMode), [schema, viewMode])
+
+  // Memoize the widgets
+  const memoizedWidgets = useMemo(() => getWidgets(viewMode), [viewMode])
+
+  // Memoize the templates
+  const memoizedTemplates = useMemo(
+    () => ({
+      ArrayFieldTemplate: (props) => <ArrayFieldTemplate {...props} disabled={viewMode} />,
+      ObjectFieldTemplate,
+      TitleFieldTemplate,
+    }),
+    [viewMode]
+  )
+
   return (
     <MuiThemeProvider theme={formTheme}>
       <Form
@@ -352,7 +376,8 @@ export default function DynamicForm({ schema, initialData, onChange, viewMode = 
         //   ),
         //   ..._extract(schema)
         // }}
-        uiSchema={getEnhancedUiSchema(schema, viewMode)}
+        // uiSchema={getEnhancedUiSchema(schema, viewMode)}
+        uiSchema={enhancedUiSchema}
         formData={initialData}
         onChange={(x) => {
           // onChange(x.formData)
@@ -361,14 +386,16 @@ export default function DynamicForm({ schema, initialData, onChange, viewMode = 
           }
         }}
         validator={validator}
-        // templates={{ ArrayFieldTemplate, ObjectFieldTemplate, TitleFieldTemplate }}
-        templates={{
-          ArrayFieldTemplate: (props) => <ArrayFieldTemplate {...props} disabled={viewMode} />,
-          ObjectFieldTemplate,
-          TitleFieldTemplate,
-        }}
-        // widgets={widgets}
-        widgets={getWidgets(viewMode)}
+        // // templates={{ ArrayFieldTemplate, ObjectFieldTemplate, TitleFieldTemplate }}
+        // templates={{
+        //   ArrayFieldTemplate: (props) => <ArrayFieldTemplate {...props} disabled={viewMode} />,
+        //   ObjectFieldTemplate,
+        //   TitleFieldTemplate,
+        // }}
+        // // widgets={widgets}
+        // widgets={getWidgets(viewMode)}
+        templates={memoizedTemplates}
+        widgets={memoizedWidgets}
         disabled={viewMode}
         readonly={viewMode}
       />
