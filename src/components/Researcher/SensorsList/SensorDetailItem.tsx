@@ -22,7 +22,7 @@ import LAMP from "lamp-core"
 import { Service } from "../../DBService/DBService"
 import ViewItems, { FieldConfig, TabConfig } from "./ViewItems"
 import EditIcon from "@material-ui/icons/Edit"
-import { sensorConstraints } from "./SensorDialog"
+import { sensorConstraints, defaultSensorSettings } from "./SensorDialog"
 import { slideStyles } from "../ParticipantList/AddButton"
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -482,22 +482,31 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
               <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
                 {t("Frequency (Hz")}
               </Typography>
-              {sensor.spec && sensorConstraints[sensor.spec] && (
+              {sensor.spec && (
                 <Tooltip
                   title={
                     <Box p={1}>
-                      <Typography variant="body2">Constraints:</Typography>
+                      {sensorConstraints[sensor.spec] && (
+                        <>
+                          <Typography variant="body2">Constraints:</Typography>
+                          <Typography variant="body2" style={{ marginBottom: "10px" }}>
+                            {sensorConstraints[sensor.spec].min !== null &&
+                              `Min: ${sensorConstraints[sensor.spec].min}`}
+                            {sensorConstraints[sensor.spec].min !== null &&
+                              sensorConstraints[sensor.spec].max !== null &&
+                              " | "}
+                            {sensorConstraints[sensor.spec].max !== null &&
+                              `Max: ${sensorConstraints[sensor.spec].max}`}
+                          </Typography>
+                        </>
+                      )}
                       <Typography variant="body2">
-                        {sensorConstraints[sensor.spec].min !== null && `Min: ${sensorConstraints[sensor.spec].min}`}
-                        {sensorConstraints[sensor.spec].min !== null &&
-                          sensorConstraints[sensor.spec].max !== null &&
-                          " | "}
-                        {sensorConstraints[sensor.spec].max !== null && `Max: ${sensorConstraints[sensor.spec].max}`}
+                        Default value: {defaultSensorSettings[sensor.spec].frequency}
                       </Typography>
                     </Box>
                   }
                   style={{ marginLeft: "10px" }}
-                  placement="right"
+                  placement="top"
                 >
                   <IconButton size="small">
                     <Icon>info</Icon>
@@ -563,30 +572,41 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
               <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
                 {t("Data Collection Duration (minutes)")}:
               </Typography>
-              {sensor.spec && sensorConstraints[sensor.spec] && (
-                <Tooltip
-                  title={
-                    <Box p={1}>
-                      <Typography variant="body2">Value Range:</Typography>
-                      <Typography variant="body2">
-                        {sensorConstraints[sensor.spec].max !== null &&
-                          `Min: ${Math.round((1 / sensorConstraints[sensor.spec].max / 60) * 1000) / 1000}`}
-                        {/* {sensorConstraints[sensor.spec].min !== null &&
+              {sensor.spec &&
+                (defaultSensorSettings[sensor.spec]?.data_collection_duration !== undefined ||
+                  sensorConstraints[sensor.spec]) && (
+                  <Tooltip
+                    title={
+                      <Box p={1}>
+                        {sensorConstraints[sensor.spec] && (
+                          <>
+                            <Typography variant="body2">Value Range:</Typography>
+                            <Typography variant="body2" style={{ marginBottom: "10px" }}>
+                              {sensorConstraints[sensor.spec].max !== null &&
+                                `Min: ${Math.round((1 / sensorConstraints[sensor.spec].max / 60) * 1000) / 1000}`}
+                              {/* {sensorConstraints[sensor.spec].min !== null &&
                           sensorConstraints[sensor.spec].max !== null &&
                           " | "}
                         {sensorConstraints[sensor.spec].min !== null &&
                           `Max: ${Math.round(((1 / sensorConstraints[sensor.spec].min)/60)*1000)/1000}`} */}
-                      </Typography>
-                    </Box>
-                  }
-                  style={{ marginLeft: "10px" }}
-                  placement="right"
-                >
-                  <IconButton size="small">
-                    <Icon>info</Icon>
-                  </IconButton>
-                </Tooltip>
-              )}
+                            </Typography>
+                          </>
+                        )}
+                        {defaultSensorSettings[sensor.spec]?.data_collection_duration !== undefined && (
+                          <Typography variant="body2">
+                            Default value: {defaultSensorSettings[sensor.spec].data_collection_duration}
+                          </Typography>
+                        )}
+                      </Box>
+                    }
+                    style={{ marginLeft: "10px" }}
+                    placement="top"
+                  >
+                    <IconButton size="small">
+                      <Icon>info</Icon>
+                    </IconButton>
+                  </Tooltip>
+                )}
               <Box
                 display="flex"
                 alignItems="center"

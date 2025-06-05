@@ -124,10 +124,19 @@ export interface Sensors {
 }
 
 export const sensorConstraints = {
-  "lamp.accelerometer": { min: 0.0, max: 5 },
-  "lamp.gps": { min: 0.008, max: 0.2 },
-  "lamp.wifi": { max: 0.003, min: 0.0 },
-  "lamp.bluetooth": { max: 0.003, min: 0.0 },
+  "lamp.accelerometer": { min: 0, max: 0.2 },
+}
+
+export const defaultSensorSettings = {
+  "lamp.accelerometer": { frequency: 0.1, data_collection_duration: 10 },
+  "lamp.gps": { frequency: 0.1, data_collection_duration: 10 },
+  "lamp.wifi": { frequency: 0.003333, data_collection_duration: 10 },
+  "lamp.bluetooth": { frequency: 0.003333, data_collection_duration: 10 },
+  "lamp.ambient": { frequency: 0.1, data_collection_duration: 10 },
+  "lamp.battery_status": { frequency: 0.001667, data_collection_duration: 10 },
+  "lamp.app_usage": { frequency: 0.00003472 },
+  "lamp.call_log": { frequency: 0.00003472 },
+  "lamp.screen_state": { frequency: 0.00003472 },
 }
 
 export default function SensorDialog({
@@ -540,22 +549,32 @@ export default function SensorDialog({
                 <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
                   {t("Frequency (Hz)")}
                 </Typography>
-                {sensorSpec && sensorConstraints[sensorSpec] && (
+                {sensorSpec && (
                   <Tooltip
                     title={
                       <Box p={1}>
-                        <Typography variant="body2">Constraints:</Typography>
+                        {sensorConstraints[sensorSpec] && (
+                          <>
+                            {" "}
+                            <Typography variant="body2">Constraints:</Typography>
+                            <Typography variant="body2" style={{ marginBottom: "10px" }}>
+                              {sensorConstraints[sensorSpec].min !== null &&
+                                `Min: ${sensorConstraints[sensorSpec].min}`}
+                              {sensorConstraints[sensorSpec].min !== null &&
+                                sensorConstraints[sensorSpec].max !== null &&
+                                " | "}
+                              {sensorConstraints[sensorSpec].max !== null &&
+                                `Max: ${sensorConstraints[sensorSpec].max}`}
+                            </Typography>{" "}
+                          </>
+                        )}
                         <Typography variant="body2">
-                          {sensorConstraints[sensorSpec].min !== null && `Min: ${sensorConstraints[sensorSpec].min}`}
-                          {sensorConstraints[sensorSpec].min !== null &&
-                            sensorConstraints[sensorSpec].max !== null &&
-                            " | "}
-                          {sensorConstraints[sensorSpec].max !== null && `Max: ${sensorConstraints[sensorSpec].max}`}
+                          Default value: {defaultSensorSettings[sensorSpec].frequency}
                         </Typography>
                       </Box>
                     }
                     style={{ marginLeft: "10px" }}
-                    placement="right"
+                    placement="top"
                   >
                     <IconButton size="small">
                       <Icon>info</Icon>
@@ -610,30 +629,41 @@ export default function SensorDialog({
                 <Typography variant="body2" style={{ fontWeight: 500, width: "40%" }}>
                   {t("Data Collection Duration (minutes)")}:
                 </Typography>
-                {sensorSpec && sensorConstraints[sensorSpec] && (
-                  <Tooltip
-                    title={
-                      <Box p={1}>
-                        <Typography variant="body2">Value Range:</Typography>
-                        <Typography variant="body2">
-                          {sensorConstraints[sensorSpec].max !== null &&
-                            `Min: ${Math.round((1 / sensorConstraints[sensorSpec].max / 60) * 1000) / 1000}`}
-                          {/* {sensorConstraints[sensor.spec].min !== null &&
+                {sensorSpec &&
+                  (defaultSensorSettings[sensorSpec]?.data_collection_duration !== undefined ||
+                    sensorConstraints[sensorSpec]) && (
+                    <Tooltip
+                      title={
+                        <Box p={1}>
+                          {sensorConstraints[sensorSpec] && (
+                            <>
+                              <Typography variant="body2">Value Range:</Typography>
+                              <Typography variant="body2" style={{ marginBottom: "10px" }}>
+                                {sensorConstraints[sensorSpec].max !== null &&
+                                  `Min: ${Math.round((1 / sensorConstraints[sensorSpec].max / 60) * 1000) / 1000}`}
+                                {/* {sensorConstraints[sensor.spec].min !== null &&
                           sensorConstraints[sensor.spec].max !== null &&
                           " | "}
                         {sensorConstraints[sensor.spec].min !== null &&
                           `Max: ${Math.round(((1 / sensorConstraints[sensor.spec].min)/60)*1000)/1000}`} */}
-                        </Typography>
-                      </Box>
-                    }
-                    style={{ marginLeft: "10px" }}
-                    placement="right"
-                  >
-                    <IconButton size="small">
-                      <Icon>info</Icon>
-                    </IconButton>
-                  </Tooltip>
-                )}
+                              </Typography>
+                            </>
+                          )}
+                          {defaultSensorSettings[sensorSpec]?.data_collection_duration !== undefined && (
+                            <Typography variant="body2">
+                              Default value: {defaultSensorSettings[sensorSpec].data_collection_duration}
+                            </Typography>
+                          )}
+                        </Box>
+                      }
+                      style={{ marginLeft: "10px" }}
+                      placement="top"
+                    >
+                      <IconButton size="small">
+                        <Icon>info</Icon>
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 <Box
                   display="flex"
                   alignItems="center"
