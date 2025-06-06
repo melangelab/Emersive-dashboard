@@ -569,7 +569,7 @@ export default function SensorDialog({
                           </>
                         )}
                         <Typography variant="body2">
-                          Default value: {defaultSensorSettings[sensorSpec].frequency}
+                          Default value: {defaultSensorSettings[sensorSpec]?.frequency}
                         </Typography>
                       </Box>
                     }

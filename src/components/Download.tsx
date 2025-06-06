@@ -824,6 +824,8 @@ function Download({ studies, target = "studies" }) {
       if (startDate) params.append("start_date", startDate)
       if (endDate) params.append("end_date", endDate)
 
+      console.log("PARAMS sens", participantsId, sensorSpecs, startDate, endDate, params.toString())
+
       const response = await fetch(`${baseURL}/participant-sensor-events?${params.toString()}`, {
         method: "GET",
         headers: {
@@ -850,13 +852,68 @@ function Download({ studies, target = "studies" }) {
   }
 
   const fetchActivityEvents = async () => {
-    // Empty function as requested
-    console.log("Fetching activity events...", {
-      participants: finalSelectedItems,
-      startDate,
-      endDate,
+    const participantsId = finalSelectedItems.map((item) => item.id)
+
+    const selectedStudyObjects = studies.filter((study) => selectedStudies[study.id])
+
+    let activitiesId2Fetch = []
+    selectedStudyObjects.forEach((study) => {
+      const activities =
+        study.activities?.filter((activity) => {
+          return (
+            !Object.keys(selectedGnames).length ||
+            (activity.groups.length > 0 && activity.groups.some((group) => selectedGnames[`${study.id}-${group}`]))
+          )
+        }) || []
+
+      activities.forEach((activity) => {
+        if (activity.id) {
+          activitiesId2Fetch.push(activity.id)
+        }
+      })
     })
-    return []
+
+    if (participantsId.length === 0 || activitiesId2Fetch.length === 0) {
+      alert("Please select at least one participant and one activity")
+      return
+    }
+
+    try {
+      const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+      const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+
+      // Build the query parameters
+      const params = new URLSearchParams()
+      params.append("participant_ids", participantsId.join(","))
+      params.append("activities", activitiesId2Fetch.join(","))
+      if (startDate) params.append("start_date", startDate)
+      if (endDate) params.append("end_date", endDate)
+
+      console.log("PARAMS", participantsId, activitiesId2Fetch, startDate, endDate, params.toString())
+
+      const response = await fetch(`${baseURL}/participant-activity-events?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Basic " + btoa(authString),
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const mainData = data.data
+      console.log("Fetched sensor events data:", mainData)
+      // setFetchedData(mainData) // Set the fetched data here
+      return mainData
+    } catch (err) {
+      console.error("Error fetching sensor events:", err)
+      alert(`Failed to fetch sensor data: ${err.message}`)
+    } finally {
+      // setLoading(false)
+    }
   }
 
   const handleDownload = async () => {
@@ -1055,13 +1112,30 @@ function Download({ studies, target = "studies" }) {
                 >
                   Clear selection
                 </Button>
-                <Button
-                  className={`${classes.actionButton} ${classes.primaryButton}`}
-                  onClick={() => setNextPage(true)}
-                  disabled={!Object.values(selectedStudies).some(Boolean) || downloadLoading}
-                >
-                  Next
-                </Button>
+                {target === "studies" ? (
+                  <Button
+                    className={`${classes.actionButton} ${classes.primaryButton}`}
+                    onClick={handleDownload}
+                    disabled={!Object.values(selectedStudies).some(Boolean)}
+                  >
+                    {downloadLoading ? (
+                      <div className={classes.buttonLoadingContainer}>
+                        <CircularProgress size={20} className={classes.buttonProgress} />
+                        <span>Downloading...</span>
+                      </div>
+                    ) : (
+                      "Download"
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    className={`${classes.actionButton} ${classes.primaryButton}`}
+                    onClick={() => setNextPage(true)}
+                    disabled={!Object.values(selectedStudies).some(Boolean) || downloadLoading}
+                  >
+                    Next
+                  </Button>
+                )}
               </div>
             </>
           ) : target === "participants" ? (
