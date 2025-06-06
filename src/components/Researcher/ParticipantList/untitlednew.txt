@@ -1,144 +1,123 @@
-// Activity Event Details Component - Fixed
-const ActivityEventDetails: React.FC<{ event: any }> = React.memo(({ event }) => (
-  <Box>
-    {event.temporal_slices?.map((slice: any, sliceIdx: number) => (
-      <Box key={sliceIdx} mb={2} pl={2} borderLeft="2px solid #e0e0e0">
-        <Typography variant="body2">
-          <strong>Item:</strong> {slice.item}
-        </Typography>
-        <Typography variant="body2" color="textSecondary" style={{ marginTop: 4 }}>
-          <strong>Value:</strong> {slice.value || "N/A"}
-        </Typography>
-        {slice.emotions && Object.keys(slice.emotions).length > 0 && (
-          <Box mt={1}>
-            <Typography variant="caption" color="textSecondary">
-              <strong>Emotions:</strong>
-            </Typography>
-            <Box display="flex" flexWrap="wrap" mt={0.5} style={{ gap: 4 }}>
-              {Object.entries(slice.emotions).map(([emotion, value]) => (
-                <Chip
-                  key={emotion}
-                  label={`${emotion}: ${value}`}
-                  size="small"
-                  variant="outlined"
-                />
-              ))}
-            </Box>
-          </Box>
-        )}
-        <Typography variant="caption" color="textSecondary" style={{ marginTop: 4, display: 'block' }}>
-          <strong>Duration:</strong> {slice.duration} ms
-        </Typography>
-      </Box>
-    ))}
-    
-    {event.static_data?.story_responses && (
-      <StaticDataDetails staticData={event.static_data} />
-    )}
-  </Box>
-))
-
-// Static Data Details Component - Fixed
-const StaticDataDetails: React.FC<{ staticData: any }> = React.memo(({ staticData }) => (
-  <Box mt={2} pt={2} borderTop="1px solid #e0e0e0">
-    <Typography variant="subtitle2" color="primary" gutterBottom>
-      <strong>Responses:</strong>
-    </Typography>
-    <Box ml={2} mt={1}>
-      {Object.keys(staticData.story_responses || {}).map((storyKey) => {
-        const storyIndex = storyKey.replace("story_", "")
-        const audioKey = `story_${storyIndex}_audio`
-        const audioValue = staticData.audio_recordings?.[audioKey]
-
+// Sensor Event Details Component
+const SensorEventDetails: React.FC<{ event: any }> = React.memo(({ event }) => {
+  const renderDataValue = useCallback((key: string, value: any) => {
+    if (typeof value === "object" && value !== null) {
+      if (Array.isArray(value)) {
         return (
-          <Box key={storyKey} mb={2} p={2} bgcolor="#f5f5f5" borderRadius={1}>
-            <Typography variant="body2" color="textPrimary" gutterBottom>
-              <strong>Story {Number(storyIndex) + 1}:</strong>
+          <Box key={key} mb={1}>
+            <Typography variant="body2">
+              <strong>{key}:</strong> Array ({value.length} items)
             </Typography>
             <Box ml={2}>
-              <Typography variant="body2" color="textSecondary" style={{ marginBottom: 8 }}>
-                <strong>Response:</strong> {staticData.story_responses[storyKey]}
-              </Typography>
-              {audioValue && (
-                <Box mt={1}>
-                  <Typography variant="body2" color="textSecondary" style={{ marginBottom: 4 }}>
-                    <strong>Audio:</strong>
-                  </Typography>
-                  <audio controls style={{ width: '100%', maxWidth: '300px' }}>
-                    <source src={audioValue} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                  </audio>
-                </Box>
-              )}
+-              {value.map((item, idx) => (
+-                <Typography key={idx} variant="caption" display="block">
+-                  [{idx}]: {typeof item === "object" ? JSON.stringify(item) : String(item)}
+-                </Typography>
+-              ))}
++              {value.map((item, idx) => {
++                if (typeof item === "object" && item !== null) {
++                  return (
++                    <Box key={idx} mb={2} p={2} bgcolor="#f9f9f9" borderRadius={1} border="1px solid #e0e0e0">
++                      <Typography variant="caption" color="primary" gutterBottom>
++                        <strong>Item {idx + 1}:</strong>
++                      </Typography>
++                      <Box display="grid" gridTemplateColumns="1fr 2fr" gap={1} mt={1}>
++                        {Object.entries(item).map(([itemKey, itemValue]) => {
++                          // Skip name and number for call_log sensor
++                          if (event.sensor === "lamp.call_log" && (itemKey === "name" || itemKey === "number")) {
++                            return null;
++                          }
++                          
++                          return (
++                            <React.Fragment key={itemKey}>
++                              <Typography variant="caption" sx={{ fontWeight: 500, color: "text.secondary" }}>
++                                {itemKey}:
++                              </Typography>
++                              <Typography variant="caption" sx={{ wordBreak: "break-word" }}>
++                                {itemKey === "timestamp" && typeof itemValue === "number" 
++                                  ? new Date(itemValue).toLocaleString()
++                                  : String(itemValue)
++                                }
++                              </Typography>
++                            </React.Fragment>
++                          );
++                        })}
++                      </Box>
++                    </Box>
++                  );
++                } else {
++                  return (
++                    <Typography key={idx} variant="caption" display="block">
++                      [{idx}]: {String(item)}
++                    </Typography>
++                  );
++                }
++              })}
             </Box>
           </Box>
         )
-      })}
-    </Box>
-  </Box>
-))
+      } else {
+        const entries = Object.entries(value)
+        return (
+          <Box key={key} mb={1}>
+            <Typography variant="body2">
+              <strong>{key}:</strong>
+            </Typography>
+            <Box ml={2}>
+-              {entries.map(([subKey, subValue]) => (
+-                <Typography key={subKey} variant="caption" display="block">
+-                  {subKey}: {String(subValue).substring(0, 50)}
+-                  {String(subValue).length > 50 ? "..." : ""}
+-                </Typography>
+-              ))}
++              <Box display="grid" gridTemplateColumns="1fr 2fr" gap={1}>
++                {entries.map(([subKey, subValue]) => {
++                  // Skip name and number for call_log sensor
++                  if (event.sensor === "lamp.call_log" && (subKey === "name" || subKey === "number")) {
++                    return null;
++                  }
++                  
++                  return (
++                    <React.Fragment key={subKey}>
++                      <Typography variant="caption" sx={{ fontWeight: 500, color: "text.secondary" }}>
++                        {subKey}:
++                      </Typography>
++                      <Typography variant="caption" sx={{ wordBreak: "break-word" }}>
++                        {String(subValue).substring(0, 50)}
++                        {String(subValue).length > 50 ? "..." : ""}
++                      </Typography>
++                    </React.Fragment>
++                  );
++                })}
++              </Box>
+            </Box>
+          </Box>
+        )
+      }
+    }
 
-// Fixed getItemSize calculation in VirtualizedEventList
-const getItemSize = useCallback((index: number) => {
-  const baseHeight = 80
-  if (!expandedItems.has(index)) {
-    return baseHeight
-  }
-  
-  const event = events[index]
-  if (!event) return baseHeight
-  
-  if (selectedTab === 'sensors') {
-    const dataEntries = event.data ? Object.keys(event.data).length : 0
-    const arrayDataCount = event.data ? Object.values(event.data).reduce((count: number, val: any) => {
-      return count + (Array.isArray(val) ? val.length : 0)
-    }, 0) : 0
-    const hasNestedData = event.data && Object.values(event.data).some((val: any) => 
-      typeof val === 'object' && val !== null && !Array.isArray(val)
++    // Skip name and number for call_log sensor at top level
++    if (event.sensor === "lamp.call_log" && (key === "name" || key === "number")) {
++      return null;
++    }
+
+    return (
+      <Typography key={key} variant="body2">
+        <strong>{key}:</strong> {String(value)}
+      </Typography>
     )
-    
-    let expandedHeight = 150
-    expandedHeight += dataEntries * 25
-    expandedHeight += arrayDataCount as number * 20
-    if (hasNestedData) expandedHeight += 50
-    
-    return Math.min(expandedHeight, 800)
-  } else if (selectedTab === 'activities') {
-    const sliceCount = event.temporal_slices?.length || 0
-    const hasStaticData = event.static_data?.story_responses
-    const staticDataCount = hasStaticData ? Object.keys(event.static_data.story_responses).length : 0
-    
-    let expandedHeight = 180 // Base expanded height
-    
-    // Calculate height for temporal slices (more accurate)
-    expandedHeight += sliceCount * 140 // Each slice needs about 140px
-    
-    // Add height for emotions in slices
-    if (event.temporal_slices) {
-      event.temporal_slices.forEach((slice: any) => {
-        if (slice.emotions && Object.keys(slice.emotions).length > 0) {
-          expandedHeight += 60 // Extra height for emotion chips
-        }
-      })
-    }
-    
-    // Calculate height for static data (more accurate)
-    if (hasStaticData) {
-      expandedHeight += 100 // Header and padding
-      expandedHeight += staticDataCount * 120 // Each story response
-      
-      // Add extra height if audio is present
-      Object.keys(event.static_data.story_responses).forEach((storyKey) => {
-        const storyIndex = storyKey.replace("story_", "")
-        const audioKey = `story_${storyIndex}_audio`
-        if (event.static_data.audio_recordings?.[audioKey]) {
-          expandedHeight += 80 // Audio player height
-        }
-      })
-    }
-    
-    return Math.min(expandedHeight, 1000) // Increased max height for activities
-  }
-  
-  return 200
-}, [expandedItems, selectedTab, events])
+  }, [])
+
+  return (
+    <Box pl={1} maxHeight={400} overflow="auto" width="100%" boxSizing="border-box">
+      <Typography variant="subtitle2" color="primary" gutterBottom>
+        Sensor Data:
+      </Typography>
+      {event.data && typeof event.data === "object" ? (
+        Object.entries(event.data).map(([key, value]) => renderDataValue(key, value))
+      ) : (
+        <Typography variant="body2">{String(event.data)}</Typography>
+      )}
+    </Box>
+  )
+})

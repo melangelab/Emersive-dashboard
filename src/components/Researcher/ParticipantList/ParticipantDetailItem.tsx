@@ -345,11 +345,49 @@ const SensorEventDetails: React.FC<{ event: any }> = React.memo(({ event }) => {
               <strong>{key}:</strong> Array ({value.length} items)
             </Typography>
             <Box ml={2}>
-              {value.map((item, idx) => (
+              {/* {value.map((item, idx) => (
                 <Typography key={idx} variant="caption" display="block">
                   [{idx}]: {typeof item === "object" ? JSON.stringify(item) : String(item)}
                 </Typography>
-              ))}
+              ))} */}
+              {value.map((item, idx) => {
+                if (typeof item === "object" && item !== null) {
+                  return (
+                    <Box key={idx} mb={2} p={2} bgcolor="#f9f9f9" borderRadius={1} border="1px solid #e0e0e0">
+                      <Typography variant="caption" color="primary" gutterBottom>
+                        <strong>Item {idx + 1}:</strong>
+                      </Typography>
+                      <Box display="grid" gridTemplateColumns="1fr 2fr" style={{ gap: 4 }} mt={1}>
+                        {Object.entries(item).map(([itemKey, itemValue]) => {
+                          // Skip name and number for call_log sensor
+                          if (event.sensor === "lamp.call_log" && (itemKey === "name" || itemKey === "number")) {
+                            return null
+                          }
+
+                          return (
+                            <React.Fragment key={itemKey}>
+                              <Typography variant="caption" style={{ fontWeight: 500, color: "text.secondary" }}>
+                                {itemKey}:
+                              </Typography>
+                              <Typography variant="caption" style={{ wordBreak: "break-word" }}>
+                                {itemKey === "timestamp" && typeof itemValue === "number"
+                                  ? new Date(itemValue).toLocaleString()
+                                  : String(itemValue)}
+                              </Typography>
+                            </React.Fragment>
+                          )
+                        })}
+                      </Box>
+                    </Box>
+                  )
+                } else {
+                  return (
+                    <Typography key={idx} variant="caption" display="block">
+                      [{idx}]: {String(item)}
+                    </Typography>
+                  )
+                }
+              })}
             </Box>
           </Box>
         )
@@ -361,18 +399,40 @@ const SensorEventDetails: React.FC<{ event: any }> = React.memo(({ event }) => {
               <strong>{key}:</strong>
             </Typography>
             <Box ml={2}>
-              {entries.map(([subKey, subValue]) => (
+              {/* {entries.map(([subKey, subValue]) => (
                 <Typography key={subKey} variant="caption" display="block">
                   {subKey}: {String(subValue).substring(0, 50)}
                   {String(subValue).length > 50 ? "..." : ""}
                 </Typography>
-              ))}
+              ))} */}
+              <Box display="grid" gridTemplateColumns="1fr 2fr" style={{ gap: 4 }} mt={1}>
+                {entries.map(([subKey, subValue]) => {
+                  // Skip name and number for call_log sensor
+                  if (event.sensor === "lamp.call_log" && (subKey === "name" || subKey === "number")) {
+                    return null
+                  }
+
+                  return (
+                    <React.Fragment key={subKey}>
+                      <Typography variant="caption" style={{ fontWeight: 500, color: "text.secondary" }}>
+                        {subKey}:
+                      </Typography>
+                      <Typography variant="caption" style={{ wordBreak: "break-word" }}>
+                        {String(subValue)}
+                      </Typography>
+                    </React.Fragment>
+                  )
+                })}
+              </Box>
             </Box>
           </Box>
         )
       }
     }
 
+    if (event.sensor === "lamp.call_log" && (key === "name" || key === "number")) {
+      return null
+    }
     return (
       <Typography key={key} variant="body2">
         <strong>{key}:</strong> {String(value)}
