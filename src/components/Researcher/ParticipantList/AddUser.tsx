@@ -207,10 +207,19 @@ export default function AddUser({
             lastEnrollmentAt: new Date(),
             firstEnrollmentAt: timestamps.firstEnrollmentAt || new Date(), // Set only if not already set
           }
+
+          const studyParticipants = currentStudy?.participants
+          const participantCreated = await LAMP.Participant.view(newParticipant.id)
+          const updatedParticipants = [...studyParticipants, participantCreated]
+
           const updatedStudy = {
             ...currentStudy,
+            participants: updatedParticipants,
             timestamps: updatedTimestamps,
           }
+
+          // WHAT IS THE BELOW LOGIC and its not present in the AddParticipantToStudy
+
           const fieldsToUpdate = ["timestamps"]
           LAMP.Study.update(selectedStudy, updatedStudy).then((res) => {
             Service.update(

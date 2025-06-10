@@ -161,8 +161,13 @@ export default function AddParticipantToStudy({
         firstEnrollmentAt: timestamps.firstEnrollmentAt || new Date(),
       }
 
+      const studyParticipants = currentStudy?.participants
+      const participantCreated = await LAMP.Participant.view(participantId)
+      const updatedParticipants = [...studyParticipants, participantCreated]
+
       await LAMP.Study.update(study.id, {
         ...currentStudy,
+        participants: updatedParticipants,
         timestamps: updatedTimestamps,
       })
 
