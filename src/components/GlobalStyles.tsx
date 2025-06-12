@@ -54,12 +54,14 @@ export const useLayoutStyles = makeStyles((theme: Theme) =>
     },
 
     drawerContainer: {
-      height: "90vh",
+      maxHeight: "87.5vh",
       position: "fixed",
-      // top: "50px",
-      left: 0,
+      top: "100px",
+      left: "18px",
       bottom: 0,
-      backgroundColor: "red",
+      // backgroundColor: "red",
+      borderRadius: 20,
+      overflowY: "auto",
     },
 
     drawerContainerBottom: {
@@ -67,18 +69,20 @@ export const useLayoutStyles = makeStyles((theme: Theme) =>
       width: "100vw",
       // top: "95vh",
       left: 0,
+
       backgroundColor: "grey",
     },
 
     researcherMenu: {
-      // top: "100px", todo
+      // position: "sticky",
       background: "white",
-      position: "absolute",
       maxWidth: 120,
       border: 6,
-      top: 0,
+      // top: 0,
+      // top: '102px !important',
       borderRadius: 20,
-      marginLeft: theme.spacing(2),
+      left: "0 !important",
+      // marginLeft: theme.spacing(2),
       "& span": {
         fontSize: 14,
         whiteSpace: "normal",
@@ -111,12 +115,12 @@ export const useLayoutStyles = makeStyles((theme: Theme) =>
       marginRight: "0px",
     },
     logResearcher: {
-      top: 102,
-      height: "calc(100vh - 102.2px)",
-      position: "absolute",
+      // top: 102,
+      height: "100%",
+      // position: "sticky",
       width: 120,
       padding: theme.spacing(2),
-      overflowY: "scroll",
+      // overflowY: "scroll",
 
       /* Hide scrollbar for WebKit browsers (Chrome, Safari) */
       "&::-webkit-scrollbar": {

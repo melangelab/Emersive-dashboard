@@ -154,6 +154,12 @@ const useStyles = makeStyles((theme: Theme) =>
         borderRight: "#7599FF solid 5px",
       },
     },
+    stickyDrawerPaper: {
+      position: "sticky",
+      top: 0,
+      alignSelf: "flex-start",
+      zIndex: 1200,
+    },
     logo: {
       // width: theme.spacing(10), // Scales dynamically (5 * 8px = 40px)
       // height: theme.spacing(10),
@@ -359,16 +365,15 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
               <Drawer
                 variant="permanent"
                 classes={{
-                  paper:
-                    layoutClasses.researcherMenu +
-                    " " +
-                    layoutClasses.logResearcher +
-                    " " +
-                    (!supportsSidebar
-                      ? layoutClasses.researcherMenuBottom + " " + layoutClasses.logResearcherBottom
-                      : ""),
+                  paper: [
+                    layoutClasses.researcherMenu,
+                    layoutClasses.logResearcher,
+                    supportsSidebar ? classes.stickyDrawerPaper : "",
+                    !supportsSidebar ? layoutClasses.researcherMenuBottom : "",
+                    !supportsSidebar ? layoutClasses.logResearcherBottom : "",
+                  ].join(" "),
                 }}
-                style={{ marginBottom: "0px" }}
+                // style={{ position: "sticky", marginBottom: "0px" }}
               >
                 <List
                   component="nav"
