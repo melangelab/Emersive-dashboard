@@ -361,6 +361,13 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
               className={`${layoutClasses.drawerContainer} ${
                 !supportsSidebar ? layoutClasses.drawerContainerBottom : ""
               }`}
+              style={{
+                minHeight: "calc(100vh - 100px)", // Adjust the 100px for the actual header height
+                position: "fixed",
+                top: "100px", // Adjust this if needed to match the header's height
+                left: "18px",
+                bottom: 0,
+              }}
             >
               <Drawer
                 variant="permanent"
@@ -373,7 +380,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                     !supportsSidebar ? layoutClasses.logResearcherBottom : "",
                   ].join(" "),
                 }}
-                // style={{ position: "sticky", marginBottom: "0px" }}
+                style={{ height: "100%" }} // Ensure full height here
               >
                 <List
                   component="nav"
