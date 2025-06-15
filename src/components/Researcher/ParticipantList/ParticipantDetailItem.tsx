@@ -301,16 +301,36 @@ const EventItem: React.FC<{
 // Activity Event Details Component
 const ActivityEventDetails: React.FC<{ event: any }> = React.memo(({ event }) => (
   <Box pl={1} maxHeight={400} overflow="auto" width="100%" boxSizing="border-box">
-    <Typography variant="subtitle2" color="primary" gutterBottom>
+    <Typography variant="subtitle1" color="primary" gutterBottom>
       Activity Details:
     </Typography>
+    {event?.score !== undefined && event?.score !== null ? (
+      <Typography variant="subtitle2" gutterBottom>
+        <span style={{ color: "#1976d2" }}>Score:</span> <span style={{ color: "#000000" }}>{event.score}</span>
+      </Typography>
+    ) : null}
     {event.temporal_slices?.map((slice: any, sliceIdx: number) => (
       <Box key={sliceIdx} mb={2} pl={2} bgcolor="#f9f9f9" borderRadius={1} borderLeft="3px solid #1976d2">
         <Typography variant="body2">
           <strong>Item:</strong> {slice.item}
         </Typography>
         <Typography variant="body2" color="textSecondary" style={{ marginTop: 4 }}>
-          <strong>Value:</strong> {slice.value || "N/A"}
+          <strong>Value:</strong>{" "}
+          {typeof slice.value === "object" && slice.value !== null ? (
+            <>
+              <br />
+              {Object.entries(slice.value).map(([key, val], index) => (
+                <div key={index}>
+                  {key} - {val}
+                </div>
+              ))}
+            </>
+          ) : (typeof slice.value === "string" || typeof slice.value === "number") &&
+            !isNaN(Date.parse(slice.value as string)) ? (
+            new Date(slice.value).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+          ) : (
+            slice.value || "N/A"
+          )}
         </Typography>
         {slice.emotions && Object.keys(slice.emotions).length > 0 && (
           <Box mt={1}>
@@ -501,7 +521,8 @@ const ItemCard: React.FC<{
   selectedTab: string
   onToggleItem: (index: number) => void
   expandedItems: Set<number>
-}> = React.memo(({ item, index, selectedTab, onToggleItem, expandedItems }) => {
+  dateRangeEnabled: boolean
+}> = React.memo(({ item, index, selectedTab, onToggleItem, expandedItems, dateRangeEnabled }) => {
   const isExpanded = expandedItems.has(index)
   const eventCount = item.events?.length || (item.lastEvent ? 1 : 0)
 
@@ -526,12 +547,14 @@ const ItemCard: React.FC<{
               {item.spec}
             </Typography>
             <Box display="flex" alignItems="center" mt={0.5}>
-              <Chip
-                label={`${eventCount} events`}
-                size="small"
-                color={eventCount > 0 ? "primary" : "default"}
-                variant="outlined"
-              />
+              {dateRangeEnabled && (
+                <Chip
+                  label={`${eventCount} events`}
+                  size="small"
+                  color={eventCount > 0 ? "primary" : "default"}
+                  variant="outlined"
+                />
+              )}
               {item.lastEvent && (
                 <Chip
                   label={`Last: ${item.lastEvent.timestamp}`}
@@ -1040,6 +1063,7 @@ const AsyncStatsContent: React.FC<{
             selectedTab={selectedTab.tab}
             onToggleItem={handleToggleItem}
             expandedItems={expandedItems}
+            dateRangeEnabled={dateRangeEnabled}
           />
         ))}
       </Box>
