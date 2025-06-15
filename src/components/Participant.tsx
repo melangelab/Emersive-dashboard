@@ -353,9 +353,7 @@ export default function Participant({
                           value,
                         })),
                       ],
-                      prefillTimestamp: new Date(
-                        data.x
-                      ).getTime() /* post-increment later to avoid double-reporting events! */,
+                      prefillTimestamp: new Date(data.x).getTime(),
                     },
                   ])
                 }}
