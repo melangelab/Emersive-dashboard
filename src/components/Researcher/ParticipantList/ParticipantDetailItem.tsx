@@ -23,6 +23,7 @@ import {
   CardContent,
   Chip,
 } from "@material-ui/core"
+import { Alert } from "@material-ui/lab"
 import ViewItems, { FieldConfig, TabConfig } from "../SensorsList/ViewItems"
 import { useTranslation } from "react-i18next"
 import { useSnackbar } from "notistack"
@@ -474,45 +475,611 @@ const SensorEventDetails: React.FC<{ event: any }> = React.memo(({ event }) => {
   )
 })
 
-// Static Data Details Component
-const StaticDataDetails: React.FC<{ staticData: any }> = React.memo(({ staticData }) => (
-  <Box mt={2} pt={2} borderTop="1px solid #e0e0e0">
-    <Typography variant="subtitle2" color="primary">
-      <strong>Responses:</strong>
-    </Typography>
-    <Box ml={2} mt={1}>
-      {Object.keys(staticData.story_responses || {}).map((storyKey) => {
-        const storyIndex = storyKey.replace("story_", "")
-        const audioKey = `story_${storyIndex}_audio`
-        const audioValue = staticData.audio_recordings?.[audioKey]
+const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audioSrc, storyIndex }) => {
+  const [audioError, setAudioError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [processedAudioSrc, setProcessedAudioSrc] = useState<string>("")
+  const [isConverting, setIsConverting] = useState(false)
+  const [browserInfo, setBrowserInfo] = useState<string>("")
+  const [audioReady, setAudioReady] = useState(false)
+  const [forceReload, setForceReload] = useState(0)
+  const [duration, setDuration] = useState<number>(0)
+  const [currentTime, setCurrentTime] = useState<number>(0)
+  const audioRef = useRef<HTMLAudioElement>(null)
 
-        return (
-          <Box key={storyKey} mb={2} p={2} bgcolor="#f5f5f5" borderRadius={1}>
-            <Typography variant="body2" color="textPrimary" gutterBottom>
-              <strong>Story {Number(storyIndex) + 1}:</strong>
-            </Typography>
-            <Box ml={2}>
-              <Typography variant="body2" color="textSecondary" style={{ marginBottom: 8 }}>
-                <strong>Response:</strong> {staticData.story_responses[storyKey]}
-              </Typography>
-              {audioValue && (
-                <Box mt={1}>
-                  <Typography variant="body2" color="textSecondary" style={{ marginBottom: 4 }}>
-                    <strong>Audio:</strong>
-                  </Typography>
-                  <audio controls style={{ width: "100%", maxWidth: "300px" }}>
-                    <source src={audioValue} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                  </audio>
-                </Box>
+  // Enhanced browser detection
+  const detectBrowser = (): { name: string; version: number; isLegacy: boolean; isSafari: boolean } => {
+    const ua = navigator.userAgent
+
+    // Safari detection (including mobile)
+    if (ua.indexOf("Safari/") !== -1 && ua.indexOf("Chrome") === -1) {
+      const version = ua.indexOf("Version/") !== -1 ? parseInt(ua.substring(ua.indexOf("Version/") + 8)) : 0
+      return { name: "Safari", version, isLegacy: version < 14, isSafari: true }
+    }
+
+    // Internet Explorer
+    if (ua.indexOf("MSIE") !== -1 || ua.indexOf("Trident/") !== -1) {
+      const version =
+        ua.indexOf("MSIE") !== -1
+          ? parseInt(ua.substring(ua.indexOf("MSIE") + 5, ua.indexOf(";", ua.indexOf("MSIE"))))
+          : 11
+      return { name: "IE", version, isLegacy: true, isSafari: false }
+    }
+
+    // Edge Legacy
+    if (ua.indexOf("Edge/") !== -1) {
+      const version = parseInt(ua.substring(ua.indexOf("Edge/") + 5))
+      return { name: "Edge Legacy", version, isLegacy: version < 79, isSafari: false }
+    }
+
+    // Chrome
+    if (ua.indexOf("Chrome/") !== -1 && ua.indexOf("Edg/") === -1) {
+      const version = parseInt(ua.substring(ua.indexOf("Chrome/") + 7))
+      return { name: "Chrome", version, isLegacy: version < 80, isSafari: false }
+    }
+
+    // New Edge (Chromium)
+    if (ua.indexOf("Edg/") !== -1) {
+      const version = parseInt(ua.substring(ua.indexOf("Edg/") + 4))
+      return { name: "Edge", version, isLegacy: false, isSafari: false }
+    }
+
+    // Firefox
+    if (ua.indexOf("Firefox/") !== -1) {
+      const version = parseInt(ua.substring(ua.indexOf("Firefox/") + 8))
+      return { name: "Firefox", version, isLegacy: version < 70, isSafari: false }
+    }
+
+    return { name: "Unknown", version: 0, isLegacy: true, isSafari: false }
+  }
+
+  // Detect actual audio format from base64 data
+  const detectAudioFormat = (base64Data: string): string => {
+    if (base64Data.startsWith("data:")) {
+      const data = base64Data.split(",")[1]
+      try {
+        // Decode first part of base64 to check signature
+        const binaryString = atob(data.substring(0, 100))
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i)
+        }
+
+        // Check for WebM signature (Matroska/EBML)
+        if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) {
+          return "webm"
+        }
+
+        // Check for other formats
+        if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) return "wav"
+        if (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0) return "mp3"
+        if (bytes[0] === 0x4f && bytes[1] === 0x67 && bytes[2] === 0x67 && bytes[3] === 0x53) return "ogg"
+        if (bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) return "mp4"
+      } catch (e) {
+        console.warn("Could not decode base64 for format detection:", e)
+      }
+
+      // Fallback to MIME type
+      const mimeMatch = base64Data.match(/data:audio\/([^;]+)/)
+      if (mimeMatch) {
+        return mimeMatch[1]
+      }
+    }
+    return "unknown"
+  }
+
+  // Check format compatibility with browser
+  const isFormatSupported = (
+    format: string,
+    browser: { name: string; version: number; isLegacy: boolean; isSafari: boolean }
+  ): boolean => {
+    if (browser.isLegacy || browser.name === "IE") {
+      return ["mp3", "wav"].includes(format)
+    }
+
+    if (browser.isSafari) {
+      // Safari 14+ supports WebM, but earlier versions don't
+      if (format === "webm") {
+        return browser.version >= 14
+      }
+      return ["mp3", "aac", "wav", "mp4"].includes(format)
+    }
+
+    switch (browser.name) {
+      case "Firefox":
+        return ["mp3", "wav", "ogg", "webm"].includes(format)
+      case "Chrome":
+      case "Edge":
+        return ["mp3", "wav", "ogg", "webm", "aac"].includes(format)
+      default:
+        return ["mp3", "wav"].includes(format)
+    }
+  }
+
+  // Enhanced Safari-compatible WAV creation
+  const createSafariCompatibleWav = (buffer: AudioBuffer): ArrayBuffer => {
+    const length = buffer.length
+    const numberOfChannels = buffer.numberOfChannels
+    const sampleRate = buffer.sampleRate
+    const bytesPerSample = 2
+    const blockAlign = numberOfChannels * bytesPerSample
+    const byteRate = sampleRate * blockAlign
+    const dataSize = length * blockAlign
+
+    const bufferSize = 44 + dataSize
+    const arrayBuffer = new ArrayBuffer(bufferSize)
+    const view = new DataView(arrayBuffer)
+
+    // Write string helper
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i))
+      }
+    }
+
+    // RIFF chunk descriptor
+    writeString(0, "RIFF")
+    view.setUint32(4, bufferSize - 8, true)
+    writeString(8, "WAVE")
+
+    // FMT sub-chunk
+    writeString(12, "fmt ")
+    view.setUint32(16, 16, true)
+    view.setUint16(20, 1, true)
+    view.setUint16(22, numberOfChannels, true)
+    view.setUint32(24, sampleRate, true)
+    view.setUint32(28, byteRate, true)
+    view.setUint16(32, blockAlign, true)
+    view.setUint16(34, 16, true)
+
+    // Data sub-chunk
+    writeString(36, "data")
+    view.setUint32(40, dataSize, true)
+
+    // Convert audio samples
+    let offset = 44
+    for (let i = 0; i < length; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const channelData = buffer.getChannelData(channel)
+        let sample = channelData[i]
+        sample = Math.max(-1, Math.min(1, sample))
+        const pcm = sample < 0 ? Math.floor(sample * 32768) : Math.floor(sample * 32767)
+        view.setInt16(offset, pcm, true)
+        offset += 2
+      }
+    }
+
+    return arrayBuffer
+  }
+
+  // Enhanced audio conversion with Safari-specific handling
+  const convertAudioForCompatibility = async (audioSrc: string): Promise<string> => {
+    try {
+      setIsConverting(true)
+
+      // Convert base64 to ArrayBuffer
+      const base64Data = audioSrc.split(",")[1]
+      const binaryData = atob(base64Data)
+      const arrayBuffer = new ArrayBuffer(binaryData.length)
+      const uint8Array = new Uint8Array(arrayBuffer)
+
+      for (let i = 0; i < binaryData.length; i++) {
+        uint8Array[i] = binaryData.charCodeAt(i)
+      }
+
+      // Use Web Audio API for conversion
+      if (window.AudioContext || (window as any).webkitAudioContext) {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+
+        try {
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
+          const wavBuffer = createSafariCompatibleWav(audioBuffer)
+          const wavBlob = new Blob([wavBuffer], { type: "audio/wav" })
+
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(wavBlob)
+          })
+        } finally {
+          await audioContext.close()
+        }
+      }
+
+      throw new Error("Web Audio API not available")
+    } catch (error) {
+      console.error("Audio conversion failed:", error)
+      throw new Error(`Failed to convert audio: ${error.message}`)
+    } finally {
+      setIsConverting(false)
+    }
+  }
+
+  // Reset audio to beginning
+  const resetAudio = () => {
+    const audio = audioRef.current
+    if (audio) {
+      audio.currentTime = 0
+      audio.load()
+      setForceReload((prev) => prev + 1)
+    }
+  }
+
+  // Get appropriate MIME type based on actual format
+  const getCorrectMimeType = (audioSrc: string, detectedFormat: string): string => {
+    const mimeTypes = {
+      webm: "audio/webm",
+      mp3: "audio/mpeg",
+      wav: "audio/wav",
+      ogg: "audio/ogg",
+      aac: "audio/aac",
+      mp4: "audio/mp4",
+    }
+
+    return mimeTypes[detectedFormat] || "audio/wav"
+  }
+
+  useEffect(() => {
+    const initializeAudio = async () => {
+      const browser = detectBrowser()
+      setBrowserInfo(`${browser.name} ${browser.version}${browser.isLegacy ? " (Legacy)" : ""}`)
+
+      const format = detectAudioFormat(audioSrc)
+      console.log(`Detected format: ${format}, Browser: ${browser.name} ${browser.version}`)
+
+      // Fix the MIME type based on actual format
+      let processedSrc = audioSrc
+      if (format !== "unknown") {
+        const correctMimeType = getCorrectMimeType(audioSrc, format)
+        if (audioSrc.startsWith("data:") && !audioSrc.startsWith(`data:${correctMimeType}`)) {
+          processedSrc = audioSrc.replace(/^data:audio\/[^;]+/, `data:${correctMimeType}`)
+          console.log(`Fixed MIME type from ${audioSrc.split(";")[0]} to ${correctMimeType}`)
+        }
+      }
+
+      // Only convert if format is not supported by browser
+      if (!isFormatSupported(format, browser)) {
+        try {
+          setIsLoading(true)
+          console.log(`Converting ${format} to WAV for ${browser.name}`)
+          const convertedAudio = await convertAudioForCompatibility(audioSrc)
+          setProcessedAudioSrc(convertedAudio)
+        } catch (error) {
+          console.error("Conversion failed:", error)
+          setAudioError(`Unable to convert ${format.toUpperCase()} audio for ${browser.name}. ${error.message}`)
+          setIsLoading(false)
+          return
+        }
+      } else {
+        setProcessedAudioSrc(processedSrc)
+      }
+
+      setIsLoading(false)
+    }
+
+    initializeAudio()
+  }, [audioSrc, forceReload])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !processedAudioSrc) return
+
+    const browser = detectBrowser()
+    let metadataLoaded = false
+
+    const loadingTimeout = setTimeout(() => {
+      if (!metadataLoaded) {
+        console.log("Metadata loading timeout, setting ready anyway")
+        setAudioReady(true)
+        // For Safari, show a hint that user needs to click to see duration
+        if (browser.isSafari && duration === 0) {
+          console.log("Safari detected - duration will load after user interaction")
+        }
+      }
+    }, 2000)
+
+    const handleLoadedMetadata = () => {
+      console.log("Metadata loaded, duration:", audio.duration)
+      metadataLoaded = true
+      setAudioReady(true)
+      if (audio.duration > 0 && !isNaN(audio.duration)) {
+        setDuration(audio.duration)
+      }
+      clearTimeout(loadingTimeout)
+    }
+
+    const handleLoadedData = () => {
+      console.log("Audio data loaded")
+      setAudioReady(true)
+      if (audio.duration > 0 && !isNaN(audio.duration)) {
+        setDuration(audio.duration)
+      }
+      clearTimeout(loadingTimeout)
+    }
+
+    const handleCanPlay = () => {
+      console.log("Can play audio, duration:", audio.duration)
+      setAudioReady(true)
+      setAudioError(null)
+      if (audio.duration > 0 && !isNaN(audio.duration)) {
+        setDuration(audio.duration)
+      }
+      clearTimeout(loadingTimeout)
+    }
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime)
+      // Update duration if it wasn't set during metadata loading (Safari behavior)
+      if (audio.duration > 0 && !isNaN(audio.duration) && duration === 0) {
+        setDuration(audio.duration)
+        console.log("Duration updated during playback:", audio.duration)
+      }
+    }
+
+    const handleDurationChange = () => {
+      console.log("Duration changed to:", audio.duration)
+      if (audio.duration > 0 && !isNaN(audio.duration)) {
+        setDuration(audio.duration)
+        setAudioReady(true)
+      }
+    }
+
+    const handlePlay = () => {
+      console.log("Audio started playing")
+      // Safari often loads metadata when play starts
+      if (audio.duration > 0 && !isNaN(audio.duration) && duration === 0) {
+        setDuration(audio.duration)
+        console.log("Duration loaded on play:", audio.duration)
+      }
+    }
+
+    const handlePause = () => {
+      console.log("Audio paused")
+    }
+
+    const handleEnded = () => {
+      console.log("Audio ended")
+      setCurrentTime(0)
+    }
+
+    const handleError = (e: Event) => {
+      clearTimeout(loadingTimeout)
+      const target = e.target as HTMLAudioElement
+      const error = target.error
+
+      let errorMessage = `Audio format not supported in ${browser.name}`
+
+      if (error) {
+        switch (error.code) {
+          case error.MEDIA_ERR_ABORTED:
+            errorMessage = "Audio playback was aborted"
+            break
+          case error.MEDIA_ERR_NETWORK:
+            errorMessage = "Network error occurred while loading audio"
+            break
+          case error.MEDIA_ERR_DECODE:
+            errorMessage = `Audio format could not be decoded in ${browser.name}`
+            break
+          case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            errorMessage = `Audio source not supported in ${browser.name}`
+            break
+        }
+      }
+
+      setAudioError(errorMessage)
+    }
+
+    // Add all event listeners
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata)
+    audio.addEventListener("loadeddata", handleLoadedData)
+    audio.addEventListener("canplay", handleCanPlay)
+    audio.addEventListener("canplaythrough", handleCanPlay)
+    audio.addEventListener("timeupdate", handleTimeUpdate)
+    audio.addEventListener("durationchange", handleDurationChange)
+    audio.addEventListener("play", handlePlay)
+    audio.addEventListener("pause", handlePause)
+    audio.addEventListener("ended", handleEnded)
+    audio.addEventListener("error", handleError)
+
+    // Try to load the audio
+    audio.load()
+
+    // For Safari, try to trigger metadata loading without autoplay
+    if (browser.isSafari) {
+      // Small delay to ensure audio element is ready
+      setTimeout(() => {
+        try {
+          // This might trigger metadata loading in some Safari versions
+          audio.currentTime = 0.1
+          audio.currentTime = 0
+        } catch (e) {
+          console.log("Safari metadata loading trick failed:", e)
+        }
+      }, 500)
+    }
+
+    return () => {
+      clearTimeout(loadingTimeout)
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
+      audio.removeEventListener("loadeddata", handleLoadedData)
+      audio.removeEventListener("canplay", handleCanPlay)
+      audio.removeEventListener("canplaythrough", handleCanPlay)
+      audio.removeEventListener("timeupdate", handleTimeUpdate)
+      audio.removeEventListener("durationchange", handleDurationChange)
+      audio.removeEventListener("play", handlePlay)
+      audio.removeEventListener("pause", handlePause)
+      audio.removeEventListener("ended", handleEnded)
+      audio.removeEventListener("error", handleError)
+    }
+  }, [processedAudioSrc, forceReload])
+
+  const formatTime = (time: number): string => {
+    if (isNaN(time)) return "0:00"
+    const minutes = Math.floor(time / 60)
+    const seconds = Math.floor(time % 60)
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  }
+
+  if (audioError) {
+    return (
+      <Alert severity="warning" style={{ marginTop: 8, maxWidth: "400px" }}>
+        <div>
+          <strong>Audio Playback Issue:</strong>
+          <br />
+          {audioError}
+          <br />
+          <small style={{ marginTop: 8, display: "block", color: "#666" }}>Browser: {browserInfo}</small>
+          <small style={{ marginTop: 4, display: "block" }}>
+            <a href={audioSrc} download={`story_${storyIndex + 1}_audio.webm`} style={{ color: "#1976d2" }}>
+              Download audio file
+            </a>
+          </small>
+        </div>
+      </Alert>
+    )
+  }
+
+  return (
+    <Box mt={1}>
+      <Typography variant="body2" color="textSecondary" style={{ marginBottom: 4 }}>
+        <strong>Audio:</strong>
+        <Typography variant="caption" color="textSecondary" style={{ marginLeft: 8 }}>
+          ({browserInfo})
+        </Typography>
+        {!audioReady && (
+          <Typography variant="caption" color="primary" style={{ marginLeft: 8 }}>
+            - Loading...
+          </Typography>
+        )}
+      </Typography>
+
+      {(isLoading || isConverting) && (
+        <Typography variant="caption" color="textSecondary" style={{ marginBottom: 8, display: "block" }}>
+          {isConverting ? "Converting audio for browser compatibility..." : "Loading audio..."}
+        </Typography>
+      )}
+
+      {processedAudioSrc && (
+        <>
+          <audio
+            ref={audioRef}
+            controls
+            preload="metadata"
+            key={`audio-${forceReload}`}
+            style={{
+              width: "100%",
+              maxWidth: "400px",
+              display: "block",
+              marginTop: 4,
+            }}
+          >
+            <source src={processedAudioSrc} />
+            Your browser does not support the audio element.
+          </audio>
+
+          {/* Show duration info - with Safari-specific messaging */}
+          {audioReady && (
+            <Typography variant="caption" color="textSecondary" style={{ marginTop: 4, display: "block" }}>
+              {duration > 0 ? (
+                <>Current: {formatTime(currentTime)}</>
+              ) : browserInfo.includes("Safari") ? (
+                <>Duration: Click play to load | Current: {formatTime(currentTime)}</>
+              ) : (
+                <>Duration: Loading... | Current: {formatTime(currentTime)}</>
               )}
-            </Box>
-          </Box>
-        )
-      })}
+            </Typography>
+          )}
+
+          {!audioReady && (
+            <button
+              onClick={resetAudio}
+              style={{
+                marginTop: 8,
+                padding: "4px 8px",
+                fontSize: "12px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Reload Audio
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Fallback download link */}
+      <Typography variant="caption" style={{ marginTop: 4, display: "block" }}>
+        <a
+          href={audioSrc}
+          download={`story_${storyIndex + 1}_audio.webm`}
+          style={{ color: "#1976d2", fontSize: "12px" }}
+        >
+          Download if playback fails
+        </a>
+      </Typography>
     </Box>
-  </Box>
-))
+  )
+}
+
+// Enhanced Static Data Details Component
+const StaticDataDetails: React.FC<{ staticData: any }> = React.memo(({ staticData }) => {
+  // Check if browser supports audio
+  const audioSupported = typeof Audio !== "undefined"
+
+  return (
+    <Box mt={2} pt={2} style={{ borderTop: "1px solid #e0e0e0" }}>
+      <Typography variant="subtitle2" color="primary">
+        <strong>Responses:</strong>
+      </Typography>
+
+      {!audioSupported && (
+        <Alert severity="info" style={{ marginTop: 8, marginBottom: 16 }}>
+          Audio playback may not be supported in this environment.
+        </Alert>
+      )}
+
+      <Box ml={2} mt={1}>
+        {Object.keys(staticData.story_responses || {}).map((storyKey) => {
+          const storyIndex = storyKey.replace("story_", "")
+          const audioKey = `story_${storyIndex}_audio`
+          const audioValue = staticData.audio_recordings?.[audioKey]
+
+          return (
+            <Box key={storyKey} mb={2} p={2} style={{ backgroundColor: "#f5f5f5", borderRadius: 4 }}>
+              <Typography variant="body2" color="textPrimary" gutterBottom>
+                <strong>Story {Number(storyIndex) + 1}:</strong>
+              </Typography>
+              <Box ml={2}>
+                <Typography variant="body2" color="textSecondary" style={{ marginBottom: 8 }}>
+                  <strong>Response:</strong> {staticData.story_responses[storyKey]}
+                </Typography>
+
+                {audioValue && audioSupported && <AudioPlayer audioSrc={audioValue} storyIndex={Number(storyIndex)} />}
+
+                {audioValue && !audioSupported && (
+                  <Box mt={1}>
+                    <Typography variant="body2" color="textSecondary">
+                      <strong>Audio:</strong>
+                      <a
+                        href={audioValue}
+                        download={`story_${Number(storyIndex) + 1}_audio`}
+                        style={{ marginLeft: 8, color: "#1976d2" }}
+                      >
+                        Download Audio File
+                      </a>
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          )
+        })}
+      </Box>
+    </Box>
+  )
+})
 
 // Main Item Component (for sensors/activities list)
 const ItemCard: React.FC<{
