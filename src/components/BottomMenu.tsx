@@ -23,7 +23,6 @@ import { ReactComponent as Manage } from "../icons/Manage.svg"
 import { ReactComponent as PreventIcon } from "../icons/Prevent.svg"
 import { useTranslation } from "react-i18next"
 import LAMP from "lamp-core"
-import Participant from "./Participant"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -485,7 +484,7 @@ export default function BottomMenu({ ...props }) {
               onChange={(_, newTab) => openTabUpdate(newTab)}
             />
           </ManageTooltip>
-          <PreventTooltip
+          {/* <PreventTooltip
             open={tabVal == 3 && (typeof tabValues[3] === "undefined" || !!tabValues[3])}
             interactive={true}
             className={classes.btnCursor}
@@ -514,7 +513,7 @@ export default function BottomMenu({ ...props }) {
               icon={<PreventIcon />}
               onChange={(_, newTab) => openTabUpdate(newTab)}
             />
-          </PreventTooltip>
+          </PreventTooltip> */}
         </Drawer>
       </Box>
     </div>

@@ -1021,7 +1021,7 @@ function AppRouter({ ...props }) {
             ) : state.authType === "researcher" ? (
               <Redirect to="/researcher/me/studies" />
             ) : (
-              <Redirect to="/participant/me/assess" />
+              <Redirect to="/participant/me/feed" />
             )
           ) : (
             <React.Fragment />
@@ -1208,9 +1208,10 @@ function AppRouter({ ...props }) {
                     await Service.deleteUserDB()
                     setState((state) => ({
                       ...state,
-                      activeTab: 3,
+                      // activeTab: "feed",
+                      activeTab: 4,
                     }))
-                    props.history.push(`/participant/${id}/portal`)
+                    props.history.push(`/participant/${id}/feed`)
                   })()
                 }}
                 mode={"researcher"} // Defaulting to researcher mode for now {state.researcherType}

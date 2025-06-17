@@ -137,6 +137,7 @@ export const defaultSensorSettings = {
   "lamp.app_usage": { frequency: 0.00003472 },
   "lamp.call_log": { frequency: 0.00003472 },
   "lamp.screen_state": { frequency: 0.00003472 },
+  "lamp.screen_active": { frequency: 0.00003472 },
 }
 
 export default function SensorDialog({
