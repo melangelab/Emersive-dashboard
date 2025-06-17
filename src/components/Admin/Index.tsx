@@ -44,7 +44,6 @@ import { ReactComponent as AdminsIcon } from "../../icons/NewIcons/admin-alt.svg
 import { ReactComponent as AdminsIconFilled } from "../../icons/NewIcons/admin-alt.svg"
 
 import AdminDashboard from "./AdminDashboard"
-import Participant from "../Participant"
 import Account from "./Account"
 
 const useStyles = makeStyles((theme: Theme) =>
