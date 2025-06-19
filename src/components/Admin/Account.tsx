@@ -247,6 +247,7 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
   }
 
   const handleStartEditing = (field) => {
+    console.log("Editing field:", field)
     setEditingFields((prev) => ({ ...prev, [field]: true }))
     setTempValues((prev) => ({ ...prev, [field]: profile.data[field] || "" }))
   }
@@ -550,22 +551,22 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
                     fullWidth
                     variant="outlined"
                     value={editingFields.userName ? tempValues.userName : profile?.data?.userName || ""}
-                    onChange={handleFieldChange("username")}
+                    onChange={handleFieldChange("userName")}
                     className={classes.textField}
                     disabled={!editingFields.userName}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
                           {!editingFields.userName ? (
-                            <IconButton onClick={() => handleStartEditing("username")}>
+                            <IconButton onClick={() => handleStartEditing("userName")}>
                               <Edit className={classes.editIcon} />
                             </IconButton>
                           ) : (
                             <>
-                              <IconButton onClick={() => handleSaveField("username")}>
+                              <IconButton onClick={() => handleSaveField("userName")}>
                                 <Check className={classes.editIcon} />
                               </IconButton>
-                              <IconButton onClick={() => handleCancelEditing("username")}>
+                              <IconButton onClick={() => handleCancelEditing("userName")}>
                                 <Close className={classes.editIcon} />
                               </IconButton>
                             </>
