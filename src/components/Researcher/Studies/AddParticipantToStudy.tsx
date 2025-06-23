@@ -133,6 +133,7 @@ export default function AddParticipantToStudy({
         token: idData.token,
         email: email,
         userType: "participant",
+        parentEmail: LAMP.Auth._auth.id === "admin" ? null : LAMP.Auth._auth.id,
       }).toString()
 
       const response: any = await fetch(`${baseURL}/send-password-email?${params}`, {

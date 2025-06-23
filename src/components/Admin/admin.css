@@ -13,34 +13,50 @@
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  border-bottom: 1px solid black;
-  padding: 15px;
+  border-bottom: 1px solid #dbdbdb;
+  padding: 10px 20px;
 }
 
 .profile-container {
-  /* padding: 15px; */
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  gap: 5px;
+  align-items: center;
+  /* padding-left: 9px; */
 }
 
 .profile-text-container {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
 }
 
 .profile-text {
-  margin: 0 !important;
+  margin: 0px;
+  line-height: 15px;
+  font-size: 15px;
+  font-weight: 500;
+  text-transform: capitalize;
+  color: #4d555b;
+}
+
+.profile-sub-text {
+  margin: 0px;
+  line-height: 15px;
+  font-size: 13px;
+  font-weight: 400;
+  color: gray;
+  text-transform: capitalize;
 }
 
 .profile-icon {
-  width: 45px !important;
-  height: 45px !important;
+  width: 35px;
+  height: 35px;
 }
 
 .profile-icon path {
-  fill: black !important;
+  fill: gray;
 }
 
 .action-container {
@@ -48,68 +64,196 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 15px;
-  padding-right: 15px;
+  gap: 5px;
+  padding-right: 10px;
+}
+
+.search-icon-container {
+  border-radius: 50%;
+  height: 45px;
+  width: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-icon-container:hover {
+  background-color: #e47c6214;
+  cursor: pointer;
+}
+
+.search-icon-container2 {
+  width: auto;
+}
+
+.search-icon-container2:hover {
+  background-color: transparent;
+}
+
+.search {
+  position: relative;
+  border-radius: 50px;
+  background-color: #fff;
+  border: 1px solid #dadce0;
+  height: 30px;
+  transition: width 100ms ease;
+  width: 30px !important;
+}
+
+.search:hover {
+  background-color: #f8f9fa;
+}
+
+.search-compact {
+  width: 33px;
+}
+
+.search-expanded {
+  width: 300px !important;
+}
+
+/* .search-compact.search-expanded {
+  width: 122px;
+} */
+
+.search-icon {
+  padding: 0px 8px 4px 2px;
+  height: 100%;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.search-icon-inner {
+  width: 20px;
+  height: 20px;
+  color: #7f7f7f;
+  /* Example color */
+  cursor: pointer;
 }
 
 .icon-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  /* Ensures a circular shape */
-  height: 40px;
+  height: 45px;
+  width: 45px;
   border-radius: 50%;
   transition: background-color 0.3s ease-in-out;
 }
 
 .icon-container:hover {
-  background-color: rgba(211, 211, 211, 0.5);
-  /* Light grey hover effect */
+  background-color: #e47c6214;
   cursor: pointer;
 }
 
 .refresh-icon,
-.view-icon,
-.view-icon-filled,
-.filter-cols-icon,
+.grid-icon,
+.grid-icon-filled,
 .filter,
 .download-icon {
-  width: 25px !important;
-  height: 25px !important;
-  /* border-radius: 50%; */
+  width: 28px !important;
+  height: 28px !important;
+  cursor: pointer;
+  fill: #7f7f7f;
 }
 
+.filter-cols-icon,
+.view-icon,
+.view-icon-filled {
+  width: 32px !important;
+  height: 32px !important;
+  cursor: pointer;
+  fill: #7f7f7f;
+}
+
+.icon-container:hover svg path,
+.view-icon:hover path,
+.view-icon-filled:hover path,
+.grid-icon:hover path,
+.grid-icon-filled:hover path,
+.filter-cols-icon:hover path,
+.filter:hover path,
+.download-icon:hover path,
+.refresh-icon:hover path {
+  fill: gray;
+  cursor: pointer;
+}
+
+.grid-icon-filled path,
 .view-icon-filled path {
-  fill: #06b0f0 !important;
+  fill: #979797 !important;
 }
 
-.add-fab-btn {
-  background-color: #008607 !important;
-  color: white !important;
-  width: 35px !important;
-  height: 30px !important;
-  border-radius: 100%;
-  box-shadow: none;
+.add-icon-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  height: 45px;
+  width: 45px;
+  border-radius: 50%;
+}
+
+.add-icon-container:hover {
+  background-color: #e47c6214;
   cursor: pointer;
+}
+
+.add-fab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 29.5px;
+  min-height: 28px;
+  height: 29.5px;
+  border: none;
+  border-radius: 100%;
+  box-shadow: none;
+  background-color: #008607;
+  color: white;
+  /* margin-left: 10px;
+  margin-right: 10px; */
   transition: background-color 0.3s ease-in-out;
+  cursor: pointer;
 }
 
 .add-fab-btn:hover {
   background-color: #57a05d;
+  cursor: pointer;
 }
 
-.table-container {
-  padding: 0 5px;
+.add-icon,
+.add-icon path {
+  cursor: pointer;
+}
+
+.body-container {
+  padding: 5px 5px;
   overflow-y: auto;
-  background-color: rgb(255, 255, 255) !important;
+  background-color: #f1f5f9 !important;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+}
+
+.table-container {
+  height: 100%;
+  position: relative;
+  border-radius: 20px;
+  border: 1px solid rgb(229, 231, 235);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.MuiCardActions-root,
+.MuiCardActions-spacing,
+.header-action-bar {
+  display: none;
 }
 
 .table-container div.MuiInput-underline::before {
@@ -131,28 +275,19 @@
   display: none;
 }
 
-.view-icon:hover path,
-.view-icon-filled:hover path,
-.filter-cols-icon:hover path,
-.filter:hover path,
-.download-icon:hover path,
-.refresh-icon:hover path {
-  fill: #06b0f0;
-}
-
 .table-actions-container {
   display: flex;
   flex-direction: row;
-  gap: 7px;
+  gap: 0px;
+  align-items: center;
 }
 
 .table-actions-icon-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  /* Ensures a circular shape */
-  height: 40px;
+  height: 35px;
+  width: 35px;
   border-radius: 50%;
   transition: background-color 0.3s ease-in-out;
 }
@@ -162,7 +297,7 @@
 }
 
 .table-actions-icon-container:hover {
-  background-color: rgba(211, 211, 211, 0.5);
+  background-color: rgba(211, 211, 211, 0.2);
   /* Light grey hover effect */
   cursor: pointer;
 }
@@ -173,13 +308,27 @@
 }
 
 .table-actions-icon {
-  width: 25px !important;
-  height: 25px !important;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.table-actions-icon path {
+  cursor: pointer;
 }
 
 .table-actions-icon.disabled-icon {
   pointer-events: none;
   opacity: 0.5;
+}
+
+.sticky-column {
+  border-bottom: 0.5px solid #def;
+  white-space: nowrap;
+  background: #ffffff;
+  border-left: 0.5px solid #def;
+  z-index: 1;
+  position: sticky;
 }
 
 .add-researcher-header {

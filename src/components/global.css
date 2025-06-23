@@ -5,13 +5,15 @@
   align-items: flex-start;
   height: 100vh;
   width: 15vw;
+  min-width: 250px;
   background-color: #ffffff;
   border-right: 0.5px solid #dbdbdb;
-  box-shadow: 0px 0px 9px 4px #9a9a9a24;
+  box-shadow: 0px 0px 9px 2px #9a9a9a34;
 }
 
 .sidebar.collapse {
   width: 7vw;
+  min-width: 100px;
 }
 
 .logo {
@@ -21,17 +23,16 @@
   width: 100%;
   margin-top: 20px;
 }
-
-.logo-icon {
-  width: 60%;
+  .logo-icon {
+  width: 40%;
 }
 
 .platform-name {
   display: inline-block;
-  color: #eb8367;
+  color: #bc652e;
   font-family: "Exo 2", sans-serif;
-  font-size: clamp(1.72rem, 0.05vi + 1.59rem, 2rem);
-  font-weight: 400;
+  font-size: clamp(1.9rem, 0.05vi + 1.59rem, 2.4rem);
+  font-weight: 600;
   font-optical-sizing: auto;
   font-style: normal;
   line-height: 32px;
@@ -53,8 +54,6 @@
 .list-container {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
   margin-top: 5vh;
   width: 100%;
 }
@@ -63,6 +62,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+
   align-items: flex-start;
   width: 100%;
 }
@@ -77,13 +77,32 @@
   cursor: pointer;
 }
 
+/* Text styling */
+.sidebar-item .MuiListItemText-root .MuiTypography-root {
+  font-size: 14px;
+  color: #4d555b;
+  font-weight: 400;
+  transition: color 0.3s ease;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+/* Apply hover effect to the entire sidebar item */
+.sidebar-item:hover {
+  background-color: rgba(228, 124, 98, 0.08) !important;
+  color: #2b3033;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 .sidebar-icon {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 35px !important;
   height: 50px;
-  margin: 5px 5px 5px 15px;
+  min-width: 50px;
+  margin: 5px 5px 5px 5px;
   border-radius: 100%;
   transition: background-color 0.3s ease, width 0.3s ease, height 0.3s ease;
   cursor: pointer;
@@ -96,13 +115,11 @@
 }
 
 .sidebar-icon svg path {
-  fill: #e47c62;
-  /* Gray color for inactive state */
+  fill: gray;
 }
 
-/* Apply hover effect to the entire sidebar item */
-.sidebar-item:hover {
-  background-color: rgba(228, 124, 98, 0.08) !important;
+.sidebar-icon:hover svg path {
+  fill: #e47c62;
 }
 
 .sidebar-icon.active {
@@ -110,17 +127,13 @@
   background-color: #e47c62;
 }
 
-.sidebar-icon.active svg path {
-  fill: #fff !important; /* White fill for active state */
+.sidebar-icon.active svg {
+  width: 25px;
+  pointer-events: none;
 }
 
-/* Text styling */
-.sidebar-item .MuiListItemText-root .MuiTypography-root {
-  font-size: 14px;
-  color: #6c757d;
-  /* Gray color for inactive text */
-  font-weight: 400;
-  transition: color 0.3s ease;
+.sidebar-icon.active svg path {
+  fill: #fff !important;
 }
 
 .bottom-list-container {
@@ -130,8 +143,6 @@
   justify-content: center;
   margin-top: auto;
   margin-bottom: 20px;
-  border-radius: 10px 20px 30px 40px;
-  border-radius: black;
 }
 
 .bottom-list {
@@ -142,13 +153,33 @@
   margin: 0px;
   padding: 0px;
   list-style: none;
-  width: 90%;
+  width: 85%;
 }
 
 .sidebar-bottom-item {
-  height: 25px;
-  width: 25px;
+  height: 30px;
+  width: 30px;
   padding: 0 !important;
+  cursor: pointer;
+}
+
+.sidebar-bottom-icon {
+  min-width: 30px;
+  cursor: pointer;
+}
+
+.sidebar-bottom-icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.sidebar-bottom-icon svg path {
+  fill: Gray;
+}
+
+.sidebar-bottom-icon:hover svg path {
+  cursor: pointer;
+  fill: #e47c62;
 }
 
 .bottom-list.collapse {
@@ -157,22 +188,7 @@
   width: auto;
   margin-left: auto;
   gap: 4px;
-  min-width: 105px;
-  /* transform: translateX(-50%); */
-}
-
-.sidebar-bottom-icon {
-  margin-right: 0;
-}
-
-.sidebar-bottom-icon svg {
-  width: 25px;
-  height: 25px;
-}
-
-.sidebar-bottom-icon path {
-  fill: #e47c62;
-  /* Gray color for inactive state */
+  min-width: 100px;
 }
 
 .view-field-container {
@@ -205,7 +221,8 @@
 .view-element-info {
   height: 100%;
   /* box-sizing: border-box; */
-  overflow-y: hidden; /* Remove background-color: blue which was likely for debugging */
+  overflow-y: hidden;
+  /* Remove background-color: blue which was likely for debugging */
 }
 
 .view-element-grid .MuiGrid-item:nth-child(2) .MuiPaper-root {

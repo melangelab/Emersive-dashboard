@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { Box, InputBase, Icon, makeStyles, Theme, createStyles, useMediaQuery, useTheme } from "@material-ui/core"
 import { useTranslation } from "react-i18next"
+import "./Admin/admin.css"
 
 interface StyleProps {
   isExpanded: boolean
@@ -17,14 +18,15 @@ const useStyles = makeStyles<Theme, StyleProps>((theme: Theme) =>
         backgroundColor: "#f8f9fa",
       },
       transition: theme.transitions.create("width"),
-      width: ({ isExpanded }) => (isExpanded ? 300 : 40),
-      height: 40,
+      width: ({ isExpanded }) => (isExpanded ? 300 : 33),
+      height: 33,
     },
     searchCompact: {
-      width: ({ isExpanded }) => (isExpanded ? 122 : 40),
+      width: ({ isExpanded }) => (isExpanded ? 122 : 33),
     },
     searchIcon: {
-      padding: theme.spacing(0, 1),
+      // padding: theme.spacing(0, 1),
+      padding: "0px 4px 4px 4px",
       height: "100%",
       position: "absolute",
       display: "flex",
@@ -32,6 +34,10 @@ const useStyles = makeStyles<Theme, StyleProps>((theme: Theme) =>
       justifyContent: "center",
       cursor: "pointer",
       zIndex: 1,
+    },
+    searchIcon2: {
+      width: 20,
+      height: 20,
     },
     inputRoot: {
       color: "inherit",
@@ -42,7 +48,7 @@ const useStyles = makeStyles<Theme, StyleProps>((theme: Theme) =>
       transition: theme.transitions.create("opacity"),
     },
     inputInput: {
-      padding: "8px 10px",
+      padding: "4px 10px",
       paddingLeft: 40,
       width: "100%",
     },
@@ -70,10 +76,14 @@ export default function Header({ searchData, ...props }: { searchData: Function 
   }
 
   return (
-    <Box>
-      <div className={`${classes.search} ${supportsSidebar ? "" : classes.searchCompact}`}>
+    <div className={`search-icon-container ${isExpanded ? "search-icon-container2" : ""}`}>
+      {/* <div className={`${classes.search} ${supportsSidebar ? "" : classes.searchCompact}`}>
         <div className={classes.searchIcon} onClick={handleSearchClick}>
-          <Icon>search</Icon>
+          <Icon className={classes.searchIcon2}>search</Icon>
+        </div> */}
+      <div className={`search ${isExpanded ? "search-expanded" : ""}`}>
+        <div className="search-icon" onClick={handleSearchClick}>
+          <Icon className="search-icon-inner">search</Icon>
         </div>
         <InputBase
           placeholder={isExpanded ? `${t("Search by name")}` + "…" : ""}
@@ -94,6 +104,6 @@ export default function Header({ searchData, ...props }: { searchData: Function 
           value={search}
         />
       </div>
-    </Box>
+    </div>
   )
 }

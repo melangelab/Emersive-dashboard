@@ -491,10 +491,10 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
     <div className={classes.root}>
       <div className={classes.headerContainer}>
         <div className={classes.profileContainer}>
-          <ProfileIcon className={classes.profileIcon} />
-          <div className={classes.profileTextContainer}>
-            <p>Hi! {props.title}</p>
-            <p>{authType}</p>
+          <ProfileIcon className="profile-icon" />
+          <div className="profile-text-container">
+            <p className="profile-text">Hi! {props.title}</p>
+            <p className="profile-sub-text">{authType}</p>
           </div>
         </div>
       </div>

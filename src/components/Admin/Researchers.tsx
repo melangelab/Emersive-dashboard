@@ -443,7 +443,7 @@ export default function Researchers({ history, updateStore, adminType, authType,
             selectedColumns={selectedColumns}
             setSelectedColumns={setSelectedColumns}
           />
-          <div className="table-container">
+          <div className="body-container">
             <DynamicTable
               researchers={researchers}
               columns={columns}
