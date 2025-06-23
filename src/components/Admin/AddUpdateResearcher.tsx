@@ -20,6 +20,7 @@ import { useSnackbar } from "notistack"
 import { useTranslation } from "react-i18next"
 import AddIcon from "@material-ui/icons/Add"
 import EditIcon from "@material-ui/icons/Edit"
+import "./admin.css"
 
 import { ReactComponent as ResearcherIconFilled } from "../../icons/NewIcons/crown.svg"
 
@@ -158,6 +159,7 @@ export default function AddUpdateResearcher({
           token: resultR.data.token,
           email: researcherObj.email,
           userType: "researcher",
+          parentEmail: LAMP.Auth._auth.id === "admin" ? null : LAMP.Auth._auth.id,
         }).toString()
 
         const response = await fetch(`${baseURL}/send-password-email?${params}`, {
@@ -218,14 +220,14 @@ export default function AddUpdateResearcher({
   }
 
   return (
-    <Box>
+    <div className="add-icon-container">
       {researcher ? (
         <Fab size="small" classes={{ root: classes.btnWhite }} onClick={() => setOpen(true)}>
           <Icon>edit</Icon>
         </Fab>
       ) : (
         <Fab className="add-fab-btn">
-          <AddIcon onClick={() => setOpen(true)} />
+          <AddIcon onClick={() => setOpen(true)} className="add-icon" />
         </Fab>
       )}
 
@@ -375,6 +377,6 @@ export default function AddUpdateResearcher({
           )}
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   )
 }

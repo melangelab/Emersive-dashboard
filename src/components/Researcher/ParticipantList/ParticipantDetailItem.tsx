@@ -486,17 +486,18 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
   const [duration, setDuration] = useState<number>(0)
   const [currentTime, setCurrentTime] = useState<number>(0)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [browserName, setBrowserName] = useState<string>("")
+  const [safariProgressFixed, setSafariProgressFixed] = useState(false)
 
   // Enhanced browser detection
   const detectBrowser = (): { name: string; version: number; isLegacy: boolean; isSafari: boolean } => {
     const ua = navigator.userAgent
-
     // Safari detection (including mobile)
     if (ua.indexOf("Safari/") !== -1 && ua.indexOf("Chrome") === -1) {
       const version = ua.indexOf("Version/") !== -1 ? parseInt(ua.substring(ua.indexOf("Version/") + 8)) : 0
       return { name: "Safari", version, isLegacy: version < 14, isSafari: true }
     }
-
     // Internet Explorer
     if (ua.indexOf("MSIE") !== -1 || ua.indexOf("Trident/") !== -1) {
       const version =
@@ -505,31 +506,26 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
           : 11
       return { name: "IE", version, isLegacy: true, isSafari: false }
     }
-
     // Edge Legacy
     if (ua.indexOf("Edge/") !== -1) {
       const version = parseInt(ua.substring(ua.indexOf("Edge/") + 5))
       return { name: "Edge Legacy", version, isLegacy: version < 79, isSafari: false }
     }
-
     // Chrome
     if (ua.indexOf("Chrome/") !== -1 && ua.indexOf("Edg/") === -1) {
       const version = parseInt(ua.substring(ua.indexOf("Chrome/") + 7))
       return { name: "Chrome", version, isLegacy: version < 80, isSafari: false }
     }
-
     // New Edge (Chromium)
     if (ua.indexOf("Edg/") !== -1) {
       const version = parseInt(ua.substring(ua.indexOf("Edg/") + 4))
       return { name: "Edge", version, isLegacy: false, isSafari: false }
     }
-
     // Firefox
     if (ua.indexOf("Firefox/") !== -1) {
       const version = parseInt(ua.substring(ua.indexOf("Firefox/") + 8))
       return { name: "Firefox", version, isLegacy: version < 70, isSafari: false }
     }
-
     return { name: "Unknown", version: 0, isLegacy: true, isSafari: false }
   }
 
@@ -544,12 +540,10 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i)
         }
-
         // Check for WebM signature (Matroska/EBML)
         if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) {
           return "webm"
         }
-
         // Check for other formats
         if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) return "wav"
         if (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0) return "mp3"
@@ -558,7 +552,6 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
       } catch (e) {
         console.warn("Could not decode base64 for format detection:", e)
       }
-
       // Fallback to MIME type
       const mimeMatch = base64Data.match(/data:audio\/([^;]+)/)
       if (mimeMatch) {
@@ -576,7 +569,6 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
     if (browser.isLegacy || browser.name === "IE") {
       return ["mp3", "wav"].includes(format)
     }
-
     if (browser.isSafari) {
       // Safari 14+ supports WebM, but earlier versions don't
       if (format === "webm") {
@@ -584,7 +576,6 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
       }
       return ["mp3", "aac", "wav", "mp4"].includes(format)
     }
-
     switch (browser.name) {
       case "Firefox":
         return ["mp3", "wav", "ogg", "webm"].includes(format)
@@ -596,7 +587,7 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
     }
   }
 
-  // Enhanced Safari-compatible WAV creation
+  // Enhanced Safari-compatible WAV creation with proper headers
   const createSafariCompatibleWav = (buffer: AudioBuffer): ArrayBuffer => {
     const length = buffer.length
     const numberOfChannels = buffer.numberOfChannels
@@ -605,7 +596,6 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
     const blockAlign = numberOfChannels * bytesPerSample
     const byteRate = sampleRate * blockAlign
     const dataSize = length * blockAlign
-
     const bufferSize = 44 + dataSize
     const arrayBuffer = new ArrayBuffer(bufferSize)
     const view = new DataView(arrayBuffer)
@@ -622,27 +612,29 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
     view.setUint32(4, bufferSize - 8, true)
     writeString(8, "WAVE")
 
-    // FMT sub-chunk
+    // FMT sub-chunk with extended format for Safari compatibility
     writeString(12, "fmt ")
-    view.setUint32(16, 16, true)
-    view.setUint16(20, 1, true)
+    view.setUint32(16, 16, true) // PCM format size
+    view.setUint16(20, 1, true) // PCM format
     view.setUint16(22, numberOfChannels, true)
     view.setUint32(24, sampleRate, true)
     view.setUint32(28, byteRate, true)
     view.setUint16(32, blockAlign, true)
-    view.setUint16(34, 16, true)
+    view.setUint16(34, 16, true) // bits per sample
 
     // Data sub-chunk
     writeString(36, "data")
     view.setUint32(40, dataSize, true)
 
-    // Convert audio samples
+    // Convert audio samples with proper range clamping
     let offset = 44
     for (let i = 0; i < length; i++) {
       for (let channel = 0; channel < numberOfChannels; channel++) {
         const channelData = buffer.getChannelData(channel)
         let sample = channelData[i]
+        // Clamp to valid range
         sample = Math.max(-1, Math.min(1, sample))
+        // Convert to 16-bit PCM
         const pcm = sample < 0 ? Math.floor(sample * 32768) : Math.floor(sample * 32767)
         view.setInt16(offset, pcm, true)
         offset += 2
@@ -656,13 +648,11 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
   const convertAudioForCompatibility = async (audioSrc: string): Promise<string> => {
     try {
       setIsConverting(true)
-
       // Convert base64 to ArrayBuffer
       const base64Data = audioSrc.split(",")[1]
       const binaryData = atob(base64Data)
       const arrayBuffer = new ArrayBuffer(binaryData.length)
       const uint8Array = new Uint8Array(arrayBuffer)
-
       for (let i = 0; i < binaryData.length; i++) {
         uint8Array[i] = binaryData.charCodeAt(i)
       }
@@ -670,12 +660,10 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
       // Use Web Audio API for conversion
       if (window.AudioContext || (window as any).webkitAudioContext) {
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-
         try {
           const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
           const wavBuffer = createSafariCompatibleWav(audioBuffer)
           const wavBlob = new Blob([wavBuffer], { type: "audio/wav" })
-
           return new Promise((resolve, reject) => {
             const reader = new FileReader()
             reader.onload = () => resolve(reader.result as string)
@@ -686,7 +674,6 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
           await audioContext.close()
         }
       }
-
       throw new Error("Web Audio API not available")
     } catch (error) {
       console.error("Audio conversion failed:", error)
@@ -696,6 +683,38 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
     }
   }
 
+  // Safari-specific progress bar fix
+  const fixSafariProgressBar = () => {
+    const audio = audioRef.current
+    if (!audio || !browserName.includes("Safari")) return
+
+    // Force Safari to show progress controls by triggering specific events
+    setTimeout(() => {
+      try {
+        // Create a synthetic interaction to enable controls
+        const event = new Event("loadstart")
+        audio.dispatchEvent(event)
+
+        // Force metadata loading
+        if (audio.readyState < 1) {
+          audio.load()
+        }
+
+        // Try to seek to a very small position to trigger metadata
+        if (audio.duration > 0) {
+          const originalTime = audio.currentTime
+          audio.currentTime = 0.01
+          setTimeout(() => {
+            audio.currentTime = originalTime
+            setSafariProgressFixed(true)
+          }, 100)
+        }
+      } catch (e) {
+        console.log("Safari progress fix attempt failed:", e)
+      }
+    }, 200)
+  }
+
   // Reset audio to beginning
   const resetAudio = () => {
     const audio = audioRef.current
@@ -703,6 +722,7 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
       audio.currentTime = 0
       audio.load()
       setForceReload((prev) => prev + 1)
+      setSafariProgressFixed(false)
     }
   }
 
@@ -716,7 +736,6 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
       aac: "audio/aac",
       mp4: "audio/mp4",
     }
-
     return mimeTypes[detectedFormat] || "audio/wav"
   }
 
@@ -724,6 +743,7 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
     const initializeAudio = async () => {
       const browser = detectBrowser()
       setBrowserInfo(`${browser.name} ${browser.version}${browser.isLegacy ? " (Legacy)" : ""}`)
+      setBrowserName(browser.name)
 
       const format = detectAudioFormat(audioSrc)
       console.log(`Detected format: ${format}, Browser: ${browser.name} ${browser.version}`)
@@ -738,8 +758,8 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
         }
       }
 
-      // Only convert if format is not supported by browser
-      if (!isFormatSupported(format, browser)) {
+      // Always convert to WAV for Safari to ensure progress bar works
+      if (browser.isSafari || !isFormatSupported(format, browser)) {
         try {
           setIsLoading(true)
           console.log(`Converting ${format} to WAV for ${browser.name}`)
@@ -772,12 +792,12 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
       if (!metadataLoaded) {
         console.log("Metadata loading timeout, setting ready anyway")
         setAudioReady(true)
-        // For Safari, show a hint that user needs to click to see duration
-        if (browser.isSafari && duration === 0) {
-          console.log("Safari detected - duration will load after user interaction")
+        // For Safari, try to fix progress bar
+        if (browser.isSafari) {
+          fixSafariProgressBar()
         }
       }
-    }, 2000)
+    }, 3000) // Increased timeout for Safari
 
     const handleLoadedMetadata = () => {
       console.log("Metadata loaded, duration:", audio.duration)
@@ -787,6 +807,11 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
         setDuration(audio.duration)
       }
       clearTimeout(loadingTimeout)
+
+      // Safari-specific progress bar fix
+      if (browser.isSafari) {
+        fixSafariProgressBar()
+      }
     }
 
     const handleLoadedData = () => {
@@ -796,6 +821,11 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
         setDuration(audio.duration)
       }
       clearTimeout(loadingTimeout)
+
+      // Safari-specific progress bar fix
+      if (browser.isSafari) {
+        fixSafariProgressBar()
+      }
     }
 
     const handleCanPlay = () => {
@@ -827,18 +857,28 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
 
     const handlePlay = () => {
       console.log("Audio started playing")
+      setIsPlaying(true)
       // Safari often loads metadata when play starts
       if (audio.duration > 0 && !isNaN(audio.duration) && duration === 0) {
         setDuration(audio.duration)
         console.log("Duration loaded on play:", audio.duration)
       }
+
+      // Additional Safari progress bar fix on first play
+      if (browser.isSafari && !safariProgressFixed) {
+        setTimeout(() => {
+          fixSafariProgressBar()
+        }, 500)
+      }
     }
 
     const handlePause = () => {
+      setIsPlaying(false)
       console.log("Audio paused")
     }
 
     const handleEnded = () => {
+      setIsPlaying(false)
       console.log("Audio ended")
       setCurrentTime(0)
     }
@@ -847,7 +887,6 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
       clearTimeout(loadingTimeout)
       const target = e.target as HTMLAudioElement
       const error = target.error
-
       let errorMessage = `Audio format not supported in ${browser.name}`
 
       if (error) {
@@ -866,7 +905,6 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
             break
         }
       }
-
       setAudioError(errorMessage)
     }
 
@@ -882,21 +920,51 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
     audio.addEventListener("ended", handleEnded)
     audio.addEventListener("error", handleError)
 
-    // Try to load the audio
-    audio.load()
-
-    // For Safari, try to trigger metadata loading without autoplay
+    // Enhanced Safari loading strategy
     if (browser.isSafari) {
-      // Small delay to ensure audio element is ready
-      setTimeout(() => {
-        try {
-          // This might trigger metadata loading in some Safari versions
-          audio.currentTime = 0.1
-          audio.currentTime = 0
-        } catch (e) {
-          console.log("Safari metadata loading trick failed:", e)
-        }
-      }, 500)
+      // Set proper attributes for Safari
+      audio.preload = "metadata"
+      audio.controls = true
+
+      // Load the audio
+      audio.load()
+
+      // Multiple attempts to trigger metadata loading
+      const safariLoadAttempts = [
+        () => {
+          try {
+            audio.currentTime = 0.001
+            audio.currentTime = 0
+          } catch (e) {
+            console.log("Safari metadata trick 1 failed:", e)
+          }
+        },
+        () => {
+          try {
+            const event = new Event("loadstart")
+            audio.dispatchEvent(event)
+          } catch (e) {
+            console.log("Safari metadata trick 2 failed:", e)
+          }
+        },
+        () => {
+          try {
+            if (audio.readyState < 1) {
+              audio.load()
+            }
+          } catch (e) {
+            console.log("Safari metadata trick 3 failed:", e)
+          }
+        },
+      ]
+
+      // Apply tricks with delays
+      safariLoadAttempts.forEach((attempt, index) => {
+        setTimeout(attempt, (index + 1) * 300)
+      })
+    } else {
+      // Standard loading for other browsers
+      audio.load()
     }
 
     return () => {
@@ -964,17 +1032,24 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
         <>
           <audio
             ref={audioRef}
-            controls
+            controls={true}
             preload="metadata"
             key={`audio-${forceReload}`}
+            className={browserName === "Safari" ? "safari-audio-enhanced" : ""}
             style={{
               width: "100%",
               maxWidth: "400px",
               display: "block",
               marginTop: 4,
+              minHeight: browserName === "Safari" ? "40px" : "auto",
             }}
+            // Safari-specific attributes
+            {...(browserName === "Safari" && {
+              controlsList: "nodownload",
+              disablePictureInPicture: true,
+            })}
           >
-            <source src={processedAudioSrc} />
+            <source src={processedAudioSrc} type="audio/wav" />
             Your browser does not support the audio element.
           </audio>
 
@@ -984,10 +1059,24 @@ const AudioPlayer: React.FC<{ audioSrc: string; storyIndex: number }> = ({ audio
               {duration > 0 ? (
                 <>Current: {formatTime(currentTime)}</>
               ) : browserInfo.includes("Safari") ? (
-                <>Duration: Click play to load | Current: {formatTime(currentTime)}</>
+                <>
+                  Duration: {safariProgressFixed ? "Loading..." : "Click play to load"} | Current:{" "}
+                  {formatTime(currentTime)}
+                </>
               ) : (
                 <>Duration: Loading... | Current: {formatTime(currentTime)}</>
               )}
+            </Typography>
+          )}
+
+          {/* Safari-specific help message */}
+          {browserName === "Safari" && !safariProgressFixed && audioReady && (
+            <Typography
+              variant="caption"
+              color="textSecondary"
+              style={{ marginTop: 4, display: "block", fontStyle: "italic" }}
+            >
+              Note: Safari may require clicking play once to enable the progress bar
             </Typography>
           )}
 

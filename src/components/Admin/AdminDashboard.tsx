@@ -138,7 +138,7 @@ const AdminDashboard = (props) => {
             <ProfileIcon className="profile-icon" />
             <div className="profile-text-container">
               <p className="profile-text">Hi! {props.title}</p>
-              <p className="profile-text">{props.authType}</p>
+              <p className="profile-sub-text">{props.authType}</p>
             </div>
           </div>
         </div>

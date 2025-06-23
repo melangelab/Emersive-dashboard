@@ -81,11 +81,11 @@ export default function ViewResearcherHeader(props) {
         <div className="table-actions-icon-container" onClick={() => handleIconClick("cancel")}>
           <Cancel className="table-actions-icon" />
         </div>
-        <div className="profile-container">
+        <div className="profile-container" style={{ padding: "10px" }}>
           <ProfileIcon className="profile-icon" />
           <div className="profile-text-container">
             <p className="profile-text">Hi! {props.title}</p>
-            <p className="profile-text">{props.authType}</p>
+            <p className="profile-sub-text">{props.authType}</p>
           </div>
         </div>
       </div>

@@ -156,6 +156,7 @@ export default function AddUpdateAdmin({
           token: result.data.token,
           email: emailId,
           userType: "admin",
+          parentEmail: LAMP.Auth._auth.id === "admin" ? null : LAMP.Auth._auth.id,
         }).toString()
 
         const response = await fetch(`${baseURL}/send-password-email?${params}`, {

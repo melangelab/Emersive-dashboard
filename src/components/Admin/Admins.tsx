@@ -567,7 +567,7 @@ export default function Admins({ title, authType, adminType, history }) {
             <ProfileIcon className="profile-icon" />
             <div className="profile-text-container">
               <p className="profile-text">Hi! {title}</p>
-              <p className="profile-text">{authType}</p>
+              <p className="profile-sub-text">{authType}</p>
             </div>
           </div>
         </div>

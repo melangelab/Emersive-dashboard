@@ -52,14 +52,6 @@ import { ReactComponent as Download } from "../../icons/NewIcons/progress-downlo
 
 import "./admin.css"
 
-// const StyledAddIcon = styled(AddIcon)({
-//   display: "flex",
-//   alignItems: "center",
-//   justifyContent: "center",
-//   width: "20px",
-//   height: "20px",
-// });
-
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     optionsMain: {
@@ -305,9 +297,9 @@ export default function Header({
         </div>
         <div className="icon-container" onClick={() => handleIconClick("grid")}>
           {tabularView ? (
-            <GridIcon className={`view-icon ${selectedIcon === "grid" ? "selected" : ""}`} />
+            <GridIcon className={`grid-icon ${selectedIcon === "grid" ? "selected" : ""}`} />
           ) : (
-            <GridIconFilled className="view-icon-filled" />
+            <GridIconFilled className="grid-icon-filled" />
           )}
         </div>
         <div className="icon-container" onClick={() => handleIconClick("table")}>
@@ -408,7 +400,7 @@ export default function Header({
           <ProfileIcon className="profile-icon" />
           <div className="profile-text-container">
             <p className="profile-text">Hi! {title}</p>
-            <p className="profile-text">{authType}</p>
+            <p className="profile-sub-text">{authType}</p>
           </div>
         </div>
       </div>

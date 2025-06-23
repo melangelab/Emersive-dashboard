@@ -834,174 +834,123 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
   }
 
   return (
-    <div
-      style={{
-        height: "95%",
-        position: "relative",
-        borderRadius: "20px",
-        border: "1px solid rgb(229, 231, 235)",
-        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden", // Changed from 'auto' to 'hidden'
-      }}
-    >
+    <div className="table-container">
       {showCopyTooltip && <CopyTooltip text="Copied!" position={tooltipPosition} />}
-      <CardActions
+      <ConfirmationDialog
+        confirmationDialog={confirmationDialog}
+        open={confirmationDialog > 0}
+        onClose={() => setConfirmationDialog(0)}
+        confirmAction={confirmAction}
+        confirmationMsg="Are you sure you want to delete this investigator(s)?."
+      />
+      <table
         style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 20, // Increased z-index
-          backgroundColor: "white",
-          padding: "0.5rem 0",
-          display: "flex",
-          justifyContent: "center",
-          width: "100%",
-          borderBottom: "1px solid rgb(229, 231, 235)",
+          width: "max-content",
+          minWidth: "100%",
+          borderCollapse: "separate",
+          borderSpacing: 0,
+          tableLayout: "fixed",
         }}
       >
-        {adminType !== "practice_lead" && (
-          <Box
-            display="flex"
-            flexDirection="row"
+        <thead>
+          <tr
             style={{
-              justifyContent: "space-between",
-              gap: "14px", // Adds consistent spacing between all flex items
+              position: "sticky",
+              top: 0,
+              zIndex: 1,
+              backgroundColor: "rgb(213 213 213)",
             }}
-          ></Box>
-        )}
-        {/* {["delete", "suspend"].includes(activeButton) && researchersSelected.length > 0 ? (
-          <Button onClick={(event) => (activeButton === "delete" ? setConfirmationDialog(6) : handleSuspension())}>
-            {activeButton}
-          </Button>
-        ) : null} */}
-        <ConfirmationDialog
-          confirmationDialog={confirmationDialog}
-          open={confirmationDialog > 0}
-          onClose={() => setConfirmationDialog(0)}
-          confirmAction={confirmAction}
-          confirmationMsg="Are you sure you want to delete this investigator(s)?."
-        />
-      </CardActions>
-      <div
-        style={{
-          overflowX: "auto",
-          overflowY: "auto",
-          position: "relative",
-          flex: 1,
-          minHeight: 0,
-          marginTop: "14px",
-        }}
-      >
-        <table
-          style={{
-            width: "max-content",
-            minWidth: "100%",
-            borderCollapse: "separate",
-            borderSpacing: 0,
-            tableLayout: "fixed",
-          }}
-        >
-          <thead>
+          >
+            {selectedColumns.map((key, index) => (
+              <th
+                key={key}
+                style={{
+                  padding: "0.75rem 1rem",
+                  textAlign: "left",
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  borderBottom: "1px solid rgb(229, 231, 235)",
+                  whiteSpace: "nowrap",
+                  background:
+                    index === selectedColumns.length - 1
+                      ? "linear-gradient(to right, rgb(213, 212, 212),rgb(183, 183, 183))" // 3D effect for last column
+                      : "rgb(213, 212, 212)", // Same styling for all other columns
+                  boxShadow: index === selectedColumns.length - 1 ? "-3px 0px 5px rgba(0, 0, 0, 0.2)" : "none",
+                  borderLeft: index === selectedColumns.length - 1 ? "3px solid #9e9e9e" : "none",
+                  zIndex: index === selectedColumns.length - 1 ? 2 : "auto",
+                  position: index === selectedColumns.length - 1 ? "sticky" : "static",
+                  right: index === selectedColumns.length - 1 ? 0 : "auto",
+                }}
+                className={index === selectedColumns.length - 1 ? "sticky-column" : ""}
+              >
+                {formatValue(columns[key], "")}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, rowIndex) => (
             <tr
-              style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 1,
-                backgroundColor: "rgb(213 213 213)",
-              }}
+              key={rowIndex}
+              className={`${classes.tableRow} ${
+                selectedRow === rowIndex || selectedRows.includes(rowIndex) ? classes.selectedRow : ""
+              }`}
             >
               {selectedColumns.map((key, index) => (
-                <th
-                  key={key}
+                <td
+                  key={`${rowIndex}-${key}`}
                   style={{
                     padding: "0.75rem 1rem",
-                    textAlign: "left",
-                    fontSize: "0.75rem",
-                    fontWeight: 500,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
+                    fontSize: "0.875rem",
+                    color: "rgb(17, 24, 39)",
                     borderBottom: "1px solid rgb(229, 231, 235)",
                     whiteSpace: "nowrap",
                     background:
                       index === selectedColumns.length - 1
-                        ? "linear-gradient(to right, rgb(213, 212, 212),rgb(183, 183, 183))" // 3D effect for last column
-                        : "rgb(213, 212, 212)", // Same styling for all other columns
+                        ? "linear-gradient(to right, #ffffff, #f5f5f5)" // 3D effect for last column
+                        : !Object.keys(row).includes("status") || row.status === "ACTIVE"
+                        ? "white"
+                        : "rgb(243, 243, 243)", // Same design for other columns #e0e0e0
                     boxShadow: index === selectedColumns.length - 1 ? "-3px 0px 5px rgba(0, 0, 0, 0.2)" : "none",
-                    borderLeft: index === selectedColumns.length - 1 ? "3px solid #9e9e9e" : "none",
-                    zIndex: index === selectedColumns.length - 1 ? 2 : "auto",
+                    borderLeft: index === selectedColumns.length - 1 ? "3px solid #bdbdbd" : "none",
+                    zIndex: index === selectedColumns.length - 1 ? 1 : "auto",
                     position: index === selectedColumns.length - 1 ? "sticky" : "static",
                     right: index === selectedColumns.length - 1 ? 0 : "auto",
                   }}
                   className={index === selectedColumns.length - 1 ? "sticky-column" : ""}
                 >
-                  {formatValue(columns[key], "")}
-                </th>
+                  {/* {renderCell(rowIndex, key, getValue(row, key), row)} */}
+                  {index === selectedColumns.length - 1 ? (
+                    <ActionsDiv
+                      row={row}
+                      rowIndex={rowIndex}
+                      history={history}
+                      setSelectedRow={setSelectedRow}
+                      selectedRow={selectedRow}
+                      setActiveButton={setActiveButton}
+                      activeButton={activeButton}
+                      researcherSelected={researcherSelected}
+                      setResearcherSelected={setResearcherSelected}
+                      changeElement={changeElement}
+                      isEditing={isEditing}
+                      setIsEditing={setIsEditing}
+                      setEditedData={setEditedData}
+                      handleSaveEdit={handleSaveEdit}
+                      handleSuspension={handleSuspension}
+                      handleUnSuspension={handleUnSuspension}
+                      setConfirmationDialog={setConfirmationDialog}
+                    />
+                  ) : (
+                    renderCell(rowIndex, key, getValue(row, key), row)
+                  )}
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {data.map((row, rowIndex) => (
-              <tr
-                key={rowIndex}
-                className={`${classes.tableRow} ${
-                  selectedRow === rowIndex || selectedRows.includes(rowIndex) ? classes.selectedRow : ""
-                }`}
-              >
-                {selectedColumns.map((key, index) => (
-                  <td
-                    key={`${rowIndex}-${key}`}
-                    style={{
-                      padding: "0.75rem 1rem",
-                      fontSize: "0.875rem",
-                      color: "rgb(17, 24, 39)",
-                      borderBottom: "1px solid rgb(229, 231, 235)",
-                      whiteSpace: "nowrap",
-                      background:
-                        index === selectedColumns.length - 1
-                          ? "linear-gradient(to right, #ffffff, #f5f5f5)" // 3D effect for last column
-                          : !Object.keys(row).includes("status") || row.status === "ACTIVE"
-                          ? "white"
-                          : "rgb(243, 243, 243)", // Same design for other columns #e0e0e0
-                      boxShadow: index === selectedColumns.length - 1 ? "-3px 0px 5px rgba(0, 0, 0, 0.2)" : "none",
-                      borderLeft: index === selectedColumns.length - 1 ? "3px solid #bdbdbd" : "none",
-                      zIndex: index === selectedColumns.length - 1 ? 1 : "auto",
-                      position: index === selectedColumns.length - 1 ? "sticky" : "static",
-                      right: index === selectedColumns.length - 1 ? 0 : "auto",
-                    }}
-                    className={index === selectedColumns.length - 1 ? "sticky-column" : ""}
-                  >
-                    {/* {renderCell(rowIndex, key, getValue(row, key), row)} */}
-                    {index === selectedColumns.length - 1 ? (
-                      <ActionsDiv
-                        row={row}
-                        rowIndex={rowIndex}
-                        history={history}
-                        setSelectedRow={setSelectedRow}
-                        selectedRow={selectedRow}
-                        setActiveButton={setActiveButton}
-                        activeButton={activeButton}
-                        researcherSelected={researcherSelected}
-                        setResearcherSelected={setResearcherSelected}
-                        changeElement={changeElement}
-                        isEditing={isEditing}
-                        setIsEditing={setIsEditing}
-                        setEditedData={setEditedData}
-                        handleSaveEdit={handleSaveEdit}
-                        handleSuspension={handleSuspension}
-                        handleUnSuspension={handleUnSuspension}
-                        setConfirmationDialog={setConfirmationDialog}
-                      />
-                    ) : (
-                      renderCell(rowIndex, key, getValue(row, key), row)
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
