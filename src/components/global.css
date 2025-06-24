@@ -23,8 +23,9 @@
   width: 100%;
   margin-top: 20px;
 }
-  .logo-icon {
-  width: 40%;
+
+.logo-icon {
+  width: 40% !important;
 }
 
 .platform-name {
