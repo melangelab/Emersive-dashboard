@@ -33,7 +33,9 @@ import { ResponsiveMargin } from "./Utils"
 import { ReactComponent as Logo } from "../icons/Logo.svg"
 import { ReactComponent as LineArt } from "../icons/login_line_drawing.svg"
 // import { ReactComponent as LoginBackground } from "../icons/login_background.svg"
-import LoginBackground from "../icons/login_background.jpg"
+import LoginBackground from "../icons/blob_bg_1.png"
+import TopLeft from "../icons/corner-top-left.png"
+import BottomRight from "../icons/corner-bottom-right.png"
 import { ReactComponent as Logotext } from "../icons/mindLAMP.svg"
 
 import { useTranslation } from "react-i18next"
@@ -999,19 +1001,10 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
             <Grid item xs={12} md={7} className="line-art-container">
               {/*<div className="line-art-div">*/}
               {/*<LineArt className="line-art" />*/}
-              <img
-                src={LoginBackground}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "fill",
-                  zIndex: 0,
-                }}
-              />
               {/*</div>*/}
+              <img className="corner top-left-corner" src={TopLeft} alt="top left corner" />
+              <img className="corner bottom-right-corner" src={BottomRight} alt="bottom right corner" />
+
               <Logo className="logo-component" style={{ zIndex: 1 }} />
               <div className="platform-name">emersive</div>
               <div className="platform-tag">MOBILE SENSING RESEARCH</div>
@@ -1212,7 +1205,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                           onClick={handleLogin}
                           className={loginClick ? "loginDisabled" : ""}
                           style={{
-                            background: "#4C4AE8", // Match your image's purple shade
+                            background: "#cf825a", // Match your image's purple shade
                             color: "white",
                             width: "100%",
                             height: "56px", // Consistent height (adjust as needed)

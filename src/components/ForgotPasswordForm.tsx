@@ -113,7 +113,7 @@ export default function ForgotPasswordForm({ onBack }) {
                   type="submit"
                   disabled={loading}
                   style={{
-                    background: "#4C4AE8", // Match your image's purple shade
+                    background: "#cf825a", // Match your image's purple shade
                     color: "white",
                     width: "100%",
                     height: "56px", // Consistent height (adjust as needed)
