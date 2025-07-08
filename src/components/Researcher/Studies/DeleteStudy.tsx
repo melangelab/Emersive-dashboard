@@ -113,7 +113,7 @@ export default function DeleteStudy({ study, deletedStudy, researcherId, ...prop
           <Icon>delete_outline</Icon>
         </Fab>
       </Box> */}
-      {props.activeButton?.id === study.id && props.activeButton?.action === "delete" && props.viewMode === "grid" ? (
+      {props.activeButton?.id === study.id && props.activeButton?.action === "delete" && !props.tabularView ? (
         <DeleteFilledIcon
           className={`${classes.actionIcon} active`}
           onClick={() => {

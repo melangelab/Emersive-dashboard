@@ -17,12 +17,30 @@
   padding: 10px 20px;
 }
 
+.page-title-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.page-name {
+  margin: 0px;
+  line-height: 15px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #4d555b;
+  text-transform: capitalize;
+}
+
 .profile-container {
   display: flex;
   flex-direction: row;
   gap: 5px;
   align-items: center;
-  /* padding-left: 9px; */
+  padding-left: 20px;
+  padding-right: 10px;
 }
 
 .profile-text-container {
@@ -60,64 +78,51 @@
 }
 
 .action-container {
-  flex-grow: 1;
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 5px;
-  padding-right: 10px;
+  padding: 10px 13px 10px 10px;
+  position: sticky;
 }
 
 .search-icon-container {
   border-radius: 50%;
   height: 45px;
-  width: 45px;
+  min-width: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.search-icon-container:hover {
+.search-icon-container:hover:not(.expanded) {
   background-color: #e47c6214;
   cursor: pointer;
-}
-
-.search-icon-container2 {
-  width: auto;
-}
-
-.search-icon-container2:hover {
-  background-color: transparent;
 }
 
 .search {
   position: relative;
   border-radius: 50px;
-  background-color: #fff;
-  border: 1px solid #dadce0;
-  height: 30px;
+  border: 1.5px solid #979797;
+  height: 35px;
   transition: width 100ms ease;
-  width: 30px !important;
+  width: 35px;
 }
 
 .search:hover {
   background-color: #f8f9fa;
 }
 
-.search-compact {
-  width: 33px;
-}
-
 .search-expanded {
-  width: 300px !important;
+  width: 300px;
+  height: 35px;
+  border: 1px solid #dadce0;
+  justify-content: flex-start;
+  padding: 5px 5px;
 }
-
-/* .search-compact.search-expanded {
-  width: 122px;
-} */
 
 .search-icon {
-  padding: 0px 8px 4px 2px;
+  margin: -1px 0px 0px 5px;
   height: 100%;
   position: absolute;
   display: flex;
@@ -127,11 +132,14 @@
   z-index: 1;
 }
 
+.search-expanded .search-icon {
+  margin: -5px 0px 0px 8px;
+}
+
 .search-icon-inner {
   width: 20px;
   height: 20px;
   color: #7f7f7f;
-  /* Example color */
   cursor: pointer;
 }
 
@@ -150,15 +158,44 @@
   cursor: pointer;
 }
 
+.sort-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 45px;
+  width: 50px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease-in-out;
+  /* margin: 0px 4px 0px 4px; */
+}
+
+.sort-icon-container:hover {
+  background-color: #e47c6214;
+  cursor: pointer;
+}
+
 .refresh-icon,
 .grid-icon,
 .grid-icon-filled,
-.filter,
-.download-icon {
+.filter-icon,
+.download-icon,
+.edit-icon,
+.save-icon,
+.password-edit-icon,
+.left-icon,
+.right-icon,
+.cancel-icon {
   width: 28px !important;
   height: 28px !important;
   cursor: pointer;
   fill: #7f7f7f;
+}
+
+.sort-icon {
+  padding: 0px 2px 0px 2px;
+  font-size: 24px !important;
+  cursor: pointer;
+  color: #7f7f7f;
 }
 
 .filter-cols-icon,
@@ -178,7 +215,13 @@
 .filter-cols-icon:hover path,
 .filter:hover path,
 .download-icon:hover path,
-.refresh-icon:hover path {
+.refresh-icon:hover path,
+.edit-icon:hover path,
+.save-icon:hover path,
+.password-edit-icon:hover path,
+.left-icon:hover path,
+.right-icon:hover path,
+.cancel-icon:hover path {
   fill: gray;
   cursor: pointer;
 }
@@ -195,6 +238,8 @@
   height: 45px;
   width: 45px;
   border-radius: 50%;
+  position: relative;
+  overflow: auto;
 }
 
 .add-icon-container:hover {
@@ -214,8 +259,6 @@
   box-shadow: none;
   background-color: #008607;
   color: white;
-  /* margin-left: 10px;
-  margin-right: 10px; */
   transition: background-color 0.3s ease-in-out;
   cursor: pointer;
 }
@@ -231,12 +274,20 @@
 }
 
 .body-container {
-  padding: 5px 5px;
+  padding: 0px 5px 7px 5px;
   overflow-y: auto;
-  background-color: #f1f5f9 !important;
+  background-color: #f1f5f9;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  position: relative;
+}
+
+.grid-container {
+  height: 100%;
+  position: relative;
+  border-radius: 20px;
+  overflow: auto;
 }
 
 .table-container {
@@ -391,6 +442,7 @@
 }
 
 .view-element-container {
+  margin-top: 30px;
   flex: 1;
   overflow: hidden;
   display: flex;

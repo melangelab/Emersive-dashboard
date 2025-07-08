@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useRef } from "react"
 import {
   Box,
   DialogContent,
@@ -14,7 +14,11 @@ import {
   useMediaQuery,
   useTheme,
   Divider,
+  Paper,
 } from "@material-ui/core"
+import ClickAwayListener from "@material-ui/core/ClickAwayListener"
+
+import Popper from "@material-ui/core/Popper"
 import LAMP, { Researcher } from "lamp-core"
 import { useSnackbar } from "notistack"
 import { useTranslation } from "react-i18next"
@@ -103,13 +107,12 @@ export default function AddUpdateResearcher({
     username: researcher?.username ?? "",
     address: researcher?.address ?? "",
     adminNote: researcher?.adminNote ?? "",
-    // password: "",
-    // confirmPassword: "",
   })
-
   const [researcherCreated, setResearcherCreated] = useState(undefined)
-
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
+
+  const anchorRef = useRef(null)
+  const [dialogPos, setDialogPos] = useState({ top: 0, left: 0 })
 
   const handleInputChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -117,12 +120,6 @@ export default function AddUpdateResearcher({
       [field]: event.target.value,
     })
   }
-
-  console.log("in the add update researcher")
-
-  // const _checkCredential = async(email) =>{
-  //   await LAMP.Credential.list()
-  // }
 
   const addResearcher = async () => {
     const fullName = `${formData.firstName} ${formData.lastName}`.trim()
@@ -226,31 +223,179 @@ export default function AddUpdateResearcher({
           <Icon>edit</Icon>
         </Fab>
       ) : (
-        <Fab className="add-fab-btn">
-          <AddIcon onClick={() => setOpen(true)} className="add-icon" />
+        <Fab
+          className="add-fab-btn"
+          ref={anchorRef}
+          onClick={() => setOpen((prev) => !prev)}
+          style={{ backgroundColor: "#008607", color: "white" }}
+        >
+          <AddIcon className="add-icon" />
         </Fab>
       )}
 
-      <Dialog
+      <Popper
         open={open}
-        onClose={handleClose}
-        PaperProps={{
-          style: {
-            position: "absolute",
-            top: "8.5%",
-            left: "64%",
-            margin: "0px",
-            height: "91.4vh",
-            // display:"flex",
-            // flexDirection:"column",
-            // flex:1
-            // transform: 'translateX(-50%)',
+        anchorEl={anchorRef.current}
+        placement="bottom"
+        style={{
+          zIndex: 1300,
+          marginTop: 8,
+        }}
+        popperOptions={{
+          modifiers: {
+            flip: {
+              enabled: false, // Disable flipping
+            },
           },
         }}
-        // style={{margin:0}}
+      >
+        <ClickAwayListener onClickAway={handleClose}>
+          <Paper
+            elevation={4}
+            style={{
+              width: 450,
+              padding: 20,
+              maxHeight: "80vh",
+              overflowY: "auto",
+            }}
+          >
+            <div className="add-researcher-header">
+              <div className="add-researcher-icon">
+                <ResearcherIconFilled />
+              </div>
+              <p>ADD NEW RESEARCHER</p>
+            </div>
+
+            {!researcherCreated ? (
+              <>
+                <TextField
+                  margin="dense"
+                  label={t("First Name")}
+                  fullWidth
+                  value={formData.firstName}
+                  onChange={handleInputChange("firstName")}
+                  required
+                />
+                <TextField
+                  margin="dense"
+                  label={t("Last Name")}
+                  fullWidth
+                  value={formData.lastName}
+                  onChange={handleInputChange("lastName")}
+                  required
+                />
+                <TextField
+                  margin="dense"
+                  label={t("Email")}
+                  type="email"
+                  fullWidth
+                  value={formData.email}
+                  onChange={handleInputChange("email")}
+                  required
+                />
+                <TextField
+                  margin="dense"
+                  label={t("Mobile")}
+                  type="number"
+                  fullWidth
+                  value={formData.mobile}
+                  onChange={handleInputChange("mobile")}
+                />
+                <TextField
+                  margin="dense"
+                  label={t("Institution")}
+                  fullWidth
+                  value={formData.institution}
+                  onChange={handleInputChange("institution")}
+                />
+                <TextField
+                  margin="dense"
+                  label={t("Username")}
+                  fullWidth
+                  value={formData.username}
+                  onChange={handleInputChange("username")}
+                  required
+                />
+                <TextField
+                  margin="dense"
+                  label={t("Address")}
+                  fullWidth
+                  value={formData.address}
+                  onChange={handleInputChange("address")}
+                />
+                <TextField
+                  margin="dense"
+                  label={t("Admin Note")}
+                  fullWidth
+                  multiline
+                  rows={4}
+                  value={formData.adminNote}
+                  onChange={handleInputChange("adminNote")}
+                />
+
+                <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+                  <Button onClick={handleClose} color="primary">
+                    {t("Cancel")}
+                  </Button>
+                  <Button
+                    onClick={addResearcher}
+                    color="primary"
+                    disabled={!formData.firstName.trim() || !formData.lastName.trim()}
+                  >
+                    {t("Add")}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Divider />
+                <p style={{ padding: "20px", whiteSpace: "pre-line" }}>
+                  New Researcher - {researcherCreated?.firstName} {researcherCreated?.lastName} - has been successfully
+                  added.
+                  {"\n"}A set password mail has been successfully sent to the email - {researcherCreated?.email}.{"\n"}
+                  The link will expire after 24 hours.
+                </p>
+                <Divider />
+                <div style={{ marginTop: 16 }}>
+                  <button
+                    onClick={handleSuccess}
+                    style={{
+                      backgroundColor: "#FEE2D4",
+                      color: "#C06E3C",
+                      border: "none",
+                      borderRadius: "12px",
+                      padding: "10px 24px",
+                      fontSize: "16px",
+                      fontWeight: "500",
+                      cursor: "pointer",
+                      boxShadow: "none",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    EXIT
+                  </button>
+                </div>
+              </>
+            )}
+          </Paper>
+        </ClickAwayListener>
+      </Popper>
+      {/* <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        PaperProps={{
+          style: {
+            position: 'absolute',
+            top: `${dialogPos.top}px`,
+            left: `${dialogPos.left}px`,
+            margin: 0,
+            width: '450px',
+            maxHeight: '85vh',
+          }
+        }}
         BackdropProps={{
           style: {
-            backgroundColor: "rgba(0, 0, 0, 0.1)", // Adjust the alpha value for transparency
+            backgroundColor: 'rgba(0,0,0,0.1)',
           },
         }}
       >
@@ -376,7 +521,7 @@ export default function AddUpdateResearcher({
             </button>
           )}
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
     </div>
   )
 }

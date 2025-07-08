@@ -409,14 +409,18 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="logo">
         <Logo className="logo-icon" />
         {sidebarCollapse ? null : <span className="platform-name">emersive</span>}
-        {sidebarCollapse ? null : <span className="platform-tag">MOBILE SENSING RESEARCH</span>}
+        {sidebarCollapse ? null : <span className="platform-tag">MOBILE SENSING FOR RESEARCH</span>}
       </div>
 
       <div className="list-container">
         <List className="sidebar-list">
           {filteredMenuItems.map((item, index) => (
-            <ListItem key={index} className={`sidebar-item`} onClick={() => handleSidebarNavigation(item, index)}>
-              <ListItemIcon className={`sidebar-icon ${item.path.includes(activeRoute) ? "active" : ""}`}>
+            <ListItem
+              key={index}
+              className={`sidebar-item ${item.path.includes(activeRoute) ? "active" : ""}`}
+              onClick={() => handleSidebarNavigation(item, index)}
+            >
+              <ListItemIcon className={`sidebar-icon`}>
                 {item.path.includes(activeRoute) ? item.filledIcon : item.icon}
               </ListItemIcon>
               {sidebarCollapse ? null : <ListItemText primary={item.text} />}

@@ -18,6 +18,7 @@ import { Visibility, VisibilityOff, Edit, Close, Check } from "@material-ui/icon
 import LAMP, { Researcher } from "lamp-core"
 import { useSnackbar } from "notistack"
 import { Service } from "../DBService/DBService"
+import AdminHeader from "../Header"
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -66,6 +67,7 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     borderBottom: "1px solid #E0E0E0",
     marginTop: theme.spacing(1),
+    backgroundColor: "#FFFFFF",
   },
   tab: {
     padding: theme.spacing(2, 3),
@@ -94,7 +96,9 @@ const useStyles = makeStyles((theme) => ({
   },
   formContainer: {
     width: "100%",
-    padding: theme.spacing(4, 0),
+    padding: theme.spacing(4, 2),
+    backgroundColor: "#FFFFFF",
+    overflowY: "auto",
   },
   formField: {
     marginBottom: theme.spacing(3),
@@ -488,388 +492,396 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
   }
 
   return (
-    <div className={classes.root}>
-      <div className={classes.headerContainer}>
+    <React.Fragment>
+      {/* <div className={classes.headerContainer}>
         <div className={classes.profileContainer}>
           <ProfileIcon className="profile-icon" />
           <div className="profile-text-container">
-            <p className="profile-text">Hi! {props.title}</p>
+            <p className="profile-text">{props.title}</p>
             <p className="profile-sub-text">{authType}</p>
           </div>
         </div>
-      </div>
+      </div> */}
 
-      <div className={classes.tabsContainer}>
-        {tabs.map((tab, index) => (
-          <div
-            key={index}
-            className={`${classes.tab} ${currentTab === index ? classes.activeTab : ""}`}
-            onClick={() => handleTabChange(index)}
-          >
-            {tab}
-          </div>
-        ))}
-      </div>
-
-      <div className={classes.formContainer}>
-        {currentTab === 0 && (
-          <>
-            <Grid container spacing={4}>
-              {/* Left Column - Profile Form */}
-              <Grid item xs={12} md={7}>
-                <div className={classes.formField}>
-                  <Typography className={classes.inputLabel}>ID</Typography>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    value={profile.data.id === "" ? "NA" : profile.data.id}
-                    InputProps={{ readOnly: true }}
-                    className={classes.textField}
-                  />
-                </div>
-                <div className={classes.formField}>
-                  <Typography className={classes.inputLabel}>Role</Typography>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    value={
-                      profile?.data?.role === "system_admin"
-                        ? "System Admin"
-                        : profile?.data?.role === "admin"
-                        ? "Admin"
-                        : profile?.data?.role === "researcher"
-                        ? "Researcher"
-                        : "Participant"
-                    }
-                    InputProps={{ readOnly: true }}
-                    className={classes.textField}
-                  />
-                </div>
-                <div className={classes.formField}>
-                  <Typography className={classes.inputLabel}>Username</Typography>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    value={editingFields.userName ? tempValues.userName : profile?.data?.userName || ""}
-                    onChange={handleFieldChange("userName")}
-                    className={classes.textField}
-                    disabled={!editingFields.userName}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          {!editingFields.userName ? (
-                            <IconButton onClick={() => handleStartEditing("userName")}>
-                              <Edit className={classes.editIcon} />
-                            </IconButton>
-                          ) : (
-                            <>
-                              <IconButton onClick={() => handleSaveField("userName")}>
-                                <Check className={classes.editIcon} />
-                              </IconButton>
-                              <IconButton onClick={() => handleCancelEditing("userName")}>
-                                <Close className={classes.editIcon} />
-                              </IconButton>
-                            </>
-                          )}
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </div>
-                <div className={classes.formField}>
-                  <Typography className={classes.inputLabel}>First Name</Typography>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    value={editingFields.firstName ? tempValues.firstName : profile?.data?.firstName || ""}
-                    onChange={handleFieldChange("firstName")}
-                    className={classes.textField}
-                    disabled={!editingFields.firstName}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          {!editingFields.firstName ? (
-                            <IconButton onClick={() => handleStartEditing("firstName")}>
-                              <Edit className={classes.editIcon} />
-                            </IconButton>
-                          ) : (
-                            <>
-                              <IconButton onClick={() => handleSaveField("firstName")}>
-                                <Check className={classes.editIcon} />
-                              </IconButton>
-                              <IconButton onClick={() => handleCancelEditing("firstName")}>
-                                <Close className={classes.editIcon} />
-                              </IconButton>
-                            </>
-                          )}
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </div>
-                <div className={classes.formField}>
-                  <Typography className={classes.inputLabel}>Last Name</Typography>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    value={editingFields.lastName ? tempValues.lastName : profile?.data?.lastName || ""}
-                    onChange={handleFieldChange("lastName")}
-                    className={classes.textField}
-                    disabled={!editingFields.lastName}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          {!editingFields.lastName ? (
-                            <IconButton onClick={() => handleStartEditing("lastName")}>
-                              <Edit className={classes.editIcon} />
-                            </IconButton>
-                          ) : (
-                            <>
-                              <IconButton onClick={() => handleSaveField("lastName")}>
-                                <Check className={classes.editIcon} />
-                              </IconButton>
-                              <IconButton onClick={() => handleCancelEditing("lastName")}>
-                                <Close className={classes.editIcon} />
-                              </IconButton>
-                            </>
-                          )}
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </div>
-                <div className={classes.formField}>
-                  <Typography className={classes.inputLabel}>Email Address</Typography>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    value={editingFields.emailAddress ? tempValues.emailAddress : profile?.data?.emailAddress || ""}
-                    onChange={handleFieldChange("emailAddress")}
-                    className={classes.textField}
-                    disabled={userId === "admin" ? true : !editingFields.emailAddress}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          {userId !== "admin" && !editingFields.emailAddress ? (
-                            <IconButton onClick={() => handleStartEditing("emailAddress")}>
-                              <Edit className={classes.editIcon} />
-                            </IconButton>
-                          ) : userId !== "admin" && editingFields.emailAddress ? (
-                            <>
-                              <IconButton onClick={() => handleSaveField("emailAddress")}>
-                                <Check className={classes.editIcon} />
-                              </IconButton>
-                              <IconButton onClick={() => handleCancelEditing("emailAddress")}>
-                                <Close className={classes.editIcon} />
-                              </IconButton>
-                            </>
-                          ) : null}
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </div>
-                <div className={classes.formField}>
-                  <Typography className={classes.inputLabel}>Password</Typography>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    type={showPassword ? "text" : "password"}
-                    value={showPassword ? profile.data.password : "••••••••"} // Masked password display
-                    className={classes.textField}
-                    disabled={true}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          {LAMP.Auth._auth.id === "admin" ? null : (
-                            <IconButton onClick={() => setShowPasswordDialog(true)}>
-                              <Edit className={classes.editIcon} />
-                            </IconButton>
-                          )}
-                          <IconButton onClick={handleTogglePassword}>
-                            {!showPassword ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </div>
-              </Grid>
-
-              {/* Right Column - Profile Photo */}
-              <Grid item xs={12} md={5} className={classes.gridItem}>
-                <div className={classes.profileSection}>
-                  <div className={classes.userPhoto}>
-                    <ProfileIcon style={{ width: 80, height: 80 }} />
-                  </div>
-                </div>
-              </Grid>
-            </Grid>
-
-            <Dialog open={showPasswordDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
-              <DialogTitle id="form-dialog-title">Reset Password</DialogTitle>
-              <DialogContent>
-                {passwordError && (
-                  <Typography color="error" variant="body2" gutterBottom>
-                    {passwordError}
-                  </Typography>
-                )}
-                <TextField
-                  autoFocus
-                  margin="dense"
-                  id="new-password"
-                  label="New Password"
-                  type="password"
-                  fullWidth
-                  value={updatedPassword}
-                  onChange={(e) => setUpdatedPassword(e.target.value)}
-                />
-                <TextField
-                  margin="dense"
-                  id="confirm-password"
-                  label="Confirm Password"
-                  type="password"
-                  fullWidth
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleCloseDialog} color="primary">
-                  Close
-                </Button>
-                <Button onClick={handleSubmitPassword} color="primary" variant="contained">
-                  Submit
-                </Button>
-              </DialogActions>
-            </Dialog>
-          </>
-        )}
-
-        {/* Social Connect Tab */}
-        {currentTab === 1 && (
-          <div className={classes.socialConnect}>
-            <Typography variant="body1" style={{ marginBottom: "20px" }}>
-              Connect your account with these services for simplified login and enhanced features.
-            </Typography>
-            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-              <Button
-                variant="contained"
-                style={{
-                  backgroundColor: "#4285F4",
-                  color: "#FFFFFF",
-                  textTransform: "none",
-                  padding: "12px 20px",
-                }}
-              >
-                Connect with Google
-              </Button>
-              <Button
-                variant="contained"
-                style={{
-                  backgroundColor: "#FF6600",
-                  color: "#FFFFFF",
-                  textTransform: "none",
-                  padding: "12px 20px",
-                }}
-              >
-                Connect with MindOrange
-              </Button>
+      <AdminHeader
+        adminType={adminType}
+        authType={authType}
+        title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+        pageLocation="Account"
+      />
+      <div className="body-container">
+        <div className={classes.tabsContainer}>
+          {tabs.map((tab, index) => (
+            <div
+              key={index}
+              className={`${classes.tab} ${currentTab === index ? classes.activeTab : ""}`}
+              onClick={() => handleTabChange(index)}
+            >
+              {tab}
             </div>
-          </div>
-        )}
+          ))}
+        </div>
 
-        {/* Delete Account Tab */}
-        {currentTab === 2 && (
-          <div className={classes.deleteAccount}>
-            <Typography variant="h6" style={{ color: "#EB8367", marginBottom: "10px" }}>
-              Delete Your Account
-            </Typography>
-            <Typography variant="body1" style={{ marginBottom: "20px" }}>
-              Warning: This action cannot be undone. All your data, settings, and information will be permanently
-              deleted.
-            </Typography>
-            {!showDeleteConfirmation ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "50px",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+        <div className={classes.formContainer}>
+          {currentTab === 0 && (
+            <>
+              <Grid container spacing={4}>
+                {/* Left Column - Profile Form */}
+                <Grid item xs={12} md={7}>
+                  <div className={classes.formField}>
+                    <Typography className={classes.inputLabel}>ID</Typography>
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      value={profile.data.id === "" ? "NA" : profile.data.id}
+                      InputProps={{ readOnly: true }}
+                      className={classes.textField}
+                    />
+                  </div>
+                  <div className={classes.formField}>
+                    <Typography className={classes.inputLabel}>Role</Typography>
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      value={
+                        profile?.data?.role === "system_admin"
+                          ? "System Admin"
+                          : profile?.data?.role === "admin"
+                          ? "Admin"
+                          : profile?.data?.role === "researcher"
+                          ? "Researcher"
+                          : "Participant"
+                      }
+                      InputProps={{ readOnly: true }}
+                      className={classes.textField}
+                    />
+                  </div>
+                  <div className={classes.formField}>
+                    <Typography className={classes.inputLabel}>Username</Typography>
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      value={editingFields.userName ? tempValues.userName : profile?.data?.userName || ""}
+                      onChange={handleFieldChange("userName")}
+                      className={classes.textField}
+                      disabled={!editingFields.userName}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            {!editingFields.userName ? (
+                              <IconButton onClick={() => handleStartEditing("userName")}>
+                                <Edit className={classes.editIcon} />
+                              </IconButton>
+                            ) : (
+                              <>
+                                <IconButton onClick={() => handleSaveField("userName")}>
+                                  <Check className={classes.editIcon} />
+                                </IconButton>
+                                <IconButton onClick={() => handleCancelEditing("userName")}>
+                                  <Close className={classes.editIcon} />
+                                </IconButton>
+                              </>
+                            )}
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </div>
+                  <div className={classes.formField}>
+                    <Typography className={classes.inputLabel}>First Name</Typography>
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      value={editingFields.firstName ? tempValues.firstName : profile?.data?.firstName || ""}
+                      onChange={handleFieldChange("firstName")}
+                      className={classes.textField}
+                      disabled={!editingFields.firstName}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            {!editingFields.firstName ? (
+                              <IconButton onClick={() => handleStartEditing("firstName")}>
+                                <Edit className={classes.editIcon} />
+                              </IconButton>
+                            ) : (
+                              <>
+                                <IconButton onClick={() => handleSaveField("firstName")}>
+                                  <Check className={classes.editIcon} />
+                                </IconButton>
+                                <IconButton onClick={() => handleCancelEditing("firstName")}>
+                                  <Close className={classes.editIcon} />
+                                </IconButton>
+                              </>
+                            )}
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </div>
+                  <div className={classes.formField}>
+                    <Typography className={classes.inputLabel}>Last Name</Typography>
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      value={editingFields.lastName ? tempValues.lastName : profile?.data?.lastName || ""}
+                      onChange={handleFieldChange("lastName")}
+                      className={classes.textField}
+                      disabled={!editingFields.lastName}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            {!editingFields.lastName ? (
+                              <IconButton onClick={() => handleStartEditing("lastName")}>
+                                <Edit className={classes.editIcon} />
+                              </IconButton>
+                            ) : (
+                              <>
+                                <IconButton onClick={() => handleSaveField("lastName")}>
+                                  <Check className={classes.editIcon} />
+                                </IconButton>
+                                <IconButton onClick={() => handleCancelEditing("lastName")}>
+                                  <Close className={classes.editIcon} />
+                                </IconButton>
+                              </>
+                            )}
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </div>
+                  <div className={classes.formField}>
+                    <Typography className={classes.inputLabel}>Email Address</Typography>
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      value={editingFields.emailAddress ? tempValues.emailAddress : profile?.data?.emailAddress || ""}
+                      onChange={handleFieldChange("emailAddress")}
+                      className={classes.textField}
+                      disabled={userId === "admin" ? true : !editingFields.emailAddress}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            {userId !== "admin" && !editingFields.emailAddress ? (
+                              <IconButton onClick={() => handleStartEditing("emailAddress")}>
+                                <Edit className={classes.editIcon} />
+                              </IconButton>
+                            ) : userId !== "admin" && editingFields.emailAddress ? (
+                              <>
+                                <IconButton onClick={() => handleSaveField("emailAddress")}>
+                                  <Check className={classes.editIcon} />
+                                </IconButton>
+                                <IconButton onClick={() => handleCancelEditing("emailAddress")}>
+                                  <Close className={classes.editIcon} />
+                                </IconButton>
+                              </>
+                            ) : null}
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </div>
+                  <div className={classes.formField}>
+                    <Typography className={classes.inputLabel}>Password</Typography>
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      type={showPassword ? "text" : "password"}
+                      value={showPassword ? profile.data.password : "••••••••"} // Masked password display
+                      className={classes.textField}
+                      disabled={true}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            {LAMP.Auth._auth.id === "admin" ? null : (
+                              <IconButton onClick={() => setShowPasswordDialog(true)}>
+                                <Edit className={classes.editIcon} />
+                              </IconButton>
+                            )}
+                            <IconButton onClick={handleTogglePassword}>
+                              {!showPassword ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </div>
+                </Grid>
+
+                {/* Right Column - Profile Photo */}
+                <Grid item xs={12} md={5} className={classes.gridItem}>
+                  <div className={classes.profileSection}>
+                    <div className={classes.userPhoto}>
+                      <ProfileIcon style={{ width: 80, height: 80 }} />
+                    </div>
+                  </div>
+                </Grid>
+              </Grid>
+
+              <Dialog open={showPasswordDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
+                <DialogTitle id="form-dialog-title">Reset Password</DialogTitle>
+                <DialogContent>
+                  {passwordError && (
+                    <Typography color="error" variant="body2" gutterBottom>
+                      {passwordError}
+                    </Typography>
+                  )}
+                  <TextField
+                    autoFocus
+                    margin="dense"
+                    id="new-password"
+                    label="New Password"
+                    type="password"
+                    fullWidth
+                    value={updatedPassword}
+                    onChange={(e) => setUpdatedPassword(e.target.value)}
+                  />
+                  <TextField
+                    margin="dense"
+                    id="confirm-password"
+                    label="Confirm Password"
+                    type="password"
+                    fullWidth
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={handleCloseDialog} color="primary">
+                    Close
+                  </Button>
+                  <Button onClick={handleSubmitPassword} color="primary" variant="contained">
+                    Submit
+                  </Button>
+                </DialogActions>
+              </Dialog>
+            </>
+          )}
+
+          {/* Social Connect Tab */}
+          {currentTab === 1 && (
+            <div className={classes.socialConnect}>
+              <Typography variant="body1" style={{ marginBottom: "20px" }}>
+                Connect your account with these services for simplified login and enhanced features.
+              </Typography>
+              <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
                 <Button
                   variant="contained"
-                  disabled={userId === "admin"}
                   style={{
-                    backgroundColor: "#EB8367",
+                    backgroundColor: "#4285F4",
                     color: "#FFFFFF",
                     textTransform: "none",
-                    opacity: userId === "admin" ? 0.5 : 1,
+                    padding: "12px 20px",
                   }}
-                  onClick={handleDeleteAccount}
                 >
-                  <span
-                    style={{
-                      opacity: 1,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Delete Account
-                  </span>
+                  Connect with Google
                 </Button>
-                {userId === "admin" && (
-                  <Typography
-                    variant="h6"
-                    style={{
-                      color: "#EB8367",
-                      marginTop: "10px",
-                    }}
-                  >
-                    This account belongs to System Admin and can't be deleted.
-                  </Typography>
-                )}
+                <Button
+                  variant="contained"
+                  style={{
+                    backgroundColor: "#FF6600",
+                    color: "#FFFFFF",
+                    textTransform: "none",
+                    padding: "12px 20px",
+                  }}
+                >
+                  Connect with MindOrange
+                </Button>
               </div>
-            ) : (
-              <div>
-                <Typography variant="body1" style={{ marginBottom: "15px" }}>
-                  Are you sure you want to delete your account? This action cannot be undone.
-                </Typography>
-                <div style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}>
-                  <input
-                    type="checkbox"
-                    checked={confirmDelete}
-                    onChange={(e) => setConfirmDelete(e.target.checked)}
-                    id="confirm-delete"
-                  />
-                  <label htmlFor="confirm-delete" style={{ marginLeft: "10px" }}>
-                    I understand this action is permanent and cannot be reversed
-                  </label>
-                </div>
-                <div style={{ display: "flex", gap: "15px" }}>
+            </div>
+          )}
+
+          {/* Delete Account Tab */}
+          {currentTab === 2 && (
+            <div className={classes.deleteAccount}>
+              <Typography variant="h6" style={{ color: "#EB8367", marginBottom: "10px" }}>
+                Delete Your Account
+              </Typography>
+              <Typography variant="body1" style={{ marginBottom: "20px" }}>
+                Warning: This action cannot be undone. All your data, settings, and information will be permanently
+                deleted.
+              </Typography>
+              {!showDeleteConfirmation ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    gap: "50px",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <Button
                     variant="contained"
+                    disabled={userId === "admin"}
                     style={{
                       backgroundColor: "#EB8367",
                       color: "#FFFFFF",
                       textTransform: "none",
+                      opacity: userId === "admin" ? 0.5 : 1,
                     }}
-                    onClick={handleConfirmDelete}
-                    disabled={!confirmDelete}
+                    onClick={handleDeleteAccount}
                   >
-                    Confirm Delete
+                    <span
+                      style={{
+                        opacity: 1,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Delete Account
+                    </span>
                   </Button>
-                  <Button variant="outlined" onClick={handleCancelDelete}>
-                    Cancel
-                  </Button>
+                  {userId === "admin" && (
+                    <Typography
+                      variant="h6"
+                      style={{
+                        color: "#EB8367",
+                        marginTop: "10px",
+                      }}
+                    >
+                      This account belongs to System Admin and can't be deleted.
+                    </Typography>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              ) : (
+                <div>
+                  <Typography variant="body1" style={{ marginBottom: "15px" }}>
+                    Are you sure you want to delete your account? This action cannot be undone.
+                  </Typography>
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}>
+                    <input
+                      type="checkbox"
+                      checked={confirmDelete}
+                      onChange={(e) => setConfirmDelete(e.target.checked)}
+                      id="confirm-delete"
+                    />
+                    <label htmlFor="confirm-delete" style={{ marginLeft: "10px" }}>
+                      I understand this action is permanent and cannot be reversed
+                    </label>
+                  </div>
+                  <div style={{ display: "flex", gap: "15px" }}>
+                    <Button
+                      variant="contained"
+                      style={{
+                        backgroundColor: "#EB8367",
+                        color: "#FFFFFF",
+                        textTransform: "none",
+                      }}
+                      onClick={handleConfirmDelete}
+                      disabled={!confirmDelete}
+                    >
+                      Confirm Delete
+                    </Button>
+                    <Button variant="outlined" onClick={handleCancelDelete}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </React.Fragment>
   )
 }
 

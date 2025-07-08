@@ -22,10 +22,13 @@ import {
 
 import LAMP from "lamp-core"
 import { useTranslation } from "react-i18next"
-import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
+// import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
 import { slideStyles } from "../ParticipantList/AddButton"
 import { ReactComponent as ActivityIcon } from "../../../icons/NewIcons/time-fast-filled.svg"
+
+import AddIcon from "@material-ui/icons/Add"
+import { createPortal } from "react-dom"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -251,126 +254,148 @@ export default function AddActivity({
   }, [])
 
   return (
-    <Box>
-      <AddIcon className={classes.addButton} onClick={(event) => setSlideOpen(true)} />
-      <Backdrop className={sliderclasses.backdrop} open={slideOpen} onClick={() => setSlideOpen(false)} />
-      <Slide direction="left" in={slideOpen} mountOnEnter unmountOnExit>
-        <Box
-          className={sliderclasses.slidePanel}
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            borderRadius: 10,
-          }}
-        >
-          <Box className={sliderclasses.icon}>
-            <ActivityIcon />
-          </Box>
-          <Typography variant="h6">{t("Add Activity")}</Typography>
+    <div className="add-icon-container">
+      <Fab
+        className="add-fab-btn"
+        onClick={(event) => setSlideOpen(true)}
+        style={{ backgroundColor: "#008607", color: "white" }}
+      >
+        <AddIcon className="add-icon" />
+      </Fab>
+      {slideOpen &&
+        createPortal(
+          <>
+            <Backdrop className={sliderclasses.backdrop} open={slideOpen} onClick={() => setSlideOpen(false)} />
+            <Slide direction="left" in={slideOpen} mountOnEnter unmountOnExit>
+              <Box
+                className={sliderclasses.slidePanel}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  display: "block",
+                  borderRadius: 10,
+                }}
+              >
+                <Box className={sliderclasses.icon}>
+                  <ActivityIcon />
+                </Box>
+                <Typography variant="h6">{t("Add Activity")}</Typography>
 
-          <Divider className={sliderclasses.divider} />
+                <Divider className={sliderclasses.divider} />
 
-          <MenuItem
-            divider
-            onClick={() => {
-              window.location.href = `/#/researcher/${researcherId}/activity/import`
-              setSlideOpen(false)
-            }}
-            className={sliderclasses.menuitem}
-          >
-            <Grid container style={{ marginLeft: "-15px" }}>
-              <Grid item xs={2} style={{ textAlign: "center" }}>
-                <Icon>cloud_upload</Icon>
-              </Grid>
-              <Grid item xs={10}>
-                {`${t("Import activities")}`}
-              </Grid>
-            </Grid>
-          </MenuItem>
-          {activitySpecs.filter((x) =>
-            ["lamp.group", "lamp.form_builder", "lamp.survey", "lamp.cbt_thought_record", "lamp.stories"].includes(x.id)
-          ).length > 0 && (
-            <React.Fragment>
-              <MenuItem disabled divider>
-                <b>{`${t("Create a new...")}`}</b>
-              </MenuItem>
-              {activitySpecs
-                .filter((x) =>
+                <MenuItem
+                  divider
+                  onClick={() => {
+                    window.location.href = `/#/researcher/${researcherId}/activity/import`
+                    setSlideOpen(false)
+                  }}
+                  className={sliderclasses.menuitem}
+                >
+                  <Grid container style={{ marginLeft: "-15px" }}>
+                    <Grid item xs={2} style={{ textAlign: "center" }}>
+                      <Icon>cloud_upload</Icon>
+                    </Grid>
+                    <Grid item xs={10}>
+                      {`${t("Import activities")}`}
+                    </Grid>
+                  </Grid>
+                </MenuItem>
+                {activitySpecs.filter((x) =>
                   [
                     "lamp.group",
                     "lamp.form_builder",
                     "lamp.survey",
                     "lamp.cbt_thought_record",
                     "lamp.stories",
-                    "lamp.mood_tracker",
-                    "lamp.video_recording",
                   ].includes(x.id)
-                )
-                .map((x) => (
-                  <MenuItem
-                    key={x.id}
-                    onClick={() => {
-                      setSelectedSpec(x)
-                      setShowCreateForm(true)
-                      setSlideOpen(false)
-                    }}
-                    className={sliderclasses.menuLinks}
-                  >
-                    {activitiesObj[x.id]
-                      ? `${t(activitiesObj[x.id])}`
-                      : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
-                  </MenuItem>
-                ))}
-            </React.Fragment>
-          )}
-          {/*           */}
-          {activitySpecs.filter(
-            (x) =>
-              ![
-                "lamp.group",
-                "lamp.survey",
-                "lamp.form_builder",
-                "lamp.cbt_thought_record",
-                "lamp.stories",
-                "lamp.mood_tracker",
-                "lamp.video_recording",
-              ].includes(x.id)
-          ).length > 0 && [
-            <MenuItem divider key="head" disabled className={classes.borderTop}>
-              <b>{`${t("Smartphone Cognitive Tests")}`}</b>
-            </MenuItem>,
-            ...activitySpecs
-              .filter(
-                (x) =>
-                  ![
-                    "lamp.group",
-                    "lamp.survey",
-                    "lamp.form_builder",
-                    "lamp.cbt_thought_record",
-                    "lamp.video_recording",
-                  ].includes(x.id)
-              )
-              .map((x) => (
-                <MenuItem
-                  key={x.id}
-                  onClick={() => {
-                    window.location.href = `/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`
-                    setSlideOpen(false)
-                  }}
-                  className={`${sliderclasses.menuLinks}`}
-                >
-                  <Link
-                    href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}
-                    underline="none"
-                  >
-                    {activitiesObj[x.id]
-                      ? `${t(activitiesObj[x.id])}`
-                      : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
-                  </Link>
-                </MenuItem>
-              )),
-          ]}
-        </Box>
-      </Slide>
-    </Box>
+                ).length > 0 && (
+                  <React.Fragment>
+                    <MenuItem disabled divider>
+                      <b>{`${t("Create a new...")}`}</b>
+                    </MenuItem>
+                    {activitySpecs
+                      .filter((x) =>
+                        [
+                          "lamp.group",
+                          "lamp.form_builder",
+                          "lamp.survey",
+                          "lamp.cbt_thought_record",
+                          "lamp.stories",
+                          "lamp.mood_tracker",
+                          "lamp.video_recording",
+                        ].includes(x.id)
+                      )
+                      .map((x) => (
+                        <MenuItem
+                          key={x.id}
+                          onClick={() => {
+                            setSelectedSpec(x)
+                            setShowCreateForm(true)
+                            setSlideOpen(false)
+                          }}
+                          className={sliderclasses.menuLinks}
+                        >
+                          {activitiesObj[x.id]
+                            ? `${t(activitiesObj[x.id])}`
+                            : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
+                        </MenuItem>
+                      ))}
+                  </React.Fragment>
+                )}
+                {/*           */}
+                {activitySpecs.filter(
+                  (x) =>
+                    ![
+                      "lamp.group",
+                      "lamp.survey",
+                      "lamp.form_builder",
+                      "lamp.cbt_thought_record",
+                      "lamp.stories",
+                      "lamp.mood_tracker",
+                      "lamp.video_recording",
+                    ].includes(x.id)
+                ).length > 0 && [
+                  <MenuItem divider key="head" disabled className={classes.borderTop}>
+                    <b>{`${t("Smartphone Cognitive Tests")}`}</b>
+                  </MenuItem>,
+                  ...activitySpecs
+                    .filter(
+                      (x) =>
+                        ![
+                          "lamp.group",
+                          "lamp.survey",
+                          "lamp.form_builder",
+                          "lamp.cbt_thought_record",
+                          "lamp.video_recording",
+                        ].includes(x.id)
+                    )
+                    .map((x) => (
+                      <MenuItem
+                        key={x.id}
+                        onClick={() => {
+                          window.location.href = `/#/researcher/${researcherId}/activity/add/${x?.id?.replace(
+                            "lamp.",
+                            ""
+                          )}`
+                          setSlideOpen(false)
+                        }}
+                        className={`${sliderclasses.menuLinks}`}
+                      >
+                        <Link
+                          href={`/#/researcher/${researcherId}/activity/add/${x?.id?.replace("lamp.", "")}`}
+                          underline="none"
+                        >
+                          {activitiesObj[x.id]
+                            ? `${t(activitiesObj[x.id])}`
+                            : `${t(x?.id?.replace("lamp.", "").replaceAll("_", " "))}`}
+                        </Link>
+                      </MenuItem>
+                    )),
+                ]}
+              </Box>
+            </Slide>
+          </>,
+          document.body
+        )}
+    </div>
   )
 }

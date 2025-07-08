@@ -11,7 +11,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@material-ui/core"
-import Header from "./Header"
+
 import { useTranslation } from "react-i18next"
 import LAMP, { Sensor } from "lamp-core"
 import SensorListItem from "./SensorListItem"
@@ -34,6 +34,10 @@ import SensorChangesConfirmationSlide from "./SensorChangesConfirmationSlide"
 import SensorDetailItem from "./SensorDetailItem"
 import { fetchGetData } from "../SaveResearcherData"
 import { ACCESS_LEVELS, getResearcherAccessLevel } from "../Studies/Index"
+import Header from "../../Header"
+import ActionsComponent from "../../Admin/ActionsComponent"
+import AddSensor from "./AddSensor"
+import "../researcher.css"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -142,6 +146,7 @@ export default function SensorsList({
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
   const { enqueueSnackbar, closeSnackbar } = useSnackbar()
   const [allresearchers, setAllResearchers] = useState([])
+  const [tabularView, setTabularView] = useState(false)
 
   useInterval(
     () => {
@@ -341,6 +346,7 @@ export default function SensorsList({
   const [RowMode, setRowMode] = useState(null)
   const [editedValues, setEditedValues] = useState({})
   const handleEditSensorRow = (sensor) => {
+    console.log("prev Editing sensor:", sensor, RowMode, activeButton)
     if (editingSensor && editingSensor.id === sensor.id) {
       setRowMode("view")
       setEditingSensor(null)
@@ -352,6 +358,7 @@ export default function SensorsList({
       setEditedValues({})
       setActiveButton({ id: sensor.id, action: "edit" })
     }
+    console.log("Editing sensor:", sensor, RowMode, activeButton)
   }
 
   const handleSaveSensorRow = async (sensor) => {
@@ -526,62 +533,81 @@ export default function SensorsList({
 
   return (
     <React.Fragment>
-      {/* <Backdrop className={classes.backdrop} open={loading || sensors === null}>
-        <CircularProgress color="inherit" />
-      </Backdrop> */}
       {viewingSensor ? (
-        <ItemViewHeader
-          ItemTitle="Sensor"
-          ItemName={viewingSensor.name}
-          searchData={handleSearchData}
-          authType={authType}
-          onEdit={handleEditSensor}
-          onSave={() => {
-            if (isEditing) {
-              handleSaveSensor()
-            }
-          }}
-          onPrevious={() => {
-            const currentIndex = sensors.findIndex((s) => s.id === viewingSensor.id)
-            if (currentIndex > 0) {
-              setViewingSensor(sensors[currentIndex - 1])
-            }
-          }}
-          onNext={() => {
-            const currentIndex = sensors.findIndex((s) => s.id === viewingSensor.id)
-            if (currentIndex < sensors.length - 1) {
-              setViewingSensor(sensors[currentIndex + 1])
-            }
-          }}
-          onClose={handleCloseViewSensor}
-          disabledBtns={!canEditSensor(viewingSensor, studies, researcherId, props.sharedstudies)}
+        <Header
+          authType={LAMP.Auth._type}
+          title={ptitle}
+          pageLocation={`${ptitle} > Sensors > ${viewingSensor.name}`}
         />
       ) : (
-        <Header
-          studies={studies}
-          researcherId={researcherId}
-          selectedSensors={selectedSensors}
-          searchData={handleSearchData}
-          setSelectedStudies={setSelectedStudies}
-          selectedStudies={selected}
-          setSensors={searchFilterSensors}
-          setOrder={setOrder}
-          order={order}
-          title={ptitle}
-          authType={authType}
-          onLogout={onLogout}
-          onViewModechanged={setViewMode}
-          viewMode={viewMode}
-          VisibleColumns={columns}
-          setVisibleColumns={setColumns}
-          resemail={props.resemail}
-        />
+        // <ItemViewHeader
+        //   ItemTitle="Sensor"
+        //   ItemName={viewingSensor.name}
+        //   searchData={handleSearchData}
+        //   authType={authType}
+        //   onEdit={handleEditSensor}
+        //   onSave={() => {
+        //     if (isEditing) {
+        //       handleSaveSensor()
+        //     }
+        //   }}
+        //   onPrevious={() => {
+        //     const currentIndex = sensors.findIndex((s) => s.id === viewingSensor.id)
+        //     if (currentIndex > 0) {
+        //       setViewingSensor(sensors[currentIndex - 1])
+        //     }
+        //   }}
+        //   onNext={() => {
+        //     const currentIndex = sensors.findIndex((s) => s.id === viewingSensor.id)
+        //     if (currentIndex < sensors.length - 1) {
+        //       setViewingSensor(sensors[currentIndex + 1])
+        //     }
+        //   }}
+        //   onClose={handleCloseViewSensor}
+        //   disabledBtns={!canEditSensor(viewingSensor, studies, researcherId, props.sharedstudies)}
+        // />
+        // <Header
+        //   studies={studies}
+        //   researcherId={researcherId}
+        //   selectedSensors={selectedSensors}
+        //   searchData={handleSearchData}
+        //   setSelectedStudies={setSelectedStudies}
+        //   selectedStudies={selected}
+        //   setSensors={searchFilterSensors}
+        //   setOrder={setOrder}
+        //   order={order}
+        //   title={ptitle}
+        //   authType={authType}
+        //   onLogout={onLogout}
+        //   onViewModechanged={setViewMode}
+        //   viewMode={viewMode}
+        //   VisibleColumns={columns}
+        //   setVisibleColumns={setColumns}
+        //   resemail={props.resemail}
+        // />
+        <Header authType={LAMP.Auth._type} title={ptitle} pageLocation={`${ptitle} > Sensors`} />
       )}
-      <Box
-        className={layoutClasses.tableContainer + " " + (!supportsSidebar ? layoutClasses.tableContainerMobile : "")}
-        style={{ overflowX: "hidden" }}
-      >
-        {viewingSensor ? (
+      {viewingSensor ? (
+        <div className="body-container">
+          <ActionsComponent
+            actions={["edit", "save", "left", "right", "cancel"]}
+            onEdit={handleEditSensor}
+            onSave={handleSaveSensor}
+            onPrevious={() => {
+              const currentIndex = sensors.findIndex((s) => s.id === viewingSensor.id)
+              if (currentIndex > 0) {
+                setViewingSensor(sensors[currentIndex - 1])
+              }
+            }}
+            onNext={() => {
+              const currentIndex = sensors.findIndex((s) => s.id === viewingSensor.id)
+              if (currentIndex < sensors.length - 1) {
+                setViewingSensor(sensors[currentIndex + 1])
+              }
+            }}
+            onClose={handleCloseViewSensor}
+            disabledBtns={!canEditSensor(viewingSensor, studies, researcherId, null)}
+          />
           <SensorDetailItem
             sensor={viewingSensor}
             isEditing={isEditing}
@@ -589,14 +615,43 @@ export default function SensorsList({
             studies={studies}
             triggerSave={triggerSave}
           />
-        ) : (
-          <>
-            {sensors !== null && sensors.length > 0 ? (
-              <>
-                {viewMode === "grid" ? (
-                  <Grid container spacing={3}>
+        </div>
+      ) : (
+        <div className="body-container">
+          <ActionsComponent
+            searchData={handleSearchData}
+            refreshElements={searchFilterSensors}
+            setSelectedColumns={setColumns}
+            VisibleColumns={columns}
+            setVisibleColumns={setColumns}
+            addComponent={
+              <AddSensor
+                studies={studies}
+                setSensors={setSensors}
+                researcherId={researcherId}
+                title={title}
+                resemail={props.resemail}
+              />
+            }
+            actions={["refresh", "search", "grid", "table", "filter", "download"]}
+            tabularView={tabularView}
+            setTabularView={setTabularView}
+            studies={studies}
+            selectedStudies={selectedStudies}
+            setSelectedStudies={setSelectedStudies}
+            researcherId={researcherId}
+            order={order}
+            setOrder={setOrder}
+            tabType={"sensors"}
+            downloadTarget={"sensors"}
+          />
+          {!tabularView ? (
+            <div className="" style={{ overflow: "auto" }}>
+              <Grid container spacing={3} className="cards-grid">
+                {sensors !== null && sensors.length > 0 ? (
+                  <>
                     {(paginatedSensors ?? []).map((item, index) => (
-                      <Grid item xs={12} sm={12} md={6} lg={5} key={item.id}>
+                      <Grid item xs={12} sm={12} md={6} lg={4} key={item.id}>
                         <SensorListItem
                           sensor={item}
                           studies={studies}
@@ -614,95 +669,85 @@ export default function SensorsList({
                     <Pagination
                       data={sensors}
                       updatePage={handleChangePage}
-                      rowPerPage={[20, 40, 60, 80]}
+                      rowPerPage={[5, 10, 20, 40, 60, 80]}
                       currentPage={page}
                       currentRowCount={rowCount}
                     />
-                  </Grid>
-                ) : (
-                  <>
-                    <SensorTable
-                      sensors={sensors}
-                      selectedSensors={selectedSensors}
-                      handleChange={(sensor, checked) => handleChange(sensor, checked)}
-                      formatDate={formatDate}
-                      onViewSensor={handleViewSensor}
-                      onEditSensor={handleEditSensorRow}
-                      onSaveSensor={handleSaveSensorRow}
-                      onCopySensor={handleCopySensor}
-                      onDeleteSensor={handleDeleteSensor}
-                      visibleColumns={columns.filter((col) => col.visible).map((col) => col.id)}
-                      setVisibleColumns={(newColumns) => {
-                        setColumns((prevColumns) =>
-                          prevColumns.map((col) => ({
-                            ...col,
-                            visible: newColumns.includes(col.id),
-                          }))
-                        )
-                      }}
-                      editingSensor={editingSensor}
-                      mode={RowMode}
-                      onCellValueChange={handleCellValueChange}
-                      editableColumns={["name", "spec", "settings"]}
-                      activeButton={activeButton}
-                      setActiveButton={setActiveButton}
-                      allresearchers={allresearchers}
-                      sharedstudies={props.sharedstudies}
-                      studies={studies}
-                      researcherId={researcherId}
-                    />
-                    {editingSensor && (
-                      <>
-                        {/* <SensorDialog
-                sensor={editingSensor}
-                onclose={() => handleCloseSensorDialog()}
-                studies={studies}
-                open={sensorDialog}
-                type="edit"
-                studyId={editingSensor.study_id ?? null}
-                addOrUpdateSensor={addOrUpdateSensor}
-                allSensors={sensors || []}
-              /> */}
-                        <SensorChangesConfirmationSlide
-                          open={confirmationSlideOpen}
-                          originalSensor={sensorToUpdate || {}}
-                          editedValues={pendingChanges}
-                          onConfirm={handleConfirmChanges}
-                          onCancel={handleCancelChanges}
-                        />
-                        <CopySensor
-                          sensor={editingSensor}
-                          studies={studies}
-                          setSensors={searchFilterSensors}
-                          open={copySensorOpen}
-                          onclose={() => handleCloseCopyDialog()}
-                          studyId={editingSensor.study_id ?? null}
-                          allSensors={sensors || []}
-                        />
-
-                        <ConfirmationDialog
-                          confirmationDialog={confirmationDialog}
-                          open={confirmationDialog === 5}
-                          onClose={() => setConfirmationDialog(0)}
-                          confirmAction={confirmDelete}
-                          confirmationMsg={`Are you sure you want to delete ${editingSensor.name}?`}
-                        />
-                      </>
-                    )}
                   </>
+                ) : (
+                  <Box className={classes.norecordsmain}>
+                    <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
+                      <Icon>info</Icon>
+                      {`${t("No Sensors Found")}`}
+                    </Box>
+                  </Box>
                 )}
-              </>
-            ) : (
-              <Box className={classes.norecordsmain}>
-                <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
-                  <Icon>info</Icon>
-                  {`${t("No Sensors Found")}`}
-                </Box>
-              </Box>
-            )}
-          </>
-        )}
-      </Box>
+              </Grid>
+            </div>
+          ) : (
+            <>
+              <SensorTable
+                sensors={sensors}
+                selectedSensors={selectedSensors}
+                handleChange={(sensor, checked) => handleChange(sensor, checked)}
+                formatDate={formatDate}
+                onViewSensor={handleViewSensor}
+                onEditSensor={handleEditSensorRow}
+                onSaveSensor={handleSaveSensorRow}
+                onCopySensor={handleCopySensor}
+                onDeleteSensor={handleDeleteSensor}
+                visibleColumns={columns.filter((col) => col.visible).map((col) => col.id)}
+                setVisibleColumns={(newColumns) => {
+                  setColumns((prevColumns) =>
+                    prevColumns.map((col) => ({
+                      ...col,
+                      visible: newColumns.includes(col.id),
+                    }))
+                  )
+                }}
+                editingSensor={editingSensor}
+                mode={RowMode}
+                onCellValueChange={handleCellValueChange}
+                editableColumns={["name", "spec", "settings"]}
+                activeButton={activeButton}
+                setActiveButton={setActiveButton}
+                allresearchers={allresearchers}
+                sharedstudies={props.sharedstudies}
+                studies={studies}
+                researcherId={researcherId}
+              />
+              {editingSensor && (
+                <>
+                  <SensorChangesConfirmationSlide
+                    open={confirmationSlideOpen}
+                    originalSensor={sensorToUpdate || {}}
+                    editedValues={pendingChanges}
+                    onConfirm={handleConfirmChanges}
+                    onCancel={handleCancelChanges}
+                  />
+                  <CopySensor
+                    sensor={editingSensor}
+                    studies={studies}
+                    setSensors={searchFilterSensors}
+                    open={copySensorOpen}
+                    onclose={() => handleCloseCopyDialog()}
+                    studyId={editingSensor.study_id ?? null}
+                    allSensors={sensors || []}
+                  />
+
+                  <ConfirmationDialog
+                    confirmationDialog={confirmationDialog}
+                    open={confirmationDialog === 5}
+                    onClose={() => setConfirmationDialog(0)}
+                    confirmAction={confirmDelete}
+                    confirmationMsg={`Are you sure you want to delete ${editingSensor.name}?`}
+                  />
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </React.Fragment>
   )
 }

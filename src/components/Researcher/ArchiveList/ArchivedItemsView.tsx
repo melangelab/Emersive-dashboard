@@ -52,7 +52,7 @@ import { fetchPostData, fetchResult } from "../SaveResearcherData"
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     container: {
-      padding: theme.spacing(3),
+      padding: theme.spacing(2),
     },
     header: {
       display: "flex",

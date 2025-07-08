@@ -26,23 +26,30 @@ import AddUser from "./AddUser"
 import StudyCreator from "./StudyCreator"
 import PatientStudyCreator from "../ParticipantList/PatientStudyCreator"
 import AddUserGroup from "../ParticipantList/AddUserGroup"
-import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
+// import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
+import AddIcon from "@material-ui/icons/Add"
 import { ReactComponent as UserIcon } from "../../../icons/NewIcons/users.svg"
+import { createPortal } from "react-dom"
+import "../../Admin/admin.css"
+import { openDB } from "idb"
 
 export const slideStyles = makeStyles((theme: Theme) =>
   createStyles({
     slidePanel: {
       position: "fixed",
+      display: "flex",
+      flexDirection: "column",
       right: 0,
       top: 0,
       bottom: 0,
       backgroundColor: "#fff",
       boxShadow: "0 0 10px rgba(0,0,0,0.3)",
       padding: theme.spacing(3),
-      zIndex: 1301,
+      zIndex: 1300,
       width: "30%",
       color: "#000",
-      overflowY: "auto", // Enable vertical scrolling
+      height: "100vh",
+      overflowY: "auto",
       overflowX: "hidden", // Prevent horizontal scrolling
       paddingRight: theme.spacing(2), // Add some right padding for scroll bar
       paddingBottom: theme.spacing(4), // Add bottom padding
@@ -112,7 +119,7 @@ export const slideStyles = makeStyles((theme: Theme) =>
       marginTop: theme.spacing(1),
     },
     backdrop: {
-      zIndex: 1300,
+      zIndex: 1299,
       color: "rgba(255, 255, 255, 0.1)",
     },
     endbuttonsbox: {
@@ -388,117 +395,75 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
   }
 
   return (
-    <Box>
-      {/* <Fab
-        variant="extended"
-        color="primary"
-        classes={{ root: classes.btnBlue + " " + (!!popover ? classes.popexpand : "") }}
-        onClick={(event) => setPopover(event.currentTarget)}
+    <div className="add-icon-container">
+      <Fab
+        className="add-fab-btn"
+        onClick={(event) => setOpen(true)}
+        style={{ backgroundColor: "#008607", color: "white" }}
       >
-        <Icon>add</Icon> <span className={classes.addText}>{`${t("Add")}`}</span>
-      </Fab> */}
-
-      {/* <Button
-        variant="contained"
-        className={classes.addButton}
-        startIcon={<AddIcon />}
-        onClick={(event) => setPopover(event.currentTarget)}
-      >
-        {t("Add")}
-      </Button> */}
-      <AddIcon
-        className={classes.addButton}
-        onClick={(event) =>
-          //  setPopover(event.currentTarget)
-          setOpen(true)
-        }
-      />
-      <Backdrop open={open} className={sliderclasses.backdrop} onClick={() => setOpen(false)}>
-        <Slide direction="left" in={open} mountOnEnter unmountOnExit>
-          <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
-            <Box className={sliderclasses.icon}>
-              <UserIcon />
-            </Box>
-            <Typography variant="h6">ADD NEW PARTICIPANTS</Typography>
-            <Divider className={sliderclasses.divider} />
-            <Typography variant="body2" paragraph>
-              Participants are <strong>researcher</strong> & <strong>study</strong> specific. Admins should add
-              participants only in special circumstances, if researchers are unable to do so due to technical reasons.
-              (Account locked, Password lost etc.)
-            </Typography>
-            <Divider className={sliderclasses.divider} />
-            <Button
-              className={sliderclasses.button}
-              onClick={() => {
-                setOpen(false)
-                setAddUser(true)
+        <AddIcon className="add-icon" />
+      </Fab>
+      {open &&
+        createPortal(
+          <>
+            <Backdrop open={open} className={sliderclasses.backdrop} onClick={() => setOpen(false)}>
+              <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+                <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
+                  <Box className={sliderclasses.icon}>
+                    <UserIcon />
+                  </Box>
+                  <Typography variant="h6">ADD NEW PARTICIPANTS</Typography>
+                  <Divider className={sliderclasses.divider} />
+                  <Typography variant="body2" paragraph>
+                    Participants are <strong>researcher</strong> & <strong>study</strong> specific. Admins should add
+                    participants only in special circumstances, if researchers are unable to do so due to technical
+                    reasons. (Account locked, Password lost etc.)
+                  </Typography>
+                  <Divider className={sliderclasses.divider} />
+                  <Button
+                    className={sliderclasses.button}
+                    onClick={() => {
+                      setOpen(false)
+                      setAddUser(true)
+                    }}
+                  >
+                    Next
+                  </Button>
+                </Box>
+              </Slide>
+            </Backdrop>
+            <Popover
+              classes={{ root: classes.customPopover, paper: classes.customPaper }}
+              open={!!popover ? true : false}
+              anchorPosition={popover ? popover.getBoundingClientRect() : null}
+              anchorReference="anchorPosition"
+              onClose={() => setPopover(null)}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "right",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "right",
               }}
             >
-              Next
-            </Button>
-          </Box>
-        </Slide>
-      </Backdrop>
-      <Popover
-        classes={{ root: classes.customPopover, paper: classes.customPaper }}
-        open={!!popover ? true : false}
-        //anchorPosition={!!popover && popover.getBoundingClientRect()}
-        anchorPosition={popover ? popover.getBoundingClientRect() : null}
-        anchorReference="anchorPosition"
-        onClose={() => setPopover(null)}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "right",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "right",
-        }}
-      >
-        <React.Fragment>
-          {mode === "researcher" && (
-            <MenuItem
-              onClick={() => {
-                setPopover(null)
-                setAddUser(true)
-              }}
-            >
-              <Typography variant="h6">{`${t("Add a user")}`}</Typography>
-              <Typography variant="body2">{`${t("Create a new entry in this group.")}`}</Typography>
-            </MenuItem>
-          )}
-          {/* {mode === "researcher" && (
-            <MenuItem
-              onClick={() => {
-                setPopover(null)
-                setAddGroupUser(true)
-              }}
-            >
-              <Typography variant="h6">{`${t("Add a new group")}`}</Typography>
-              <Typography variant="body2">{`${t("Create a new group")}.`}</Typography>
-            </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              setPopover(null)
-              setAddGroupUser(false)
-              setAddParticipantStudy(true)
-            }}
-          >
-            <Typography variant="h6">{`${t("Add a new user and group")}`}</Typography>
-            <Typography variant="body2">{`${t("Create a user under their own group.")}`}</Typography>
-          </MenuItem> */}
-        </React.Fragment>
-      </Popover>
-      {/* <AddUserGroup
-        studies={studies}
-        researcherId={researcherId}
-        setParticipants={setParticipants}
-        open={addGroupUser}
-        onClose={() => setAddGroupUser(false)}
-        handleNewStudy={handleNewStudyData}
-        closePopUp={handleClosePopUp}
-      /> */}
+              <React.Fragment>
+                {mode === "researcher" && (
+                  <MenuItem
+                    onClick={() => {
+                      setPopover(null)
+                      setAddUser(true)
+                    }}
+                  >
+                    <Typography variant="h6">{`${t("Add a user")}`}</Typography>
+                    <Typography variant="body2">{`${t("Create a new entry in this group.")}`}</Typography>
+                  </MenuItem>
+                )}
+              </React.Fragment>
+            </Popover>
+          </>,
+          document.body
+        )}
       <AddUser
         researcherId={researcherId}
         studies={studies}
@@ -511,14 +476,6 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
         title={props.title}
         resemail={props.resemail}
       />
-      {/* <PatientStudyCreator
-        studies={studies}
-        researcherId={researcherId}
-        onClose={() => setAddParticipantStudy(false)}
-        open={addParticipantStudy}
-        handleNewStudy={handleNewStudyData}
-        closePopUp={handleClosePopUp}
-      /> */}
-    </Box>
+    </div>
   )
 }

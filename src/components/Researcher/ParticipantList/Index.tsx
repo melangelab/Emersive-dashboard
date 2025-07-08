@@ -45,7 +45,6 @@ import hi from "javascript-time-ago/locale/hi"
 import zhHK from "javascript-time-ago/locale/zh-Hans-HK"
 import fr from "javascript-time-ago/locale/fr"
 import ParticipantListItem from "./ParticipantListItem"
-import Header from "./Header"
 import { Service } from "../../DBService/DBService"
 import { sortData } from "../Dashboard"
 import { useTranslation } from "react-i18next"
@@ -59,7 +58,7 @@ import { useSnackbar } from "notistack"
 import ParticipantTableRow from "./ParticipantTableRow"
 import { Link } from "@material-ui/core"
 import { useQuery, formatDate_alph } from "../../Utils"
-import { ACCESS_LEVELS, getResearcherAccessLevel, ModularTable, useModularTableStyles } from "../Studies/Index"
+import { ACCESS_LEVELS, getResearcherAccessLevel, useModularTableStyles } from "../Studies/Index"
 import { ReactComponent as ArrowDropDownIcon } from "../../../icons/NewIcons/sort-circle-down.svg"
 import { ReactComponent as ArrowDropUpIcon } from "../../../icons/NewIcons/sort-circle-up.svg"
 import ParticipantName from "./ParticipantName"
@@ -84,6 +83,15 @@ import { ReactComponent as SaveFilledIcon } from "../../../icons/NewIcons/floppy
 import { ReactComponent as VisualiseIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
 import { ReactComponent as VisualiseFilledIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
 import { fetchGetData } from "../SaveResearcherData"
+import CommonTable, { TableColumn as CommonTableColumn } from "../CommonTable"
+
+import Header from "../../Header"
+import "../../Admin/admin.css"
+import ActionsComponent from "../../Admin/ActionsComponent"
+import AddButton from "./AddButton"
+
+import "../researcher.css"
+import { FilterMatchMode } from "primereact/api"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -307,6 +315,9 @@ export default function ParticipantList({
   const [selectedTab, setSelectedTab] = useState({ id: null, tab: null })
   const [allresearchers, setAllResearchers] = useState([])
   console.log("sharedstudies", sharedstudies)
+
+  const [tabularView, setTabularView] = useState(false)
+
   const stats = (participant, study) => {
     return [
       {
@@ -581,14 +592,70 @@ export default function ParticipantList({
   }
 
   // Choose columns and values here btw we can do this later
-  const [columns, setColumns] = useState<TableColumn[]>([
-    { id: "id", label: "ID", value: (p) => p.id, visible: true },
-    { id: "name", label: "Name", value: (p) => `${p.firstName} ${p.lastName}`, visible: true },
-    { id: "username", label: "Username", value: (p) => p.username, visible: true },
-    { id: "email", label: "Email", value: (p) => p.email, visible: true },
-    { id: "mobile", label: "Mobile", value: (p) => p.mobile, visible: true },
-    { id: "group", label: "Group", value: (p) => p.group_name || "-", visible: true },
-    { id: "study", label: "Study", value: (p) => p.study_name, visible: true },
+  const [columns, setColumns] = useState<CommonTableColumn[]>([
+    {
+      id: "id",
+      label: "ID",
+      value: (p) => p.id,
+      visible: true,
+      filterable: true,
+      filterType: "text",
+      filterPlaceholder: "Filter by ID",
+    },
+    {
+      id: "name",
+      label: "Name",
+      value: (p) => `${p.firstName} ${p.lastName}`,
+      visible: true,
+      filterable: true,
+      filterType: "text",
+      filterPlaceholder: "Filter by Name",
+    },
+    {
+      id: "username",
+      label: "Username",
+      value: (p) => p.username,
+      visible: true,
+      filterable: true,
+      filterType: "text",
+      filterPlaceholder: "Filter by Username",
+    },
+    {
+      id: "email",
+      label: "Email",
+      value: (p) => p.email,
+      visible: true,
+      filterable: true,
+      filterType: "text",
+      filterPlaceholder: "Filter by Email",
+    },
+    {
+      id: "mobile",
+      label: "Mobile",
+      value: (p) => p.mobile,
+      visible: true,
+      filterable: true,
+      filterType: "text",
+      filterPlaceholder: "Filter by Mobile",
+    },
+    {
+      id: "group",
+      label: "Group",
+      value: (p) => p.group_name || "-",
+      visible: true,
+      filterable: true,
+      filterType: "text",
+      filterPlaceholder: "Filter by Group",
+    },
+    {
+      id: "study",
+      label: "Study",
+      value: (p) => p.study_name,
+      visible: true,
+      filterable: true,
+      filterType: "text",
+      filterPlaceholder: "Filter by Study",
+    },
     {
       id: "ownership",
       label: "Ownership",
@@ -596,17 +663,56 @@ export default function ParticipantList({
       value: (p) => getParentResearcher(p.parentResearcher) || getParentResearcher(researcherId),
       visible: true,
       sortable: true,
+      filterable: true,
+      filterType: "text",
+      filterPlaceholder: "Filter by Owner",
     },
-    { id: "userAge", label: "Age", value: (p) => p.userAge || "-", visible: false },
-    { id: "gender", label: "Gender", value: (p) => p.gender || "-", visible: false },
+    {
+      id: "userAge",
+      label: "Age",
+      value: (p) => p.userAge || "-",
+      visible: false,
+      filterable: true,
+      filterType: "numeric",
+      filterPlaceholder: "Filter by Age",
+    },
+    {
+      id: "gender",
+      label: "Gender",
+      value: (p) => p.gender || "-",
+      visible: false,
+      filterable: true,
+      filterType: "dropdown",
+      filterOptions: [
+        { label: "Male", value: "male" },
+        { label: "Female", value: "female" },
+        { label: "Other", value: "other" },
+      ],
+      filterPlaceholder: "Filter by Gender",
+    },
     { id: "caregiverName", label: "Caregiver", value: (p) => p.caregiverName || "-", visible: false },
     {
       id: "lastLogin",
       label: "Last Login",
       value: (p) => (p.systemTimestamps?.lastLoginTime ? formatDate(p.systemTimestamps.lastLoginTime) : "-"),
       visible: true,
+      filterable: true,
+      filterType: "date",
+      filterPlaceholder: "Filter by Last Login",
     },
-    { id: "isLoggedIn", label: "Login Status", value: (p) => p.isLoggedIn, visible: true },
+    {
+      id: "isLoggedIn",
+      label: "Login Status",
+      value: (p) => p.isLoggedIn,
+      visible: true,
+      filterable: true,
+      filterType: "dropdown",
+      filterOptions: [
+        { label: "Online", value: true },
+        { label: "Offline", value: false },
+      ],
+      filterPlaceholder: "Filter by Status",
+    },
   ])
 
   useEffect(() => {
@@ -1163,6 +1269,7 @@ export default function ParticipantList({
                         setActiveButton({ id: participant.id, action: "suspend" })
                         handleOpenSuspendDialog(participant, setActiveButton)
                       }}
+                      style={{ cursor: "pointer", width: 24, height: 24 }}
                     />
                   ) : (
                     <SuspendIcon
@@ -1170,6 +1277,7 @@ export default function ParticipantList({
                         setActiveButton({ id: participant.id, action: "suspend" })
                         handleOpenSuspendDialog(participant, setActiveButton)
                       }}
+                      style={{ cursor: "pointer", width: 24, height: 24 }}
                     />
                   )
                 ) : activeButton.id === participant.id && activeButton.action === "suspend" ? (
@@ -1225,9 +1333,25 @@ export default function ParticipantList({
       )
     }
 
+    const initFilters = () => {
+      const baseFilters = {
+        global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      }
+      columns.forEach((col) => {
+        baseFilters[col.id] = { value: null, matchMode: FilterMatchMode.CONTAINS }
+      })
+      console.log("Initial filters:", baseFilters)
+      return baseFilters
+    }
+    const [filters, setFilters] = useState(initFilters())
+
+    useEffect(() => {
+      setFilters(initFilters())
+    }, [columns])
+
     return (
       <>
-        <ModularTable
+        <CommonTable
           data={sortedData || participants || []}
           columns={columns.filter((col) => col.visible).map((col) => ({ ...col, sortable: true }))}
           actions={actions}
@@ -1248,6 +1372,13 @@ export default function ParticipantList({
           }}
           indexmap={originalIndexMap}
           renderCell={renderCellContent}
+          categorizeItems={null}
+          showCategoryHeaders={false}
+          // 3. Pass filter props
+          filters={filters}
+          onFilter={(newFilters) => setFilters(newFilters)}
+          filterDisplay="row" // row
+          // filterMatchModeOptions={filterMatchModeOptions}
         />
 
         <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
@@ -1364,61 +1495,87 @@ export default function ParticipantList({
         <CircularProgress color="inherit" />
       </Backdrop>
       {viewingParticipant ? (
-        <ItemViewHeader
-          ItemTitle="Participant"
-          ItemName={`${viewingParticipant.firstName} ${viewingParticipant.lastName}`}
-          searchData={handleSearchData}
-          authType={props.authType}
-          onEdit={handleEditParticipant}
-          onSave={() => {
-            if (isEditing) {
-              handleSaveParticipant()
-            }
-          }}
-          onPrevious={() => {
-            const currentIndex = participants.findIndex((p) => p.id === viewingParticipant.id)
-            if (currentIndex > 0) {
-              setViewingParticipant(participants[currentIndex - 1])
-            }
-          }}
-          onNext={() => {
-            const currentIndex = participants.findIndex((p) => p.id === viewingParticipant.id)
-            if (currentIndex < participants.length - 1) {
-              setViewingParticipant(participants[currentIndex + 1])
-            }
-          }}
-          onClose={handleCloseViewParticipant}
+        <Header
+          authType={LAMP.Auth._type}
+          title={props.ptitle}
+          pageLocation={`${props.ptitle} > Participants > ${viewingParticipant.firstName} ${viewingParticipant.lastName}`}
         />
       ) : (
-        <Header
-          studies={studies}
-          participants={participants}
-          researcherId={researcherId}
-          selectedParticipants={selectedParticipants}
-          searchData={handleSearchData}
-          selectedStudies={selected}
-          setSelectedStudies={setSelectedStudies}
-          setParticipants={searchParticipants}
-          setData={getAllStudies}
-          mode={mode}
-          setOrder={setOrder}
-          order={order}
-          title={props.ptitle}
-          authType={props.authType}
-          onLogout={props.onLogout}
-          onViewModechanged={setViewMode}
-          viewMode={viewMode}
-          VisibleColumns={columns}
-          setVisibleColumns={setColumns}
-          resemail={props.resemail}
-          refresh={searchParticipants}
-        />
+        // <ItemViewHeader
+        //   ItemTitle="Participant"
+        //   ItemName={`${viewingParticipant.firstName} ${viewingParticipant.lastName}`}
+        //   searchData={handleSearchData}
+        //   authType={props.authType}
+        //   onEdit={handleEditParticipant}
+        //   onSave={() => {
+        //     if (isEditing) {
+        //       handleSaveParticipant()
+        //     }
+        //   }}
+        //   onPrevious={() => {
+        //     const currentIndex = participants.findIndex((p) => p.id === viewingParticipant.id)
+        //     if (currentIndex > 0) {
+        //       setViewingParticipant(participants[currentIndex - 1])
+        //     }
+        //   }}
+        //   onNext={() => {
+        //     const currentIndex = participants.findIndex((p) => p.id === viewingParticipant.id)
+        //     if (currentIndex < participants.length - 1) {
+        //       setViewingParticipant(participants[currentIndex + 1])
+        //     }
+        //   }}
+        //   onClose={handleCloseViewParticipant}
+        // />
+        // <Header
+        //   studies={studies}
+        //   participants={participants}
+        //   researcherId={researcherId}
+        //   selectedParticipants={selectedParticipants}
+        //   searchData={handleSearchData}
+        //   selectedStudies={selected}
+        //   setSelectedStudies={setSelectedStudies}
+        //   setParticipants={searchParticipants}
+        //   setData={getAllStudies}
+        //   mode={mode}
+        //   setOrder={setOrder}
+        //   order={order}
+        //   title={props.ptitle}
+        //   authType={props.authType}
+        //   onLogout={props.onLogout}
+        //   onViewModechanged={setViewMode}
+        //   viewMode={viewMode}
+        //   VisibleColumns={columns}
+        //   setVisibleColumns={setColumns}
+        //   resemail={props.resemail}
+        //   refresh={searchParticipants}
+        // />
+
+        <Header authType={LAMP.Auth._type} title={props.ptitle} pageLocation={`${props.ptitle} > Participants`} />
       )}
-      <Box
-        className={layoutClasses.tableContainer + " " + (!supportsSidebar ? layoutClasses.tableContainerMobile : "")}
-        style={{ overflowX: "hidden" }}
-      >
-        {viewingParticipant ? (
+      {viewingParticipant ? (
+        <div className="body-container">
+          <ActionsComponent
+            actions={["edit", "save", "passwordEdit", "left", "right", "cancel"]}
+            onEdit={handleEditParticipant}
+            onSave={() => {
+              if (isEditing) {
+                handleSaveParticipant()
+              }
+            }}
+            onPrevious={() => {
+              const currentIndex = participants.findIndex((p) => p.id === viewingParticipant.id)
+              if (currentIndex > 0) {
+                setViewingParticipant(participants[currentIndex - 1])
+              }
+            }}
+            onNext={() => {
+              const currentIndex = participants.findIndex((p) => p.id === viewingParticipant.id)
+              if (currentIndex < participants.length - 1) {
+                setViewingParticipant(participants[currentIndex + 1])
+              }
+            }}
+            onClose={handleCloseViewParticipant}
+          />
           <ParticipantDetailItem
             participant={viewingParticipant}
             isEditing={isEditing}
@@ -1428,105 +1585,128 @@ export default function ParticipantList({
             stats={stats}
             sharedstudies={sharedstudies}
           />
-        ) : (
-          <>
-            {!!participants && participants.length > 0 ? (
-              <>
-                {viewMode === "grid" ? (
-                  // <Grid container spacing={3}>
-                  <Grid container spacing={3} xs={12}>
-                    {paginatedParticipants.map((eachParticipant, index) => (
-                      <Grid item xs={12} sm={12} md={6} lg={4} key={eachParticipant.id}>
-                        <ParticipantListItem
-                          participant={eachParticipant}
-                          onParticipantSelect={onParticipantSelect}
-                          studies={studies}
-                          notificationColumn={notificationColumn}
-                          handleSelectionChange={handleChange}
-                          selectedParticipants={selectedParticipants}
-                          researcherId={researcherId}
-                          onViewParticipant={handleViewParticipant}
-                          onParticipantUpdate={handleUpdateParticipant}
-                          formatDate={formatDate}
-                          onSuspend={handleOpenSuspendDialog}
-                          onUnSuspend={handleOpenUnSuspendDialog}
-                          refreshParticipants={searchParticipants}
-                          researcherName={
-                            !eachParticipant.isShared
-                              ? researcherName
-                              : getParentResearcher(eachParticipant.parentResearcher)
-                          }
-                          sharedstudies={sharedstudies}
-                        />
-                      </Grid>
-                    ))}
-                    <Pagination
-                      data={participants}
-                      updatePage={handleChangePage}
-                      rowPerPage={[5, 10, 20, 40, 60, 80]}
-                      currentPage={page}
-                      currentRowCount={rowCount}
-                    />
-                  </Grid>
-                ) : (
-                  // <TableView
-                  //   participants={paginatedParticipants}
-                  //   handleChange={handleChange}
-                  //   selectedParticipants={selectedParticipants}
-                  //   onParticipantSelect={onParticipantSelect}
-                  // />
-                  <TableView_Mod />
-                  // <TableView_rows
-                  //   participants={paginatedParticipants}
-                  //   handleChange={handleChange}
-                  //   selectedParticipants={selectedParticipants}
-                  //   onParticipantSelect={onParticipantSelect}
-                  // />
-                )}
-                <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
-                  <DialogTitle>Suspend Participant</DialogTitle>
-                  <DialogContent>
-                    <Typography>
-                      Are you sure you want to suspend the participant "{participantToSuspend?.name}"?
-                    </Typography>
-                  </DialogContent>
-                  <DialogActions>
-                    <Button onClick={handleCloseSuspendDialog} color="secondary">
-                      Cancel
-                    </Button>
-                    <Button onClick={confirmSuspend} color="primary">
-                      Suspend
-                    </Button>
-                  </DialogActions>
-                </Dialog>
-                <Dialog open={unsuspendDialogOpen} onClose={handleCloseUnSuspendDialog}>
-                  <DialogTitle>Removal of Participant from Suspension</DialogTitle>
-                  <DialogContent>
-                    <Typography>
-                      Are you sure you want to undo suspension of the participant "{participantToUnSuspend?.name}"?
-                    </Typography>
-                  </DialogContent>
-                  <DialogActions>
-                    <Button onClick={handleCloseUnSuspendDialog} color="secondary">
-                      Cancel
-                    </Button>
-                    <Button onClick={confirmUnSuspend} color="primary">
-                      Undo Suspension
-                    </Button>
-                  </DialogActions>
-                </Dialog>
-              </>
+        </div>
+      ) : (
+        <>
+          {/* {!!participants && participants.length > 0 ? ( */}
+          <div className="body-container">
+            <ActionsComponent
+              searchData={handleSearchData}
+              refreshElements={searchParticipants}
+              setSelectedColumns={setColumns}
+              VisibleColumns={columns}
+              setVisibleColumns={setColumns}
+              addComponent={
+                <AddButton
+                  researcherId={researcherId}
+                  studies={studies}
+                  participants={participants}
+                  setParticipants={setParticipants}
+                  setSelectedStudies={setSelectedStudies}
+                  setData={getAllStudies}
+                  mode={mode}
+                  title={props.title}
+                  resemail={props.resemail}
+                />
+              }
+              actions={["refresh", "search", "grid", "table", "filter", "download"]}
+              tabularView={tabularView}
+              setTabularView={setTabularView}
+              studies={studies}
+              selectedStudies={selectedStudies}
+              setSelectedStudies={setSelectedStudies}
+              researcherId={researcherId}
+              order={order}
+              setOrder={setOrder}
+              tabType={"participants"}
+              downloadTarget={"participants"}
+            />
+            {!tabularView ? (
+              <div className="" style={{ overflow: "auto" }}>
+                <Grid container spacing={3} className="cards-grid">
+                  {!!participants && participants.length > 0 ? (
+                    <>
+                      {paginatedParticipants.map((eachParticipant, index) => (
+                        <Grid item xs={12} sm={12} md={6} lg={4} key={eachParticipant.id}>
+                          <ParticipantListItem
+                            participant={eachParticipant}
+                            onParticipantSelect={onParticipantSelect}
+                            studies={studies}
+                            notificationColumn={notificationColumn}
+                            handleSelectionChange={handleChange}
+                            selectedParticipants={selectedParticipants}
+                            researcherId={researcherId}
+                            onViewParticipant={handleViewParticipant}
+                            onParticipantUpdate={handleUpdateParticipant}
+                            formatDate={formatDate}
+                            onSuspend={handleOpenSuspendDialog}
+                            onUnSuspend={handleOpenUnSuspendDialog}
+                            refreshParticipants={searchParticipants}
+                            researcherName={
+                              !eachParticipant.isShared
+                                ? researcherName
+                                : getParentResearcher(eachParticipant.parentResearcher)
+                            }
+                            sharedstudies={sharedstudies}
+                          />
+                        </Grid>
+                      ))}
+                      <Pagination
+                        data={participants}
+                        updatePage={handleChangePage}
+                        rowPerPage={[5, 10, 20, 40, 60, 80]}
+                        currentPage={page}
+                        currentRowCount={rowCount}
+                      />
+                    </>
+                  ) : (
+                    <Box className={classes.norecordsmain}>
+                      <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
+                        <Icon>info</Icon>
+                        {`${t("No Records Found")}`}
+                      </Box>
+                    </Box>
+                  )}
+                </Grid>
+              </div>
             ) : (
-              <Box className={classes.norecordsmain}>
-                <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
-                  <Icon>info</Icon>
-                  {`${t("No Records Found")}`}
-                </Box>
-              </Box>
+              <TableView_Mod />
             )}
-          </>
-        )}
-      </Box>
+            <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
+              <DialogTitle>Suspend Participant</DialogTitle>
+              <DialogContent>
+                <Typography>
+                  Are you sure you want to suspend the participant "{participantToSuspend?.name}"?
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleCloseSuspendDialog} color="secondary">
+                  Cancel
+                </Button>
+                <Button onClick={confirmSuspend} color="primary">
+                  Suspend
+                </Button>
+              </DialogActions>
+            </Dialog>
+            <Dialog open={unsuspendDialogOpen} onClose={handleCloseUnSuspendDialog}>
+              <DialogTitle>Removal of Participant from Suspension</DialogTitle>
+              <DialogContent>
+                <Typography>
+                  Are you sure you want to undo suspension of the participant "{participantToUnSuspend?.name}"?
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleCloseUnSuspendDialog} color="secondary">
+                  Cancel
+                </Button>
+                <Button onClick={confirmUnSuspend} color="primary">
+                  Undo Suspension
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </div>
+        </>
+      )}
     </React.Fragment>
   )
 }

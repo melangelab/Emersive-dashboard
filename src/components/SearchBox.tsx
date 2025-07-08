@@ -76,11 +76,7 @@ export default function Header({ searchData, ...props }: { searchData: Function 
   }
 
   return (
-    <div className={`search-icon-container ${isExpanded ? "search-icon-container2" : ""}`}>
-      {/* <div className={`${classes.search} ${supportsSidebar ? "" : classes.searchCompact}`}>
-        <div className={classes.searchIcon} onClick={handleSearchClick}>
-          <Icon className={classes.searchIcon2}>search</Icon>
-        </div> */}
+    <div className={`search-icon-container ${isExpanded ? "expanded" : ""}`}>
       <div className={`search ${isExpanded ? "search-expanded" : ""}`}>
         <div className="search-icon" onClick={handleSearchClick}>
           <Icon className="search-icon-inner">search</Icon>

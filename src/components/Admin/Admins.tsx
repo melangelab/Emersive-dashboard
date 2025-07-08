@@ -10,7 +10,7 @@ import { ReactComponent as DeleteIcon } from "../../icons/NewIcons/trash-xmark.s
 import { ReactComponent as PasswordEdit } from "../../icons/NewIcons/password-lock.svg"
 import { ReactComponent as PasswordEditFilled } from "../../icons/NewIcons/password-lock-filled.svg"
 import { ReactComponent as Edit } from "../../icons/NewIcons/text-box-edit.svg"
-import { ModularTable, useModularTableStyles } from "../Researcher/Studies/Index"
+import { useModularTableStyles } from "../Researcher/Studies/Index"
 import { useSnackbar } from "notistack"
 import LAMP from "lamp-core"
 import "./admin.css"
@@ -36,13 +36,16 @@ import { ReactComponent as SuspendFilledIcon } from "../../icons/NewIcons/stop-c
 import { ReactComponent as DeleteFilledIcon } from "../../icons/NewIcons/trash-xmark-Deleted.svg"
 import { ReactComponent as CopyIcon } from "../../icons/NewIcons/arrow-circle-down.svg"
 import { ReactComponent as CopyFilledIcon } from "../../icons/NewIcons/arrow-circle-down-filled.svg"
-import { TableColumn } from "../Researcher/ParticipantList/Index"
 import { ReactComponent as Save } from "../../icons/NewIcons/floppy-disks.svg"
 
 import AddUpdateAdmin from "./AddUpdateAdmin"
 import { Theme } from "@material-ui/core/styles"
 import { key } from "vega"
 import ConfirmationDialog from "../ConfirmationDialog"
+import AdminHeader from "../Header"
+import ActionsComponent from "./ActionsComponent"
+import CommonTable, { TableColumn } from "../Researcher/CommonTable"
+import { FilterMatchMode } from "primereact/api"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -73,6 +76,7 @@ export default function Admins({ title, authType, adminType, history }) {
   const [selectedIcon, setSelectedIcon] = useState(null)
   const [selectedAdmins, setSelectedAdmins] = useState([])
   const [admins, setAdmins] = useState([])
+  const [filteredAdmins, setFilteredAdmins] = useState([])
 
   useEffect(() => {
     refreshAdmins()
@@ -84,19 +88,26 @@ export default function Admins({ title, authType, adminType, history }) {
 
   const refreshAdmins = async () => {
     setIsLoading(true)
-    setAdmins([])
 
     console.log("HHHHHHH tested called")
 
-    const res: any = await LAMP.Type.getAttachment(null, "emersive.profile")
+    if (search.trim().length > 0) {
+      const data = admins.filter((admin) =>
+        (admin.firstName + " " + admin.lasttName)?.toLowerCase()?.includes(search?.toLowerCase())
+      )
+      console.log("Filtered Admins", data)
+      setFilteredAdmins(data)
+    } else {
+      const res: any = await LAMP.Type.getAttachment(null, "emersive.profile")
 
-    if (!res.error) {
-      const admins_array = Array.isArray(res.data) ? res.data : [res.data]
-      setAdmins(admins_array)
-      setSelectedAdmins(admins_array)
+      if (!res.error) {
+        const admins_array = Array.isArray(res.data) ? res.data : [res.data]
+        setAdmins(admins_array)
+        setSelectedAdmins(admins_array)
+        setFilteredAdmins(admins_array)
+      }
     }
-
-    console.log("GOT FOLLOWING ADMINS", res)
+    setIsLoading(false)
   }
 
   const handleHeaderIconClick = (iconName) => {
@@ -165,11 +176,51 @@ export default function Admins({ title, authType, adminType, history }) {
     const classesTemp = useStyles()
 
     const [columns, setColumns] = useState<TableColumn[]>([
-      { id: "role", label: "Admin role", value: (s) => s.role, visible: true, sortable: true },
-      { id: "userName", label: "Username", value: (s) => s.userName || "-", visible: true, sortable: true },
-      { id: "firstName", label: "First Name", value: (s) => s.firstName, visible: true, sortable: true },
-      { id: "lastName", label: "Last Name", value: (s) => s.lastName, visible: true, sortable: true },
-      { id: "emailAddress", label: "Email ID", value: (s) => s.emailAddress, visible: true, sortable: true },
+      {
+        id: "role",
+        label: "Admin role",
+        value: (s) => s.role,
+        visible: true,
+        sortable: true,
+        filterable: true,
+        filterType: "text",
+      },
+      {
+        id: "userName",
+        label: "Username",
+        value: (s) => s.userName || "-",
+        visible: true,
+        sortable: true,
+        filterable: true,
+        filterType: "text",
+      },
+      {
+        id: "firstName",
+        label: "First Name",
+        value: (s) => s.firstName,
+        visible: true,
+        sortable: true,
+        filterable: true,
+        filterType: "text",
+      },
+      {
+        id: "lastName",
+        label: "Last Name",
+        value: (s) => s.lastName,
+        visible: true,
+        sortable: true,
+        filterable: true,
+        filterType: "text",
+      },
+      {
+        id: "emailAddress",
+        label: "Email ID",
+        value: (s) => s.emailAddress,
+        visible: true,
+        sortable: true,
+        filterable: true,
+        filterType: "text",
+      },
     ])
 
     const editable_columns = ["firstName", "lastName", "userName"]
@@ -290,9 +341,9 @@ export default function Admins({ title, authType, adminType, history }) {
     }, [admins])
 
     const sortedData = useMemo(() => {
-      if (!admins) return []
+      if (!filteredAdmins) return []
 
-      const sortableData = [...admins]
+      const sortableData = [...filteredAdmins]
       if (sortConfig.field === "index") {
         sortableData.sort((a, b) => {
           const aIndex = originalIndexMap[a.emailAddress]
@@ -313,6 +364,22 @@ export default function Admins({ title, authType, adminType, history }) {
       }
       return sortableData
     }, [admins, sortConfig, originalIndexMap])
+
+    const initFilters = () => {
+      const baseFilters = {
+        global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      }
+      columns.forEach((col) => {
+        baseFilters[col.id] = { value: null, matchMode: FilterMatchMode.CONTAINS }
+      })
+      console.log("Initial filters:", baseFilters)
+      return baseFilters
+    }
+    const [filters, setFilters] = useState(initFilters())
+
+    useEffect(() => {
+      setFilters(initFilters())
+    }, [columns])
 
     const actions = (Admin) => {
       return (
@@ -451,13 +518,14 @@ export default function Admins({ title, authType, adminType, history }) {
 
     return (
       <>
-        <ModularTable
-          data={sortedData || admins || []}
+        <CommonTable
+          data={sortedData || filteredAdmins || []}
           columns={columns.filter((col) => col.visible).map((col) => ({ ...col, value: col.value, sortable: true }))}
           actions={actions}
           selectable={true}
           selectedRows={selectedRows}
           onSelectRow={(id) => {
+            console.log("Selected row ID:", id)
             setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
           }}
           onSelectAll={() => {
@@ -472,6 +540,10 @@ export default function Admins({ title, authType, adminType, history }) {
           }}
           indexmap={originalIndexMap}
           renderCell={renderCell}
+          categorizeItems={null}
+          filters={filters}
+          onFilter={(newFilters) => setFilters(newFilters)}
+          filterDisplay="menu" // row
         />
 
         <Dialog open={showPasswordDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
@@ -552,10 +624,9 @@ export default function Admins({ title, authType, adminType, history }) {
 
   return (
     <>
-      <div className="header-container">
+      {/* <div className="header-container">
         <div className="action-container">
           <SearchBox searchData={setSearch} />
-
           <div className="icon-container" onClick={() => handleHeaderIconClick("refresh")}>
             <RefreshIcon className={`refresh-icon ${selectedIcon === "refresh" ? "selected" : ""}`} />
           </div>
@@ -571,9 +642,24 @@ export default function Admins({ title, authType, adminType, history }) {
             </div>
           </div>
         </div>
+      </div> */}
+      <AdminHeader
+        adminType={adminType}
+        authType={authType}
+        title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+        pageLocation="Admins"
+      />
+      <div className="body-container">
+        <ActionsComponent
+          searchData={(data) => setSearch(data)}
+          refreshElements={refreshAdmins}
+          addComponent={<AddUpdateAdmin refreshAdmins={refreshAdmins} admin={null} admins={admins} />}
+          actions={["refresh", "search"]}
+        />
+        <div className="table-container">
+          <TableView_Mod />
+        </div>
       </div>
-      <TableView_Mod />
-      {/* <ModularTable data={admins} columns={columns} selectedItems={selectedAdmins} onSelectionChange={(admin, checked) => handleChange(admin, checked)} actions={adminActions} categorizeItems={categorizeAdmins} /> */}
     </>
   )
 }

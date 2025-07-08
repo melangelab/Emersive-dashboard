@@ -20,6 +20,7 @@ import * as XLSX from "xlsx"
 import Papa from "papaparse"
 import { CircularProgress } from "@material-ui/core"
 import LAMP from "lamp-core"
+import { createPortal } from "react-dom"
 
 const useStyles = makeStyles((theme) => ({
   actionIcon: {
@@ -61,9 +62,13 @@ const useStyles = makeStyles((theme) => ({
   },
   studiesWrapper: {
     display: "flex",
+    flexShrink: 0,
+    flexGrow: 1,
+    flexBasis: 0,
     flexDirection: "column",
     gap: theme.spacing(2),
-    maxHeight: "70vh",
+    minHeight: "10vh",
+    maxHeight: "83vh",
     overflowY: "auto",
   },
   targetWrapper: {
@@ -73,9 +78,13 @@ const useStyles = makeStyles((theme) => ({
   },
   itemsContainer: {
     display: "flex",
+    flexShrink: 0,
+    flexGrow: 1,
+    flexBasis: 0,
     flexDirection: "column",
     gap: theme.spacing(1),
-    maxHeight: "60vh",
+    minHeight: "10vh",
+    maxHeight: "83vh",
     overflowY: "auto",
     padding: theme.spacing(2),
     "& .MuiFormControlLabel-root": {
@@ -89,8 +98,9 @@ const useStyles = makeStyles((theme) => ({
   },
   buttonsContainer: {
     display: "flex",
+    flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: theme.spacing(2),
+    margin: "8px 0",
   },
   headerContainer: {
     display: "flex",
@@ -247,7 +257,8 @@ const ParticipantOptionsComponent = ({
   }
 
   return (
-    <div className={classes.optionsContainer}>
+    // <div className={classes.optionsContainer}>
+    <>
       <FormControl component="fieldset">
         <FormLabel component="legend">Select Download Option</FormLabel>
         <RadioGroup value={selectedOption} onChange={(e) => setSelectedOption(e.target.value)}>
@@ -297,7 +308,7 @@ const ParticipantOptionsComponent = ({
           </Typography>
         </>
       )}
-    </div>
+    </>
   )
 }
 
@@ -324,7 +335,18 @@ function Download({ studies, target = "studies" }) {
 
   console.log("Logging studies from inside the Download", studies)
 
-  // Initialize selected states when studies prop changes
+  useEffect(() => {
+    return () => {
+      setDownloadSlider(false)
+      setNextPage(false)
+      setShowOptionsPage(false)
+      setSelectedStudies({})
+      setFinalSelectedItems([])
+      setSelectedGnames({})
+      setSelectedOption("")
+    }
+  }, [])
+
   useEffect(() => {
     const studySelections = {}
     const gnameSelections = {}
@@ -423,9 +445,11 @@ function Download({ studies, target = "studies" }) {
     selectedGroups,
     finalSelectedItems,
     setFinalSelectedItems,
+    onDownload,
   }) => {
     console.log("Selected studies:", selectedStudies)
     console.log("Selected groups:", selectedGroups)
+    console.log("FINAL SELECTED ITEMS,", finalSelectedItems)
 
     const [downloadLoading, setDownloadLoading] = useState(false)
 
@@ -435,6 +459,7 @@ function Download({ studies, target = "studies" }) {
       finalSelectedItems.forEach((item) => {
         initial[item.id] = true
       })
+      console.log("Initial selected items:", initial)
       return initial
     })
 
@@ -503,13 +528,13 @@ function Download({ studies, target = "studies" }) {
       })
 
       setSelectedItems(newSelectedItems)
-      setFinalSelectedItems(newFinalSelectedItems)
+      // setFinalSelectedItems(newFinalSelectedItems)
     }
 
     // Deselect all items
     const handleDeselectAllItems = () => {
       setSelectedItems({})
-      setFinalSelectedItems([])
+      // setFinalSelectedItems([])
     }
 
     // Sync selectedItems when finalSelectedItems changes externally
@@ -529,15 +554,21 @@ function Download({ studies, target = "studies" }) {
         ...prev,
         [item.id]: !isCurrentlySelected,
       }))
+    }
 
-      // Update parent state
-      if (!isCurrentlySelected) {
-        // Add item
-        setFinalSelectedItems((prev) => [...prev, item])
-      } else {
-        // Remove item
-        setFinalSelectedItems((prev) => prev.filter((i) => i.id !== item.id))
+    const updateParentState = () => {
+      const newFinalSelectedItems = filteredItems.filter((item) => selectedItems[item.id])
+      setFinalSelectedItems(newFinalSelectedItems)
+    }
+
+    const handleDownloadClick = async () => {
+      updateParentState()
+      // Wait a tick to ensure state is updated
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      if (onDownload) {
+        await onDownload()
       }
+      // setSelectedItems({})
     }
 
     const getItemDisplay = (item) => {
@@ -554,7 +585,8 @@ function Download({ studies, target = "studies" }) {
     }
 
     return (
-      <div className={classes.targetWrapper}>
+      // <div className={classes.targetWrapper}>
+      <>
         <div className={classes.headerContainer}>
           <Typography variant="h5" component="h1" className={classes.title}>
             Select {target}
@@ -594,7 +626,72 @@ function Download({ studies, target = "studies" }) {
             <Typography variant="body2">No {target} available for the selected studies and groups.</Typography>
           )}
         </div>
-      </div>
+        {target !== "participants" ? (
+          <>
+            {Object.values(selectedItems).includes(true) && (
+              <FormControl component="fieldset" className={classes.formatSelector}>
+                <FormLabel component="legend">Select Download Format</FormLabel>
+                <RadioGroup row value={fileFormat} onChange={handleFormatChange}>
+                  <FormControlLabel
+                    value="json"
+                    control={<Radio color="primary" disabled={downloadLoading} />}
+                    label="JSON"
+                  />
+                  <FormControlLabel
+                    value="csv"
+                    control={<Radio color="primary" disabled={downloadLoading} />}
+                    label="CSV"
+                  />
+                  <FormControlLabel
+                    value="excel"
+                    control={<Radio color="primary" disabled={downloadLoading} />}
+                    label="Excel"
+                  />
+                </RadioGroup>
+              </FormControl>
+            )}
+          </>
+        ) : null}
+        <div className={classes.buttonsContainer}>
+          <Button
+            className={`${classes.actionButton} ${classes.secondaryButton}`}
+            onClick={() => {
+              updateParentState()
+              setNextPage(false)
+            }}
+            disabled={downloadLoading}
+          >
+            Back
+          </Button>
+          {target === "participants" ? (
+            <Button
+              className={`${classes.actionButton} ${classes.primaryButton}`}
+              onClick={() => {
+                updateParentState()
+                setShowOptionsPage(true)
+              }}
+              disabled={!Object.values(selectedItems).includes(true) || downloadLoading}
+            >
+              Next
+            </Button>
+          ) : (
+            <Button
+              className={`${classes.actionButton} ${classes.primaryButton}`}
+              onClick={handleDownloadClick}
+              disabled={!Object.values(selectedItems).includes(true) || downloadLoading}
+            >
+              {downloadLoading ? (
+                <div className={classes.buttonLoadingContainer}>
+                  <CircularProgress size={20} className={classes.buttonProgress} />
+                  <span>Downloading...</span>
+                </div>
+              ) : (
+                "Download"
+              )}
+            </Button>
+          )}
+        </div>
+      </>
     )
   }
 
@@ -980,7 +1077,6 @@ function Download({ studies, target = "studies" }) {
       return
     }
 
-    // For target === "studies"
     const dataToDownload =
       target === "studies" ? studies.filter((study) => selectedStudies[study.id]) : finalSelectedItems
 
@@ -998,10 +1094,18 @@ function Download({ studies, target = "studies" }) {
         console.error("Invalid file format selected")
     }
 
+    setDownloadLoading(false)
     setDownloadSlider(false)
     setNextPage(false)
     setShowOptionsPage(false)
     setSelectedOption("")
+    setFetchedData(null)
+    setSelectedGnames({})
+    setSelectedStudies({})
+    setFinalSelectedItems([])
+    setStartDate(null)
+    setEndDate(null)
+    setFileFormat("json")
   }
 
   const showFormatSelector = () => {
@@ -1011,282 +1115,320 @@ function Download({ studies, target = "studies" }) {
     return selectedItemsCount > 0
   }
 
+  const resetDownloadState = () => {
+    setDownloadSlider(false)
+    setNextPage(false)
+    setShowOptionsPage(false)
+    setSelectedOption("")
+    setFetchedData(null)
+    setSelectedGnames({})
+    setSelectedStudies({})
+    setFinalSelectedItems([])
+    setStartDate(null)
+    setEndDate(null)
+    setFileFormat("json")
+  }
+
+  // 6. Add function to reset all states including selected items
+  const resetAllStates = () => {
+    resetDownloadState()
+    // Force re-initialization of selection states
+    const studySelections = {}
+    const gnameSelections = {}
+    studies.forEach((study) => {
+      studySelections[study.id] = false
+      if (study.gname) {
+        study.gname.forEach((gname) => {
+          gnameSelections[`${study.id}-${gname}`] = false
+        })
+      }
+    })
+    setSelectedStudies(studySelections)
+    setSelectedGnames(gnameSelections)
+  }
+
+  const handleBackdropClick = () => {
+    if (!downloadLoading) {
+      resetAllStates()
+    }
+  }
+
   return (
     <>
-      <DownloadIcon className={classes.actionIcon} onClick={() => setDownloadSlider(true)} />
-      <Backdrop
-        className={`${sliderclasses.backdrop} ${downloadLoading ? classes.backdropFixed : ""}`}
-        open={downloadSlider}
-        onClick={() => {
-          if (!downloadLoading) {
-            setDownloadSlider(false)
-            setNextPage(false)
-            setShowOptionsPage(false)
-            setSelectedStudies({})
-            setSelectedGnames({})
-            setSelectedOption("")
-          }
-        }}
-      />
-      <Slide direction="left" in={downloadSlider} mountOnEnter unmountOnExit>
-        <Box className={sliderclasses.slidePanel}>
-          {downloadLoading && (
-            <div className={classes.downloadingOverlay}>
-              <CircularProgress className={classes.loadingSpinner} />
-              <Typography variant="h6" className={classes.downloadingText}>
-                Preparing your download...
-              </Typography>
-              <Typography variant="body2" className={classes.downloadingText}>
-                Please wait while we process your request
-              </Typography>
-            </div>
-          )}
-          {!nextPage ? (
-            <>
-              <div className={classes.headerContainer}>
-                <Typography variant="h5" component="h1" className={classes.title}>
-                  Select studies
-                </Typography>
-                <div className={classes.selectionButtons}>
-                  <Button
-                    className={`${classes.actionButton} ${classes.secondaryButton} ${classes.selectAllButton}`}
-                    onClick={handleSelectAll}
-                    disabled={downloadLoading}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    className={`${classes.actionButton} ${classes.secondaryButton} ${classes.selectAllButton}`}
-                    onClick={handleDeselectAll}
-                    disabled={downloadLoading}
-                  >
-                    Deselect All
-                  </Button>
+      <DownloadIcon className={`download-icon `} onClick={() => setDownloadSlider(true)} />
+      {createPortal(
+        <>
+          <Backdrop
+            className={`${sliderclasses.backdrop} ${downloadLoading ? classes.backdropFixed : ""}`}
+            open={downloadSlider}
+            onClick={handleBackdropClick}
+          />
+          <Slide direction="left" in={downloadSlider} mountOnEnter unmountOnExit>
+            <Box className={sliderclasses.slidePanel}>
+              {downloadLoading && (
+                <div className={classes.downloadingOverlay}>
+                  <CircularProgress className={classes.loadingSpinner} />
+                  <Typography variant="h6" className={classes.downloadingText}>
+                    Preparing your download...
+                  </Typography>
+                  <Typography variant="body2" className={classes.downloadingText}>
+                    Please wait while we process your request
+                  </Typography>
                 </div>
-              </div>
-              <div className={classes.studiesWrapper}>
-                {studies.map((study) => (
-                  <div key={study.id} className={classes.studyContainer}>
-                    <div className={classes.studyHeader}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={selectedStudies[study.id] || false}
-                            onChange={() => handleStudySelect(study.id)}
-                            color="primary"
-                            disabled={downloadLoading}
-                          />
-                        }
-                        label={`${study.name} (ID: ${study.id})`}
-                      />
+              )}
+              {!nextPage ? (
+                <>
+                  <div className={classes.headerContainer}>
+                    <Typography variant="h5" component="h1" className={classes.title}>
+                      Select studies
+                    </Typography>
+                    <div className={classes.selectionButtons}>
+                      <Button
+                        className={`${classes.actionButton} ${classes.secondaryButton} ${classes.selectAllButton}`}
+                        onClick={handleSelectAll}
+                        disabled={downloadLoading}
+                      >
+                        Select All
+                      </Button>
+                      <Button
+                        className={`${classes.actionButton} ${classes.secondaryButton} ${classes.selectAllButton}`}
+                        onClick={handleDeselectAll}
+                        disabled={downloadLoading}
+                      >
+                        Deselect All
+                      </Button>
                     </div>
-                    {study.gname && study.gname.length > 0 && (
-                      <div className={classes.gnamesContainer}>
-                        {study.gname.map((gname) => (
+                  </div>
+                  <div className={classes.studiesWrapper}>
+                    {studies.map((study) => (
+                      <div key={study.id} className={classes.studyContainer}>
+                        <div className={classes.studyHeader}>
                           <FormControlLabel
-                            key={`${study.id}-${gname}`}
                             control={
                               <Checkbox
-                                checked={selectedGnames[`${study.id}-${gname}`] || false}
-                                onChange={() => handleGnameSelect(study.id, gname)}
+                                checked={selectedStudies[study.id] || false}
+                                onChange={() => handleStudySelect(study.id)}
                                 color="primary"
                                 disabled={downloadLoading}
                               />
                             }
-                            label={gname}
+                            label={`${study.name} (ID: ${study.id})`}
                           />
-                        ))}
+                        </div>
+                        {study.gname && study.gname.length > 0 && (
+                          <div className={classes.gnamesContainer}>
+                            {study.gname.map((gname) => (
+                              <FormControlLabel
+                                key={`${study.id}-${gname}`}
+                                control={
+                                  <Checkbox
+                                    checked={selectedGnames[`${study.id}-${gname}`] || false}
+                                    onChange={() => handleGnameSelect(study.id, gname)}
+                                    color="primary"
+                                    disabled={downloadLoading}
+                                  />
+                                }
+                                label={gname}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
+                    ))}
+                  </div>
+                  {target === "studies" ? (
+                    <FormControl component="fieldset" className={classes.formatSelector}>
+                      <FormLabel component="legend">Select Download Format</FormLabel>
+                      <RadioGroup row value={fileFormat} onChange={handleFormatChange}>
+                        <FormControlLabel
+                          value="json"
+                          control={<Radio color="primary" disabled={downloadLoading} />}
+                          label="JSON"
+                        />
+                        <FormControlLabel
+                          value="csv"
+                          control={<Radio color="primary" disabled={downloadLoading} />}
+                          label="CSV"
+                        />
+                        <FormControlLabel
+                          value="excel"
+                          control={<Radio color="primary" disabled={downloadLoading} />}
+                          label="Excel"
+                        />
+                      </RadioGroup>
+                    </FormControl>
+                  ) : null}
+                  <div className={classes.buttonsContainer}>
+                    <Button
+                      className={`${classes.actionButton} ${classes.secondaryButton}`}
+                      onClick={() => {
+                        setSelectedStudies({})
+                        setSelectedGnames({})
+                      }}
+                      disabled={downloadLoading}
+                    >
+                      Clear selection
+                    </Button>
+                    {target === "studies" ? (
+                      <Button
+                        className={`${classes.actionButton} ${classes.primaryButton}`}
+                        onClick={handleDownload}
+                        disabled={!Object.values(selectedStudies).some(Boolean)}
+                      >
+                        {downloadLoading ? (
+                          <div className={classes.buttonLoadingContainer}>
+                            <CircularProgress size={20} className={classes.buttonProgress} />
+                            <span>Downloading...</span>
+                          </div>
+                        ) : (
+                          "Download"
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        className={`${classes.actionButton} ${classes.primaryButton}`}
+                        onClick={() => setNextPage(true)}
+                        disabled={!Object.values(selectedStudies).some(Boolean) || downloadLoading}
+                      >
+                        Next
+                      </Button>
                     )}
                   </div>
-                ))}
-              </div>
-              <div className={classes.buttonsContainer}>
-                <Button
-                  className={`${classes.actionButton} ${classes.secondaryButton}`}
-                  onClick={() => {
-                    setSelectedStudies({})
-                    setSelectedGnames({})
-                  }}
-                  disabled={downloadLoading}
-                >
-                  Clear selection
-                </Button>
-                {target === "studies" ? (
-                  <Button
-                    className={`${classes.actionButton} ${classes.primaryButton}`}
-                    onClick={handleDownload}
-                    disabled={!Object.values(selectedStudies).some(Boolean)}
-                  >
-                    {downloadLoading ? (
-                      <div className={classes.buttonLoadingContainer}>
-                        <CircularProgress size={20} className={classes.buttonProgress} />
-                        <span>Downloading...</span>
-                      </div>
-                    ) : (
-                      "Download"
-                    )}
-                  </Button>
+                </>
+              ) : target === "participants" ? (
+                !showOptionsPage ? (
+                  <>
+                    <SelectTargetComponent
+                      target={target}
+                      studies={studies}
+                      selectedStudies={selectedStudies}
+                      selectedGroups={selectedGnames}
+                      finalSelectedItems={finalSelectedItems}
+                      setFinalSelectedItems={setFinalSelectedItems}
+                      onDownload={handleDownload}
+                    />
+                    {/* <div className={classes.buttonsContainer}>
+                      <Button
+                        className={`${classes.actionButton} ${classes.secondaryButton}`}
+                        onClick={() => setNextPage(false)}
+                        disabled={downloadLoading}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        className={`${classes.actionButton} ${classes.primaryButton}`}
+                        onClick={() => setShowOptionsPage(true)}
+                        disabled={finalSelectedItems.length === 0 || downloadLoading}
+                      >
+                        Next
+                      </Button>
+                    </div> */}
+                  </>
                 ) : (
-                  <Button
-                    className={`${classes.actionButton} ${classes.primaryButton}`}
-                    onClick={() => setNextPage(true)}
-                    disabled={!Object.values(selectedStudies).some(Boolean) || downloadLoading}
-                  >
-                    Next
-                  </Button>
-                )}
-              </div>
-            </>
-          ) : target === "participants" ? (
-            !showOptionsPage ? (
-              <>
-                <SelectTargetComponent
-                  target={target}
-                  studies={studies}
-                  selectedStudies={selectedStudies}
-                  selectedGroups={selectedGnames}
-                  finalSelectedItems={finalSelectedItems}
-                  setFinalSelectedItems={setFinalSelectedItems}
-                />
-                <div className={classes.buttonsContainer}>
-                  <Button
-                    className={`${classes.actionButton} ${classes.secondaryButton}`}
-                    onClick={() => setNextPage(false)}
-                    disabled={downloadLoading}
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    className={`${classes.actionButton} ${classes.primaryButton}`}
-                    onClick={() => setShowOptionsPage(true)}
-                    disabled={finalSelectedItems.length === 0 || downloadLoading}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className={classes.headerContainer}>
-                  <Typography variant="h5" component="h1" className={classes.title}>
-                    Select Download Option
-                  </Typography>
-                </div>
-                <ParticipantOptionsComponent
-                  selectedOption={selectedOption}
-                  setSelectedOption={setSelectedOption}
-                  startDate={startDate}
-                  setStartDate={setStartDate}
-                  endDate={endDate}
-                  setEndDate={setEndDate}
-                  fileFormat={fileFormat}
-                  handleFormatChange={handleFormatChange}
-                />
-                <FormControl component="fieldset" className={classes.formatSelector}>
-                  <FormLabel component="legend">Select Download Format</FormLabel>
-                  <RadioGroup row value={fileFormat} onChange={handleFormatChange}>
-                    <FormControlLabel
-                      value="json"
-                      control={<Radio color="primary" disabled={downloadLoading} />}
-                      label="JSON"
-                    />
-                    <FormControlLabel
-                      value="csv"
-                      control={<Radio color="primary" disabled={downloadLoading} />}
-                      label="CSV"
-                    />
-                    <FormControlLabel
-                      value="excel"
-                      control={<Radio color="primary" disabled={downloadLoading} />}
-                      label="Excel"
-                    />
-                  </RadioGroup>
-                </FormControl>
-                <div className={classes.buttonsContainer}>
-                  <Button
-                    className={`${classes.actionButton} ${classes.secondaryButton}`}
-                    onClick={() => setShowOptionsPage(false)}
-                    disabled={downloadLoading}
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    className={`${classes.actionButton} ${classes.primaryButton}`}
-                    onClick={handleDownload}
-                    disabled={!selectedOption || downloadLoading}
-                  >
-                    {downloadLoading ? (
-                      <div className={classes.buttonLoadingContainer}>
-                        <CircularProgress size={20} className={classes.buttonProgress} />
-                        <span>Downloading...</span>
-                      </div>
-                    ) : (
-                      "Download"
-                    )}
-                  </Button>
-                </div>
-              </>
-            )
-          ) : (
-            <>
-              <SelectTargetComponent
-                target={target}
-                studies={studies}
-                selectedStudies={selectedStudies}
-                selectedGroups={selectedGnames}
-                finalSelectedItems={finalSelectedItems}
-                setFinalSelectedItems={setFinalSelectedItems}
-              />
-              {finalSelectedItems.length > 0 && (
-                <FormControl component="fieldset" className={classes.formatSelector}>
-                  <FormLabel component="legend">Select Download Format</FormLabel>
-                  <RadioGroup row value={fileFormat} onChange={handleFormatChange}>
-                    <FormControlLabel
-                      value="json"
-                      control={<Radio color="primary" disabled={downloadLoading} />}
-                      label="JSON"
-                    />
-                    <FormControlLabel
-                      value="csv"
-                      control={<Radio color="primary" disabled={downloadLoading} />}
-                      label="CSV"
-                    />
-                    <FormControlLabel
-                      value="excel"
-                      control={<Radio color="primary" disabled={downloadLoading} />}
-                      label="Excel"
-                    />
-                  </RadioGroup>
-                </FormControl>
-              )}
-              <div className={classes.buttonsContainer}>
-                <Button
-                  className={`${classes.actionButton} ${classes.secondaryButton}`}
-                  onClick={() => setNextPage(false)}
-                  disabled={downloadLoading}
-                >
-                  Back
-                </Button>
-                <Button
-                  className={`${classes.actionButton} ${classes.primaryButton}`}
-                  onClick={handleDownload}
-                  disabled={finalSelectedItems.length === 0 || downloadLoading}
-                >
-                  {downloadLoading ? (
-                    <div className={classes.buttonLoadingContainer}>
-                      <CircularProgress size={20} className={classes.buttonProgress} />
-                      <span>Downloading...</span>
+                  <>
+                    <div className={classes.headerContainer}>
+                      <Typography variant="h5" component="h1" className={classes.title}>
+                        Select Download Option
+                      </Typography>
                     </div>
-                  ) : (
-                    "Download"
-                  )}
-                </Button>
-              </div>
-            </>
-          )}
-        </Box>
-      </Slide>
+                    <div className={classes.itemsContainer}>
+                      <ParticipantOptionsComponent
+                        selectedOption={selectedOption}
+                        setSelectedOption={setSelectedOption}
+                        startDate={startDate}
+                        setStartDate={setStartDate}
+                        endDate={endDate}
+                        setEndDate={setEndDate}
+                        fileFormat={fileFormat}
+                        handleFormatChange={handleFormatChange}
+                      />
+                      <FormControl component="fieldset" className={classes.formatSelector}>
+                        <FormLabel component="legend">Select Download Format</FormLabel>
+                        <RadioGroup row value={fileFormat} onChange={handleFormatChange}>
+                          <FormControlLabel
+                            value="json"
+                            control={<Radio color="primary" disabled={downloadLoading} />}
+                            label="JSON"
+                          />
+                          <FormControlLabel
+                            value="csv"
+                            control={<Radio color="primary" disabled={downloadLoading} />}
+                            label="CSV"
+                          />
+                          <FormControlLabel
+                            value="excel"
+                            control={<Radio color="primary" disabled={downloadLoading} />}
+                            label="Excel"
+                          />
+                        </RadioGroup>
+                      </FormControl>
+                    </div>
+                    <div className={classes.buttonsContainer}>
+                      <Button
+                        className={`${classes.actionButton} ${classes.secondaryButton}`}
+                        onClick={() => setShowOptionsPage(false)}
+                        disabled={downloadLoading}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        className={`${classes.actionButton} ${classes.primaryButton}`}
+                        onClick={handleDownload}
+                        disabled={!selectedOption || downloadLoading}
+                      >
+                        {downloadLoading ? (
+                          <div className={classes.buttonLoadingContainer}>
+                            <CircularProgress size={20} className={classes.buttonProgress} />
+                            <span>Downloading...</span>
+                          </div>
+                        ) : (
+                          "Download"
+                        )}
+                      </Button>
+                    </div>
+                  </>
+                )
+              ) : (
+                <>
+                  <SelectTargetComponent
+                    target={target}
+                    studies={studies}
+                    selectedStudies={selectedStudies}
+                    selectedGroups={selectedGnames}
+                    finalSelectedItems={finalSelectedItems}
+                    setFinalSelectedItems={setFinalSelectedItems}
+                    onDownload={handleDownload}
+                  />
+                  {/* <div className={classes.buttonsContainer}>
+                    <Button
+                      className={`${classes.actionButton} ${classes.secondaryButton}`}
+                      onClick={() => setNextPage(false)}
+                      disabled={downloadLoading}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      className={`${classes.actionButton} ${classes.primaryButton}`}
+                      onClick={handleDownload}
+                      disabled={finalSelectedItems.length === 0 || downloadLoading}
+                    >
+                      {downloadLoading ? (
+                        <div className={classes.buttonLoadingContainer}>
+                          <CircularProgress size={20} className={classes.buttonProgress} />
+                          <span>Downloading...</span>
+                        </div>
+                      ) : (
+                        "Download"
+                      )}
+                    </Button>
+                  </div> */}
+                </>
+              )}
+            </Box>
+          </Slide>{" "}
+        </>,
+        document.body
+      )}
     </>
   )
 }

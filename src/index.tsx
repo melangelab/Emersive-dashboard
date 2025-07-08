@@ -15,6 +15,11 @@ import "url-search-params-polyfill"
 import "material-icons"
 import "./i18n"
 
+// PrimeReact Imports
+import "primereact/resources/themes/saga-blue/theme.css"
+import "primereact/resources/primereact.min.css"
+import "primeicons/primeicons.css"
+
 // in index.html: <!DOCTYPE html><html></html>
 let root = document.createElement("div")
 var css = document.createElement("style")

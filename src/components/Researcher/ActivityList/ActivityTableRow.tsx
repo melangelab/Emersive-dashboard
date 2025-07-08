@@ -566,39 +566,6 @@ export default function ActivityTableRow({
               className={classes.editableField}
             />
           )
-        // case "type":
-        //   return (
-        //     <FormControl fullWidth size="small" variant="outlined">
-        //     <Select
-        //       value={activity.spec || ''} // Ensure default value
-        //       onChange={(e) => onCellValueChange("spec", e.target.value)}
-        //       className={classes.editableField}
-        //     >
-        //       {availableSpecs.map((spec) => (
-        //         <MenuItem key={spec} value={spec}>
-        //           {spec} {/* Remove 'lamp.' prefix for display */}
-        //         </MenuItem>
-        //       ))}
-        //                     {availableSpecs.map((spec) => (
-        //         <MenuItem key={spec} value={spec}>
-        //           {spec} {/* Remove 'lamp.' prefix for display */}
-        //         </MenuItem>
-        //       ))}
-
-        //     </Select>
-        //   </FormControl>
-        //   )
-        // case "creator":
-        //   return (
-        //     <TextField
-        //       defaultValue={getCurrentValue("creator")}
-        //       onChange={(e) => onCellValueChange("creator", e.target.value)}
-        //       fullWidth
-        //       size="small"
-        //       variant="outlined"
-        //       className={classes.editableField}
-        //     />
-        //   )
         case "groups":
           const availableGroups = activity.study_id ? studies.find((s) => s.id === activity.study_id)?.gname || [] : []
           return (
@@ -624,16 +591,6 @@ export default function ActivityTableRow({
                 ))}
               </Select>
             </FormControl>
-            // return (
-            //   <TextField
-            //     defaultValue={getCurrentValue("groups")?.join(", ") || ""}
-            //     onChange={(e) => onCellValueChange("groups", e.target.value.split(",").map(g => g.trim()))}
-            //     fullWidth
-            //     size="small"
-            //     variant="outlined"
-            //     className={classes.editableField}
-            //     helperText="Comma separated values"
-            //   />
           )
         default:
           return column.value(activity)
@@ -727,14 +684,7 @@ export default function ActivityTableRow({
 
   return (
     <>
-      <TableRow
-        className={classes.row}
-        // hover
-        // role="checkbox"
-        // aria-checked={checked}
-        // selected={checked}
-        // className={activity.shareTocommunity ? classes.communityRow : ""}
-      >
+      <TableRow className={classes.row}>
         <TableCell padding="checkbox">
           <Checkbox checked={checked} onChange={handleCheckChange} className={classes.checkboxActive} />
         </TableCell>
@@ -749,59 +699,8 @@ export default function ActivityTableRow({
             {getCellContent(column)}
           </TableCell>
         ))}
-        {/* {visibleColumns.map((column) => (
-          <TableCell key={column.id}>
-            {column.id === "id" ? (
-              <Box
-                className={classes.copyableCell}
-                onClick={() => {
-                  window.navigator?.clipboard?.writeText?.(activity.id)
-                  enqueueSnackbar("ID copied to clipboard", {
-                    variant: "success",
-                    autoHideDuration: 1000,
-                  })
-                }}
-              >
-                {activity.id}
-              </Box>
-            ) : column.id === "study" ? (
-              <Box
-                className={classes.studyCell}
-                onClick={() => {
-                  window.navigator?.clipboard?.writeText?.(activity.study_id)
-                  enqueueSnackbar("Study ID copied to clipboard", {
-                    variant: "success",
-                    autoHideDuration: 1000,
-                  })
-                }}
-              >
-                <Typography className={classes.studyName}>{activity.study_name || "No Study Name"}</Typography>
-                <Box className={classes.studyId}>{`ID: ${activity.study_id}`}</Box>
-              </Box>
-            ) : column.id === "version" ? (
-              <Box className={classes.versionBadge}>
-                <Icon fontSize="small">flag</Icon>
-                {activity.currentVersion?.name || "v1.0"}
-              </Box>
-            ) : column.id === "scoreInterpretation" ? (
-              <Box className={classes.scoreBox}>
-                {Object.entries(activity.scoreInterpretation || {}).map(([key, schema]) => (
-                  <Typography key={key} variant="body2">
-                    {key}: {(schema as ScoreInterpretationSchema).ranges.length} ranges
-                  </Typography>
-                ))}
-              </Box>
-            ) : (
-              column.value(activity)
-            )}
-          </TableCell>
-        ))} */}
-
         <TableCell className={classes.actionCell}>
-          <Box
-            className={classes.actionButtons}
-            // display="flex" style={{ gap: 8 }}
-          >
+          <Box className={classes.actionButtons}>
             {activity.isCommunityActivity ? (
               <>
                 {activeButton.id === activity.id && activeButton.action === "view" ? (
@@ -907,14 +806,6 @@ export default function ActivityTableRow({
                     )}
                   </>
                 )}
-                {/* <UpdateActivity
-                  activity={activity}
-                  activities={activities}
-                  studies={studies}
-                  setActivities={setActivities}
-                  profile={0}
-                  researcherId={researcherId}
-                /> */}
                 {activeButton.id === activity.id && activeButton.action === "history" ? (
                   <HistoryFilledIcon
                     className={`${activitycardclasses.actionIcon} active`}

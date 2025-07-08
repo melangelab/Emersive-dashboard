@@ -1,0 +1,506 @@
+.p-datatable .p-datatable-tbody > tr:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.p-datatable .p-datatable-tbody > tr td {
+  position: relative;
+  vertical-align: middle;
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  vertical-align: middle;
+}
+
+.p-datatable .p-datatable-action-buttons {
+  display: flex;
+  gap: 8px;
+  min-width: 320px;
+  justify-content: flex-start;
+}
+
+.p-datatable .p-datatable-action-buttons > * {
+  flex-shrink: 0;
+}
+
+.actionIcon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.4;
+  display: inline-flex;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.actionIcon path {
+  fill: #000;
+}
+
+.actionIcon:hover {
+  opacity: 1;
+}
+
+.actionIcon:hover path {
+  fill: #06b0f0;
+}
+
+.actionIcon.selected {
+  opacity: 1;
+}
+
+.actionIcon.selected path {
+  fill: #4f95da;
+}
+
+.actionIcon.active {
+  opacity: 1;
+}
+
+.actionIcon.active path {
+  fill: #215f9a;
+}
+
+.disabledIconContainer {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.disabledIcon {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.action-buttons-container {
+  display: flex;
+  gap: 8px;
+}
+
+.studies-datatable {
+  min-width: 50rem;
+}
+
+.studies-datatable .selection-column .p-column-header-content {
+  width: 3rem;
+}
+
+.studies-datatable .index-column {
+  width: 5rem;
+}
+
+.studies-datatable .data-column {
+  min-width: 10rem;
+}
+
+.studies-datatable .actions-column {
+  width: 320px;
+  /* min-width: 320px;  */
+  max-width: 320px;
+}
+
+.studies-datatable .actions-column .p-column-header-content {
+  width: 320px;
+  /* min-width: 320px; */
+  max-width: 320px;
+}
+
+.studies-datatable .actions-column td {
+  padding: 8px;
+  vertical-align: middle;
+}
+
+/* Base styles for all themes */
+.table-container {
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+}
+
+.theme-selector {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.studies-datatable {
+  min-width: 50rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Common column widths */
+.studies-datatable .selection-column .p-column-header-content {
+  width: 3rem;
+}
+.studies-datatable .index-column {
+  width: 5rem;
+}
+.studies-datatable .data-column {
+  min-width: 10rem;
+}
+.studies-datatable .actions-column {
+  width: 320px;
+  /* min-width: 320px;  */
+  max-width: 320px;
+}
+.studies-datatable .actions-column .p-column-header-content {
+  /* width: 320px;  */
+  /* min-width: 320px;  */
+  max-width: 320px;
+}
+.studies-datatable .actions-column td {
+  padding: 8px;
+  vertical-align: middle;
+}
+
+/* Action buttons common styles */
+.p-datatable-action-buttons {
+  display: flex;
+  gap: 8px;
+  min-width: 320px;
+  justify-content: flex-start;
+}
+
+.p-datatable-action-buttons > * {
+  flex-shrink: 0;
+}
+
+.actionIcon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.4;
+  display: inline-flex;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.actionIcon path {
+  fill: #000;
+}
+
+.actionIcon:hover {
+  opacity: 1;
+}
+
+.actionIcon:hover path {
+  fill: #06b0f0;
+}
+
+.actionIcon.selected {
+  opacity: 1;
+}
+
+.actionIcon.selected path {
+  fill: #4f95da;
+}
+
+.actionIcon.active {
+  opacity: 1;
+}
+
+.actionIcon.active path {
+  fill: #215f9a;
+}
+
+.disabledIconContainer {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.disabledIcon {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.action-buttons-container {
+  display: flex;
+  gap: 8px;
+}
+
+/* DEFAULT THEME */
+.studies-datatable.default-theme .p-datatable-tbody > tr:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.studies-datatable.default-theme .p-datatable-tbody > tr td {
+  position: relative;
+  vertical-align: middle;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.studies-datatable.default-theme .p-datatable-thead > tr > th {
+  vertical-align: middle;
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+/* DARK THEME */
+.studies-datatable.dark-theme {
+  background-color: #1e1e1e;
+  color: #ffffff;
+}
+
+.studies-datatable.dark-theme .p-datatable-thead > tr > th {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  border-bottom: 2px solid #404040;
+}
+
+.studies-datatable.dark-theme .p-datatable-tbody > tr {
+  background-color: #1e1e1e !important;
+  color: #ffffff;
+}
+
+.studies-datatable.dark-theme .p-datatable-tbody > tr:hover {
+  background-color: #333333 !important;
+}
+
+.studies-datatable.dark-theme .p-datatable-tbody > tr td {
+  border-bottom: 1px solid #404040;
+}
+
+.studies-datatable.dark-theme .p-checkbox .p-checkbox-box {
+  background-color: #2d2d2d;
+  border-color: #404040;
+}
+
+.studies-datatable.dark-theme .actionIcon path {
+  fill: #ffffff;
+}
+
+/* MATERIAL THEME */
+.studies-datatable.material-theme {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  border: none;
+}
+
+.studies-datatable.material-theme .p-datatable-thead > tr > th {
+  background-color: #3f51b5 !important;
+  color: #ffffff !important;
+  font-weight: 500;
+  padding: 16px 12px;
+  border: none;
+}
+
+.studies-datatable.material-theme .p-datatable-tbody > tr:hover {
+  background-color: rgba(63, 81, 181, 0.08) !important;
+}
+
+.studies-datatable.material-theme .p-datatable-tbody > tr td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.studies-datatable.material-theme .p-datatable-tbody > tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+/* BOOTSTRAP THEME */
+.studies-datatable.bootstrap-theme {
+  border: 1px solid #dee2e6;
+}
+
+.studies-datatable.bootstrap-theme .p-datatable-thead > tr > th {
+  background-color: #e9ecef !important;
+  color: #495057 !important;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 700;
+}
+
+.studies-datatable.bootstrap-theme .p-datatable-tbody > tr:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.studies-datatable.bootstrap-theme .p-datatable-tbody > tr td {
+  border-bottom: 1px solid #dee2e6;
+}
+
+.studies-datatable.bootstrap-theme .p-datatable-tbody > tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+.studies-datatable.bootstrap-theme .p-datatable-tbody > tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+/* MINIMAL THEME */
+.studies-datatable.minimal-theme {
+  border: none;
+  box-shadow: none;
+}
+
+.studies-datatable.minimal-theme .p-datatable-thead > tr > th {
+  background-color: transparent !important;
+  color: #666666 !important;
+  border-bottom: 2px solid #000000;
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+}
+
+.studies-datatable.minimal-theme .p-datatable-tbody > tr:hover {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+.studies-datatable.minimal-theme .p-datatable-tbody > tr td {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 12px;
+}
+
+.studies-datatable.minimal-theme .p-datatable-tbody > tr:last-child td {
+  border-bottom: none;
+}
+
+/* GRADIENT THEME */
+.studies-datatable.gradient-theme {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.studies-datatable.gradient-theme .p-datatable-thead > tr > th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: #ffffff !important;
+  border: none;
+  font-weight: 600;
+}
+
+.studies-datatable.gradient-theme .p-datatable-tbody > tr {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.studies-datatable.gradient-theme .p-datatable-tbody > tr:hover {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.studies-datatable.gradient-theme .p-datatable-tbody > tr td {
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+/* UNSTYLED THEME */
+.studies-datatable.unstyled-theme {
+  /* Remove all default PrimeReact styling */
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.studies-datatable.unstyled-theme .p-datatable-wrapper {
+  border: 2px solid #000000;
+  border-radius: 0;
+}
+
+.studies-datatable.unstyled-theme .p-datatable-thead > tr > th {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: none;
+  font-family: "Courier New", monospace;
+  font-weight: bold;
+  text-transform: uppercase;
+  padding: 15px;
+}
+
+.studies-datatable.unstyled-theme .p-datatable-tbody > tr {
+  background-color: #ffffff !important;
+}
+
+.studies-datatable.unstyled-theme .p-datatable-tbody > tr:nth-child(even) {
+  background-color: #f9f9f9 !important;
+}
+
+.studies-datatable.unstyled-theme .p-datatable-tbody > tr:hover {
+  background-color: #ffff00 !important;
+  color: #000000;
+}
+
+.studies-datatable.unstyled-theme .p-datatable-tbody > tr td {
+  border: 1px solid #cccccc;
+  font-family: "Courier New", monospace;
+  padding: 10px 15px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .studies-datatable {
+    min-width: auto;
+  }
+
+  .studies-datatable .actions-column {
+    width: 280px;
+    min-width: 280px;
+    max-width: 280px;
+  }
+
+  .p-datatable-action-buttons {
+    min-width: 280px;
+  }
+}
+
+/* Custom animations for theme transitions */
+.studies-datatable {
+  transition: all 0.3s ease-in-out;
+}
+
+.studies-datatable .p-datatable-thead > tr > th,
+.studies-datatable .p-datatable-tbody > tr td {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.category-header {
+  background-color: #f8f9fa;
+  padding: 8px 12px;
+  font-weight: bold;
+  font-size: 14px;
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Ensure category headers stay visible during scroll */
+.p-datatable .p-rowgroup-header {
+  position: sticky !important;
+  background-color: #f8f9fa !important;
+  top: var(--header-height, 50px) !important;
+  z-index: 5 !important;
+}
+
+.p-datatable .p-rowgroup-header td {
+  position: sticky !important;
+  top: var(--header-height, 50px) !important;
+  z-index: 5 !important;
+  background-color: #f8f9fa !important;
+}
+
+/* Dark theme category headers */
+.dark-theme .category-header,
+.dark-theme .p-datatable .p-rowgroup-header {
+  background-color: #343a40 !important;
+  color: #f8f9fa !important;
+  border-bottom-color: #495057 !important;
+}
+
+.dark-theme .p-datatable .p-rowgroup-header td {
+  background-color: #343a40 !important;
+  color: #f8f9fa !important;
+}
+.studies-datatable .p-datatable-wrapper {
+  position: relative;
+  overflow: auto;
+}
+
+.studies-datatable .p-datatable-thead > tr > th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+.p-datatable .p-datatable-wrapper {
+  position: sticky !important;
+  top: 0 !important;
+}

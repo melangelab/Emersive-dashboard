@@ -3,13 +3,15 @@ import { Box, Grid, Backdrop, CircularProgress, Icon, makeStyles, Theme, createS
 import { Service } from "../../DBService/DBService"
 import { useTranslation } from "react-i18next"
 import ArchivedItemsView from "./ArchivedItemsView"
-import Header from "./Header"
+// import Header from "./Header"
+import Header from "../../Header"
 import { sortData } from "../Dashboard"
 import useInterval from "../../useInterval"
 import LAMP from "lamp-core"
 import { useLayoutStyles } from "../../GlobalStyles"
 import { useSnackbar } from "notistack"
 import { useQuery } from "../../Utils"
+import ActionsComponent from "../../Admin/ActionsComponent"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -84,7 +86,7 @@ export default function ArchivedList({
         <CircularProgress color="inherit" />
       </Backdrop>
 
-      <Header
+      {/* <Header
         studies={studies}
         researcherId={researcherId}
         searchData={handleSearchData}
@@ -95,29 +97,34 @@ export default function ArchivedList({
         title={props.ptitle}
         authType={props.authType}
         onLogout={props.onLogout}
-      />
+      /> */}
 
-      <Box className={layoutClasses.tableContainer} py={4}>
-        {studies && studies.length > 0 ? (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <ArchivedItemsView
-                researcherId={researcherId}
-                searchFilter={search}
-                selectedStudies={selected}
-                studies={studies}
-              />
+      <Header authType={LAMP.Auth._type} title={props.ptitle} pageLocation={`${props.ptitle} > Archived Items`} />
+
+      <div className="body-container">
+        <ActionsComponent searchData={handleSearchData} actions={["search"]} />
+        <div style={{ overflow: "auto" }}>
+          {studies && studies.length > 0 ? (
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <ArchivedItemsView
+                  researcherId={researcherId}
+                  searchFilter={search}
+                  selectedStudies={selected}
+                  studies={studies}
+                />
+              </Grid>
             </Grid>
-          </Grid>
-        ) : (
-          <Box className={classes.norecordsmain}>
-            <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
-              <Icon>info</Icon>
-              {`${t("No Studies Found")}`}
+          ) : (
+            <Box className={classes.norecordsmain}>
+              <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
+                <Icon>info</Icon>
+                {`${t("No Studies Found")}`}
+              </Box>
             </Box>
-          </Box>
-        )}
-      </Box>
+          )}
+        </div>
+      </div>
     </React.Fragment>
   )
 }

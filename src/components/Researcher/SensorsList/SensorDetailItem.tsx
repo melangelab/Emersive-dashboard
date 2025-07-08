@@ -813,7 +813,7 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
   }
 
   return (
-    <div className={classes.rootContainer}>
+    <React.Fragment>
       <ViewItems
         fields={fields}
         tabs={[
@@ -841,7 +841,7 @@ const SensorDetailItem: React.FC<SensorDetailItemProps> = ({ sensor, isEditing, 
         loading={loading}
         submissionInfo={getSubmissionInfo()}
       />
-    </div>
+    </React.Fragment>
   )
 }
 

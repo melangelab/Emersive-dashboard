@@ -9,13 +9,15 @@ import { MuiThemeProvider, makeStyles, Theme, createStyles } from "@material-ui/
 import locale_lang from "../../locale_map.json"
 import Pagination from "../PaginatedElement"
 import ResearcherRow from "./ResearcherRow"
-import ResearcherHeader from "./ResearcherHeader"
+import AdminHeader from "../Header"
 import ViewResearcherHeader from "../ViewElementHeader"
 import ViewElement from "../ViewElement"
 import { useLayoutStyles } from "../GlobalStyles"
-import DynamicTable from "./DynamicTable"
+import ResearcherTable from "./ResearchersTable"
 
 import "./admin.css"
+import ActionsComponent from "./ActionsComponent"
+import AddUpdateResearcher from "./AddUpdateResearcher"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -218,6 +220,7 @@ const useStyles = makeStyles((theme: Theme) =>
 
 export default function Researchers({ history, updateStore, adminType, authType, onLogout, ...props }) {
   const [researchers, setResearchers] = useState([])
+  const [filteredResearchers, setFilteredResearchers] = useState([])
   const [paginatedResearchers, setPaginatedResearchers] = useState([])
   const [page, setPage] = useState(0)
   const [rowCount, setRowCount] = useState(40)
@@ -233,10 +236,63 @@ export default function Researchers({ history, updateStore, adminType, authType,
   const [actionOnViewResearcher, setActionOnViewResearcher] = useState(null)
   const [isEditing4View, setIsEditing4View] = useState(false)
 
+  const [tabularView, setTabularView] = useState(false)
+
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
   console.log("reached researcher")
 
-  const columns = {
+  const [columns, setColumns] = useState([
+    { id: "id", label: "ID", value: (s) => s.id, visible: true, sortable: true },
+    { id: "firstName", label: "First Name", value: (s) => s.firstName, visible: true, sortable: true },
+    { id: "lastName", label: "Last Name", value: (s) => s.lastName, visible: true, sortable: true },
+    { id: "username", label: "Username", value: (s) => s.username, visible: true, sortable: true },
+    { id: "email", label: "Email", value: (s) => s.email, visible: true, sortable: true },
+    { id: "mobile", label: "Mobile", value: (s) => s.mobile, visible: true, sortable: true },
+    { id: "loggedIn", label: "Logged In", value: (s) => (s.loggedIn ? "Yes" : "No"), visible: true, sortable: true },
+    { id: "institution", label: "Institution", value: (s) => s.institution || "-", visible: true, sortable: true },
+    { id: "adminNote", label: "Admin Note", value: (s) => s.adminNote || "-", visible: false, sortable: true },
+    {
+      id: "noProjectAccess",
+      label: "No of Projects Access",
+      value: (s) => s.noProjectAccess ?? "-",
+      visible: false,
+      sortable: true,
+    },
+    { id: "address", label: "Address", value: (s) => s.address || "-", visible: false, sortable: true },
+    { id: "studies", label: "Studies", value: (s) => s.studies?.join(", ") || "-", visible: false, sortable: false },
+    { id: "status", label: "Status", value: (s) => s.status, visible: true, sortable: true },
+    { id: "timestamp", label: "Time of Account creation", value: (s) => s.timestamp, visible: true, sortable: true },
+    {
+      id: "timestamps.lastLoginAt",
+      label: "Time of last login",
+      value: (s) => s.timestamps?.lastLoginAt || "-",
+      visible: false,
+      sortable: true,
+    },
+    {
+      id: "timestamps.lastActivityAt",
+      label: "Time of last activity",
+      value: (s) => s.timestamps?.lastActivityAt || "-",
+      visible: false,
+      sortable: true,
+    },
+    {
+      id: "timestamps.suspendedAt",
+      label: "Time of suspension",
+      value: (s) => s.timestamps?.suspendedAt || "-",
+      visible: false,
+      sortable: true,
+    },
+    {
+      id: "actions",
+      label: "Actions",
+      value: (s) => "", // Action buttons rendered separately
+      visible: true,
+      sortable: false,
+    },
+  ])
+
+  const columnsNames = {
     id: "ID",
     firstName: "First Name",
     lastName: "last Name",
@@ -294,23 +350,34 @@ export default function Researchers({ history, updateStore, adminType, authType,
 
   const refreshResearchers = () => {
     setIsLoading(true)
-    setPaginatedResearchers([])
+    // setPaginatedResearchers([])
+    // setResearchers([])
     setPage(0)
-    setResearchers([])
 
-    LAMP.Researcher.all()
-      .then((data) => {
-        if (search.trim().length > 0) {
-          data = data.filter((researcher) => researcher.name?.toLowerCase()?.includes(search?.toLowerCase()))
+    if (search.trim().length > 0) {
+      console.log("Searching researchers with:", search)
+      console.log("Researchers before filtering:", researchers, "\n")
+      const data = researchers.filter((researcher) => researcher.name?.toLowerCase()?.includes(search?.toLowerCase()))
+      setFilteredResearchers(data)
+      console.log("Filtered researchers:", data)
+      setIsLoading(false)
+    } else {
+      LAMP.Researcher.all()
+        .then((data) => {
           setResearchers(data)
-        } else {
-          setResearchers(data)
-        }
-        setPaginatedResearchers(data.slice(0, rowCount))
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
+          setFilteredResearchers(data)
+          // if (search.trim().length > 0) {
+          //   data = data.filter((researcher) => researcher.name?.toLowerCase()?.includes(search?.toLowerCase()))
+          //   setResearchers(data)
+          // } else {
+          //   setResearchers(data)
+          // }
+          setPaginatedResearchers(data.slice(0, rowCount))
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
+    }
   }
 
   useEffect(() => {
@@ -402,6 +469,13 @@ export default function Researchers({ history, updateStore, adminType, authType,
     console.log("Researcher clicked:", researcher)
   }
 
+  useEffect(() => {
+    if (search.trim().length > 0) {
+      const data = researchers.filter((researcher) => researcher.name?.toLowerCase()?.includes(search?.toLowerCase()))
+      setFilteredResearchers(data)
+    }
+  }, [researchers])
+
   const handleResearchersUpdate = (updatedResearchers) => {
     setResearchers((prevResearchers) => {
       // Create a copy of the current researchers array
@@ -423,32 +497,27 @@ export default function Researchers({ history, updateStore, adminType, authType,
     <React.Fragment>
       {!crrViewResearcher.researcher ? (
         <>
-          <ResearcherHeader
-            elements={researchers}
-            searchData={(data) => setSearch(data)}
-            refreshElements={refreshResearchers}
+          <AdminHeader
             adminType={adminType}
             authType={authType}
             title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
-            // title={
-            //   adminType === "admin"
-            //     ? "Administrator"
-            //     : adminType === "practice_lead"
-            //       ? "Practice Lead"
-            //       : "User Administrator"
-            // }
-            onLogout={onLogout}
-            columns={columns}
-            originalColumnKeys={originalColumnKeys}
-            selectedColumns={selectedColumns}
-            setSelectedColumns={setSelectedColumns}
+            pageLocation="Researchers"
           />
           <div className="body-container">
-            <DynamicTable
+            <ActionsComponent
+              searchData={(data) => setSearch(data)}
+              refreshElements={refreshResearchers}
+              addComponent={<AddUpdateResearcher refreshResearchers={refreshResearchers} researchers={researchers} />}
+              actions={["refresh", "search", "grid", "table", "filter-cols"]}
+              tabularView={tabularView}
+              setTabularView={setTabularView}
+              VisibleColumns={columns}
+              setVisibleColumns={setColumns}
+            />
+            <ResearcherTable
               researchers={researchers}
-              columns={columns}
               editable_columns={editable_columns}
-              data={researchers}
+              data={filteredResearchers}
               onRowClick={handleRowClick}
               emptyStateMessage="No researchers found"
               isLoading={isLoading}
@@ -456,18 +525,24 @@ export default function Researchers({ history, updateStore, adminType, authType,
               adminType={adminType}
               history={history}
               originalColumnKeys={originalColumnKeys}
-              selectedColumns={selectedColumns}
-              setSelectedColumns={setSelectedColumns}
+              selectedColumns={columns.filter((col) => col.visible)}
               refreshResearchers={refreshResearchers}
               updateStore={updateStore}
               changeElement={setCrrViewResearcher}
               onResearchersUpdate={handleResearchersUpdate}
+              searchData={(data) => setSearch(data)}
+              refreshElements={refreshResearchers}
             />
           </div>
         </>
       ) : (
-        <React.Fragment>
-          <ViewResearcherHeader
+        <>
+          <AdminHeader
+            authType={LAMP.Auth._type}
+            title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+            pageLocation={`Researchers > ${crrViewResearcher.researcher.firstName} ${crrViewResearcher.researcher.lastName}`}
+          />
+          {/* <ViewResearcherHeader
             length={researchers.length}
             elementType={"Researchers"}
             element={crrViewResearcher}
@@ -479,13 +554,33 @@ export default function Researchers({ history, updateStore, adminType, authType,
             setActionOnViewElement={setActionOnViewResearcher}
             isEditing={isEditing4View}
             setIsEditing={setIsEditing4View}
-          />
-          <div className="view-element-container">
+          /> */}
+          <div className="body-container">
+            <ActionsComponent
+              actions={["edit", "save", "passwordEdit", "left", "right", "cancel"]}
+              onEdit={() => {
+                actionOnViewResearcher === "edit" ? setActionOnViewResearcher(null) : setActionOnViewResearcher("edit")
+              }}
+              onSave={() => setActionOnViewResearcher("save")}
+              onPasswordEdit={() => setActionOnViewResearcher("passwordEdit")}
+              onPrevious={() =>
+                setCrrViewResearcher((prev) => ({
+                  ...prev,
+                  idx: (prev.idx - 1 + researchers.length) % researchers.length,
+                }))
+              }
+              onNext={() => setCrrViewResearcher((prev) => ({ ...prev, idx: (prev.idx + 1) % researchers.length }))}
+              onClose={() => {
+                setIsEditing4View(false)
+                setCrrViewResearcher({ researcher: null, idx: null })
+              }}
+              tabularView={tabularView}
+            />
             <ViewElement
               elementType={"researchers"}
               element={crrViewResearcher.researcher}
               changeElement={setCrrViewResearcher}
-              columns={columns}
+              columns={columnsNames}
               editableColumns={editable_columns}
               actionOnViewElement={actionOnViewResearcher}
               setActionOnViewElement={setActionOnViewResearcher}
@@ -493,37 +588,8 @@ export default function Researchers({ history, updateStore, adminType, authType,
               setIsEditing={setIsEditing4View}
             />
           </div>
-        </React.Fragment>
+        </>
       )}
-
-      {/* <Box className={layoutClasses.tableContainer}>
-        <Grid container >
-          {researchers.length > 0 ? (
-            <Grid container spacing={3} xs={12}>
-              {(paginatedResearchers ?? []).map((item, index) => (
-                <Grid item xs={12} sm={12} md={6} lg={4} key={item.id}>
-                  <ResearcherRow
-                    researcher={item}
-                    history={history}
-                    refreshResearchers={refreshResearchers}
-                    researchers={researchers}
-                    updateStore={updateStore}
-                    adminType={adminType}
-                  />
-                </Grid>
-              ))}
-              <Pagination data={researchers} updatePage={handleChangePage} rowPerPage={[20, 40, 60, 80]} />
-            </Grid>
-          ) : (
-            <Grid item lg={6} xs={12}>
-              <Box display="flex" alignItems="center" className={classes.norecords}>
-                <Icon>info</Icon>
-                {`${t("No Records Found")}`}
-              </Box>
-            </Grid>
-          )}
-        </Grid>
-      </Box> */}
     </React.Fragment>
   )
 }

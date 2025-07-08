@@ -29,6 +29,8 @@ import DetailModal from "./DetailModal"
 import { sensorConstraints, defaultSensorSettings } from "./SensorDialog"
 import { set } from "date-fns"
 import { canEditSensor } from "./Index"
+import CommonTable, { TableColumn } from "../CommonTable"
+import { FilterMatchMode, FilterOperator } from "primereact/api"
 
 export interface SensorTableProps {
   sensors: any[]
@@ -88,7 +90,31 @@ const SensorTable: React.FC<SensorTableProps> = ({
   const [editingSensorFrequency, setEditingSensorFrequency] = useState(null)
   const [editingSensorDuration, setEditingSensorDuration] = useState(null)
   const [editingCellSensorSpec, setEditingCellSensorSpec] = useState(null)
+  const [sortConfig, setSortConfig] = useState({ field: null, direction: null })
+  const initFilters = () => {
+    return {
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      id: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      spec: { value: null, matchMode: FilterMatchMode.EQUALS },
+      study_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      study_id: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      group: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      ownership: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      // statusInUsers: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      // studies: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      // settings: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    }
+  }
+  const [filters, setFilters] = useState(initFilters())
 
+  useEffect(() => {
+    setFilters(initFilters())
+  }, [])
+
+  const clearFilters = () => {
+    setFilters(initFilters())
+  }
   const getParentResearcher = (parentResearcherId) => {
     const researcher = allresearchers.find((r) => r.id === parentResearcherId)
     return researcher ? researcher.name : parentResearcherId
@@ -139,25 +165,23 @@ const SensorTable: React.FC<SensorTableProps> = ({
     if (constraints.max !== null && duration < 1 / (constraints.max * 60)) return false
     return true
   }
-
-  const allColumns: ColumnConfig[] = useMemo(
-    () => [
-      {
-        id: "index",
-        label: "#",
-        getValue: (sensor) => 0, // filled by itemIndices
-        visible: true,
-        sortable: true,
-        renderCell: (sensor) => <span style={{ fontWeight: 500, textAlign: "center", display: "block" }}></span>,
-      },
+  const columns = useMemo(() => {
+    const allColumns: TableColumn[] = [
       {
         id: "name",
         label: "Name",
-        getValue: (sensor) => sensor.name,
+        value: (sensor) => sensor.name,
         visible: true,
         sortable: true,
-        renderCell: (sensor) =>
-          mode == "edit" && editingSensor && editingSensor.id === sensor.id && editableColumns?.includes("name") ? (
+        filterable: true,
+        filterField: "name",
+        filterType: "text",
+        filterPlaceholder: "Search by name...",
+        renderCell: (sensor) => {
+          return mode == "edit" &&
+            editingSensor &&
+            editingSensor.id === sensor.id &&
+            editableColumns?.includes("name") ? (
             <input
               type="text"
               defaultValue={sensor.name}
@@ -186,22 +210,33 @@ const SensorTable: React.FC<SensorTableProps> = ({
             >
               {sensor.name}
             </Box>
-          ),
+          )
+        },
       },
       {
         id: "id",
         label: "ID",
-        getValue: (sensor) => sensor.id,
+        value: (sensor) => sensor.id,
         visible: true,
         sortable: false,
+        filterable: true,
+        filterType: "text",
+        filterPlaceholder: "Search by ID...",
         renderCell: (sensor) => sensor.id,
       },
       {
         id: "spec",
         label: "Sensor Type",
-        getValue: (sensor) => sensor.spec,
+        value: (sensor) => sensor.spec,
         visible: true,
         sortable: true,
+        filterable: true,
+        filterField: "spec",
+        filterType: "dropdown",
+        filterOptions: sensorSpecs.map((spec) => ({
+          label: spec.id.replace("lamp.", ""),
+          value: spec.id,
+        })),
         renderCell: (sensor) =>
           mode == "edit" && editingSensor && editingSensor.id === sensor.id && editableColumns?.includes("spec") ? (
             <FormControl fullWidth variant="outlined" size="small">
@@ -222,11 +257,10 @@ const SensorTable: React.FC<SensorTableProps> = ({
             sensor.spec
           ),
       },
-
       {
         id: "settings",
         label: "Settings",
-        getValue: (sensor) => {
+        value: (sensor) => {
           if (!sensor.settings || Object.keys(sensor.settings).length === 0) {
             return "Default"
           }
@@ -238,6 +272,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
         },
         visible: true,
         sortable: false,
+        filterable: false,
         renderCell: (sensor) =>
           mode == "edit" && editingSensor && editingSensor.id === sensor.id && editableColumns?.includes("settings") ? (
             <Box sx={{ width: "100%", padding: "8px" }}>
@@ -264,7 +299,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
                           </>
                         )}
                         <Typography variant="body2">
-                          Default Value: {defaultSensorSettings[editingCellSensorSpec].frequency}
+                          Default Value: {defaultSensorSettings[editingCellSensorSpec]?.frequency}
                         </Typography>
                       </Box>
                     }
@@ -486,9 +521,13 @@ const SensorTable: React.FC<SensorTableProps> = ({
       {
         id: "study_name",
         label: "Study",
-        getValue: (sensor) => sensor.study_name || "Not assigned",
+        value: (sensor) => sensor.study_name || "Not assigned",
         visible: true,
         sortable: true,
+        filterable: true,
+        filterField: "study_name",
+        filterType: "text",
+        filterPlaceholder: "Search by study...",
         renderCell: (sensor) => (
           <Box
             style={{
@@ -511,30 +550,40 @@ const SensorTable: React.FC<SensorTableProps> = ({
       {
         id: "study_id",
         label: "Study",
-        getValue: (sensor) => sensor.study_id,
+        value: (sensor) => sensor.study_id,
         visible: true,
         sortable: true,
+        filterable: true,
+        filterField: "study_id",
+        filterType: "text",
         renderCell: (sensor) => sensor.study_id,
       },
       {
         id: "group",
         label: "Group",
-        getValue: (sensor) => sensor.group || "-",
+        value: (sensor) => sensor.group || "-",
         visible: true,
         sortable: true,
+        filterable: true,
+        filterField: "group",
+        filterType: "text",
+        filterPlaceholder: "Search by group...",
       },
-      ,
       {
         id: "ownership",
         label: "Ownership",
-        getValue: (sensor) => getParentResearcher(sensor.parentResearcher) || getParentResearcher(researcherId),
+        value: (sensor) => getParentResearcher(sensor.parentResearcher) || getParentResearcher(researcherId),
         visible: true,
         sortable: true,
+        filterable: true,
+        filterField: "ownership",
+        filterType: "text",
+        filterPlaceholder: "Search by owner...",
       },
       {
         id: "statusInUsers",
         label: "Status in Participants",
-        getValue: (sensor) => {
+        value: (sensor) => {
           if (!sensor.statusInUsers || sensor.statusInUsers.length === 0) {
             return "Not used"
           }
@@ -542,6 +591,12 @@ const SensorTable: React.FC<SensorTableProps> = ({
         },
         visible: true,
         sortable: false,
+        filterable: false,
+        // filterType: 'dropdown',
+        // filterOptions: [
+        //   { label: 'Not used', value: 'Not used' },
+        //   { label: 'Used', value: 'Used' }
+        // ],
         renderCell: (sensor) => (
           <Box
             style={{
@@ -567,7 +622,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
       {
         id: "studies",
         label: "Studies/Groups",
-        getValue: (sensor) => {
+        value: (sensor) => {
           if (!sensor.studies || sensor.studies.length === 0) {
             return "-"
           }
@@ -575,6 +630,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
         },
         visible: true,
         sortable: false,
+        filterable: false,
         renderCell: (sensor) => (
           <Box
             style={{
@@ -595,11 +651,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
           </Box>
         ),
       },
-    ],
-    [enqueueSnackbar, editingSensor, editableColumns, sensorSpecs]
-  )
-
-  const columns = useMemo(() => {
+    ]
     if (visibleColumns) {
       return allColumns
         .map((col) => ({
@@ -609,7 +661,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
         .filter((col) => col.visible)
     }
     return allColumns.filter((col) => col.visible)
-  }, [allColumns, visibleColumns, editingSensor])
+  }, [editingSensor, editableColumns, sensorSpecs, mode, visibleColumns])
 
   const categorizeSensors = (sensors) => {
     return {
@@ -618,13 +670,12 @@ const SensorTable: React.FC<SensorTableProps> = ({
       Core: sensors.filter((s) => !s.isCommunity && s.spec?.startsWith("lamp.")),
     }
   }
-
   // Action buttons for sensors
   const sensorActions = (sensor) => {
     const canEdit = canEditSensor(sensor, studies, researcherId, sharedstudies)
 
     return (
-      <>
+      <Box display="flex" alignItems="center" style={{ gap: 8 }}>
         {sensor.isCommunity ? (
           // Community sensor actions
           <>
@@ -769,7 +820,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
             )}
           </>
         )}
-      </>
+      </Box>
     )
   }
   const [detailModal, setDetailModal] = useState({
@@ -778,19 +829,38 @@ const SensorTable: React.FC<SensorTableProps> = ({
     content: null,
     contentType: "json" as "json" | "participants" | "studies",
   })
+  const originalIndexMap = useMemo(() => {
+    return (sensors || []).reduce((acc, sensor, index) => {
+      acc[sensor.id] = index
+      return acc
+    }, {})
+  }, [sensors])
 
   return (
     <>
-      <ModularTable
+      <CommonTable
         data={sensors}
         columns={columns}
-        selectedItems={selectedSensors}
-        onSelectionChange={handleChange}
         actions={sensorActions}
-        getItemKey={(sensor) => sensor.id}
         categorizeItems={categorizeSensors}
-        emptyStateMessage="No sensors found"
+        indexmap={originalIndexMap}
+        sortConfig={sortConfig}
+        onSort={(field) => {
+          setSortConfig({
+            field,
+            direction: sortConfig.field === field && sortConfig.direction === "asc" ? "desc" : "asc",
+          })
+        }}
+        filters={filters}
+        onFilter={(newFilters) => {
+          setFilters(newFilters)
+        }}
+        filterDisplay="row"
+        onSelectRow={() => {}}
+        onSelectAll={() => {}}
+        key={editingSensor ? `${editingSensor.id}-${mode}` : null}
       />
+
       <DetailModal
         open={detailModal.open}
         onClose={() => setDetailModal({ ...detailModal, open: false })}

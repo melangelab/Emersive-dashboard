@@ -92,23 +92,23 @@ export default function StudyFilter({ setShowFilterStudies, setOrder, order, ...
   }, [showFilter])
 
   return (
-    <Box
-      className={headerClasses.filterContainer + " " + (!supportsSidebar ? headerClasses.filterContainerBottom : null)}
-    >
-      <FilterIcon
-        className={classes.actionIcon}
-        onClick={() => {
-          showFilter === true ? setShowFilter(false) : setShowFilter(true)
-        }}
-      />
-      <Fab
-        variant="extended"
-        className={classes.btnFilter + " " + (showFilter === true ? classes.tagFilteredBg : "")}
-        onClick={setOrder}
-      >
-        <Icon>sort_by_alpha</Icon>
-        {order === true ? <Icon>arrow_downward</Icon> : <Icon>arrow_upward</Icon>}
-      </Fab>
-    </Box>
+    <React.Fragment>
+      <div className="icon-container">
+        <FilterIcon
+          className="filter-icon"
+          onClick={() => {
+            showFilter === true ? setShowFilter(false) : setShowFilter(true)
+          }}
+        />
+      </div>
+      <div className="sort-icon-container" onClick={setOrder}>
+        <Icon className="sort-icon">sort_by_alpha</Icon>
+        {order === true ? (
+          <Icon className="sort-icon">arrow_downward</Icon>
+        ) : (
+          <Icon className="sort-icon">arrow_upward</Icon>
+        )}
+      </div>
+    </React.Fragment>
   )
 }
