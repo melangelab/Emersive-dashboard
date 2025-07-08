@@ -108,14 +108,18 @@ const fetchSharedStudies = async (researcherId) => {
     const processedSharedStudies = studyData.data.map((study) => ({
       ...study,
       isShared: true,
+      researcherId,
       activity_count: study.activities.length,
       sensor_count: study.sensors.length,
       participant_count: study.participants.length,
+      activities: (study.activities || []).map((a) => ({ ...a, researcherId })),
+      sensors: (study.sensors || []).map((s) => ({ ...s, researcherId })),
+      participants: (study.participants || []).map((p) => ({ ...p, researcherId })),
     }))
 
     // Add to ServiceDB
     try {
-      Service.addData("sharedstudies", processedSharedStudies)
+      Service.addData("sharedstudies", processedSharedStudies, researcherId) // TODO add researcherId to addData call
     } catch (error) {
       console.error("Error adding shared studies to ServiceDB:", error)
     }
@@ -141,31 +145,44 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
   studies.map((study) => {
     studiesList = studiesList.concat(study.name)
   })
-  Service.addData("studies", studies)
-  participants.map((p) => {
+  // TODO : Add researcherId to all study objects before saving
+  const studiesWithResearcher = studies.map((study) => ({
+    ...study,
+    researcherId,
+    participants: (study.participants || []).map((p) => ({ ...p, researcherId })),
+    activities: (study.activities || []).map((a) => ({ ...a, researcherId })),
+    sensors: (study.sensors || []).map((s) => ({ ...s, researcherId })),
+  }))
+  Service.addData("studies", studiesWithResearcher, researcherId)
+
+  const participantsWithResearcher = participants.map((p) => ({ ...p, researcherId }))
+  const activitiesWithResearcher = activities.map((a) => ({ ...a, researcherId }))
+  const sensorsWithResearcher = sensors.map((s) => ({ ...s, researcherId }))
+  participantsWithResearcher.map((p) => {
     Service.getDataByKey("participants", [p.id], "id").then((data) => {
       console.log("cached participants before", data)
     })
   })
-  Service.addData("participants", participants)
+  Service.addData("participants", participantsWithResearcher, researcherId)
   console.log("pariticipants logged", participants)
-  participants.map((p) => {
+  participantsWithResearcher.map((p) => {
     Service.getDataByKey("participants", [p.id], "id").then((data) => {
       console.log("cached participants", data)
     })
   })
   Service.addData(
     "sensors",
-    sensors.map((sensor) => ({
+    sensorsWithResearcher.map((sensor) => ({
       ...sensor,
       studies: sensor.studies || [],
       statusInUsers: sensor.statusInUsers || [],
-    }))
+    })),
+    researcherId
   )
   // Service.addData("activities", activities)
   Service.addData(
     "activities",
-    activities.map((activity) => ({
+    activitiesWithResearcher.map((activity) => ({
       ...activity,
       creator: activity.creator || "",
       createdAt: activity.createdAt || new Date(),
@@ -177,7 +194,8 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
       sharingStudies: activity.sharingStudies || [],
       scoreInterpretation: activity.scoreInterpretation || {},
       activityGuide: activity.activityGuide || null,
-    }))
+    })),
+    researcherId
   )
 
   // fetchSharedStudies(researcherId).then(sharedStudies => {
@@ -218,9 +236,9 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
         sharedSensors = sharedSensors.concat(study.sensors.map((s) => ({ ...s, isShared: true, parentResearcher })))
       }
     })
-    if (sharedParticipants.length > 0) Service.addData("participants", sharedParticipants)
-    if (sharedActivities.length > 0) Service.addData("activities", sharedActivities)
-    if (sharedSensors.length > 0) Service.addData("sensors", sharedSensors)
+    if (sharedParticipants.length > 0) Service.addData("participants", sharedParticipants, researcherId)
+    if (sharedActivities.length > 0) Service.addData("activities", sharedActivities, researcherId)
+    if (sharedSensors.length > 0) Service.addData("sensors", sharedSensors, researcherId)
     // Service.addData("studies", sharedStudies)
     // const currentStudyFilter = localStorage.getItem("studyFilter_" + researcherId)
     // if (currentStudyFilter) {
@@ -259,6 +277,8 @@ export const saveDemoData = () => {
 }
 
 export const saveDataToCache = (authString, id) => {
+  // Service.deleteDB()
+  // Service.deleteUserDB()
   Service.addData("researcher", [{ id: id }])
   LAMP.API.query(
     "($studyList := $LAMP.Study.list('" +

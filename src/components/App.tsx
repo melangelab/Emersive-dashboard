@@ -1168,39 +1168,6 @@ function AppRouter({ ...props }) {
           ) : (
             <React.Fragment>
               <PageTitle>{`${getResearcher(props.match.params.id).name}`}</PageTitle>
-              {/* <NavigationBar 
-                authType={state.authType}
-                id={props.match.params.id}
-                title={`${getResearcher(props.match.params.id).name}`}
-                goBack={props.history.goBack}
-                onLogout={() => reset()}
-                activeTab="Researcher"
-                sameLineTitle={true}
-                changeResearcherType={changeResearcherType}
-                mode={"researcher"} 
-                tab={props.match.params.tab}
-                researcherid={getResearcher(props.match.params.id).id}
-               > */}
-              {/* <HeaderBar               
-                authType={state.authType}
-                id={getResearcher(props.match.params.id)}
-                title={`${getResearcher(props.match.params.id).name}`}
-                goBack={props.history.goBack}
-                onLogout={() => reset()}
-                activeTab="Researcher"
-                sameLineTitle={true}
-                mode={"researcher"} 
-                tab={props.match.params.tab}
-               > */}
-              {/*  < GlobalHeader
-                 authType={state.authType}
-                 id={props.match.params.id}
-                 title={`${getResearcher(props.match.params.id).name}`}
-                 goBack={props.history.goBack}
-                 onLogout={() => reset()}
-                 activeTab="Researcher"
-               > */}
-              {/* {(headerConfig) => ( */}
               <Researcher
                 researcher={getResearcher(props.match.params.id)}
                 onParticipantSelect={(id) => {
@@ -1221,6 +1188,8 @@ function AppRouter({ ...props }) {
                 Adminid={props.match.params.id}
                 goBack={props.history.goBack}
                 onLogout={() => reset()}
+                setIdentity={async (identity) => await reset(identity)}
+                history={props.history}
                 // headerConfig={headerConfig}
               />
               {/* )} */}

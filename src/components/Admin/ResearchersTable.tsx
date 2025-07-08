@@ -38,12 +38,125 @@ import { ReactComponent as Suspend } from "../../icons/NewIcons/stop-circle.svg"
 import { ReactComponent as UnSuspend } from "../../icons/NewIcons/stop-circle-filled.svg"
 import { ReactComponent as Delete } from "../../icons/NewIcons/trash-xmark.svg"
 import { ReactComponent as VisualizeResearcher } from "../../icons/NewIcons/arrow-left-to-arc.svg"
+import { ReactComponent as RefreshIcon } from "../../icons/NewIcons/rotate-reverse.svg"
+import { ReactComponent as TableIcon } from "../../icons/NewIcons/table-list.svg"
+import { ReactComponent as TableIconFilled } from "../../icons/NewIcons/table-list-filled.svg"
+import { ReactComponent as GridIcon } from "../../icons/NewIcons/objects-column.svg"
+import { ReactComponent as GridIconFilled } from "../../icons/NewIcons/objects-column-filled.svg"
+import { ReactComponent as FilterColumns } from "../../icons/NewIcons/columns-3.svg"
+import { ReactComponent as Filter } from "../../icons/NewIcons/filters.svg"
+import { ReactComponent as FilterFilled } from "../../icons/NewIcons/filters-filled.svg"
+import { ReactComponent as Download } from "../../icons/NewIcons/progress-download.svg"
 
 import "./admin.css"
-import { grey } from "@mui/material/colors"
-import { lightBlue } from "@material-ui/core/colors"
+import SearchBox from "../SearchBox"
 
-const ActionsDiv = ({
+interface ColumnConfig {
+  [key: string]: string
+}
+
+interface ResearcherData {
+  id: string
+  [key: string]: any
+}
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    btnWhite: {
+      background: "#fff",
+      borderRadius: "40px",
+      boxShadow: "none",
+      cursor: "pointer",
+      textTransform: "capitalize",
+      fontSize: "14px",
+      color: "#7599FF",
+      "& svg": { marginRight: 8 },
+      "&:hover": { color: "#5680f9", background: "#fff", boxShadow: "0px 3px 5px rgba(0, 0, 0, 0.20)" },
+    },
+    btnActive: {
+      background: "#7599FF",
+      color: "#fff",
+      "&:hover": {
+        background: "#5680f9",
+        color: "#fff",
+      },
+    },
+    buttoncontainer: {
+      position: "sticky",
+      top: 0,
+      backgroundColor: theme.palette.background.paper,
+      display: "flex",
+      justifyContent: "space-between",
+      padding: theme.spacing(1),
+      borderBottom: `1px solid ${theme.palette.divider}`,
+      zIndex: 1,
+    },
+    columnMenu: {
+      maxHeight: "300px",
+      overflowY: "auto",
+      padding: theme.spacing(1),
+      position: "sticky",
+      zIndex: 60,
+      width: "20%",
+      top: 0,
+      left: -10,
+    },
+    columnMenuItem: {
+      padding: theme.spacing(0.5, 2),
+    },
+    selectButtons: {
+      display: "flex",
+      justifyContent: "space-between",
+      padding: theme.spacing(1),
+      borderBottom: `1px solid ${theme.palette.divider}`,
+    },
+    selectButton: {
+      textTransform: "none",
+      fontSize: "14px",
+    },
+
+    tableRow: {
+      backgroundColor: "#ffffff !important",
+      transition: "background-color 0.2s ease",
+      "&:hover": {
+        backgroundColor: "#f3f4f6 !important",
+      },
+    },
+    selectedRow: {
+      backgroundColor: "#e5e7eb !important",
+      "&:hover": {
+        backgroundColor: "#e5e7eb !important",
+      },
+    },
+    copyableCell: {
+      cursor: "copy",
+      position: "relative",
+      "&::after": {
+        content: '""',
+        position: "absolute",
+        inset: 0,
+        backgroundColor: "rgba(117, 153, 255, 0.1)",
+        opacity: 0,
+        transition: "opacity 0.2s ease",
+      },
+      "&:active::after": {
+        opacity: 1,
+      },
+    },
+    copiedTooltip: {
+      position: "fixed",
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      color: "white",
+      padding: "4px 8px",
+      borderRadius: "4px",
+      fontSize: "12px",
+      pointerEvents: "none",
+      zIndex: 1000,
+    },
+  })
+)
+
+const TableActionsDiv = ({
   row,
   selectedRow,
   rowIndex,
@@ -262,113 +375,7 @@ const ActionsDiv = ({
   )
 }
 
-interface ColumnConfig {
-  [key: string]: string
-}
-
-interface ResearcherData {
-  id: string
-  [key: string]: any
-}
-
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    btnWhite: {
-      background: "#fff",
-      borderRadius: "40px",
-      boxShadow: "none",
-      cursor: "pointer",
-      textTransform: "capitalize",
-      fontSize: "14px",
-      color: "#7599FF",
-      "& svg": { marginRight: 8 },
-      "&:hover": { color: "#5680f9", background: "#fff", boxShadow: "0px 3px 5px rgba(0, 0, 0, 0.20)" },
-    },
-    btnActive: {
-      background: "#7599FF",
-      color: "#fff",
-      "&:hover": {
-        background: "#5680f9",
-        color: "#fff",
-      },
-    },
-    buttoncontainer: {
-      position: "sticky",
-      top: 0,
-      backgroundColor: theme.palette.background.paper,
-      display: "flex",
-      justifyContent: "space-between",
-      padding: theme.spacing(1),
-      borderBottom: `1px solid ${theme.palette.divider}`,
-      zIndex: 1,
-    },
-    columnMenu: {
-      maxHeight: "300px",
-      overflowY: "auto",
-      padding: theme.spacing(1),
-      position: "sticky",
-      zIndex: 60,
-      width: "20%",
-      top: 0,
-      left: -10,
-    },
-    columnMenuItem: {
-      padding: theme.spacing(0.5, 2),
-    },
-    selectButtons: {
-      display: "flex",
-      justifyContent: "space-between",
-      padding: theme.spacing(1),
-      borderBottom: `1px solid ${theme.palette.divider}`,
-    },
-    selectButton: {
-      textTransform: "none",
-      fontSize: "14px",
-    },
-
-    tableRow: {
-      backgroundColor: "#ffffff !important",
-      transition: "background-color 0.2s ease",
-      "&:hover": {
-        backgroundColor: "#f3f4f6 !important",
-      },
-    },
-    selectedRow: {
-      backgroundColor: "#e5e7eb !important",
-      "&:hover": {
-        backgroundColor: "#e5e7eb !important",
-      },
-    },
-    copyableCell: {
-      cursor: "copy",
-      position: "relative",
-      "&::after": {
-        content: '""',
-        position: "absolute",
-        inset: 0,
-        backgroundColor: "rgba(117, 153, 255, 0.1)",
-        opacity: 0,
-        transition: "opacity 0.2s ease",
-      },
-      "&:active::after": {
-        opacity: 1,
-      },
-    },
-    copiedTooltip: {
-      position: "fixed",
-      backgroundColor: "rgba(0, 0, 0, 0.8)",
-      color: "white",
-      padding: "4px 8px",
-      borderRadius: "4px",
-      fontSize: "12px",
-      pointerEvents: "none",
-      zIndex: 1000,
-    },
-  })
-)
-
-interface DynamicTableProps {
-  columns: ColumnConfig
+interface ResearcherTableProps {
   editable_columns: string[]
   data: ResearcherData[]
   className?: string
@@ -381,7 +388,6 @@ interface DynamicTableProps {
   researchers?: Researcher[]
   originalColumnKeys: string[]
   selectedColumns: string[]
-  setSelectedColumns: any
   refreshResearchers?: () => void
   updateStore?: () => void
   changeElement?: (value: any) => void
@@ -437,8 +443,7 @@ const StatusIndicator = ({ isOnline }) => {
   )
 }
 
-const DynamicTable: React.FC<DynamicTableProps> = ({
-  columns,
+const ResearchersTable = ({
   editable_columns,
   data,
   className = "",
@@ -449,11 +454,11 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
   history,
   originalColumnKeys,
   selectedColumns,
-  setSelectedColumns,
   refreshResearchers,
   updateStore,
   changeElement,
   onResearchersUpdate,
+  ...props
 }) => {
   const classes = useStyles()
 
@@ -834,125 +839,127 @@ const DynamicTable: React.FC<DynamicTableProps> = ({
   }
 
   return (
-    <div className="table-container">
-      {showCopyTooltip && <CopyTooltip text="Copied!" position={tooltipPosition} />}
-      <ConfirmationDialog
-        confirmationDialog={confirmationDialog}
-        open={confirmationDialog > 0}
-        onClose={() => setConfirmationDialog(0)}
-        confirmAction={confirmAction}
-        confirmationMsg="Are you sure you want to delete this investigator(s)?."
-      />
-      <table
-        style={{
-          width: "max-content",
-          minWidth: "100%",
-          borderCollapse: "separate",
-          borderSpacing: 0,
-          tableLayout: "fixed",
-        }}
-      >
-        <thead>
-          <tr
-            style={{
-              position: "sticky",
-              top: 0,
-              zIndex: 1,
-              backgroundColor: "rgb(213 213 213)",
-            }}
-          >
-            {selectedColumns.map((key, index) => (
-              <th
-                key={key}
-                style={{
-                  padding: "0.75rem 1rem",
-                  textAlign: "left",
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  borderBottom: "1px solid rgb(229, 231, 235)",
-                  whiteSpace: "nowrap",
-                  background:
-                    index === selectedColumns.length - 1
-                      ? "linear-gradient(to right, rgb(213, 212, 212),rgb(183, 183, 183))" // 3D effect for last column
-                      : "rgb(213, 212, 212)", // Same styling for all other columns
-                  boxShadow: index === selectedColumns.length - 1 ? "-3px 0px 5px rgba(0, 0, 0, 0.2)" : "none",
-                  borderLeft: index === selectedColumns.length - 1 ? "3px solid #9e9e9e" : "none",
-                  zIndex: index === selectedColumns.length - 1 ? 2 : "auto",
-                  position: index === selectedColumns.length - 1 ? "sticky" : "static",
-                  right: index === selectedColumns.length - 1 ? 0 : "auto",
-                }}
-                className={index === selectedColumns.length - 1 ? "sticky-column" : ""}
-              >
-                {formatValue(columns[key], "")}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, rowIndex) => (
+    <React.Fragment>
+      <div className="table-container">
+        {showCopyTooltip && <CopyTooltip text="Copied!" position={tooltipPosition} />}
+        <ConfirmationDialog
+          confirmationDialog={confirmationDialog}
+          open={confirmationDialog > 0}
+          onClose={() => setConfirmationDialog(0)}
+          confirmAction={confirmAction}
+          confirmationMsg="Are you sure you want to delete this investigator(s)?."
+        />
+        <table
+          style={{
+            width: "max-content",
+            minWidth: "100%",
+            borderCollapse: "separate",
+            borderSpacing: 0,
+            tableLayout: "fixed",
+          }}
+        >
+          <thead>
             <tr
-              key={rowIndex}
-              className={`${classes.tableRow} ${
-                selectedRow === rowIndex || selectedRows.includes(rowIndex) ? classes.selectedRow : ""
-              }`}
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                backgroundColor: "rgb(213 213 213)",
+              }}
             >
-              {selectedColumns.map((key, index) => (
-                <td
-                  key={`${rowIndex}-${key}`}
+              {selectedColumns.map((col, index) => (
+                <th
+                  key={col.id}
                   style={{
                     padding: "0.75rem 1rem",
-                    fontSize: "0.875rem",
-                    color: "rgb(17, 24, 39)",
+                    textAlign: "left",
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
                     borderBottom: "1px solid rgb(229, 231, 235)",
                     whiteSpace: "nowrap",
                     background:
                       index === selectedColumns.length - 1
-                        ? "linear-gradient(to right, #ffffff, #f5f5f5)" // 3D effect for last column
-                        : !Object.keys(row).includes("status") || row.status === "ACTIVE"
-                        ? "white"
-                        : "rgb(243, 243, 243)", // Same design for other columns #e0e0e0
+                        ? "linear-gradient(to right, rgb(213, 212, 212),rgb(183, 183, 183))" // 3D effect for last column
+                        : "rgb(213, 212, 212)", // Same styling for all other columns
                     boxShadow: index === selectedColumns.length - 1 ? "-3px 0px 5px rgba(0, 0, 0, 0.2)" : "none",
-                    borderLeft: index === selectedColumns.length - 1 ? "3px solid #bdbdbd" : "none",
-                    zIndex: index === selectedColumns.length - 1 ? 1 : "auto",
+                    borderLeft: index === selectedColumns.length - 1 ? "3px solid #9e9e9e" : "none",
+                    zIndex: index === selectedColumns.length - 1 ? 2 : "auto",
                     position: index === selectedColumns.length - 1 ? "sticky" : "static",
                     right: index === selectedColumns.length - 1 ? 0 : "auto",
                   }}
                   className={index === selectedColumns.length - 1 ? "sticky-column" : ""}
                 >
-                  {/* {renderCell(rowIndex, key, getValue(row, key), row)} */}
-                  {index === selectedColumns.length - 1 ? (
-                    <ActionsDiv
-                      row={row}
-                      rowIndex={rowIndex}
-                      history={history}
-                      setSelectedRow={setSelectedRow}
-                      selectedRow={selectedRow}
-                      setActiveButton={setActiveButton}
-                      activeButton={activeButton}
-                      researcherSelected={researcherSelected}
-                      setResearcherSelected={setResearcherSelected}
-                      changeElement={changeElement}
-                      isEditing={isEditing}
-                      setIsEditing={setIsEditing}
-                      setEditedData={setEditedData}
-                      handleSaveEdit={handleSaveEdit}
-                      handleSuspension={handleSuspension}
-                      handleUnSuspension={handleUnSuspension}
-                      setConfirmationDialog={setConfirmationDialog}
-                    />
-                  ) : (
-                    renderCell(rowIndex, key, getValue(row, key), row)
-                  )}
-                </td>
+                  {formatValue(col.label, "")}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {data.map((row, rowIndex) => (
+              <tr
+                key={rowIndex}
+                className={`${classes.tableRow} ${
+                  selectedRow === rowIndex || selectedRows.includes(rowIndex) ? classes.selectedRow : ""
+                }`}
+              >
+                {selectedColumns.map((col, index) => (
+                  <td
+                    key={`${rowIndex}-${col.id}`}
+                    style={{
+                      padding: "0.75rem 1rem",
+                      fontSize: "0.875rem",
+                      color: "rgb(17, 24, 39)",
+                      borderBottom: "1px solid rgb(229, 231, 235)",
+                      whiteSpace: "nowrap",
+                      background:
+                        index === selectedColumns.length - 1
+                          ? "linear-gradient(to right, #ffffff, #f5f5f5)" // 3D effect for last column
+                          : !Object.keys(row).includes("status") || row.status === "ACTIVE"
+                          ? "white"
+                          : "rgb(243, 243, 243)", // Same design for other columns #e0e0e0
+                      boxShadow: index === selectedColumns.length - 1 ? "-3px 0px 5px rgba(0, 0, 0, 0.2)" : "none",
+                      borderLeft: index === selectedColumns.length - 1 ? "3px solid #bdbdbd" : "none",
+                      zIndex: index === selectedColumns.length - 1 ? 1 : "auto",
+                      position: index === selectedColumns.length - 1 ? "sticky" : "static",
+                      right: index === selectedColumns.length - 1 ? 0 : "auto",
+                    }}
+                    className={index === selectedColumns.length - 1 ? "sticky-column" : ""}
+                  >
+                    {/* {renderCell(rowIndex, key, getValue(row, key), row)} */}
+                    {index === selectedColumns.length - 1 ? (
+                      <TableActionsDiv
+                        row={row}
+                        rowIndex={rowIndex}
+                        history={history}
+                        setSelectedRow={setSelectedRow}
+                        selectedRow={selectedRow}
+                        setActiveButton={setActiveButton}
+                        activeButton={activeButton}
+                        researcherSelected={researcherSelected}
+                        setResearcherSelected={setResearcherSelected}
+                        changeElement={changeElement}
+                        isEditing={isEditing}
+                        setIsEditing={setIsEditing}
+                        setEditedData={setEditedData}
+                        handleSaveEdit={handleSaveEdit}
+                        handleSuspension={handleSuspension}
+                        handleUnSuspension={handleUnSuspension}
+                        setConfirmationDialog={setConfirmationDialog}
+                      />
+                    ) : (
+                      renderCell(rowIndex, col.id, getValue(row, col.id), row)
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </React.Fragment>
   )
 }
 
-export default DynamicTable
+export default ResearchersTable

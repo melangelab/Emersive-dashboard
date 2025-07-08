@@ -18,9 +18,12 @@ import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
 import SensorDialog from "./SensorDialog"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
-import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
+// import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
 import { slideStyles } from "../ParticipantList/AddButton"
 import { ReactComponent as SensorIcon } from "../../../icons/NewIcons/sensor-on-filled.svg"
+import { createPortal } from "react-dom"
+import "../../Admin/admin.css"
+import AddIcon from "@material-ui/icons/Add"
 
 const useStyles = makeStyles((theme) =>
   createStyles({
@@ -130,57 +133,57 @@ export default function AddSensor({
   }
 
   return (
-    <Box>
-      {/* <Button
-        variant="contained"
-        className={`${classes.addButton} ${!supportsSidebar ? classes.addButtonCompact : ""}`}
-        onClick={(event) => setSensorDialog(true)}
+    <div className="add-icon-container">
+      <Fab
+        className="add-fab-btn"
+        onClick={(event) => setSlideOpen(true)}
+        style={{ backgroundColor: "#008607", color: "white" }}
       >
-        {supportsSidebar ? t("+ Add") : "+"}
-      </Button> */}
-      <AddIcon
-        className={classes.addButton}
-        onClick={(event) => {
-          setSlideOpen(true)
-        }}
-      />
-      <Backdrop
-        className={sliderclasses.backdrop}
-        open={slideOpen}
-        onClick={(e) => !sensorDialog && setSlideOpen(false)}
-      />
-      <Slide direction="left" in={slideOpen} mountOnEnter unmountOnExit>
-        <Box className={sliderclasses.slidePanel}>
-          <Box className={sliderclasses.icon}>
-            <SensorIcon />
-          </Box>
-          <Typography variant="h6">ADD NEW SENSOR</Typography>
-          <Divider className={sliderclasses.divider} />
-          <Typography variant="body2" paragraph>
-            Sensors are <strong>study-specific</strong> data collection tools.
-          </Typography>
-          <Divider className={sliderclasses.divider} />
-          <Typography variant="body1" paragraph>
-            Add a new Sensor under researcher <strong>{props.title}</strong>.
-          </Typography>
-          <Typography variant="body2" paragraph>
-            Choose the appropriate sensor type for your study.
-          </Typography>
-          <Divider className={sliderclasses.divider} />
-          <Button className={sliderclasses.button} onClick={() => setSensorDialog(true)}>
-            Next
-          </Button>
-        </Box>
-      </Slide>
-      <SensorDialog
-        studies={studies}
-        onclose={() => setSensorDialog(false)}
-        open={sensorDialog}
-        type="add"
-        studyId={studyId ?? null}
-        addOrUpdateSensor={addOrUpdateSensor}
-        allSensors={allSensors}
-      />
-    </Box>
+        <AddIcon className="add-icon" />
+      </Fab>
+      {slideOpen &&
+        createPortal(
+          <>
+            <Backdrop
+              className={sliderclasses.backdrop}
+              open={slideOpen}
+              onClick={(e) => !sensorDialog && setSlideOpen(false)}
+            />
+            <Slide direction="left" in={slideOpen} mountOnEnter unmountOnExit>
+              <Box className={sliderclasses.slidePanel}>
+                <Box className={sliderclasses.icon}>
+                  <SensorIcon />
+                </Box>
+                <Typography variant="h6">ADD NEW SENSOR</Typography>
+                <Divider className={sliderclasses.divider} />
+                <Typography variant="body2" paragraph>
+                  Sensors are <strong>study-specific</strong> data collection tools.
+                </Typography>
+                <Divider className={sliderclasses.divider} />
+                <Typography variant="body1" paragraph>
+                  Add a new Sensor under researcher <strong>{props.title}</strong>.
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  Choose the appropriate sensor type for your study.
+                </Typography>
+                <Divider className={sliderclasses.divider} />
+                <Button className={sliderclasses.button} onClick={() => setSensorDialog(true)}>
+                  Next
+                </Button>
+              </Box>
+            </Slide>
+            <SensorDialog
+              studies={studies}
+              onclose={() => setSensorDialog(false)}
+              open={sensorDialog}
+              type="add"
+              studyId={studyId ?? null}
+              addOrUpdateSensor={addOrUpdateSensor}
+              allSensors={allSensors}
+            />
+          </>,
+          document.body
+        )}
+    </div>
   )
 }

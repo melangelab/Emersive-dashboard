@@ -3,6 +3,7 @@ import { Grid, Card, CardContent, Typography } from "@material-ui/core"
 import { ReactComponent as ProfileIcon } from "../../icons/NewIcons/ProfileIcon.svg"
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
 import LAMP from "lamp-core"
+import AdminHeader from "../Header"
 
 const DonutChart = ({ data }) => {
   const formattedData = [
@@ -132,17 +133,12 @@ const AdminDashboard = (props) => {
 
   return (
     <>
-      <div className="header-container">
-        <div className="action-container">
-          <div className="profile-container">
-            <ProfileIcon className="profile-icon" />
-            <div className="profile-text-container">
-              <p className="profile-text">Hi! {props.title}</p>
-              <p className="profile-sub-text">{props.authType}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminHeader
+        adminType={props.adminType}
+        authType={props.authType}
+        title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+        pageLocation="Dashboard"
+      />
       <Grid container spacing={2} className="admin-dashboard-container">
         <Grid item xs={12} sm={6} md={6} className="dashboard-column">
           <Grid container spacing={2}>

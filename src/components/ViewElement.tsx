@@ -258,7 +258,7 @@ export default function ViewElement(props) {
   }
 
   useEffect(() => {
-    console.log("inside useEffect of actionOnViewElement")
+    console.log("inside useEffect of actionOnViewElement", props.actionOnViewElement)
     if (props.actionOnViewElement === "edit") {
       if (props.isEditing) {
         props.setIsEditing(false)

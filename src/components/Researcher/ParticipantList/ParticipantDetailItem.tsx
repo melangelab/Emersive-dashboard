@@ -3211,7 +3211,7 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
     }
   }, [triggerSave])
   return (
-    <div className={classes.rootContainer}>
+    <React.Fragment>
       <ViewItems
         fields={fields}
         tabs={tabs}
@@ -3222,7 +3222,7 @@ const ParticipantDetailItem: React.FC<ParticipantDetailItemProps> = ({
         additionalContent={null}
         submissionInfo={getSubmissionInfo()}
       />
-    </div>
+    </React.Fragment>
   )
 }
 

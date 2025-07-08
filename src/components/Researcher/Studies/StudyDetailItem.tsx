@@ -52,11 +52,12 @@ const useStyles = makeStyles((theme: Theme) =>
       width: "100%",
       display: "flex",
       flexDirection: "column",
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
+      // position: "absolute",
+      // top: 0,
+      // left: 0,
+      // right: 0,
+      // bottom: 0,
+      backgroundColor: "pink",
     },
     tabContent: {
       padding: theme.spacing(2),
@@ -1111,7 +1112,7 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
   }, [triggerSave])
 
   return (
-    <div className={classes.rootContainer}>
+    <React.Fragment>
       <ViewItems
         fields={fields}
         tabs={tabs}
@@ -1135,7 +1136,7 @@ const StudyDetailItem: React.FC<StudyDetailItemProps> = ({ study, isEditing, onS
           editableFields: ["sourceUrl", "user"],
         }}
       />
-    </div>
+    </React.Fragment>
   )
 }
 

@@ -1,19 +1,17 @@
 .sidebar {
-  z-index: 11;
+  z-index: 100;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   height: 100vh;
-  width: 15vw;
-  min-width: 250px;
+  width: 220px;
   background-color: #ffffff;
   border-right: 0.5px solid #dbdbdb;
-  box-shadow: 0px 0px 9px 2px #9a9a9a34;
+  box-shadow: 0px 0px 14px 2px #9a9a9a34;
 }
 
 .sidebar.collapse {
-  width: 7vw;
-  min-width: 100px;
+  width: 80px !important;
 }
 
 .logo {
@@ -25,13 +23,21 @@
 }
 
 .logo-icon {
-  width: 40% !important;
+  width: 120px;
+}
+
+.collapse .logo-icon {
+  width: 65px;
+}
+
+.collapse .logo {
+  margin-top: 10px;
 }
 
 .platform-name {
   display: inline-block;
   color: #bc652e;
-  font-family: "Exo 2", sans-serif;
+  font-family: "Exo 2", sans-serif !important;
   font-size: clamp(1.9rem, 0.05vi + 1.59rem, 2.4rem);
   font-weight: 600;
   font-optical-sizing: auto;
@@ -91,9 +97,7 @@
 
 /* Apply hover effect to the entire sidebar item */
 .sidebar-item:hover {
-  background-color: rgba(228, 124, 98, 0.08) !important;
-  color: #2b3033;
-  font-weight: 500;
+  background-color: rgba(228, 124, 98, 0.1);
   cursor: pointer;
 }
 
@@ -103,7 +107,7 @@
   align-items: center;
   height: 50px;
   min-width: 50px;
-  margin: 5px 5px 5px 5px;
+  margin: 5px 5px 5px 0px;
   border-radius: 100%;
   transition: background-color 0.3s ease, width 0.3s ease, height 0.3s ease;
   cursor: pointer;
@@ -119,21 +123,26 @@
   fill: gray;
 }
 
-.sidebar-icon:hover svg path {
+.sidebar-item:hover svg path {
   fill: #e47c62;
 }
 
-.sidebar-icon.active {
+.sidebar-item:hover .MuiTypography-root {
+  color: #2b3033;
+  font-weight: 500;
+}
+
+.active .sidebar-icon {
   border-radius: 100% !important;
   background-color: #e47c62;
 }
 
-.sidebar-icon.active svg {
+.active .sidebar-icon svg {
   width: 25px;
   pointer-events: none;
 }
 
-.sidebar-icon.active svg path {
+.active .sidebar-icon svg path {
   fill: #fff !important;
 }
 

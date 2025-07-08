@@ -26,6 +26,7 @@ import { Service } from "../../DBService/DBService"
 import { fetchPostData, fetchResult } from "../SaveResearcherData"
 import { slideStyles } from "../ParticipantList/AddButton"
 import { ReactComponent as UserIcon } from "../../../icons/NewIcons/users.svg"
+import { createPortal } from "react-dom"
 
 const useStyles = makeStyles((theme) => ({
   dataQuality: {
@@ -242,74 +243,80 @@ export default function StudyGroupCreator({
   }
 
   return (
-    <Slide direction="left" in={open} mountOnEnter unmountOnExit>
-      <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
-        <IconButton aria-label="close" className={classes.closeButton} onClick={handleClose}>
-          <Icon>close</Icon>
-        </IconButton>
-        <Box className={sliderclasses.icon}>
-          <UserIcon />
-        </Box>
-        <Typography variant="h6" className={sliderclasses.headings}>{`${t("Create a new group")}`}</Typography>
-        <TextField
-          select
-          className={sliderclasses.field}
-          autoFocus
-          fullWidth
-          variant="outlined"
-          label={`${t("Select Study")}`}
-          value={studyName}
-          onChange={(e) => {
-            // const { id, name } = JSON.parse(e.target.value) // Parse JSON to get id and name
-            // setDuplicateStudyName(name)
-            setStudyName(e.target.value)
-          }}
-          inputProps={{ maxLength: 80 }}
-        >
-          <MenuItem value="">
-            <em>None</em>
-          </MenuItem>
-          {(studies || []).map((study) => (
-            <MenuItem key={study.id} value={study.id}>
-              {study.name}
-            </MenuItem>
-          ))}
-        </TextField>
-        <Divider className={sliderclasses.divider} />
-        <TextField
-          className={sliderclasses.field}
-          error={!validate()}
-          label={t("Group Name")}
-          fullWidth
-          variant="outlined"
-          value={groupName}
-          onChange={(e) => setGroupName(e.target.value)}
-          helperText={
-            duplicateCnt > 0
-              ? `${t("Unique group name required")}`
-              : !validate()
-              ? `${t("Please enter group name.")}`
-              : ""
-          }
-        />
-        <Box display="flex" justifyContent="flex-start" style={{ gap: 8 }} mt={2}>
-          <Button onClick={handleClose} color="primary" className={sliderclasses.button}>
-            {t("Cancel")}
-          </Button>
-          <Button
-            onClick={() => createGroup(studyName, groupName)}
-            color="primary"
-            variant="contained"
-            className={sliderclasses.submitbutton}
-            disabled={!studyName || !validate() || loading}
-          >
-            {loading ? <CircularProgress size={24} /> : t("Confirm")}
-          </Button>
-        </Box>
-        {/* <Backdrop className={classes.backdrop} open={loading}>
+    <>
+      {open &&
+        createPortal(
+          <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+            <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
+              <IconButton aria-label="close" className={classes.closeButton} onClick={handleClose}>
+                <Icon>close</Icon>
+              </IconButton>
+              <Box className={sliderclasses.icon}>
+                <UserIcon />
+              </Box>
+              <Typography variant="h6" className={sliderclasses.headings}>{`${t("Create a new group")}`}</Typography>
+              <TextField
+                select
+                className={sliderclasses.field}
+                autoFocus
+                fullWidth
+                variant="outlined"
+                label={`${t("Select Study")}`}
+                value={studyName}
+                onChange={(e) => {
+                  // const { id, name } = JSON.parse(e.target.value) // Parse JSON to get id and name
+                  // setDuplicateStudyName(name)
+                  setStudyName(e.target.value)
+                }}
+                inputProps={{ maxLength: 80 }}
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                {(studies || []).map((study) => (
+                  <MenuItem key={study.id} value={study.id}>
+                    {study.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <Divider className={sliderclasses.divider} />
+              <TextField
+                className={sliderclasses.field}
+                error={!validate()}
+                label={t("Group Name")}
+                fullWidth
+                variant="outlined"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                helperText={
+                  duplicateCnt > 0
+                    ? `${t("Unique group name required")}`
+                    : !validate()
+                    ? `${t("Please enter group name.")}`
+                    : ""
+                }
+              />
+              <Box display="flex" justifyContent="flex-start" style={{ gap: 8 }} mt={2}>
+                <Button onClick={handleClose} color="primary" className={sliderclasses.button}>
+                  {t("Cancel")}
+                </Button>
+                <Button
+                  onClick={() => createGroup(studyName, groupName)}
+                  color="primary"
+                  variant="contained"
+                  className={sliderclasses.submitbutton}
+                  disabled={!studyName || !validate() || loading}
+                >
+                  {loading ? <CircularProgress size={24} /> : t("Confirm")}
+                </Button>
+              </Box>
+              {/* <Backdrop className={classes.backdrop} open={loading}>
         <CircularProgress color="inherit" />
       </Backdrop> */}
-      </Box>
-    </Slide>
+            </Box>
+          </Slide>,
+          document.body
+        )}
+    </>
   )
 }

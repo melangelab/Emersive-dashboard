@@ -275,8 +275,10 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
   const location = useLocation()
   console.log("^^$E^#", location)
   const [activeRoute, setActiveRoute] = useState(() => {
-    const path = location.pathname
-    return path.split("/").pop() || "dashboard"
+    const currPath = location.pathname
+    console.log("Active Route in the Admin dashboard:", currPath.split("/").pop())
+    console.log("Path variable in Admin and adding something to it:", path, `${path}/dev-lab`)
+    return currPath.split("/").pop() || "dashboard"
   })
 
   console.log("active route", activeRoute)
@@ -299,7 +301,7 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
       icon: <ResearcherIcon />,
       filledIcon: <ResearcherIconFilled />,
     },
-    { text: "Dev Lab", path: `${path}/dev-lab`, icon: <DevLabIcon />, filledIcon: <DevLabIconFilled /> },
+    // { text: "Dev Lab", path: `${path}/dev-lab`, icon: <DevLabIcon />, filledIcon: <DevLabIconFilled /> },
     { text: "Account", path: `${path}/account`, icon: <AccountIcon />, filledIcon: <AccountIconFilled /> },
   ]
 

@@ -353,7 +353,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     developer_info: {},
     formula4Fields: null,
   })
-  console.log("Received activity", activity)
+  console.log("Received activity", activity, isEditing, onSave, studies, triggerSave)
   LAMP.Activity.view(activity.id).then((res) => {
     console.log("Activity view response", res)
   })

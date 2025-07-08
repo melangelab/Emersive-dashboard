@@ -1,0 +1,613 @@
+import React, { useState, useEffect } from "react"
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Container,
+  useMediaQuery,
+  useTheme,
+  makeStyles,
+  Theme,
+  createStyles,
+  CircularProgress,
+  Backdrop,
+} from "@material-ui/core"
+import ParticipantList from "./ParticipantList/Index"
+import ActivityList from "./ActivityList/Index"
+import SensorsList from "./SensorsList/Index"
+import StudiesList from "./Studies/Index"
+import SharedStudiesList from "./Studies/SharedStudy"
+import { ResponsivePaper } from "../Utils"
+import { ReactComponent as Logo } from "../../icons/Logo.svg"
+import { ReactComponent as Patients } from "../../icons/NewIcons/users-thin.svg"
+import { ReactComponent as Activities } from "../../icons/NewIcons/time-fast.svg"
+import { ReactComponent as Sensors } from "../../icons/NewIcons/sensor-on.svg"
+import { ReactComponent as Studies } from "../../icons/NewIcons/flask-gear.svg"
+import { ReactComponent as SharedStudies } from "../../icons/SharedStudy.svg"
+import { ReactComponent as DataPortalIcon } from "../../icons/DataPortal.svg"
+import { useTranslation } from "react-i18next"
+import { Service } from "../DBService/DBService"
+import LAMP from "lamp-core"
+import useInterval from "../useInterval"
+import DataPortal from "../data_portal/DataPortal"
+import { useLayoutStyles } from "../GlobalStyles"
+import DeleteSweepIcon from "@material-ui/icons/DeleteSweep"
+import ArchivedView from "./ArchiveList/ArchivedItemsView"
+import ArchivedItemsView from "./ArchiveList/ArchivedItemsView"
+import ArchivedList from "./ArchiveList/Index"
+import { useHeaderStyles } from "./SharedStyles/HeaderStyles"
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    researcherMenu: {
+      background: "#F8F8F8",
+      maxWidth: 100,
+      border: 0,
+      [theme.breakpoints.down("sm")]: {
+        maxWidth: "100%",
+      },
+      "& span": { fontSize: 12 },
+      "& div.Mui-selected": { backgroundColor: "transparent", color: "#5784EE", "& path": { fill: "#5784EE" } },
+    },
+    menuItems: {
+      display: "inline-block",
+      textAlign: "center",
+      color: "rgba(0, 0, 0, 0.4)",
+      paddingTop: 40,
+      paddingBottom: 30,
+      [theme.breakpoints.down("sm")]: {
+        paddingTop: 16,
+        paddingBottom: 9,
+      },
+      [theme.breakpoints.down("xs")]: {
+        padding: 6,
+      },
+    },
+    menuIcon: {
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "50px",
+      height: "50px",
+      "& svg": {
+        fill: "#FFFFFF",
+        width: "26px",
+        height: "26px",
+      },
+      minWidth: "auto",
+      [theme.breakpoints.down("xs")]: {
+        top: 5,
+        position: "relative",
+      },
+      "& path": { fill: "rgba(0, 0, 0, 0.4)", fillOpacity: 0.7 },
+    },
+    tableContainerWidth: {
+      maxWidth: 1055,
+      width: "80%",
+      [theme.breakpoints.down("md")]: {
+        padding: 0,
+      },
+      [theme.breakpoints.down("sm")]: {
+        width: "100%",
+      },
+    },
+    backdrop: {
+      zIndex: 111111,
+      color: "#fff",
+    },
+    tableContainerWidthPad: {
+      maxWidth: 1055,
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+    tableContainerDataPortalWidth: {
+      width: "calc(100vw - 100px)",
+      height: "calc(100vh - 50px)",
+      paddingLeft: "0px",
+      paddingRight: "0px",
+      maxWidth: "100vw",
+      maxHeight: "100vh",
+      top: "0px",
+      left: "100px",
+      overflow: "scroll",
+      position: "absolute",
+      [theme.breakpoints.down("sm")]: {
+        left: "0px",
+        width: "100vw",
+        height: "calc(100vh - 150px)",
+      },
+    },
+    dataPortalPaper: {
+      height: "100%",
+      // width: "100%"
+    },
+    menuOuter: {
+      paddingTop: 0,
+      [theme.breakpoints.down("sm")]: {
+        display: "flex",
+        padding: 0,
+      },
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-start",
+      padding: 0,
+      height: "auto",
+      gap: theme.spacing(2),
+    },
+    menuOuterBottom: {
+      // backgroundColor:"pink",
+      flexDirection: "row",
+      height: "100%",
+      width: "98%",
+    },
+    logResearcher: {
+      marginTop: 50,
+      zIndex: 1111,
+      [theme.breakpoints.up("md")]: {
+        height: "calc(100vh - 55px)",
+      },
+      [theme.breakpoints.down("sm")]: {
+        borderBottom: "#7599FF solid 5px",
+        borderRight: "#7599FF solid 5px",
+      },
+    },
+    stickyDrawerPaper: {
+      position: "sticky",
+      top: 0,
+      alignSelf: "flex-start",
+      zIndex: 1200,
+    },
+    logo: {
+      // width: theme.spacing(10), // Scales dynamically (5 * 8px = 40px)
+      // height: theme.spacing(10),
+      borderRadius: "50%",
+    },
+    btnCursor: {
+      "&:hover div": {
+        cursor: "pointer !important",
+      },
+      "&:hover div > svg": {
+        cursor: "pointer !important",
+      },
+      "&:hover div > svg > path": {
+        cursor: "pointer !important",
+      },
+      "&:hover div > span": {
+        cursor: "pointer !important",
+      },
+    },
+  })
+)
+const sortStudies = (studies, order) => {
+  return (studies || []).sort((a, b) => {
+    return !!order
+      ? a["name"] > b["name"]
+        ? 1
+        : a["name"] < b["name"]
+        ? -1
+        : 0
+      : a["name"] < b["name"]
+      ? 1
+      : a["name"] > b["name"]
+      ? -1
+      : 0
+  })
+}
+
+export const sortData = (data, studies, key) => {
+  let result = []
+  ;(studies || []).map((study) => {
+    let filteredData = data.filter((d) => d.study_name === study)
+    filteredData.sort((a, b) => {
+      return a[key] > b[key] ? 1 : a[key] < b[key] ? -1 : 0
+    })
+    result = result.concat(filteredData)
+  })
+  return [...new Map(result.map((item) => [item["id"], item])).values()]
+}
+// export interface Study {
+//   id?: string
+//   name?: string
+//   participant_count?: number
+//   activity_count?: number
+//   sensor_count?: number
+// }
+export default function Dashboard({ onParticipantSelect, researcherId, mode, tab, ...props }) {
+  const [studies, setStudies] = useState(null)
+  const [notificationColumn, setNotification] = useState(false)
+  const [selectedStudies, setSelectedStudies] = useState([])
+  const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
+  const [updatedData, setUpdatedData] = useState(null)
+  const [deletedData, setDeletedData] = useState(null)
+  const [newStudy, setNewStudy] = useState(null)
+  const [search, setSearch] = useState(null)
+  const [researcher, setResearcher] = useState(null)
+  const [order, setOrder] = useState(localStorage.getItem("order") ? JSON.parse(localStorage.getItem("order")) : true)
+  const classes = useStyles()
+  const { t } = useTranslation()
+  const [loading, setLoading] = useState(true)
+  const layoutClasses = useLayoutStyles()
+  const headerclasses = useHeaderStyles()
+  const [sharedstudies, setsharedStudies] = useState(null)
+
+  useInterval(
+    () => {
+      setLoading(true)
+      getDBStudies()
+    },
+    (!studies || studies.length === 0) && (!sharedstudies || sharedstudies.length === 0) ? 60000 : null,
+    true
+  )
+
+  useEffect(() => {
+    LAMP.Researcher.view(researcherId).then(setResearcher)
+    console.log("LAMP.Auth._me.", LAMP.Auth._me, LAMP.Auth._auth)
+  }, [])
+
+  useEffect(() => {
+    getAllStudies()
+  }, [researcher])
+
+  useEffect(() => {
+    if (!!newStudy) getAllStudies()
+  }, [newStudy])
+
+  useEffect(() => {
+    if (updatedData !== null) getAllStudies()
+  }, [updatedData])
+
+  useEffect(() => {
+    if (deletedData !== null) getAllStudies()
+  }, [deletedData])
+
+  const getDBStudies = async () => {
+    Service.getAll("studies").then((studies) => {
+      setStudies(sortStudies(studies, order))
+      setLoading(false)
+      Service.getAll("researcher").then((data) => {
+        let researcherNotification = !!data ? data[0]?.notification ?? false : false
+        setNotification(researcherNotification)
+      })
+    })
+    Service.getAll("sharedstudies").then((study_data) => {
+      setsharedStudies(sortStudies(study_data, order))
+    })
+    try {
+      const [studiesData, sharedStudiesData, researcherData] = await Promise.all([
+        Service.getAll("studies"),
+        Service.getAll("sharedstudies"),
+        Service.getAll("researcher"),
+      ])
+      setStudies(sortStudies(studiesData, order))
+      setsharedStudies(sortStudies(sharedStudiesData, order))
+
+      let researcherNotification = !!researcherData ? researcherData[0]?.notification ?? false : false
+      setNotification(researcherNotification)
+
+      setLoading(false)
+    } catch (error) {
+      console.error("Error fetching studies:", error)
+      setLoading(false)
+    }
+  }
+
+  const getAllStudies = async () => {
+    Service.getAll("studies").then((studies) => {
+      setStudies(sortStudies(studies, order))
+    })
+    Service.getAll("sharedstudies").then((study_data) => {
+      setsharedStudies(sortStudies(study_data, order))
+    })
+  }
+
+  useEffect(() => {
+    localStorage.setItem("order", JSON.stringify(order))
+    getAllStudies()
+  }, [order])
+
+  // useEffect(() => {
+  //   filterStudies(studies)
+  // }, [studies])
+
+  useEffect(() => {
+    filterStudies(studies, sharedstudies)
+  }, [studies, sharedstudies])
+
+  const filterStudies = async (studies, sharedstudies) => {
+    if (!!researcherId && studies !== null && (studies || []).length > 0) {
+      let selected =
+        localStorage.getItem("studies_" + researcherId) !== null
+          ? JSON.parse(localStorage.getItem("studies_" + researcherId))
+          : []
+      if (selected.length > 0) {
+        let filteredstudies = selected.filter((o) => studies.some(({ name }) => o === name))
+        let filteredsharedstudies = selected.filter((o) => (sharedstudies || []).some(({ name }) => o === name))
+        let filtered = [...filteredstudies, ...filteredsharedstudies]
+        selected =
+          selected.length === 0 || filtered.length === 0
+            ? (studies ?? []).map((study) => {
+                return study.name
+              })
+            : filtered
+      }
+      selected.sort()
+      if (!order) selected.reverse()
+      console.log("selected studies %%$%$%,", selected)
+      setSelectedStudies(selected)
+    }
+  }
+
+  return (
+    <Container className={layoutClasses.mainContent}>
+      <Backdrop className={classes.backdrop} open={loading}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
+      <Container
+        className={
+          tab !== "portal"
+            ? window.innerWidth >= 1280 && window.innerWidth <= 1350
+              ? layoutClasses.tableContainerWidthPad
+              : layoutClasses.tableContainerWidth
+            : layoutClasses.tableContainerDataPortalWidth
+        }
+      >
+        {!!studies && (
+          <>
+            <Box
+              className={`${layoutClasses.drawerContainer} ${
+                !supportsSidebar ? layoutClasses.drawerContainerBottom : ""
+              }`}
+              style={{
+                minHeight: "calc(100vh - 100px)", // Adjust the 100px for the actual header height
+                position: "fixed",
+                top: "100px", // Adjust this if needed to match the header's height
+                left: "18px",
+                bottom: 0,
+              }}
+            >
+              <Drawer
+                variant="permanent"
+                classes={{
+                  paper: [
+                    layoutClasses.researcherMenu,
+                    layoutClasses.logResearcher,
+                    supportsSidebar ? classes.stickyDrawerPaper : "",
+                    !supportsSidebar ? layoutClasses.researcherMenuBottom : "",
+                    !supportsSidebar ? layoutClasses.logResearcherBottom : "",
+                  ].join(" "),
+                }}
+                style={{ height: "100%" }} // Ensure full height here
+              >
+                <List
+                  component="nav"
+                  className={classes.menuOuter + " " + (!supportsSidebar ? classes.menuOuterBottom : "")}
+                >
+                  {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "studies"}
+                      onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/studies`)}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <Studies />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Studies")}`} />
+                    </ListItem>
+                  )}
+                  <ListItem
+                    className={classes.menuItems + " " + classes.btnCursor}
+                    button
+                    selected={tab === "users"}
+                    onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/users`)}
+                  >
+                    <ListItemIcon className={classes.menuIcon}>
+                      <Patients />
+                    </ListItemIcon>
+                    <ListItemText primary={`${t("Participants")}`} />
+                  </ListItem>
+                  {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "activities"}
+                      onClick={(event) => {
+                        window.location.href = `/#/researcher/${researcherId}/activities`
+                      }}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <Activities />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Activities")}`} />
+                    </ListItem>
+                  )}
+                  {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "sensors"}
+                      onClick={(event) => {
+                        window.location.href = `/#/researcher/${researcherId}/sensors`
+                      }}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <Sensors />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Sensors")}`} />
+                    </ListItem>
+                  )}
+                  {/* {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "sharedstudies"}
+                      onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/sharedstudies`)}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <SharedStudies />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Shared Studies")}`} />
+                    </ListItem>
+                  )} */}
+                  {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "archived"}
+                      onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/archived`)}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <DeleteSweepIcon />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Archived")}`} />
+                    </ListItem>
+                  )}
+                  {/* {mode === "researcher" && (
+                    <ListItem
+                      className={classes.menuItems + " " + classes.btnCursor}
+                      button
+                      selected={tab === "portal"}
+                      onClick={(event) => (window.location.href = `/#/researcher/${researcherId}/portal`)}
+                    >
+                      <ListItemIcon className={classes.menuIcon}>
+                        <DataPortalIcon />
+                      </ListItemIcon>
+                      <ListItemText primary={`${t("Data Portal")}`} />
+                    </ListItem>
+                  )} */}
+                </List>
+              </Drawer>
+            </Box>
+            {tab === "users" && (
+              <ParticipantList
+                title={null}
+                onParticipantSelect={onParticipantSelect}
+                researcherId={researcherId}
+                studies={studies}
+                notificationColumn={notificationColumn}
+                selectedStudies={selectedStudies}
+                setSelectedStudies={setSelectedStudies}
+                getAllStudies={getAllStudies}
+                mode={mode}
+                setOrder={() => setOrder(!order)}
+                order={order}
+                authType={props.authType}
+                ptitle={props.ptitle}
+                goBack={props.goBack}
+                onLogout={props.onLogout}
+                resemail={researcher?.email}
+                sharedstudies={sharedstudies}
+                setSharedStudies={setsharedStudies}
+              />
+            )}
+            {tab === "activities" && (
+              <ActivityList
+                title={null}
+                researcherId={researcherId}
+                studies={studies}
+                selectedStudies={selectedStudies}
+                setSelectedStudies={setSelectedStudies}
+                setOrder={() => setOrder(!order)}
+                getAllStudies={getAllStudies}
+                order={order}
+                authType={props.authType}
+                ptitle={props.ptitle}
+                goBack={props.goBack}
+                onLogout={props.onLogout}
+                sharedstudies={sharedstudies}
+                setSharedStudies={setsharedStudies}
+              />
+            )}
+            {tab === "sensors" && (
+              <SensorsList
+                title={null}
+                researcherId={researcherId}
+                studies={studies}
+                selectedStudies={selectedStudies}
+                setSelectedStudies={setSelectedStudies}
+                setOrder={() => setOrder(!order)}
+                getAllStudies={getAllStudies}
+                order={order}
+                authType={props.authType}
+                ptitle={props.ptitle}
+                goBack={props.goBack}
+                onLogout={props.onLogout}
+                sharedstudies={sharedstudies}
+                setSharedStudies={setsharedStudies}
+              />
+            )}
+            {tab === "studies" && (
+              <StudiesList
+                title={null}
+                researcherId={researcherId}
+                studies={studies}
+                upatedDataStudy={(data) => setUpdatedData(data)}
+                deletedDataStudy={(data) => setDeletedData(data)}
+                searchData={(data) => setSearch(data)}
+                newAdddeStudy={setNewStudy}
+                getAllStudies={getAllStudies}
+                authType={props.authType}
+                ptitle={props.ptitle}
+                goBack={props.goBack}
+                onLogout={props.onLogout}
+                resins={researcher?.institution}
+                sharedstudies={sharedstudies}
+                setSharedStudies={setsharedStudies}
+              />
+            )}
+            {tab === "sharedstudies" && (
+              <SharedStudiesList
+                title={null}
+                researcherId={researcherId}
+                studies={studies}
+                upatedDataStudy={(data) => setUpdatedData(data)}
+                deletedDataStudy={(data) => setDeletedData(data)}
+                searchData={(data) => setSearch(data)}
+                newAdddeStudy={setNewStudy}
+                getAllStudies={getAllStudies}
+              />
+            )}
+            {tab === "archived" && (
+              <ArchivedList
+                title={null}
+                researcherId={researcherId}
+                studies={studies}
+                upatedDataStudy={(data) => setUpdatedData(data)}
+                deletedDataStudy={(data) => setDeletedData(data)}
+                searchData={(data) => setSearch(data)}
+                newAdddeStudy={setNewStudy}
+                getAllStudies={getAllStudies}
+                setOrder={() => setOrder(!order)}
+                order={order}
+                authType={props.authType}
+                ptitle={props.ptitle}
+                goBack={props.goBack}
+                onLogout={props.onLogout}
+                selectedStudies={selectedStudies}
+                setSelectedStudies={setSelectedStudies}
+              />
+            )}
+            {tab === "portal" && (
+              <DataPortal
+                onLogout={null}
+                token={{
+                  username: LAMP.Auth._auth.id,
+                  password: LAMP.Auth._auth.password,
+                  server: LAMP.Auth._auth.serverAddress ? LAMP.Auth._auth.serverAddress : "api.lamp.digital",
+                  type: "Researcher",
+                  id: researcher.id,
+                  name: researcher.name,
+                }}
+                data={LAMP.Auth}
+              />
+            )}
+            {/* </ResponsivePaper> */}
+          </>
+        )}
+      </Container>
+    </Container>
+  )
+}

@@ -2,10 +2,16 @@ import { userDbPromise } from "./UserDB"
 import { dbPromise } from "./AdminDB"
 
 class DBService {
-  getAll(tablespace: any, user?: boolean) {
+  getAll(tablespace: any, researcherId?: string, user?: boolean) {
     return dbPromise
       .then((db) => {
         return db.transaction(tablespace).objectStore(tablespace).getAll()
+      })
+      .then((data) => {
+        if (researcherId && Array.isArray(data)) {
+          return data.filter((item) => item.researcherId === researcherId)
+        }
+        return data
       })
       .catch((error) => {
         // Do something?
@@ -163,12 +169,16 @@ class DBService {
       })
   }
 
-  addData(tablespace: any, data: any) {
+  addData(tablespace: any, data: any, researcherId?: string) {
     return dbPromise
       .then((db) => {
         let store = db.transaction(tablespace, "readwrite").objectStore(tablespace)
         data.map((d) => {
-          store.put(d)
+          if (researcherId) {
+            store.put({ ...d, researcherId })
+          } else {
+            store.put(d)
+          }
         })
       })
       .catch((error) => {

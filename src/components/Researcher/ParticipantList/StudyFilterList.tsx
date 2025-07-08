@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next"
 import { Service } from "../../DBService/DBService"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
 import { fetchGetData } from "../SaveResearcherData"
+import { createPortal } from "react-dom"
 
 export interface NewStudy {
   id?: string
@@ -30,7 +31,6 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     multiselect: {
       border: "1px solid #C6C6C6",
-      // background: "green",
       color: "rgba(0, 0, 0, 0.4)",
       height: "auto",
       minHeight: "32px",
@@ -52,9 +52,91 @@ const useStyles = makeStyles((theme: Theme) =>
       maxWidth: 1055,
       margin: "15px auto 0",
       width: "100%",
-      backgroundColor: "pink",
+      backgroundColor: "transparent", // Remove the pink background
     },
-    chiplabel: { whiteSpace: "break-spaces" },
+    chiplabel: {
+      whiteSpace: "break-spaces",
+    },
+    // New styles for the 3D card effect
+    filterContainer: {
+      position: "fixed",
+      maxWidth: "100%",
+      minWidth: "60%",
+      zIndex: 111111,
+      top: "130px",
+      left: "52%",
+      transform: "translateX(-50%)",
+      margin: "auto",
+      // Card styling
+      backgroundColor: "#ffffff",
+      borderRadius: "16px",
+      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
+      padding: "20px",
+      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      border: "1px solid rgba(0, 0, 0, 0.06)",
+      backdropFilter: "blur(10px)",
+      // Hover effects
+      "&:hover": {
+        transform: "translateX(-50%) translateY(-2px)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
+        backgroundColor: "#fafafa",
+      },
+    },
+    // Enhanced filter chips container
+    enhancedFilterChips: {
+      flexWrap: "wrap",
+      display: "flex",
+      justifyContent: "center",
+      maxWidth: "100%",
+      margin: "0 0 16px 0",
+      width: "100%",
+      gap: "8px",
+    },
+    // Enhanced chip styling
+    enhancedChip: {
+      border: "1px solid #e0e0e0",
+      color: "rgba(0, 0, 0, 0.7)",
+      height: "auto",
+      minHeight: "36px",
+      paddingTop: "8px",
+      paddingBottom: "8px",
+      paddingLeft: "12px",
+      paddingRight: "12px",
+      borderRadius: "8px",
+      transition: "all 0.2s ease-in-out",
+      backgroundColor: "#ffffff",
+      "&:hover": {
+        backgroundColor: "#f5f5f5",
+        borderColor: "#bdbdbd",
+        transform: "translateY(-1px)",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+      },
+      "&:focus": {
+        background: "#FFFFFF !important",
+      },
+    },
+    enhancedChipPrimary: {
+      background: "#ECF4FF !important",
+      border: "1px solid #2196F3",
+      color: "#1976D2",
+      fontWeight: 600,
+      "&:focus": {
+        background: "#ECF4FF !important",
+      },
+      "&:hover": {
+        backgroundColor: "#E3F2FD !important",
+        transform: "translateY(-1px)",
+        boxShadow: "0 4px 12px rgba(33, 150, 243, 0.3)",
+      },
+    },
+    // Multi-select container styling
+    multiSelectContainer: {
+      backgroundColor: "#ffffff",
+      borderRadius: "12px",
+      border: "1px solid #e0e0e0",
+      overflow: "hidden",
+      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+    },
   })
 )
 
@@ -88,7 +170,7 @@ export default function StudyFilterList({
 
   useEffect(() => {
     // refreshStudies()
-    Promise.all([Service.getAll("studies"), Service.getAll("sharedstudies")]).then(
+    Promise.all([Service.getAll("studies", researcherId), Service.getAll("sharedstudies", researcherId)]).then(
       ([localStudiesData, sharedStudiesData]) => {
         updateStudiesState(localStudiesData || [], sharedStudiesData || [])
       }
@@ -127,7 +209,7 @@ export default function StudyFilterList({
   }
 
   const refreshStudies = () => {
-    Promise.all([Service.getAll("studies"), Service.getAll("sharedstudies")])
+    Promise.all([Service.getAll("studies", researcherId), Service.getAll("sharedstudies", researcherId)])
       .then(([localStudiesData, sharedStudiesData]) => {
         // const localStudies = localStudiesData || [];
         // const sharedStudies = sharedStudiesData || [];
@@ -183,98 +265,87 @@ export default function StudyFilterList({
 
   return (
     <Box>
-      {showFilterStudies === true && (
-        <Box
-          mt={1}
-          style={{
-            position: "fixed",
-            maxWidth: "100%",
-            minWidth: "60%",
-            zIndex: 111111,
-            backgroundColor: "grey",
-            top: "98px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            margin: "auto",
-          }}
-        >
-          <Box className={headerClasses.filterChips}>
-            {[`${t("Select All")}`, `${t("Deselect All")}`].map((item) => (
-              <Tooltip key={item} style={{ margin: 4 }} title={item}>
-                <Chip
-                  classes={{
-                    root: classes.multiselect,
-                    colorPrimary: classes.multiselectPrimary,
-                    label: classes.chiplabel,
-                  }}
-                  label={
-                    <section>
-                      <b>{`${t(item)}`}</b>
-                    </section>
-                  }
-                  color={
-                    (getFilterTypeStorage() === 1 &&
-                      item === "Select All" &&
-                      selectedStudies.length === studs.length) ||
-                    (getFilterTypeStorage() === 2 && item === "Deselect All" && selectedStudies.length === 0) ||
-                    (item === "Deselect All" && selectedStudies.length === 0)
-                      ? "primary"
-                      : undefined
-                  }
-                  onClick={(x) => {
-                    let allStudiesArray = []
-                    let selectAllStudy = false
-                    let deselectAllStudy = false
-                    let flagData = 0 // 0 = "", 1 = "Select All", 2 = "Deselect All"
-                    if (item === "Select All") {
-                      allStudiesArray = allStudies
-                      selectAllStudy = true
-                      deselectAllStudy = false
-                      flagData = 1
-                    } else if (item === "Deselect All") {
-                      selectAllStudy = false
-                      deselectAllStudy = true
-                      flagData = 2
-                    } else {
-                      selectAllStudy = false
-                      deselectAllStudy = false
+      {showFilterStudies === true &&
+        createPortal(
+          <div className={classes.filterContainer}>
+            <Box className={classes.enhancedFilterChips}>
+              {[`${t("Select All")}`, `${t("Deselect All")}`].map((item) => (
+                <Tooltip key={item} title={item}>
+                  <Chip
+                    classes={{
+                      root: classes.enhancedChip,
+                      colorPrimary: classes.enhancedChipPrimary,
+                      label: classes.chiplabel,
+                    }}
+                    label={
+                      <section>
+                        <b>{`${t(item)}`}</b>
+                      </section>
                     }
-                    setSelectAll(selectAllStudy)
-                    setDeselectAll(deselectAllStudy)
-                    localStorage.setItem("studies_" + researcherId, JSON.stringify(allStudiesArray))
+                    color={
+                      (getFilterTypeStorage() === 1 &&
+                        item === "Select All" &&
+                        selectedStudies.length === studs.length) ||
+                      (getFilterTypeStorage() === 2 && item === "Deselect All" && selectedStudies.length === 0) ||
+                      (item === "Deselect All" && selectedStudies.length === 0)
+                        ? "primary"
+                        : undefined
+                    }
+                    onClick={(x) => {
+                      let allStudiesArray = []
+                      let selectAllStudy = false
+                      let deselectAllStudy = false
+                      let flagData = 0 // 0 = "", 1 = "Select All", 2 = "Deselect All"
+                      if (item === "Select All") {
+                        allStudiesArray = allStudies
+                        selectAllStudy = true
+                        deselectAllStudy = false
+                        flagData = 1
+                      } else if (item === "Deselect All") {
+                        selectAllStudy = false
+                        deselectAllStudy = true
+                        flagData = 2
+                      } else {
+                        selectAllStudy = false
+                        deselectAllStudy = false
+                      }
+                      setSelectAll(selectAllStudy)
+                      setDeselectAll(deselectAllStudy)
+                      localStorage.setItem("studies_" + researcherId, JSON.stringify(allStudiesArray))
+                      localStorage.setItem("studyFilter_" + researcherId, JSON.stringify(flagData))
+                      setSelectedStudies(allStudiesArray)
+                    }}
+                  />
+                </Tooltip>
+              ))}
+            </Box>
+            <Box className={classes.multiSelectContainer}>
+              {
+                <MultipleSelect
+                  selected={selectedStudies}
+                  items={(studs || []).map((x) => `${x.name}`)}
+                  showZeroBadges={false}
+                  badges={studiesCount}
+                  onChange={(x) => {
+                    localStorage.setItem("studies_" + researcherId, JSON.stringify(x))
+                    setSelectedStudies(x)
+                    let flagData = 0 // 0 = "", 1 = "Select All", 2 = "Deselect All"
+                    if (allStudies.length !== x.length) {
+                      setDeselectAll(false)
+                      setSelectAll(false)
+                    } else {
+                      setSelectAll(true)
+                      setDeselectAll(false)
+                      flagData = 1
+                    }
                     localStorage.setItem("studyFilter_" + researcherId, JSON.stringify(flagData))
-                    setSelectedStudies(allStudiesArray)
                   }}
                 />
-              </Tooltip>
-            ))}
-          </Box>
-          <Box>
-            {
-              <MultipleSelect
-                selected={selectedStudies}
-                items={(studs || []).map((x) => `${x.name}`)}
-                showZeroBadges={false}
-                badges={studiesCount}
-                onChange={(x) => {
-                  localStorage.setItem("studies_" + researcherId, JSON.stringify(x))
-                  setSelectedStudies(x)
-                  let flagData = 0 // 0 = "", 1 = "Select All", 2 = "Deselect All"
-                  if (allStudies.length !== x.length) {
-                    setDeselectAll(false)
-                    setSelectAll(false)
-                  } else {
-                    setSelectAll(true)
-                    setDeselectAll(false)
-                    flagData = 1
-                  }
-                  localStorage.setItem("studyFilter_" + researcherId, JSON.stringify(flagData))
-                }}
-              />
-            }
-          </Box>
-        </Box>
-      )}
+              }
+            </Box>
+          </div>,
+          document.body
+        )}
     </Box>
   )
 }
