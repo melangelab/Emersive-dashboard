@@ -796,6 +796,9 @@ export default function ActivityList({
     }
   }
 
+  useEffect(() => {
+    console.warn("editedValues changed : ", editedValues)
+  }, [editedValues])
   const handleCellValueChange = (activityId: string, field: string, value: any) => {
     console.log("handleCellValueChange", activityId, field, value, editedValues)
     setEditedValues((prev) => ({
@@ -1164,236 +1167,243 @@ export default function ActivityList({
 
   // const [columns, setColumns] = useState<TableColumn[]>([
   const columngenerator = useCallback(
-    () => [
-      {
-        id: "id",
-        label: "ID",
-        key: `id-${editingActivity?.id || "view"}-${rowMode}`,
-        value: (a) => a.id,
-        visible: true,
-        sortable: false,
-        filterable: true,
-        filterType: "text",
-        filterPlaceholder: "Filter by ID",
-        renderCell: (activity) => (
-          <Box
-            className={classes.copyableCell}
-            onClick={() => {
-              window.navigator?.clipboard?.writeText?.(activity.id)
-              enqueueSnackbar("ID copied to clipboard", {
-                variant: "success",
-                autoHideDuration: 1000,
-              })
-            }}
-          >
-            {activity.id}
-          </Box>
-        ),
-      },
-      {
-        id: "name",
-        label: "Name",
-        key: `name-${editingActivity?.id || "view"}-${rowMode}`,
-        value: (a) => a.name,
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterType: "text",
-        filterPlaceholder: "Filter by Name",
-        renderCell: (activity) => {
-          if (rowMode === "edit" && editingActivity?.id === activity.id) {
-            return (
-              <TextField
-                value={editedValues.name ?? activity.name}
-                onChange={(e) => handleCellValueChange(activity.id, "name", e.target.value)}
-                fullWidth
-                size="small"
-                variant="outlined"
-                className={classes.editableField}
-              />
-            )
-          }
-          console.warn(
-            "rendercell inside activity loist",
-            activity.name,
-            " Mode : " + rowMode + " Editing Activity: " + editingActivity
-          )
-          return activity.name
-        },
-      },
-      {
-        id: "spec",
-        label: "Spec",
-        value: (a) => a.spec,
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterField: "spec",
-        filterType: "dropdown",
-        filterOptions: availableActivitySpecs.map((spec) => ({
-          label: spec.replace("lamp.", ""),
-          value: spec,
-        })),
-        renderCell: (a) => a.spec,
-      },
-      {
-        id: "creator",
-        label: "Creator",
-        value: (a) => a.creator,
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterType: "text",
-        filterPlaceholder: "Filter by Creator",
-        renderCell: (activity) => {
-          const creator = allresearchers.find((r) => r.id === activity.creator)?.name || activity.creator
-          return (
+    (existingColumns = []) => {
+      const existingVisibility = existingColumns.reduce((acc, col) => {
+        acc[col.id] = col.visible
+        return acc
+      }, {})
+
+      return [
+        {
+          id: "id",
+          label: "ID",
+          key: `id-${editingActivity?.id || "view"}-${rowMode}`,
+          value: (a) => a.id,
+          visible: existingVisibility.id !== undefined ? existingVisibility.id : false,
+          sortable: false,
+          filterable: true,
+          filterType: "text",
+          filterPlaceholder: "Filter by ID",
+          renderCell: (activity) => (
             <Box
               className={classes.copyableCell}
               onClick={() => {
-                window.navigator?.clipboard?.writeText?.(creator)
-                enqueueSnackbar("Creator copied to clipboard", {
+                window.navigator?.clipboard?.writeText?.(activity.id)
+                enqueueSnackbar("ID copied to clipboard", {
                   variant: "success",
                   autoHideDuration: 1000,
                 })
               }}
             >
-              {creator}
+              {activity.id}
             </Box>
-          )
+          ),
         },
-      },
-      {
-        id: "createdAt",
-        label: "Created At",
-        value: (a) => formatDate(a.createdAt),
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterType: "date",
-        filterPlaceholder: "Filter by Date",
-        renderCell: (activity) => formatDate(activity.createdAt),
-      },
-      {
-        id: "version",
-        label: "Version",
-        value: (a) => a.currentVersion?.name || "v1",
-        visible: true,
-        sortable: false,
-        renderCell: (activity) => (
-          <Box className={classes.versionBadge}>
-            <Icon fontSize="small">flag</Icon>
-            {activity.currentVersion?.name || "v1.0"}
-          </Box>
-        ),
-      },
-      // { id: 'schedule', label: 'Schedule',
-      //   value: (a) => formatSchedule(a.schedule),
-      //   visible: true
-      // },
-      {
-        id: "groups",
-        label: "Groups",
-        key: `groups-${editingActivity?.id || "view"}-${rowMode}`,
-        value: (a) => a.groups || [],
-        visible: true,
-        sortable: false,
-        renderCell: (activity) => {
-          if (rowMode === "edit" && editingActivity?.id === activity.id) {
-            const availableGroups = activity.study_id
-              ? studies.find((s) => s.id === activity.study_id)?.gname || []
-              : []
-            return (
-              <FormControl fullWidth size="small" variant="outlined">
-                <Select
-                  multiple
-                  value={editedValues.groups ?? activity.groups ?? []}
-                  onChange={(e) => handleCellValueChange(activity.id, "groups", e.target.value)}
-                  renderValue={(selected: string[]) => (
-                    <Box style={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip key={value} label={value} size="small" />
-                      ))}
-                    </Box>
-                  )}
+        {
+          id: "name",
+          label: "Name",
+          key: `name-${editingActivity?.id || "view"}-${rowMode}`,
+          value: (a) => a.name,
+          visible: existingVisibility.name !== undefined ? existingVisibility.name : true,
+          sortable: true,
+          filterable: true,
+          filterType: "text",
+          filterPlaceholder: "Filter by Name",
+          renderCell: (activity) => {
+            if (rowMode === "edit" && editingActivity?.id === activity.id) {
+              return (
+                <TextField
+                  value={editedValues.name ?? activity.name}
+                  onChange={(e) => handleCellValueChange(activity.id, "name", e.target.value)}
+                  fullWidth
+                  size="small"
+                  variant="outlined"
                   className={classes.editableField}
-                >
-                  {availableGroups.map((group) => (
-                    <MenuItem key={group} value={group}>
-                      <Checkbox checked={(editedValues.groups ?? activity.groups ?? []).includes(group)} />
-                      <ListItemText primary={group} />
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                />
+              )
+            }
+            console.warn(
+              "rendercell inside activity loist",
+              activity.name,
+              " Mode : " + rowMode + " Editing Activity: " + editingActivity
             )
-          }
-          return (
-            <Box style={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-              {(activity.groups || []).map((group) => (
-                <Chip key={group} label={group} size="small" />
-              ))}
-            </Box>
-          )
+            return activity.name
+          },
         },
-      },
-      {
-        id: "study",
-        label: "Study",
-        value: (a) => ({
-          name: a.study_name,
-          id: a.study_id,
-        }),
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterType: "text",
-        filterPlaceholder: "Filter by Study",
-        renderCell: (activity) => (
-          <Box
-            className={classes.studyCell}
-            onClick={() => {
-              window.navigator?.clipboard?.writeText?.(activity.study_id)
-              enqueueSnackbar("Study ID copied to clipboard", {
-                variant: "success",
-                autoHideDuration: 1000,
-              })
-            }}
-          >
-            {activity.study_name || "No Study Name"}
-          </Box>
-        ),
-      },
-      {
-        id: "ownership",
-        label: "Ownership",
-        // value: (a) => a.isShared ? `Shared` : "Owner",
-        value: (a) => getParentResearcher(a.parentResearcher) || getParentResearcher(researcherId),
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterType: "text",
-        filterPlaceholder: "Filter by Owner",
-        renderCell: (activity) => getParentResearcher(activity.parentResearcher) || getParentResearcher(researcherId),
-      },
-      // { id: 'studyId', label: 'Study', value: (a) => a.study_id, visible: true },
-      {
-        id: "device",
-        label: "Device",
-        value: (a) => a.device || "-",
-        visible: false,
-        sortable: true,
-        renderCell: (a) => a.device || "-",
-        key: `device-${editingActivity?.id || "view"}-${rowMode}`,
-      },
-      // { id:"tableV", label:"Table Version", value: editingActivity ? `${editingActivity.id}-${rowMode}` : null, visible: false, sortable: false},
-    ],
+        {
+          id: "spec",
+          label: "Spec",
+          value: (a) => a.spec,
+          visible: existingVisibility.spec !== undefined ? existingVisibility.spec : true,
+          sortable: true,
+          filterable: true,
+          filterField: "spec",
+          filterType: "dropdown",
+          filterOptions: availableActivitySpecs.map((spec) => ({
+            label: spec.replace("lamp.", ""),
+            value: spec,
+          })),
+          renderCell: (a) => a.spec,
+        },
+        {
+          id: "creator",
+          label: "Creator",
+          value: (a) => a.creator,
+          visible: existingVisibility.creator !== undefined ? existingVisibility.creator : true,
+          sortable: true,
+          filterable: true,
+          filterType: "text",
+          filterPlaceholder: "Filter by Creator",
+          renderCell: (activity) => {
+            const creator = allresearchers.find((r) => r.id === activity.creator)?.name || activity.creator
+            return (
+              <Box
+                className={classes.copyableCell}
+                onClick={() => {
+                  window.navigator?.clipboard?.writeText?.(creator)
+                  enqueueSnackbar("Creator copied to clipboard", {
+                    variant: "success",
+                    autoHideDuration: 1000,
+                  })
+                }}
+              >
+                {creator}
+              </Box>
+            )
+          },
+        },
+        {
+          id: "createdAt",
+          label: "Created At",
+          value: (a) => formatDate(a.createdAt),
+          visible: existingVisibility.createdAt !== undefined ? existingVisibility.createdAt : true,
+          sortable: true,
+          filterable: true,
+          filterType: "date",
+          filterPlaceholder: "Filter by Date",
+          renderCell: (activity) => formatDate(activity.createdAt),
+        },
+        {
+          id: "version",
+          label: "Version",
+          value: (a) => a.currentVersion?.name || "v1",
+          visible: existingVisibility.version !== undefined ? existingVisibility.version : true,
+          sortable: false,
+          renderCell: (activity) => (
+            <Box className={classes.versionBadge}>
+              <Icon fontSize="small">flag</Icon>
+              {activity.currentVersion?.name || "v1.0"}
+            </Box>
+          ),
+        },
+        // { id: 'schedule', label: 'Schedule',
+        //   value: (a) => formatSchedule(a.schedule),
+        //   visible: true
+        // },
+        {
+          id: "groups",
+          label: "Groups",
+          key: `groups-${editingActivity?.id || "view"}-${rowMode}`,
+          value: (a) => a.groups || [],
+          visible: existingVisibility.groups !== undefined ? existingVisibility.groups : true,
+          sortable: false,
+          renderCell: (activity) => {
+            if (rowMode === "edit" && editingActivity?.id === activity.id) {
+              const availableGroups = activity.study_id
+                ? studies.find((s) => s.id === activity.study_id)?.gname || []
+                : []
+              return (
+                <FormControl fullWidth size="small" variant="outlined">
+                  <Select
+                    multiple
+                    value={editedValues.groups ?? activity.groups ?? []}
+                    onChange={(e) => handleCellValueChange(activity.id, "groups", e.target.value)}
+                    renderValue={(selected: string[]) => (
+                      <Box style={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                        {selected.map((value) => (
+                          <Chip key={value} label={value} size="small" />
+                        ))}
+                      </Box>
+                    )}
+                    className={classes.editableField}
+                  >
+                    {availableGroups.map((group) => (
+                      <MenuItem key={group} value={group}>
+                        <Checkbox checked={(editedValues.groups ?? activity.groups ?? []).includes(group)} />
+                        <ListItemText primary={group} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )
+            }
+            return (
+              <Box style={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                {(activity.groups || []).map((group) => (
+                  <Chip key={group} label={group} size="small" />
+                ))}
+              </Box>
+            )
+          },
+        },
+        {
+          id: "study",
+          label: "Study",
+          value: (a) => ({
+            name: a.study_name,
+            id: a.study_id,
+          }),
+          visible: existingVisibility.study !== undefined ? existingVisibility.study : true,
+          sortable: true,
+          filterable: true,
+          filterType: "text",
+          filterPlaceholder: "Filter by Study",
+          renderCell: (activity) => (
+            <Box
+              className={classes.studyCell}
+              onClick={() => {
+                window.navigator?.clipboard?.writeText?.(activity.study_id)
+                enqueueSnackbar("Study ID copied to clipboard", {
+                  variant: "success",
+                  autoHideDuration: 1000,
+                })
+              }}
+            >
+              {activity.study_name || "No Study Name"}
+            </Box>
+          ),
+        },
+        {
+          id: "ownership",
+          label: "Ownership",
+          // value: (a) => a.isShared ? `Shared` : "Owner",
+          value: (a) => getParentResearcher(a.parentResearcher) || getParentResearcher(researcherId),
+          visible: existingVisibility.ownership !== undefined ? existingVisibility.ownership : true,
+          sortable: true,
+          filterable: true,
+          filterType: "text",
+          filterPlaceholder: "Filter by Owner",
+          renderCell: (activity) => getParentResearcher(activity.parentResearcher) || getParentResearcher(researcherId),
+        },
+        // { id: 'studyId', label: 'Study', value: (a) => a.study_id, visible: true },
+        {
+          id: "device",
+          label: "Device",
+          value: (a) => a.device || "-",
+          visible: existingVisibility.device !== undefined ? existingVisibility.device : false,
+          sortable: true,
+          renderCell: (a) => a.device || "-",
+          key: `device-${editingActivity?.id || "view"}-${rowMode}`,
+        },
+        // { id:"tableV", label:"Table Version", value: editingActivity ? `${editingActivity.id}-${rowMode}` : null, visible: false, sortable: false},
+      ]
+    },
     [rowMode, editingActivity, allresearchers, activeButton]
   )
   const [columns, setColumns] = useState<TableColumn[]>([])
 
   useEffect(() => {
-    const cols = [...columngenerator()] as TableColumn[]
+    const cols = [...columngenerator(columns)] as TableColumn[]
     console.warn("cols being generated", cols)
     setColumns(cols)
   }, [columngenerator, editingActivity, rowMode]) //
