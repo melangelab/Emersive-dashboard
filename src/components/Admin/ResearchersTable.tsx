@@ -851,11 +851,10 @@ const ResearchersTable = ({
         />
         <table
           style={{
-            width: "max-content",
             minWidth: "100%",
             borderCollapse: "separate",
             borderSpacing: 0,
-            tableLayout: "fixed",
+            tableLayout: "auto",
           }}
         >
           <thead>

@@ -237,11 +237,11 @@ const CommonTable = ({
 
     // Add category property to each item for grouping
     const dataWithCategories = []
-    Object.entries(categorized).forEach(([category, items]) => {
+    Object.entries(categorized).forEach(([category_row, items]) => {
       ;(items as any[]).forEach((item) => {
         dataWithCategories.push({
           ...item,
-          category: category,
+          category_row: category_row,
         })
       })
     })
@@ -254,7 +254,7 @@ const CommonTable = ({
       <div
       // className="category-header"
       >
-        {data.category}
+        {data.category_row}
       </div>
     )
   }
@@ -351,7 +351,7 @@ const CommonTable = ({
         size="small"
         responsiveLayout="scroll"
         rowGroupMode={categorizeItems ? "subheader" : undefined}
-        groupRowsBy={categorizeItems ? "category" : undefined}
+        groupRowsBy={categorizeItems ? "category_row" : undefined}
         rowGroupHeaderTemplate={showCategoryHeaders && categorizeItems ? categoryHeaderTemplate : undefined}
         // sortMode={showCategoryHeaders && categorizeItems ? "single" : "multiple"}
         scrollable={true} // ={ categorizeItems}

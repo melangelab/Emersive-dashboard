@@ -285,7 +285,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
   const [activeTab, setActiveTab] = useState("developer")
   const [currentTextValue, setCurrentTextValue] = useState("")
   const { t } = useTranslation()
-
+  console.log(fields)
   const handleValueChange = (field, value) => {
     if ((isEditing || submissionInfo?.isEditing) && setEditedValues) {
       if (field.startsWith("developer_info.")) {

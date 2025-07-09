@@ -296,7 +296,11 @@ const ActionsComponent = ({ ...props }) => {
           {props.actions?.includes("download") && (
             <div className="icon-container" onClick={() => handleIconClick("download")}>
               {/* <Download className={`download-icon ${selectedIcon === "download" ? "selected" : ""}`} /> */}
-              <DownloadComponent studies={props.studies} target={props.downloadTarget} />
+              <DownloadComponent
+                studies={props?.studies}
+                researchers={props?.researchers}
+                target={props.downloadTarget}
+              />
             </div>
           )}
         </>

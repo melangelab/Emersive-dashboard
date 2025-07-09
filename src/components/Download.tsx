@@ -257,7 +257,6 @@ const ParticipantOptionsComponent = ({
   }
 
   return (
-    // <div className={classes.optionsContainer}>
     <>
       <FormControl component="fieldset">
         <FormLabel component="legend">Select Download Option</FormLabel>
@@ -314,11 +313,12 @@ const ParticipantOptionsComponent = ({
 
 const studCols2NotDownload = ["sensors", "activities", "participants"]
 
-function Download({ studies, target = "studies" }) {
+function Download({ studies = null, researchers = null, target = "studies" }) {
   const classes = useStyles()
   const sliderclasses = slideStyles()
 
   const [downloadSlider, setDownloadSlider] = useState(false)
+  const [selectedResearchers, setSelectedResearchers] = useState({})
   const [selectedStudies, setSelectedStudies] = useState({})
   const [selectedGnames, setSelectedGnames] = useState({})
   const [finalSelectedItems, setFinalSelectedItems] = useState([])
@@ -351,7 +351,7 @@ function Download({ studies, target = "studies" }) {
     const studySelections = {}
     const gnameSelections = {}
 
-    studies.forEach((study) => {
+    studies?.forEach((study) => {
       studySelections[study.id] = false
       if (study.gname) {
         study.gname.forEach((gname) => {
@@ -363,6 +363,24 @@ function Download({ studies, target = "studies" }) {
     setSelectedStudies(studySelections)
     setSelectedGnames(gnameSelections)
   }, [studies])
+
+  const handleResearcherSelect = (researcherId) => {
+    const newSelectedResearchers = { ...selectedResearchers }
+
+    newSelectedResearchers[researcherId] = !selectedResearchers[researcherId]
+
+    setSelectedResearchers(newSelectedResearchers)
+  }
+
+  useEffect(() => {
+    console.log("researchers updated,", selectedResearchers, selectedStudies)
+    console.log(
+      "Inside the researchers dict and study dict",
+      !Object.values(selectedResearchers).includes(true),
+      !Object.values(selectedStudies).includes(true),
+      target
+    )
+  }, [selectedResearchers])
 
   const handleStudySelect = (studyId) => {
     const newSelectedStudies = { ...selectedStudies }
@@ -403,7 +421,6 @@ function Download({ studies, target = "studies" }) {
     setFileFormat(event.target.value)
   }
 
-  // New functions for select all and deselect all
   const handleSelectAll = () => {
     const newSelectedStudies = {}
     const newSelectedGnames = {}
@@ -453,7 +470,6 @@ function Download({ studies, target = "studies" }) {
 
     const [downloadLoading, setDownloadLoading] = useState(false)
 
-    // Initialize selectedItems based on finalSelectedItems
     const [selectedItems, setSelectedItems] = useState(() => {
       const initial = {}
       finalSelectedItems.forEach((item) => {
@@ -472,7 +488,6 @@ function Download({ studies, target = "studies" }) {
     const filterItemsBySelection = () => {
       let items = []
 
-      // Get all selected studies
       const selectedStudyObjects = studies.filter((study) => selectedStudies[study.id])
       console.log("Selected study objects:", selectedStudyObjects)
 
@@ -562,13 +577,13 @@ function Download({ studies, target = "studies" }) {
     }
 
     const handleDownloadClick = async () => {
-      updateParentState()
-      // Wait a tick to ensure state is updated
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      const updatedFinalSelectedItems = filteredItems.filter((item) => selectedItems[item.id])
+
+      // Update parent state
+      setFinalSelectedItems(updatedFinalSelectedItems)
       if (onDownload) {
-        await onDownload()
+        await onDownload(updatedFinalSelectedItems) // Pass the items directly
       }
-      // setSelectedItems({})
     }
 
     const getItemDisplay = (item) => {
@@ -585,7 +600,6 @@ function Download({ studies, target = "studies" }) {
     }
 
     return (
-      // <div className={classes.targetWrapper}>
       <>
         <div className={classes.headerContainer}>
           <Typography variant="h5" component="h1" className={classes.title}>
@@ -881,9 +895,9 @@ function Download({ studies, target = "studies" }) {
     XLSX.writeFile(workbook, fileName)
   }
 
-  const fetchSensorEvents = async () => {
-    // Build participantsId from finalSelectedItems
-    const participantsId = finalSelectedItems.map((item) => item.id)
+  const fetchSensorEvents = async (items = null) => {
+    const participantsToUse = items || finalSelectedItems
+    const participantsId = participantsToUse.map((item) => item.id)
 
     // Build sensorSpecs from selectedStudyObjects
     const selectedStudyObjects = studies.filter((study) => selectedStudies[study.id])
@@ -948,8 +962,11 @@ function Download({ studies, target = "studies" }) {
     }
   }
 
-  const fetchActivityEvents = async () => {
-    const participantsId = finalSelectedItems.map((item) => item.id)
+  const fetchActivityEvents = async (items = null) => {
+    // Use passed items or fall back to state
+    const participantsToUse = items || finalSelectedItems
+    console.log("Participants to use", participantsToUse)
+    const participantsId = participantsToUse.map((item) => item.id)
 
     const selectedStudyObjects = studies.filter((study) => selectedStudies[study.id])
 
@@ -1013,24 +1030,27 @@ function Download({ studies, target = "studies" }) {
     }
   }
 
-  const handleDownload = async () => {
+  const handleDownload = async (items = null) => {
+    const itemsToUse = items || finalSelectedItems
+
     if (target === "participants") {
-      let dataToDownload = finalSelectedItems
+      let dataToDownload = itemsToUse
 
       try {
         setDownloadLoading(true)
 
         switch (selectedOption) {
           case "onlyParticipants":
-            dataToDownload = finalSelectedItems
+            dataToDownload = itemsToUse
             break
 
           case "sensorEvents":
-            dataToDownload = await fetchSensorEvents() // Wait for the data
+            dataToDownload = await fetchSensorEvents(itemsToUse) // Wait for the data
             break
 
           case "activityEvents":
-            dataToDownload = await fetchActivityEvents()
+            console.log("ITEMS to use and items", itemsToUse, items, finalSelectedItems)
+            dataToDownload = await fetchActivityEvents(itemsToUse)
             break
 
           default:
@@ -1078,7 +1098,13 @@ function Download({ studies, target = "studies" }) {
     }
 
     const dataToDownload =
-      target === "studies" ? studies.filter((study) => selectedStudies[study.id]) : finalSelectedItems
+      target === "studies"
+        ? studies.filter((study) => selectedStudies[study.id])
+        : target === "researchers"
+        ? researchers.filter((researcher) => selectedResearchers[researcher.id])
+        : itemsToUse
+
+    console.log("Data to download:", dataToDownload)
 
     switch (fileFormat) {
       case "json":
@@ -1106,6 +1132,7 @@ function Download({ studies, target = "studies" }) {
     setStartDate(null)
     setEndDate(null)
     setFileFormat("json")
+    setSelectedResearchers({})
   }
 
   const showFormatSelector = () => {
@@ -1126,6 +1153,7 @@ function Download({ studies, target = "studies" }) {
     setFinalSelectedItems([])
     setStartDate(null)
     setEndDate(null)
+    setSelectedResearchers({})
     setFileFormat("json")
   }
 
@@ -1135,7 +1163,7 @@ function Download({ studies, target = "studies" }) {
     // Force re-initialization of selection states
     const studySelections = {}
     const gnameSelections = {}
-    studies.forEach((study) => {
+    studies?.forEach((study) => {
       studySelections[study.id] = false
       if (study.gname) {
         study.gname.forEach((gname) => {
@@ -1179,8 +1207,8 @@ function Download({ studies, target = "studies" }) {
               {!nextPage ? (
                 <>
                   <div className={classes.headerContainer}>
-                    <Typography variant="h5" component="h1" className={classes.title}>
-                      Select studies
+                    <Typography variant="h6" component="h1" className={classes.title}>
+                      Select {studies ? "Studies" : "Researchers"}
                     </Typography>
                     <div className={classes.selectionButtons}>
                       <Button
@@ -1200,43 +1228,67 @@ function Download({ studies, target = "studies" }) {
                     </div>
                   </div>
                   <div className={classes.studiesWrapper}>
-                    {studies.map((study) => (
-                      <div key={study.id} className={classes.studyContainer}>
-                        <div className={classes.studyHeader}>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={selectedStudies[study.id] || false}
-                                onChange={() => handleStudySelect(study.id)}
-                                color="primary"
-                                disabled={downloadLoading}
-                              />
-                            }
-                            label={`${study.name} (ID: ${study.id})`}
-                          />
-                        </div>
-                        {study.gname && study.gname.length > 0 && (
-                          <div className={classes.gnamesContainer}>
-                            {study.gname.map((gname) => (
+                    {studies ? (
+                      <>
+                        {studies.map((study) => (
+                          <div key={study.id} className={classes.studyContainer}>
+                            <div className={classes.studyHeader}>
                               <FormControlLabel
-                                key={`${study.id}-${gname}`}
                                 control={
                                   <Checkbox
-                                    checked={selectedGnames[`${study.id}-${gname}`] || false}
-                                    onChange={() => handleGnameSelect(study.id, gname)}
+                                    checked={selectedStudies[study.id] || false}
+                                    onChange={() => handleStudySelect(study.id)}
                                     color="primary"
                                     disabled={downloadLoading}
                                   />
                                 }
-                                label={gname}
+                                label={`${study.name} (ID: ${study.id})`}
                               />
-                            ))}
+                            </div>
+                            {study.gname && study.gname.length > 0 && (
+                              <div className={classes.gnamesContainer}>
+                                {study.gname.map((gname) => (
+                                  <FormControlLabel
+                                    key={`${study.id}-${gname}`}
+                                    control={
+                                      <Checkbox
+                                        checked={selectedGnames[`${study.id}-${gname}`] || false}
+                                        onChange={() => handleGnameSelect(study.id, gname)}
+                                        color="primary"
+                                        disabled={downloadLoading}
+                                      />
+                                    }
+                                    label={gname}
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                        ))}
+                      </>
+                    ) : (
+                      <>
+                        {researchers.map((researcher) => (
+                          <div key={researcher.id} className={classes.studyContainer}>
+                            <div className={classes.studyHeader}>
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={selectedResearchers[researcher.id] || false}
+                                    onChange={() => handleResearcherSelect(researcher.id)}
+                                    color="primary"
+                                    disabled={downloadLoading}
+                                  />
+                                }
+                                label={`${researcher.firstName} ${researcher.lastName} (Username: ${researcher.username}, ID: ${researcher.id})`}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
                   </div>
-                  {target === "studies" ? (
+                  {["studies", "researchers"].includes(target) ? (
                     <FormControl component="fieldset" className={classes.formatSelector}>
                       <FormLabel component="legend">Select Download Format</FormLabel>
                       <RadioGroup row value={fileFormat} onChange={handleFormatChange}>
@@ -1269,11 +1321,17 @@ function Download({ studies, target = "studies" }) {
                     >
                       Clear selection
                     </Button>
-                    {target === "studies" ? (
+                    {["studies", "researchers"].includes(target) ? (
                       <Button
                         className={`${classes.actionButton} ${classes.primaryButton}`}
-                        onClick={handleDownload}
-                        disabled={!Object.values(selectedStudies).some(Boolean)}
+                        onClick={async () => await handleDownload()}
+                        disabled={
+                          target === "studies"
+                            ? !Object.values(selectedStudies).includes(true) || downloadLoading
+                            : target === "researchers"
+                            ? !Object.values(selectedResearchers).includes(true) || downloadLoading
+                            : false
+                        }
                       >
                         {downloadLoading ? (
                           <div className={classes.buttonLoadingContainer}>
@@ -1307,22 +1365,6 @@ function Download({ studies, target = "studies" }) {
                       setFinalSelectedItems={setFinalSelectedItems}
                       onDownload={handleDownload}
                     />
-                    {/* <div className={classes.buttonsContainer}>
-                      <Button
-                        className={`${classes.actionButton} ${classes.secondaryButton}`}
-                        onClick={() => setNextPage(false)}
-                        disabled={downloadLoading}
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        className={`${classes.actionButton} ${classes.primaryButton}`}
-                        onClick={() => setShowOptionsPage(true)}
-                        disabled={finalSelectedItems.length === 0 || downloadLoading}
-                      >
-                        Next
-                      </Button>
-                    </div> */}
                   </>
                 ) : (
                   <>
@@ -1373,7 +1415,7 @@ function Download({ studies, target = "studies" }) {
                       </Button>
                       <Button
                         className={`${classes.actionButton} ${classes.primaryButton}`}
-                        onClick={handleDownload}
+                        onClick={async () => await handleDownload()}
                         disabled={!selectedOption || downloadLoading}
                       >
                         {downloadLoading ? (
@@ -1388,7 +1430,7 @@ function Download({ studies, target = "studies" }) {
                     </div>
                   </>
                 )
-              ) : (
+              ) : ["activities", "sensors"].includes(target) ? (
                 <>
                   <SelectTargetComponent
                     target={target}
@@ -1399,33 +1441,10 @@ function Download({ studies, target = "studies" }) {
                     setFinalSelectedItems={setFinalSelectedItems}
                     onDownload={handleDownload}
                   />
-                  {/* <div className={classes.buttonsContainer}>
-                    <Button
-                      className={`${classes.actionButton} ${classes.secondaryButton}`}
-                      onClick={() => setNextPage(false)}
-                      disabled={downloadLoading}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      className={`${classes.actionButton} ${classes.primaryButton}`}
-                      onClick={handleDownload}
-                      disabled={finalSelectedItems.length === 0 || downloadLoading}
-                    >
-                      {downloadLoading ? (
-                        <div className={classes.buttonLoadingContainer}>
-                          <CircularProgress size={20} className={classes.buttonProgress} />
-                          <span>Downloading...</span>
-                        </div>
-                      ) : (
-                        "Download"
-                      )}
-                    </Button>
-                  </div> */}
                 </>
-              )}
+              ) : null}
             </Box>
-          </Slide>{" "}
+          </Slide>
         </>,
         document.body
       )}
