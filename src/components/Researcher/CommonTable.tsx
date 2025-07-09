@@ -26,6 +26,7 @@ export interface TableColumn {
   filterPlaceholder?: string
   filterElement?: (options: any) => React.ReactNode
   filterMatchMode?: string
+  key?: string
 }
 
 const AVAILABLE_THEMES: {
@@ -68,6 +69,7 @@ const CommonTable = ({
   filterMatchModeOptions = null,
   itemclass = "items",
   key = null,
+  dataKeyprop = "id",
   ...props
 }) => {
   const { enqueueSnackbar } = useSnackbar()
@@ -80,17 +82,17 @@ const CommonTable = ({
   // const prevColumnsRef = useRef<TableColumn[] | null>(null);
 
   // useEffect(() => {
-  //   console.log("CommonTable received columns:", columns);
+  //   console.warn("CommonTable received columns:", columns);
   //   if (prevColumnsRef.current) {
   //     // Check if columns array reference has changed
-  //     console.log(
+  //     console.warn(
   //       "Columns array reference changed:",
   //       prevColumnsRef.current !== columns
   //     );
   //     // Check if column objects have new references
   //     const columnIds = columns.map((col) => col.id);
   //     const prevColumnIds = prevColumnsRef.current.map((col) => col.id);
-  //     console.log(
+  //     console.warn(
   //       "Column IDs match:",
   //       JSON.stringify(columnIds) === JSON.stringify(prevColumnIds)
   //     );
@@ -98,11 +100,11 @@ const CommonTable = ({
   //     columns.forEach((col, index) => {
   //       const prevCol = prevColumnsRef.current?.[index];
   //       if (prevCol && prevCol.id === col.id) {
-  //         console.log(
+  //         console.warn(
   //           `Column ${col.id} reference changed:`,
   //           prevCol !== col
   //         );
-  //         console.log(
+  //         console.warn(
   //           `Column ${col.id} renderCell reference changed:`,
   //           prevCol.renderCell !== col.renderCell
   //         );
@@ -249,6 +251,7 @@ const CommonTable = ({
     return dataWithCategories
   }, [data, categorizeItems, showCategoryHeaders])
 
+  console.warn("Columns : ", columns)
   const categoryHeaderTemplate = (data) => {
     return (
       <div
@@ -339,7 +342,7 @@ const CommonTable = ({
         emptyMessage="No records found"
         loading={false}
         selectionMode={selectable ? "multiple" : null}
-        dataKey="id"
+        dataKey={dataKeyprop}
         sortField={sortConfig?.field}
         sortOrder={sortConfig?.direction === "asc" ? 1 : -1}
         onSort={(e) => onSort?.(e.sortField)}
@@ -381,7 +384,7 @@ const CommonTable = ({
           .filter((column) => column.visible)
           .map((column) => (
             <Column
-              key={column.id}
+              key={column.key || column.id}
               field={column.id}
               header={column.label}
               filter={column.filterable}

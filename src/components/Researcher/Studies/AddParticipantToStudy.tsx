@@ -69,6 +69,8 @@ export default function AddParticipantToStudy({
   const [notes, setNotes] = useState("")
   const [newParticipantId, setNewParticipantId] = useState(null)
 
+  console.log("STUDY inside the AddParticipantToStudy component:", study)
+
   const resetForm = () => {
     setSelectedGroup("")
     setFirstName("")
@@ -127,13 +129,24 @@ export default function AddParticipantToStudy({
 
       console.log("Before sending email")
 
+      const parentEmail = LAMP.Auth._auth.id === "admin" ? null : LAMP.Auth._auth.id
+      const researcherDetails = await LAMP.Researcher.view(study.researcherId)
+      const researcherEmail = researcherDetails.email
+
+      let emailsToSend
+      if (parentEmail && parentEmail !== researcherEmail) {
+        emailsToSend = [parentEmail, researcherEmail]
+      } else {
+        emailsToSend = parentEmail || researcherEmail
+      }
+
       const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
       const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
       const params = new URLSearchParams({
         token: idData.token,
         email: email,
         userType: "participant",
-        parentEmail: LAMP.Auth._auth.id === "admin" ? null : LAMP.Auth._auth.id,
+        parentEmail: Array.isArray(emailsToSend) ? emailsToSend.join(",") : emailsToSend,
       }).toString()
 
       const response: any = await fetch(`${baseURL}/send-password-email?${params}`, {

@@ -797,6 +797,7 @@ export default function ActivityList({
   }
 
   const handleCellValueChange = (activityId: string, field: string, value: any) => {
+    console.log("handleCellValueChange", activityId, field, value, editedValues)
     setEditedValues((prev) => ({
       ...prev,
       [field]: value,
@@ -1167,6 +1168,7 @@ export default function ActivityList({
       {
         id: "id",
         label: "ID",
+        key: `id-${editingActivity?.id || "view"}-${rowMode}`,
         value: (a) => a.id,
         visible: false,
         sortable: false,
@@ -1191,6 +1193,7 @@ export default function ActivityList({
       {
         id: "name",
         label: "Name",
+        key: `name-${editingActivity?.id || "view"}-${rowMode}`,
         value: (a) => a.name,
         visible: true,
         sortable: true,
@@ -1291,6 +1294,7 @@ export default function ActivityList({
       {
         id: "groups",
         label: "Groups",
+        key: `groups-${editingActivity?.id || "view"}-${rowMode}`,
         value: (a) => a.groups || [],
         visible: true,
         sortable: false,
@@ -1373,16 +1377,31 @@ export default function ActivityList({
         renderCell: (activity) => getParentResearcher(activity.parentResearcher) || getParentResearcher(researcherId),
       },
       // { id: 'studyId', label: 'Study', value: (a) => a.study_id, visible: true },
-      { id: "device", label: "Device", value: (a) => a.device || "-", visible: false, sortable: true },
+      {
+        id: "device",
+        label: "Device",
+        value: (a) => a.device || "-",
+        visible: false,
+        sortable: true,
+        renderCell: (a) => a.device || "-",
+        key: `device-${editingActivity?.id || "view"}-${rowMode}`,
+      },
+      // { id:"tableV", label:"Table Version", value: editingActivity ? `${editingActivity.id}-${rowMode}` : null, visible: false, sortable: false},
     ],
-    [rowMode, editingActivity, editedValues, allresearchers, activeButton]
+    [rowMode, editingActivity, allresearchers, activeButton]
   )
   const [columns, setColumns] = useState<TableColumn[]>([])
 
   useEffect(() => {
-    console.warn("setting columns with columngenerator", editingActivity, rowMode)
-    setColumns(columngenerator() as TableColumn[])
-  }, [columngenerator, editingActivity, rowMode, editedValues, allresearchers, activeButton])
+    const cols = [...columngenerator()] as TableColumn[]
+    setColumns(cols)
+  }, [columngenerator, editingActivity, rowMode]) //
+
+  // Memoize columns for DataTable to ensure new reference on columns update
+  const columnsTable = useMemo(() => {
+    console.warn("New columns for Datatable")
+    return [...columns]
+  }, [columns, editingActivity, rowMode]) // editingActivity, rowMode
 
   const handleViewActivity = (activity) => {
     if (!canViewActivity(activity, studies, researcherId, props.sharedstudies)) {
@@ -1424,62 +1443,57 @@ export default function ActivityList({
     setTriggerSave(true)
   }
 
-  const handleEditActivityTable = useCallback(
-    (activity: any) => {
-      // const handleEditActivityTable = (activity: any) => {
-      console.warn("Editing activity in table:", activity?.id, editingActivity?.id, rowMode, activeButton)
-      if (!canEditActivity(activity, studies, researcherId, props.sharedstudies)) {
-        enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" })
-        return
-      }
+  const handleEditActivityTable = (activity: any) => {
+    // const handleEditActivityTable = (activity: any) => {
+    console.warn("Editing activity in table:", activity?.id, editingActivity?.id, rowMode, activeButton)
+    if (!canEditActivity(activity, studies, researcherId, props.sharedstudies)) {
+      enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" })
+      return
+    }
 
-      if (editingActivity?.id === activity.id) {
-        // Cancel edit mode
-        setRowMode("view")
+    if (editingActivity?.id === activity.id) {
+      // Cancel edit mode
+      setRowMode("view")
+      setEditingActivity(null)
+      setEditedValues({})
+      setActiveButton({ id: null, action: null })
+      console.warn("Canceling edit mode for:", activity?.id, editingActivity?.id, rowMode, activeButton)
+    } else {
+      // Start editing
+      setEditingActivity(activity)
+      setRowMode("edit")
+      setEditedValues({
+        name: activity.name,
+        groups: activity.groups || [],
+      })
+      setActiveButton({ id: activity.id, action: "edit" })
+      console.warn("Starting edit mode for:", activity?.id, editingActivity?.id, rowMode, activeButton)
+    }
+  }
+  const handleSaveActivityTable = async (activity: any) => {
+    if (Object.keys(editedValues).length > 0) {
+      try {
+        const updatedActivity = {
+          ...activity,
+          ...editedValues,
+        }
+        await handleUpdateActivity(activity.id, updatedActivity)
         setEditingActivity(null)
         setEditedValues({})
-        setActiveButton({ id: null, action: null })
-        console.warn("Canceling edit mode for:", activity?.id, editingActivity?.id, rowMode, activeButton)
-      } else {
-        // Start editing
-        setEditingActivity(activity)
-        setRowMode("edit")
-        setEditedValues({
-          name: activity.name,
-          groups: activity.groups || [],
-        })
-        setActiveButton({ id: activity.id, action: "edit" })
-        console.warn("Starting edit mode for:", activity?.id, editingActivity?.id, rowMode, activeButton)
-      }
-    },
-    [editingActivity, rowMode, activeButton, studies, researcherId, props.sharedstudies]
-  )
-  const handleSaveActivityTable = useCallback(
-    async (activity: any) => {
-      if (Object.keys(editedValues).length > 0) {
-        try {
-          const updatedActivity = {
-            ...activity,
-            ...editedValues,
-          }
-          await handleUpdateActivity(activity.id, updatedActivity)
-          setEditingActivity(null)
-          setEditedValues({})
-          setRowMode("view")
-          setActiveButton({ id: null, action: null })
-          enqueueSnackbar(t("Activity updated successfully"), { variant: "success" })
-        } catch (error) {
-          console.error("Error updating activity:", error)
-          enqueueSnackbar(t("Failed to update activity"), { variant: "error" })
-        }
-      } else {
-        enqueueSnackbar(t("No changes to save"), { variant: "info" })
-        setEditingActivity(null)
         setRowMode("view")
+        setActiveButton({ id: null, action: null })
+        enqueueSnackbar(t("Activity updated successfully"), { variant: "success" })
+      } catch (error) {
+        console.error("Error updating activity:", error)
+        enqueueSnackbar(t("Failed to update activity"), { variant: "error" })
       }
-    },
-    [editedValues, editingActivity, rowMode, activeButton]
-  )
+    } else {
+      enqueueSnackbar(t("No changes to save"), { variant: "info" })
+      setEditingActivity(null)
+      setRowMode("view")
+      setActiveButton({ id: null, action: null })
+    }
+  }
 
   const handleSaveComplete = (updatedActivity) => {
     console.log("Save complete:", updatedActivity)
@@ -1768,7 +1782,7 @@ export default function ActivityList({
             <>
               <CommonTable
                 data={[...activities, ...communityActivities]}
-                columns={columns}
+                columns={columnsTable}
                 actions={activityActions}
                 indexmap={originalIndexMap}
                 sortConfig={sortConfig}
@@ -1784,6 +1798,7 @@ export default function ActivityList({
                 onFilter={(newFilters) => setFilters(newFilters)}
                 filterDisplay="row"
                 key={editingActivity ? `${editingActivity.id}-${rowMode}` : null}
+                // dataKeyprop={"name"}
               />
               <ConfirmationDialog
                 open={confirmationVersionDialog}
