@@ -9,6 +9,7 @@
   background-color: #fdf6f7;
   height: 100%;
 }
+
 .corner {
   position: absolute;
   width: 46.875vw;
@@ -29,33 +30,33 @@
   transform: translate(33%, 62%);
 }
 
-.line-art-div {
-  height: 70%;
-  width: 80%;
+.logo-component-login {
+  width: 250px;
+  padding-left: 10px;
 }
 
-.line-art {
-  width: 100%;
-  height: 100%;
+.platform-name-login {
+  display: inline-block;
+  color: #bc652e;
+  font-family: "Exo 2", sans-serif;
+  font-size: clamp(1.9rem, 0.05vi + 1.59rem, 2.4rem);
+  font-weight: 600;
+  font-optical-sizing: auto;
+  font-style: normal;
+  line-height: 32px;
+  margin-top: 5px;
+  margin-bottom: 10px;
 }
 
-.line-art path {
-  stroke: #faac96 !important;
-}
-
-.platform-name {
-  position: relative;
-  z-index: 1;
-  color: #eb8367;
-  font-size: 82px;
-  font-weight: 400;
-  margin: 0;
-}
-
-.platform-desc {
+.platform-tag-login {
+  display: inline-block;
   color: grey;
-  font-size: 25px;
-  margin-top: -16px;
+  font-family: "Exo 2", sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  font-optical-sizing: auto;
+  font-style: normal;
+  line-height: 30px;
 }
 
 .grid-item {
@@ -163,7 +164,8 @@
 
 .divider-text {
   margin: 0 10px;
-  color: gray; /* Replace with the theme color */
+  color: gray;
+  /* Replace with the theme color */
 }
 
 /*.google-button {*/
@@ -183,7 +185,8 @@
   width: 100%;
   margin-bottom: 20px;
   display: flex;
-  justify-content: center; /* Center the button horizontally */
+  justify-content: center;
+  /* Center the button horizontally */
 }
 
 /* Target the Google button's internal div or iframe */
@@ -191,8 +194,10 @@
 .google-button > iframe {
   width: 100% !important;
   max-width: none !important;
-  height: 56px !important; /* Match the "Sign in" button height */
-  border-radius: 999px !important; /* Match the pill shape */
+  height: 56px !important;
+  /* Match the "Sign in" button height */
+  border-radius: 999px !important;
+  /* Match the pill shape */
 }
 
 .miniorange-button {

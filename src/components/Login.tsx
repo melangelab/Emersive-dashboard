@@ -992,7 +992,6 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
       <ResponsiveMargin>
         <Grid
           container
-          // spacing={2}
           justifyContent="center"
           alignItems="center"
           style={{ minHeight: "100vh", height: "100vh", width: "100vw" }}
@@ -1005,9 +1004,9 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
               <img className="corner top-left-corner" src={TopLeft} alt="top left corner" />
               <img className="corner bottom-right-corner" src={BottomRight} alt="bottom right corner" />
 
-              <Logo className="logo-component" style={{ zIndex: 1 }} />
-              <div className="platform-name">emersive</div>
-              <div className="platform-tag">MOBILE SENSING RESEARCH</div>
+              <Logo className="logo-component-login" style={{ zIndex: 1 }} />
+              <span className="platform-name-login">emersive</span>
+              <span className="platform-tag-login">MOBILE SENSING RESEARCH</span>
             </Grid>
           )}
           <Grid item xs={12} md={supportsSidebar ? 5 : 12} className="grid-item">
