@@ -1170,7 +1170,7 @@ export default function ActivityList({
         label: "ID",
         key: `id-${editingActivity?.id || "view"}-${rowMode}`,
         value: (a) => a.id,
-        visible: false,
+        visible: true,
         sortable: false,
         filterable: true,
         filterType: "text",
@@ -1394,6 +1394,7 @@ export default function ActivityList({
 
   useEffect(() => {
     const cols = [...columngenerator()] as TableColumn[]
+    console.warn("cols being generated", cols)
     setColumns(cols)
   }, [columngenerator, editingActivity, rowMode]) //
 
@@ -1798,7 +1799,7 @@ export default function ActivityList({
                 onFilter={(newFilters) => setFilters(newFilters)}
                 filterDisplay="row"
                 key={editingActivity ? `${editingActivity.id}-${rowMode}` : null}
-                // dataKeyprop={"name"}
+                dataKeyprop={"name"}
               />
               <ConfirmationDialog
                 open={confirmationVersionDialog}

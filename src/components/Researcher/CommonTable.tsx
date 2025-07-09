@@ -79,42 +79,6 @@ const CommonTable = ({
   const [headerHeight, setHeaderHeight] = useState(50)
   const [globalFilterValue, setGlobalFilterValue] = useState("")
 
-  // const prevColumnsRef = useRef<TableColumn[] | null>(null);
-
-  // useEffect(() => {
-  //   console.warn("CommonTable received columns:", columns);
-  //   if (prevColumnsRef.current) {
-  //     // Check if columns array reference has changed
-  //     console.warn(
-  //       "Columns array reference changed:",
-  //       prevColumnsRef.current !== columns
-  //     );
-  //     // Check if column objects have new references
-  //     const columnIds = columns.map((col) => col.id);
-  //     const prevColumnIds = prevColumnsRef.current.map((col) => col.id);
-  //     console.warn(
-  //       "Column IDs match:",
-  //       JSON.stringify(columnIds) === JSON.stringify(prevColumnIds)
-  //     );
-  //     // Check each column object for reference changes
-  //     columns.forEach((col, index) => {
-  //       const prevCol = prevColumnsRef.current?.[index];
-  //       if (prevCol && prevCol.id === col.id) {
-  //         console.warn(
-  //           `Column ${col.id} reference changed:`,
-  //           prevCol !== col
-  //         );
-  //         console.warn(
-  //           `Column ${col.id} renderCell reference changed:`,
-  //           prevCol.renderCell !== col.renderCell
-  //         );
-  //       }
-  //     });
-  //   }
-  //   // Update previous columns
-  //   prevColumnsRef.current = columns;
-  // }, [columns]);
-
   const indexBodyTemplate = (rowData: any) => {
     const index = indexmap[rowData.id] !== undefined ? indexmap[rowData.id] + 1 : 0
     return index
@@ -311,22 +275,6 @@ const CommonTable = ({
   }, [currentTheme])
   return (
     <div className="table-container">
-      {/* {showThemeSelector && (
-        <div className="theme-selector" style={{ marginBottom: '1rem' }}>
-          <label htmlFor="theme-dropdown">Select Theme: </label>
-          <Dropdown
-            id="theme-dropdown"
-            value={currentTheme}
-            options={AVAILABLE_THEMES.map(theme => ({ 
-              label: theme.name, 
-              value: theme.className 
-            }))}
-            onChange={handleThemeChange}
-            placeholder="Select a theme"
-            style={{ width: '200px', marginLeft: '10px' }}
-          />
-        </div>
-      )} */}
       <DataTable
         key={key}
         value={processedData}
@@ -384,7 +332,7 @@ const CommonTable = ({
           .filter((column) => column.visible)
           .map((column) => (
             <Column
-              key={column.key || column.id}
+              key={column.id}
               field={column.id}
               header={column.label}
               filter={column.filterable}
