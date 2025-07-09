@@ -32,6 +32,10 @@ import { Service } from "./DBService/DBService"
 import { ResponsiveMargin } from "./Utils"
 import { ReactComponent as Logo } from "../icons/Logo.svg"
 import { ReactComponent as LineArt } from "../icons/login_line_drawing.svg"
+// import { ReactComponent as LoginBackground } from "../icons/login_background.svg"
+import LoginBackground from "../icons/blob_bg_1.png"
+import TopLeft from "../icons/corner-top-left.png"
+import BottomRight from "../icons/corner-bottom-right.png"
 import { ReactComponent as Logotext } from "../icons/mindLAMP.svg"
 
 import { useTranslation } from "react-i18next"
@@ -76,6 +80,7 @@ interface GoogleJwtPayload {
 type SuggestedUrlOption = {
   label: string
 }
+
 // const useStyles = makeStyles((theme: Theme) =>
 //   createStyles({
 //     logoLogin: {
@@ -976,6 +981,12 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
     return timezone
   }
 
+  const [rememberMe, setRememberMe] = useState<boolean>(false)
+
+  const handleRememberMeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRememberMe(event.target.checked)
+  }
+
   return (
     <Slide direction="right" in={true} mountOnEnter unmountOnExit>
       <ResponsiveMargin>
@@ -988,11 +999,15 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
         >
           {supportsSidebar && (
             <Grid item xs={12} md={7} className="line-art-container">
-              <div className="line-art-div">
-                <LineArt className="line-art" />
-              </div>
-              <span className="platform-name">emersive</span>
-              <span className="platform-tag">MOBILE SENSING RESEARCH</span>
+              {/*<div className="line-art-div">*/}
+              {/*<LineArt className="line-art" />*/}
+              {/*</div>*/}
+              <img className="corner top-left-corner" src={TopLeft} alt="top left corner" />
+              <img className="corner bottom-right-corner" src={BottomRight} alt="bottom right corner" />
+
+              <Logo className="logo-component" style={{ zIndex: 1 }} />
+              <div className="platform-name">emersive</div>
+              <div className="platform-tag">MOBILE SENSING RESEARCH</div>
             </Grid>
           )}
           <Grid item xs={12} md={supportsSidebar ? 5 : 12} className="grid-item">
@@ -1092,26 +1107,31 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                 </>
               ) : (
                 <>
-                  <Logo className="logo-component" />
                   <h1
                     style={{
                       margin: "0px",
-                      marginBottom: "20px",
-                      alignSelf: "center", // This centers only the h1
-                      fontWeight: "300",
+                      marginBottom: "5px",
+                      alignSelf: "flex-start", // This centers only the h1
+                      fontWeight: "900",
+                      fontSize: "40px",
                     }}
                   >
-                    Login
+                    Sign in
                   </h1>
-                  <form onSubmit={(e) => handleLogin(e)}>
-                    <Box>
+                  {/*<span style={{alignSelf:"flex-start" , width:"100%"}}>*/}
+                  {/*  <div>Don't have a study account ?</div>*/}
+                  {/*  <a href="https://example.com">Sign up</a>*/}
+                  {/*</span>*/}
+
+                  <form style={{ width: "100%" }} onSubmit={(e) => handleLogin(e)}>
+                    <Box display="flex" flexDirection="column">
                       <TextField
                         required
                         name="id"
                         type="email"
                         margin="normal"
                         variant="outlined"
-                        style={{ width: "100%", height: 50 }}
+                        style={{ width: "100%", height: 50, marginTop: 30, marginBottom: 30 }}
                         placeholder={`${t("Email")}`}
                         value={state.id || ""}
                         onChange={handleChange}
@@ -1128,7 +1148,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                         type="password"
                         margin="normal"
                         variant="outlined"
-                        style={{ width: "100%", height: 50, marginBottom: 40 }}
+                        style={{ width: "100%", height: 50, marginBottom: 20 }}
                         placeholder="Password"
                         value={state.password || ""}
                         onChange={handleChange}
@@ -1143,15 +1163,32 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                           autoCapitalize: "off",
                         }}
                       />
-                      <div className="forgot-container">
+                      {/*<div className="forgot-container">*/}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          width: "100%", // or set as needed
+                          fontFamily: "sans-serif",
+                          fontSize: "16px",
+                        }}
+                      >
+                        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <input
+                            type="checkbox"
+                            style={{ cursor: "pointer" }}
+                            checked={rememberMe}
+                            onChange={handleRememberMeChange}
+                          />
+                          Remember me
+                        </label>
                         <h4
                           style={{
                             padding: "0px",
-                            // margin: "0px auto 20px",
-                            color: "red",
-                            alignSelf: "center",
-                            textAlign: "center",
-                            cursor: "pointer", // Add this to show it's clickable
+                            fontWeight: 200,
+                            color: "rgb(26, 115, 232)",
+                            cursor: "pointer",
                           }}
                           onClick={() => setShowForgotPassword(true)}
                         >
@@ -1159,17 +1196,30 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                         </h4>
                       </div>
 
+                      {/*</div>*/}
+
                       <Box className="button-nav" width={1} textAlign="center">
                         <Fab
                           variant="extended"
                           type="submit"
-                          style={{ background: "#7599FF", color: "White" }}
                           onClick={handleLogin}
                           className={loginClick ? "loginDisabled" : ""}
+                          style={{
+                            background: "#cf825a", // Match your image's purple shade
+                            color: "white",
+                            width: "100%",
+                            height: "56px", // Consistent height (adjust as needed)
+                            borderRadius: "999px", // Pill shape
+                            fontWeight: "500",
+                            fontSize: "16px",
+                            textTransform: "none",
+                            position: "relative",
+                          }}
                         >
-                          {`${t("Login")}`}
+                          {t("Sign in")}
                           <input
                             type="submit"
+                            disabled={loginClick}
                             style={{
                               cursor: "pointer",
                               position: "absolute",
@@ -1178,24 +1228,45 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                               right: 0,
                               left: 0,
                               width: "100%",
+                              height: "100%",
                               opacity: 0,
+                              border: "none",
+                              margin: 0,
+                              padding: 0,
                             }}
-                            disabled={loginClick}
                           />
                         </Fab>
                       </Box>
 
+                      <div
+                        style={{
+                          alignSelf: "center",
+                          marginTop: "20px",
+                          fontSize: "clamp(0.5rem, 1.666vw + 0.333rem, 1.333rem)",
+                          fontWeight: "200",
+                        }}
+                      >
+                        -------or-------
+                      </div>
                       {/* google login here */}
                       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-                        <div className="google-button">
+                        <div className="google-button" style={{ width: "100%", marginBottom: "20px" }}>
                           <GoogleLogin
                             onSuccess={handleGoogleSuccess}
                             onError={handleGoogleError}
-                            theme="filled_blue"
+                            theme="outline"
                             shape="pill"
                             text="signin_with"
                             locale={selectedLanguage}
                             size="large"
+                            width="100%" // Ensures the button takes the full width
+                            containerProps={{
+                              style: {
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center", // Center the button
+                              },
+                            }}
                           />
                         </div>
                       </GoogleOAuthProvider>

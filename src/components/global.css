@@ -37,25 +37,27 @@
 .platform-name {
   display: inline-block;
   color: #bc652e;
-  font-family: "Exo 2", sans-serif !important;
+  font-family: "Exo 2", sans-serif;
   font-size: clamp(1.9rem, 0.05vi + 1.59rem, 2.4rem);
   font-weight: 600;
   font-optical-sizing: auto;
   font-style: normal;
   line-height: 32px;
-  margin-top: -14px;
-  margin-bottom: 4px;
+  margin-top: 5px;
+  margin-bottom: 10px;
 }
 
 .platform-tag {
+  position: relative;
+  z-index: 1;
   display: inline-block;
   color: grey;
   font-family: "Exo 2", sans-serif;
-  font-size: 10.5px;
+  font-size: 15px;
   font-weight: 400;
   font-optical-sizing: auto;
   font-style: normal;
-  line-height: 10.5px;
+  line-height: 30px;
 }
 
 .list-container {
