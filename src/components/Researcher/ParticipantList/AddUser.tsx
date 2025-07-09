@@ -123,6 +123,18 @@ export default function AddUser({
     setNotes("")
   }
 
+  // const handlerFunc = async () => {
+  //   const selectedStudyDetail = studies.find((study) => study.id === selectedStudy)
+  //   console.log("Selected study detail, ", selectedStudyDetail)
+  //   const studyOwner = selectedStudyDetail.researcherId;
+  //   const researcherDetails = await LAMP.Researcher.view(studyOwner)
+  //   console.log("Study owner email", researcherDetails.email)
+  // }
+
+  // useEffect(() => {
+  //   handlerFunc();
+  // }, [selectedStudy])
+
   let createStudy = async () => {
     if (selectedStudy === "") {
       setShowErrorMsg(true)
@@ -135,8 +147,10 @@ export default function AddUser({
       for (let i = 0; i < newCount; i++) {
         let idData = ((await LAMP.Participant.create(selectedStudy, { study_code: "001", email: email } as any)) as any)
           .data
+
         let id = typeof idData === "object" ? idData.id : idData
         let newParticipant: any = {}
+
         if (typeof idData === "object") {
           newParticipant = idData
         } else {
@@ -151,13 +165,25 @@ export default function AddUser({
           return
         }
 
+        const parentEmail = LAMP.Auth._auth.id === "admin" ? null : LAMP.Auth._auth.id
+        const selectedStudyDetail = studies.find((study) => study.id === selectedStudy)
+        const researcherDetails = await LAMP.Researcher.view(selectedStudyDetail.researcherId)
+        const researcherEmail = researcherDetails.email
+
+        let emailsToSend
+        if (parentEmail && parentEmail !== researcherEmail) {
+          emailsToSend = [parentEmail, researcherEmail]
+        } else {
+          emailsToSend = parentEmail || researcherEmail
+        }
+
         const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
         const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
         const params = new URLSearchParams({
           token: idData.token,
           email: email,
           userType: "participant",
-          parentEmail: LAMP.Auth._auth.id === "admin" ? null : LAMP.Auth._auth.id,
+          parentEmail: Array.isArray(emailsToSend) ? emailsToSend.join(",") : emailsToSend,
         }).toString()
 
         const response: any = await fetch(`${baseURL}/send-password-email?${params}`, {
