@@ -277,8 +277,8 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
 
   const [activeRoute, setActiveRoute] = useState(() => {
     const currPath = location.pathname
-    console.log("Active Route in the Admin dashboard:", currPath.split("/").pop())
-    console.log("Path variable in Admin and adding something to it:", path, `${path}/dev-lab`)
+    console.log("Active Route in the researcher dashboard:", currPath.split("/").pop())
+    console.log("Path variable in researcher and adding something to it:", path, `${path}/dev-lab`)
     return currPath.split("/").pop() || "dashboard"
   })
 

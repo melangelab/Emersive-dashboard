@@ -32,6 +32,7 @@ import {
   useTheme,
   IconButton,
   TextField,
+  Divider,
 } from "@material-ui/core"
 import { Service } from "../../DBService/DBService"
 import { useTranslation } from "react-i18next"
@@ -77,6 +78,8 @@ import { ReactComponent as SaveFilledIcon } from "../../../icons/NewIcons/floppy
 import CommonTable, { TableColumn } from "../CommonTable"
 import { ca } from "date-fns/locale"
 import { FilterMatchMode } from "primereact/api"
+import ConfirmationDialog from "../../ConfirmationDialog"
+import VersionHistoryDialog from "./VersionHistoryDialog"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -518,7 +521,7 @@ export default function ActivityList({
   const [sharedActivities, setSharedActivities] = useState([])
   const [allresearchers, setAllResearchers] = useState([])
   const [tabularView, setTabularView] = useState(false)
-
+  // const [versionHistoryActivity, setVersionHistoryActivity] = useState(null)
   // New state variables for table editing
   const [activeButton, setActiveButton] = useState({ id: null, action: null })
   const [confirmationDialog, setConfirmationDialog] = useState(false)
@@ -527,6 +530,7 @@ export default function ActivityList({
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false)
   const [selectedVersion, setSelectedVersion] = useState(null)
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false)
+  const [dialogActivity, setDialogActivity] = useState(null)
   const [selectedStudyForDuplicate, setSelectedStudyForDuplicate] = useState("")
   const [duplicateLoading, setDuplicateLoading] = useState(false)
   const [sortConfig, setSortConfig] = useState({ field: null, direction: null })
@@ -791,7 +795,6 @@ export default function ActivityList({
       setSelectAll(false)
     }
   }
-  const [versionHistoryActivity, setVersionHistoryActivity] = useState(null)
 
   const handleCellValueChange = (activityId: string, field: string, value: any) => {
     setEditedValues((prev) => ({
@@ -830,7 +833,6 @@ export default function ActivityList({
 
     return (
       <span className="p-datatable-action-buttons">
-        {" "}
         {/* View button */}
         {activeButton.id === activity.id && activeButton.action === "view" ? (
           <ViewFilledIcon
@@ -848,6 +850,30 @@ export default function ActivityList({
               handleViewActivity(activity)
             }}
           />
+        )}
+        {/* Copy button */}
+        {isCommunity && (
+          <>
+            {activeButton.id === activity.id && activeButton.action === "copy" ? (
+              <CopyFilledIcon
+                className="actionIcon"
+                onClick={() => {
+                  setActiveButton({ id: activity.id, action: "copy" })
+                  setDialogActivity(activity)
+                  setDuplicateDialogOpen(true)
+                }}
+              />
+            ) : (
+              <CopyIcon
+                className="actionIcon"
+                onClick={() => {
+                  setActiveButton({ id: activity.id, action: "copy" })
+                  setDialogActivity(activity)
+                  setDuplicateDialogOpen(true)
+                }}
+              />
+            )}
+          </>
         )}
         {!isCommunity && (
           <>
@@ -873,6 +899,7 @@ export default function ActivityList({
                 className="actionIcon"
                 onClick={() => {
                   setActiveButton({ id: activity.id, action: "history" })
+                  setDialogActivity(activity)
                   setVersionHistoryOpen(true)
                 }}
               />
@@ -881,6 +908,7 @@ export default function ActivityList({
                 className="actionIcon"
                 onClick={() => {
                   setActiveButton({ id: activity.id, action: "history" })
+                  setDialogActivity(activity)
                   setVersionHistoryOpen(true)
                 }}
               />
@@ -895,6 +923,7 @@ export default function ActivityList({
                       className="actionIcon"
                       onClick={() => {
                         setActiveButton({ id: activity.id, action: "share" })
+                        setDialogActivity(activity)
                         setShareDialogOpen(true)
                       }}
                     />
@@ -903,6 +932,7 @@ export default function ActivityList({
                       className="actionIcon"
                       onClick={() => {
                         setActiveButton({ id: activity.id, action: "share" })
+                        setDialogActivity(activity)
                         setShareDialogOpen(true)
                       }}
                     />
@@ -912,6 +942,7 @@ export default function ActivityList({
                     className="actionIcon"
                     onClick={() => {
                       setActiveButton({ id: activity.id, action: "share" })
+                      setDialogActivity(activity)
                       setShareDialogOpen(true)
                     }}
                   />
@@ -920,6 +951,7 @@ export default function ActivityList({
                     className="actionIcon"
                     onClick={() => {
                       setActiveButton({ id: activity.id, action: "share" })
+                      setDialogActivity(activity)
                       setShareDialogOpen(true)
                     }}
                   />
@@ -935,6 +967,7 @@ export default function ActivityList({
                     className="actionIcon"
                     onClick={() => {
                       setActiveButton({ id: activity.id, action: "version" })
+                      setDialogActivity(activity)
                       setConfirmationVersionDialog(true)
                     }}
                   />
@@ -943,6 +976,7 @@ export default function ActivityList({
                     className="actionIcon"
                     onClick={() => {
                       setActiveButton({ id: activity.id, action: "version" })
+                      setDialogActivity(activity)
                       setConfirmationVersionDialog(true)
                     }}
                   />
@@ -950,24 +984,6 @@ export default function ActivityList({
               </>
             )}
           </>
-        )}
-        {/* Copy button */}
-        {activeButton.id === activity.id && activeButton.action === "copy" ? (
-          <CopyFilledIcon
-            className="actionIcon"
-            onClick={() => {
-              setActiveButton({ id: activity.id, action: "copy" })
-              setDuplicateDialogOpen(true)
-            }}
-          />
-        ) : (
-          <CopyIcon
-            className="actionIcon"
-            onClick={() => {
-              setActiveButton({ id: activity.id, action: "copy" })
-              setDuplicateDialogOpen(true)
-            }}
-          />
         )}
         {/* Delete button */}
         {!isCommunity &&
@@ -978,6 +994,7 @@ export default function ActivityList({
               className="actionIcon"
               onClick={() => {
                 setActiveButton({ id: activity.id, action: "delete" })
+                setDialogActivity(activity)
                 setConfirmationDialog(true)
               }}
             />
@@ -986,6 +1003,7 @@ export default function ActivityList({
               className="actionIcon"
               onClick={() => {
                 setActiveButton({ id: activity.id, action: "delete" })
+                setDialogActivity(activity)
                 setConfirmationDialog(true)
               }}
             />
@@ -995,18 +1013,18 @@ export default function ActivityList({
   }
   // , [activeButton, studies, researcherId, props.sharedstudies])
 
-  const handleVersioning = async (status, activity) => {
+  const handleVersioning = async (status) => {
     try {
       if (status === "Yes") {
-        const updatedActivity = { ...activity, versionThis: true }
-        await handleUpdateActivity(activity.id, updatedActivity)
+        const updatedActivity = { ...dialogActivity, versionThis: true }
+        await handleUpdateActivity(dialogActivity.id, updatedActivity)
         enqueueSnackbar(t("Successfully versioned the activity."), { variant: "success", autoHideDuration: 2000 })
       } else {
         setConfirmationVersionDialog(false)
       }
     } catch {
       enqueueSnackbar(t("Error in versioning the activity."), { variant: "error", autoHideDuration: 2000 })
-      console.log(`Activity ID ${activity.id} failed for versioning ${activity}`)
+      console.log(`Activity ID ${dialogActivity.id} failed for versioning ${dialogActivity}`)
     } finally {
       setConfirmationVersionDialog(false)
       setActiveButton({ id: null, action: null })
@@ -1045,10 +1063,12 @@ export default function ActivityList({
   const confirmShareActivity = async (val: string, activity) => {
     try {
       if (val == "Yes") {
+        console.log("Sharing activity with community:", activity)
         const updatedActivity = {
           ...activity,
           shareTocommunity: !activity.shareTocommunity,
         }
+
         await handleUpdateActivity(activity.id, updatedActivity)
         setShareDialogOpen(false)
         setActiveButton({ id: null, action: null })
@@ -1108,18 +1128,18 @@ export default function ActivityList({
     }
   }
 
-  const handleDeleteActivity = async (status, activity) => {
+  const handleDeleteActivity = async (status) => {
     if (status === "Yes") {
       try {
-        if (activity.spec === "lamp.survey") {
-          await LAMP.Type.setAttachment(activity.id, "me", "lamp.dashboard.survey_description", null)
+        if (dialogActivity.spec === "lamp.survey") {
+          await LAMP.Type.setAttachment(dialogActivity.id, "me", "lamp.dashboard.survey_description", null)
         } else {
-          await LAMP.Type.setAttachment(activity.id, "me", "emersive.activity.details", null)
+          await LAMP.Type.setAttachment(dialogActivity.id, "me", "emersive.activity.details", null)
         }
-        await LAMP.Activity.delete(activity.id)
-        await Service.delete("activities", [activity.id])
-        await Service.updateCount("studies", activity.study_id, "activity_count", 1, 1)
-        setActivities((prev) => prev.filter((a) => a.id !== activity.id))
+        await LAMP.Activity.delete(dialogActivity.id)
+        await Service.delete("activities", [dialogActivity.id])
+        await Service.updateCount("studies", dialogActivity.study_id, "activity_count", 1, 1)
+        setActivities((prev) => prev.filter((a) => a.id !== dialogActivity.id))
         await searchActivities()
         enqueueSnackbar(t("Activity deleted successfully"), { variant: "success" })
       } catch (error) {
@@ -1360,6 +1380,7 @@ export default function ActivityList({
   const [columns, setColumns] = useState<TableColumn[]>([])
 
   useEffect(() => {
+    console.warn("setting columns with columngenerator", editingActivity, rowMode)
     setColumns(columngenerator() as TableColumn[])
   }, [columngenerator, editingActivity, rowMode, editedValues, allresearchers, activeButton])
 
@@ -1744,25 +1765,198 @@ export default function ActivityList({
               </Grid>
             </div>
           ) : (
-            <CommonTable
-              data={[...activities, ...communityActivities]}
-              columns={columns}
-              actions={activityActions}
-              indexmap={originalIndexMap}
-              sortConfig={sortConfig}
-              onSort={(field) => {
-                setSortConfig({
-                  field,
-                  direction: sortConfig.field === field && sortConfig.direction === "asc" ? "desc" : "asc",
-                })
-              }}
-              categorizeItems={categorizeActivities}
-              showCategoryHeaders={true}
-              filters={filters}
-              onFilter={(newFilters) => setFilters(newFilters)}
-              filterDisplay="row"
-              key={editingActivity ? `${editingActivity.id}` : null}
-            />
+            <>
+              <CommonTable
+                data={[...activities, ...communityActivities]}
+                columns={columns}
+                actions={activityActions}
+                indexmap={originalIndexMap}
+                sortConfig={sortConfig}
+                onSort={(field) => {
+                  setSortConfig({
+                    field,
+                    direction: sortConfig.field === field && sortConfig.direction === "asc" ? "desc" : "asc",
+                  })
+                }}
+                categorizeItems={categorizeActivities}
+                showCategoryHeaders={true}
+                filters={filters}
+                onFilter={(newFilters) => setFilters(newFilters)}
+                filterDisplay="row"
+                key={editingActivity ? `${editingActivity.id}-${rowMode}` : null}
+              />
+              <ConfirmationDialog
+                open={confirmationVersionDialog}
+                onClose={() => {
+                  setConfirmationVersionDialog(false)
+                  setActiveButton({ id: null, action: null })
+                }}
+                confirmAction={handleVersioning}
+                confirmationMsg={t("Are you sure you want to version this Activity?")}
+              />
+              <ConfirmationDialog
+                open={confirmationDialog}
+                onClose={() => {
+                  setConfirmationDialog(false)
+                  setActiveButton({ id: null, action: null })
+                }}
+                confirmAction={handleDeleteActivity}
+                confirmationMsg={t("Are you sure you want to delete this Activity?")}
+              />
+              {/* Version History Dialog */}
+              {versionHistoryOpen && (
+                <VersionHistoryDialog
+                  open={versionHistoryOpen}
+                  onClose={() => {
+                    setVersionHistoryOpen(false)
+                    setDialogActivity(null)
+                  }}
+                  activity={dialogActivity}
+                  formatDate={formatDate}
+                  onPreviewVersion={(version) => {
+                    setSelectedVersion(version)
+                    setPreviewDialogOpen(true)
+                  }}
+                  onRestoreVersion={(version) => {
+                    handleRestoreVersion(version, dialogActivity)
+                    setVersionHistoryOpen(false)
+                  }}
+                />
+              )}
+              <Dialog
+                open={previewDialogOpen}
+                onClose={() => {
+                  setPreviewDialogOpen(false)
+                  setActiveButton({ id: null, action: null })
+                }}
+                maxWidth="md"
+                fullWidth
+              >
+                <DialogTitle>
+                  <Box display="flex" alignItems="center">
+                    <Icon style={{ marginRight: 8 }}>visibility</Icon>
+                    {t("Version Preview")}
+                  </Box>
+                </DialogTitle>
+                <DialogContent>
+                  {selectedVersion && (
+                    <Box>
+                      <Typography variant="h6" gutterBottom>
+                        {selectedVersion.name}
+                      </Typography>
+                      <Divider style={{ margin: "16px 0" }} />
+                      <Typography variant="body1" gutterBottom>
+                        {t("Settings")}:
+                      </Typography>
+                      <pre
+                        style={{
+                          backgroundColor: "#f5f5f5",
+                          padding: 16,
+                          borderRadius: 4,
+                          overflow: "auto",
+                        }}
+                      >
+                        {JSON.stringify(selectedVersion.details?.settings, null, 2)}
+                      </pre>
+                    </Box>
+                  )}
+                </DialogContent>
+                <DialogActions>
+                  <Button
+                    onClick={() => {
+                      setPreviewDialogOpen(false)
+                      setActiveButton({ id: null, action: null })
+                    }}
+                    color="secondary"
+                  >
+                    {t("Close")}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      handleRestoreVersion(selectedVersion, dialogActivity)
+                      setPreviewDialogOpen(false)
+                      setActiveButton({ id: null, action: null })
+                    }}
+                    color="primary"
+                  >
+                    {t("Restore This Version")}
+                  </Button>
+                </DialogActions>
+              </Dialog>
+
+              {/* Duplicate Activity Dialog */}
+              <Dialog
+                open={duplicateDialogOpen}
+                onClose={() => {
+                  setDuplicateDialogOpen(false)
+                  setSelectedStudyForDuplicate("")
+                }}
+                fullWidth
+                maxWidth="sm"
+              >
+                <DialogTitle>
+                  <Box display="flex" alignItems="center">
+                    <Icon style={{ marginRight: 8 }}>content_copy</Icon>
+                    {t("Duplicate Community Activity")}
+                  </Box>
+                </DialogTitle>
+                <DialogContent>
+                  <Typography variant="body1" gutterBottom>
+                    {t("You're about to make a copy of")}: <b>{dialogActivity?.name}</b>
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    {t("This will create a new activity in your selected study, which you can then customize.")}
+                  </Typography>
+                  <Box mt={3}>
+                    <FormControl fullWidth>
+                      <InputLabel>{t("Select Destination Study")}</InputLabel>
+                      <Select
+                        value={selectedStudyForDuplicate}
+                        onChange={(e) => setSelectedStudyForDuplicate(e.target.value as string)}
+                      >
+                        {studies.map((study) => (
+                          <MenuItem key={study.id} value={study.id}>
+                            {study.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                </DialogContent>
+                <DialogActions>
+                  <Button
+                    onClick={() => {
+                      setDuplicateDialogOpen(false)
+                      setSelectedStudyForDuplicate("")
+                    }}
+                    color="secondary"
+                  >
+                    {t("Cancel")}
+                  </Button>
+                  <Button
+                    onClick={() => handleDuplicateActivity(dialogActivity)}
+                    color="primary"
+                    disabled={duplicateLoading || !selectedStudyForDuplicate}
+                    variant="contained"
+                    startIcon={
+                      duplicateLoading ? <CircularProgress size={20} color="inherit" /> : <Icon>content_copy</Icon>
+                    }
+                  >
+                    {duplicateLoading ? t("Duplicating...") : t("Duplicate")}
+                  </Button>
+                </DialogActions>
+              </Dialog>
+              <ConfirmationDialog
+                confirmAction={(val) => confirmShareActivity(val, dialogActivity)}
+                confirmationMsg={
+                  !dialogActivity?.shareTocommunity
+                    ? t("Are you sure you want to share this Activity in Community")
+                    : t("Are you sure you want to remove this Activity from Community")
+                }
+                open={shareDialogOpen}
+                onClose={() => setShareDialogOpen(false)}
+              />
+            </>
             // <TableView
             //   activities={[...activities, ...communityActivities]}
             //   handleChange={handleChange}
@@ -1775,7 +1969,7 @@ export default function ActivityList({
           )}
         </div>
       )}
-      <Dialog open={!!versionHistoryActivity} onClose={() => setVersionHistoryActivity(null)} maxWidth="md" fullWidth>
+      {/* <Dialog open={!!versionHistoryActivity} onClose={() => setVersionHistoryActivity(null)} maxWidth="md" fullWidth>
         <DialogTitle>Version History - {versionHistoryActivity?.name}</DialogTitle>
         <DialogContent>
           {versionHistoryActivity?.versionHistory?.map((version, index) => (
@@ -1791,7 +1985,7 @@ export default function ActivityList({
             Close
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
     </React.Fragment>
   )
 }

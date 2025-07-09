@@ -1,112 +1,162 @@
-// Option 1: Use a single state update with useCallback
-const handleEditActivityTable = useCallback((activity) => {
-  console.warn("Editing activity in table:", activity?.id, editingActivity?.id, rowMode, activeButton);
-  if (!canEditActivity(activity, studies, researcherId, props.sharedstudies)) {
-    enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" });
-    return;
-  }
-  
-  if (editingActivity?.id === activity.id) {
-    // Cancel edit mode - update all states together
-    setRowMode("view");
-    setEditingActivity(null);
-    setEditedValues({});
-    setActiveButton({ id: null, action: null });
-  } else {
-    // Start editing - update all states together
-    setRowMode("edit");
-    setEditingActivity(activity);
-    setEditedValues({
-      name: activity.name,
-      groups: activity.groups || []
-    });
-    setActiveButton({ id: activity.id, action: "edit" });
-  }
-  console.warn("Now Editing activity in table:", activity?.id, editingActivity?.id, rowMode, activeButton);
-}, [editingActivity, rowMode, activeButton, studies, researcherId, props.sharedstudies]);
+// Changes needed in the ActivityList component
 
-// Option 2: Use a single state object to avoid race conditions
-const [editState, setEditState] = useState({
-  mode: "view",
-  editingActivity: null,
-  editedValues: {},
-  activeButton: { id: null, action: null }
-});
+// 1. Add a new state variable to store the full combined activities list
+const [combinedActivities, setCombinedActivities] = useState([])
 
-const handleEditActivityTable = useCallback((activity) => {
-  console.warn("Editing activity in table:", activity?.id, editState.editingActivity?.id, editState.mode, editState.activeButton);
+// 2. Update the searchActivities function to store the full combined list
+const searchActivities = async (searchVal?: string) => {
+  const searchTxt = searchVal ?? search
+  const selectedstudiesData = selected?.filter((o) => studies?.some(({ name }) => o === name)) || []
+  const selectedsharedData = props.sharedstudies
+    ? selected.filter((o) => props.sharedstudies?.some(({ name }) => o === name))
+    : []
+  const selectedData = [...selectedstudiesData, ...selectedsharedData]
   
-  if (!canEditActivity(activity, studies, researcherId, props.sharedstudies)) {
-    enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" });
-    return;
-  }
-  
-  if (editState.editingActivity?.id === activity.id) {
-    // Cancel edit mode
-    setEditState({
-      mode: "view",
-      editingActivity: null,
-      editedValues: {},
-      activeButton: { id: null, action: null }
-    });
-  } else {
-    // Start editing
-    setEditState({
-      mode: "edit",
-      editingActivity: activity,
-      editedValues: {
-        name: activity.name,
-        groups: activity.groups || []
-      },
-      activeButton: { id: activity.id, action: "edit" }
-    });
-  }
-}, [editState, studies, researcherId, props.sharedstudies]);
+  if (selectedData.length > 0) {
+    setLoading(true)
+    try {
+      const activitiesData = await Service.getAll("activities")
+      setAllActivities(activitiesData)
+      console.log("activitiesData", activitiesData)
+      const resylt = Array.isArray(activitiesData) ? activitiesData : []
+      const ids = resylt.map((activity) => activity.id)
+      const detailedActivities = await Promise.all(
+        ids.map((id) => Service.getDataByKey("activities", [id], "id").then((data) => data[0]))
+      )
+      console.log("Detailed Activities:", detailedActivities)
 
-// Option 3: Use functional state updates to ensure consistency
-const handleEditActivityTable = useCallback((activity) => {
-  console.warn("Editing activity in table:", activity?.id);
-  
-  if (!canEditActivity(activity, studies, researcherId, props.sharedstudies)) {
-    enqueueSnackbar(t("You don't have permission to edit this activity"), { variant: "error" });
-    return;
-  }
-  
-  // Use functional updates to ensure we're working with the latest state
-  setEditingActivity(prevEditingActivity => {
-    if (prevEditingActivity?.id === activity.id) {
-      // Cancel edit mode
-      setRowMode("view");
-      setEditedValues({});
-      setActiveButton({ id: null, action: null });
-      return null;
-    } else {
-      // Start editing
-      setRowMode("edit");
-      setEditedValues({
-        name: activity.name,
-        groups: activity.groups || []
-      });
-      setActiveButton({ id: activity.id, action: "edit" });
-      return activity;
+      let filteredData = activitiesData || []
+      if (filterParam) {
+        filteredData = filteredData.filter((factivity) => factivity.id === filterParam)
+      } else if (!!searchTxt && searchTxt.trim?.().length > 0) {
+        filteredData = filteredData.filter(
+          (factivity) =>
+            factivity.name?.toLowerCase().includes(searchTxt?.toLowerCase?.()) ||
+            factivity.id?.toLowerCase().includes(searchTxt?.toLowerCase?.())
+        )
+      }
+      const sortedData = sortData(filteredData, selectedData, "name")
+      setActivities(sortedData)
+      
+      const fetchedCommunityActivities = await fetchCommunityActivities()
+      const filteredCommunityActivities = fetchedCommunityActivities.filter(
+        (activity) =>
+          !searchTxt ||
+          activity.name?.toLowerCase().includes(searchTxt?.toLowerCase?.()) ||
+          activity.id?.toLowerCase().includes(searchTxt?.toLowerCase?.())
+      )
+      
+      // Create the combined activities list
+      const combinedActivitiesList = [...sortedData, ...filteredCommunityActivities]
+      setCombinedActivities(combinedActivitiesList)
+      
+      // Set paginated activities from the combined list
+      setPaginatedActivities(combinedActivitiesList.slice(page * rowCount, page * rowCount + rowCount))
+      console.log(
+        "setPaginatedActivities",
+        combinedActivitiesList,
+        combinedActivitiesList.slice(page * rowCount, page * rowCount + rowCount)
+      )
+    } catch (error) {
+      console.error("Error searching activities:", error)
+      enqueueSnackbar(t("Failed to search activities"), { variant: "error" })
+    } finally {
+      setLoading(false)
     }
-  });
-}, [studies, researcherId, props.sharedstudies]);
-
-// Update your renderCell function to use the single state (if using Option 2)
-renderCell: (activity) => {
-  if (editState.mode === "edit" && editState.editingActivity?.id === activity.id) {
-    return (
-      <TextField
-        value={editState.editedValues.name ?? activity.name}
-        onChange={(e) => handleCellValueChange(activity.id, 'name', e.target.value)}
-        fullWidth
-        size="small"
-        variant="outlined"
-        className={classes.editableField}
-      />
-    );
+  } else {
+    setActivities([])
+    setPaginatedActivities([])
+    setCombinedActivities([])
+    setLoading(false)
   }
-  console.warn("rendercell inside activity list", activity.name, " Mode : " + editState.mode + " Editing Activity: " + editState.editingActivity?.id);
-  return activity.name;
+  setSelectedActivities([])
+  setLoading(false)
 }
+
+// 3. Update the handleChangePage function to use combinedActivities
+const handleChangePage = (page: number, rowCount: number) => {
+  setLoading(true)
+  setRowCount(rowCount)
+  setPage(page)
+  localStorage.setItem("activities", JSON.stringify({ page: page, rowCount: rowCount }))
+  
+  const selectedstudiesData = selected?.filter((o) => studies?.some(({ name }) => o === name)) || []
+  const selectedsharedData = props.sharedstudies
+    ? selected.filter((o) => props.sharedstudies?.some(({ name }) => o === name))
+    : []
+  const selectedData = [...selectedstudiesData, ...selectedsharedData]
+
+  // Use the stored combinedActivities instead of recreating it
+  setPaginatedActivities(
+    sortData(combinedActivities, selectedData, "name").slice(page * rowCount, page * rowCount + rowCount)
+  )
+  setLoading(false)
+}
+
+// 4. Update the originalIndexMap to use combinedActivities
+const originalIndexMap = useMemo(() => {
+  return combinedActivities.reduce((acc, activity, index) => {
+    acc[activity.id] = index;
+    return acc;
+  }, {});
+}, [combinedActivities]);
+
+// 5. Update the navigation functions in the viewingActivity section
+const handlePrevious = () => {
+  const currentIndex = combinedActivities.findIndex((a) => a.id === viewingActivity.id)
+  if (currentIndex > 0) {
+    setViewingActivity(combinedActivities[currentIndex - 1])
+  }
+}
+
+const handleNext = () => {
+  const currentIndex = combinedActivities.findIndex((a) => a.id === viewingActivity.id)
+  if (currentIndex < combinedActivities.length - 1) {
+    setViewingActivity(combinedActivities[currentIndex + 1])
+  }
+}
+
+// 6. Update the CommonTable data prop to use combinedActivities
+<CommonTable
+  data={combinedActivities}
+  columns={columns}
+  actions={activityActions}
+  indexmap={originalIndexMap}
+  sortConfig={sortConfig}
+  onSort={(field) => {
+    setSortConfig({
+      field,
+      direction: sortConfig.field === field && sortConfig.direction === "asc" ? "desc" : "asc",
+    });
+  }}
+  categorizeItems={categorizeActivities}
+  showCategoryHeaders={true}
+  filters={filters}
+  onFilter={(newFilters) => setFilters(newFilters)}
+  filterDisplay="row"
+  key={editingActivity ?`${editingActivity.id}` : null}
+/>
+
+// 7. Update the Pagination component to use combinedActivities
+<Pagination
+  data={combinedActivities}
+  updatePage={handleChangePage}
+  rowPerPage={[20, 40, 60, 80]}
+  currentPage={page}
+  currentRowCount={rowCount}
+/>
+
+// 8. Update the no records condition
+{!!combinedActivities && combinedActivities.length > 0 ? (
+  // ... existing grid content
+) : (
+  <Box className={classes.norecordsmain}>
+    <Box display="flex" p={2} alignItems="center" className={classes.norecords}>
+      <Icon>info</Icon>
+      {`${t("No Records Found")}`}
+    </Box>
+  </Box>
+)}
+
+// 9. Remove the allActivitiesForDisplay variable since it's no longer needed
+// const allActivitiesForDisplay = [...paginatedActivities, ...communityActivities]

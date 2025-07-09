@@ -470,6 +470,7 @@ export default function Researchers({ history, updateStore, adminType, authType,
   }
 
   useEffect(() => {
+    console.log("Researchers data use effect call", researchers)
     if (search.trim().length > 0) {
       const data = researchers.filter((researcher) => researcher.name?.toLowerCase()?.includes(search?.toLowerCase()))
       setFilteredResearchers(data)
@@ -508,11 +509,13 @@ export default function Researchers({ history, updateStore, adminType, authType,
               searchData={(data) => setSearch(data)}
               refreshElements={refreshResearchers}
               addComponent={<AddUpdateResearcher refreshResearchers={refreshResearchers} researchers={researchers} />}
-              actions={["refresh", "search", "grid", "table", "filter-cols"]}
+              actions={["refresh", "search", "grid", "table", "filter-cols", "download"]}
               tabularView={tabularView}
               setTabularView={setTabularView}
               VisibleColumns={columns}
               setVisibleColumns={setColumns}
+              researchers={researchers}
+              downloadTarget={"researchers"}
             />
             <ResearcherTable
               researchers={researchers}

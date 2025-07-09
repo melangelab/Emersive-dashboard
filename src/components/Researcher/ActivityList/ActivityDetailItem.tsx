@@ -2211,7 +2211,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
   }
 
   return (
-    <div className={classes.rootContainer}>
+    <React.Fragment>
       <ViewItems
         fields={fields}
         tabs={[
@@ -2295,7 +2295,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </React.Fragment>
   )
 }
 
