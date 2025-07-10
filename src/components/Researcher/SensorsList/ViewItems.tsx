@@ -28,7 +28,7 @@ export const useStyles = makeStyles((theme: Theme) =>
     viewGrid: {
       margin: 0,
       width: "100%",
-      height: "750px",
+      height: "880px",
       overflow: "hidden",
     },
     infoContainer: {
