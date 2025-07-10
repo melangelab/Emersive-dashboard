@@ -1,639 +1,501 @@
---- a/ResearchersTable.tsx
-+++ b/ResearchersTable.tsx
-@@ -400,7 +400,7 @@ const ResearchersTable = ({
-   const confirmActionTable = async (status) => {
-     if (status === "Yes" && editingResearcher) {
-       try {
--        await LAMP.Researcher.delete(editingResearcher.id)
-+        await LAMP.Researcher.delete(editingResearcher.id)
-         enqueueSnackbar("Deleted researcher", { variant: "success" })
-         refreshResearchers?.()
-       } catch {
-@@ -411,11 +411,48 @@ const ResearchersTable = ({
-     setEditingResearcher(null)
-   }
- 
-+  // Update confirmActionTable with proper deletion logic
-+  const confirmActionTable = async (status) => {
-+    if (status === "Yes" && editingResearcher) {
-+      try {
-+        // Get credentials first
-+        const credentials = await LAMP.Credential.list(editingResearcher.id)
-+        const filteredCreds = credentials.filter((c) => c.hasOwnProperty("origin"))
+const ResearchersTable = ({
+  editable_columns,
+  data,
+  className = "",
+  onRowClick,
+  emptyStateMessage = "No data available",
+  isLoading = false,
+  adminType,
+  history,
+  originalColumnKeys,
+  selectedColumns,
+  refreshResearchers,
+  updateStore,
+  changeElement,
+  onResearchersUpdate,
+  ...props
+}) => {
+  const classes = useStyles()
+
+  const [researcherSelected, setResearcherSelected] = useState(null)
+  const [researchersSelected, setResearchersSelected] = useState([])
+  const [activeButton, setActiveButton] = useState<string | null>(null)
+  const [selectedRow, setSelectedRow] = useState<number | null>(null)
+  const [selectedRows, setSelectedRows] = useState<number[]>([])
+  const { enqueueSnackbar } = useSnackbar()
+  const { t } = useTranslation()
+  const [confirmationDialog, setConfirmationDialog] = useState(0)
+
+  // Add new state for column selection
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
+
+  const [editedData, setEditedData] = useState<{ [key: string]: any }>({})
+  const [isEditing, setIsEditing] = useState(false)
+
+  const [showCopyTooltip, setShowCopyTooltip] = useState(false)
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+
+  const [editingResearcher, setEditingResearcher] = useState(null)
+  const [filters, setFilters] = useState({})
+  const [activeButtonTable, setActiveButtonTable] = useState({ id: null, action: null })
+  const [confirmationDialogTable, setConfirmationDialogTable] = useState(false)
++ const [showPasswordDialog, setShowPasswordDialog] = useState(false)
++ const [updatedPassword, setUpdatedPassword] = useState("")
++ const [confirmPassword, setConfirmPassword] = useState("")
++ const [passwordError, setPasswordError] = useState("")
++ const [passwordDialogResearcher, setPasswordDialogResearcher] = useState(null)
+
+  useEffect(() => {
+    console.warn("Active button table changed:", activeButtonTable)
+  }, [activeButtonTable])
+
+  const columns: TableColumn[] = selectedColumns.map((col) => ({
+    id: col.id,
+    label: col.label,
+    value: col.value,
+    visible: true,
+    sortable: col.sortable,
+    filterable: true,
+    filterType: "text",
+  }))
+
+  const renderCellContent = (column, row) => {
+    const isEditable =
+      editable_columns.includes(column.id) && activeButtonTable?.id === row.id && activeButtonTable?.action === "edit"
+    if (!isEditable) {
+      return (
+        <div
+          className={!activeButtonTable.action && column.id !== "loggedIn" ? classes.copyableCell : undefined}
+          onClick={(e) => {
+            if (!activeButtonTable.action && row[column.id] && column.id !== "loggedIn") {
+              const textValue =
+                typeof row[column.id] === "object" ? JSON.stringify(row[column.id]) : String(row[column.id])
+              navigator.clipboard.writeText(textValue)
+              setTooltipPosition({ x: e.clientX, y: e.clientY })
+              setShowCopyTooltip(true)
+              setTimeout(() => setShowCopyTooltip(false), 1000)
+            }
+          }}
+        >
+          {formatValue(row[column.id], column.id)}
+        </div>
+      )
+    }
+    const editKey = `${row.id}-${column.id}`
+    const currentValue = editedData[editKey] !== undefined ? editedData[editKey] : row[column.id]
+
+    return (
+      <input
+        type="text"
+        value={currentValue ?? ""}
+        onChange={(e) => setEditedData((prev) => ({ ...prev, [editKey]: e.target.value }))}
+        className="w-full px-2 py-1 border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        onClick={(e) => e.stopPropagation()}
+      />
+    )
+  }
+
+- // Actions column
+- const actions =
+-   (row) => (
+-     <TableActionsDiv
+-       key={row.id + "-" + activeButtonTable.id + "-" + activeButtonTable.action}
+-       row={row}
+-       rowIndex={data.findIndex((r) => r.id === row.id)}
+-       history={history}
+-       setSelectedRow={setSelectedRow}
+-       selectedRow={selectedRow}
+-       setActiveButton={(abt) => {
+-         console.warn("Setting active button from row:", row.id, "with row, action:", abt)
+-         setActiveButtonTable({ id: abt.id, action: abt.action })
+-       }}
+-       activeButton={activeButtonTable}
+-       researcherSelected={editingResearcher}
+-       setResearcherSelected={setEditingResearcher}
+-       changeElement={changeElement}
+-       isEditing={!!editingResearcher && editingResearcher.id === row.id}
+-       setIsEditing={() => setEditingResearcher(row)}
+-       setEditedData={setEditedData}
+-       handleSaveEdit={async () => {
+-         // Save logic (similar to before)
+-         try {
+-           const rowEdits = {}
+-           Object.entries(editedData).forEach(([key, value]) => {
+-             if (key.startsWith(`${row.id}-`)) {
+-               const columnKey = key.replace(`${row.id}-`, "")
+-               rowEdits[columnKey] = value
+-             }
+-           })
+-
+-           const updatedResearcher = { ...row, ...rowEdits }
+-           await LAMP.Researcher.update(row.id, updatedResearcher)
+-           enqueueSnackbar("Successfully updated researcher", { variant: "success" })
+-           const newEditedData = { ...editedData }
+-           Object.keys(newEditedData).forEach((key) => {
+-             if (key.startsWith(`${row.id}-`)) {
+-               delete newEditedData[key]
+-             }
+-           })
+-           setEditedData(newEditedData)
+-           setEditingResearcher(null)
+-           setActiveButtonTable({ id: null, action: null })
+-           onResearchersUpdate([updatedResearcher])
+-         } catch {
+-           enqueueSnackbar("Failed to update researcher", { variant: "error" })
+-         }
+-       }}
+-       handleSuspension={async () => {
+-         // Suspend logic
+-         try {
+-           const updatedResearcher = {
+-             ...row,
+-             status: "SUSPENDED",
+-             timestamps: {
+-               ...row.timestamps,
+-               suspendedAt: new Date().getTime(),
+-             },
+-           }
+-
+-           await LAMP.Researcher.update(row.id, {
+-             ...updatedResearcher,
+-           })
+-           enqueueSnackbar("Suspended researcher", { variant: "success" })
+-           setActiveButtonTable({ id: null, action: null })
+-           onResearchersUpdate([updatedResearcher])
+-         } catch {
+-           enqueueSnackbar("Failed to suspend", { variant: "error" })
+-         }
+-       }}
+-       handleUnSuspension={async () => {
+-         // Unsuspend logic
+-         try {
+-           const updatedResearcher = {
+-             ...row,
+-             status: "ACTIVE",
+-           }
+-           await LAMP.Researcher.update(row.id, updatedResearcher)
+-           enqueueSnackbar("Unsuspended researcher", { variant: "success" })
+-           setActiveButtonTable({ id: null, action: null })
+-           onResearchersUpdate([updatedResearcher])
+-         } catch {
+-           enqueueSnackbar("Failed to unsuspend", { variant: "error" })
+-         }
+-       }}
+-       setConfirmationDialog={setConfirmationDialogTable}
+-     />
+-   )
+
++ // Inline actions function for CommonTable
++ const actions = (row) => {
++   const isSuspended = row.status === "SUSPENDED"
++   const isActive = (action) => activeButtonTable.id === row.id && activeButtonTable.action === action
++   const isEditing = editingResearcher?.id === row.id
 +
-+        // Delete all credentials
-+        await Promise.all(
-+          filteredCreds.map((cred) =>
-+            LAMP.Credential.delete(editingResearcher.id, cred["access_key"]).catch((error) => {
-+              console.error(`Failed to delete credential ${cred["access_key"]}:`, error)
-+              throw error
-+            })
-+          )
-+        )
++   const handleActionClick = async (buttonType) => {
++     setEditingResearcher(row)
++     setSelectedRow(data.findIndex((r) => r.id === row.id))
 +
-+        // After credentials are deleted, delete the researcher
-+        const deleteResult = (await LAMP.Researcher.delete(editingResearcher.id)) as any
++     if (buttonType === "arrow_forward") {
++       history.push(`/researcher/${row.id}/studies`)
++     } else if (buttonType === "view") {
++       changeElement?.({ researcher: row, idx: data.findIndex((r) => r.id === row.id) })
++     } else if (buttonType === "save") {
++       // Save logic
++       try {
++         const rowEdits = {}
++         Object.entries(editedData).forEach(([key, value]) => {
++           if (key.startsWith(`${row.id}-`)) {
++             const columnKey = key.replace(`${row.id}-`, "")
++             rowEdits[columnKey] = value
++           }
++         })
 +
-+        if (deleteResult?.error === undefined) {
-+          enqueueSnackbar(t("Successfully deleted the investigator and all associated credentials."), {
-+            variant: "success",
-+          })
-+        } else {
-+          enqueueSnackbar(t("Failed to delete the investigator."), {
-+            variant: "error",
-+          })
-+        }
-+        refreshResearchers?.()
-+      } catch (error) {
-+        enqueueSnackbar(t("Failed to delete the investigator or their credentials."), {
-+          variant: "error",
-+        })
-+        console.error(`Error in deletion process for researcher ${editingResearcher.id}:`, error)
-+      }
-+    }
-+    setConfirmationDialogTable(false)
-+    setEditingResearcher(null)
-+  }
++         const updatedResearcher = { ...row, ...rowEdits }
++         await LAMP.Researcher.update(row.id, updatedResearcher)
++         enqueueSnackbar("Successfully updated researcher", { variant: "success" })
++         const newEditedData = { ...editedData }
++         Object.keys(newEditedData).forEach((key) => {
++           if (key.startsWith(`${row.id}-`)) {
++             delete newEditedData[key]
++           }
++         })
++         setEditedData(newEditedData)
++         setEditingResearcher(null)
++         setActiveButtonTable({ id: null, action: null })
++         onResearchersUpdate([updatedResearcher])
++       } catch {
++         enqueueSnackbar("Failed to update researcher", { variant: "error" })
++       }
++     } else if (buttonType === "delete") {
++       setConfirmationDialogTable(true)
++     } else if (["edit", "suspend", "unsuspend"].includes(buttonType)) {
++       if (isActive(buttonType)) {
++         setActiveButtonTable({ id: null, action: null })
++         setEditingResearcher(null)
++       } else {
++         setActiveButtonTable({ id: row.id, action: buttonType })
++         if (buttonType === "suspend") {
++           // Handle suspend
++           try {
++             const updatedResearcher = {
++               ...row,
++               status: "SUSPENDED",
++               timestamps: {
++                 ...row.timestamps,
++                 suspendedAt: new Date().getTime(),
++               },
++             }
 +
-   const renderCellContent = (column, row) => {
-     const isEditable =
-       editable_columns.includes(column.id) &&
-@@ -423,22 +460,38 @@ const ResearchersTable = ({
-       activeButtonTable.action === "edit"
-     if (!isEditable) {
-       return (
-         <div
--          className={!activeButtonTable.action ? classes.copyableCell : undefined}
-+          className={!activeButtonTable.action && column.id !== "loggedIn" ? classes.copyableCell : undefined}
-           onClick={(e) => {
--            if (!activeButtonTable.action && row[column.id]) {
--              navigator.clipboard.writeText(String(row[column.id]))
-+            if (!activeButtonTable.action && row[column.id] && column.id !== "loggedIn") {
-+              const textValue = typeof row[column.id] === "object" ? JSON.stringify(row[column.id]) : String(row[column.id])
-+              navigator.clipboard.writeText(textValue)
-               setTooltipPosition({ x: e.clientX, y: e.clientY })
-               setShowCopyTooltip(true)
-               setTimeout(() => setShowCopyTooltip(false), 1000)
-             }
-           }}
-         >
--          {column.value ? column.value(row) : row[column.id]}
-+          {formatValue(row[column.id], column.id)}
-         </div>
-       )
-     }
-+    
-+    // For editable cells, get the current edit value
-+    const editKey = `${row.id}-${column.id}`
-+    const currentValue = editedData[editKey] !== undefined ? editedData[editKey] : row[column.id]
-+    
-     return (
-       <input
-         type="text"
--        value={editedData[column.id] ?? row[column.id] ?? ""}
-+        value={currentValue ?? ""}
-         onChange={(e) =>
--          setEditedData((prev) => ({ ...prev, [column.id]: e.target.value }))
-+          setEditedData((prev) => ({ ...prev, [editKey]: e.target.value }))
-         }
-         className="w-full px-2 py-1 border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-         onClick={(e) => e.stopPropagation()}
-@@ -470,19 +523,32 @@ const ResearchersTable = ({
-       handleSaveEdit={async () => {
-         // Save logic (similar to before)
-         try {
--          await LAMP.Researcher.update(row.id, { ...row, ...editedData })
-+          // Filter editedData for this specific row
-+          const rowEdits = {}
-+          Object.entries(editedData).forEach(([key, value]) => {
-+            if (key.startsWith(`${row.id}-`)) {
-+              const columnKey = key.replace(`${row.id}-`, '')
-+              rowEdits[columnKey] = value
-+            }
-+          })
-+          
-+          const updatedResearcher = { ...row, ...rowEdits }
-+          await LAMP.Researcher.update(row.id, updatedResearcher)
-           enqueueSnackbar("Successfully updated researcher", { variant: "success" })
--          setEditedData({})
-+          
-+          // Clear edits for this row
-+          const newEditedData = { ...editedData }
-+          Object.keys(newEditedData).forEach(key => {
-+            if (key.startsWith(`${row.id}-`)) {
-+              delete newEditedData[key]
-+            }
-+          })
-+          setEditedData(newEditedData)
-           setEditingResearcher(null)
-           setActiveButtonTable({ id: null, action: null })
--          onResearchersUpdate([{ ...row, ...editedData }])
-+          onResearchersUpdate([updatedResearcher])
-         } catch {
-           enqueueSnackbar("Failed to update researcher", { variant: "error" })
-         }
-       }}
-       handleSuspension={async () => {
--        // Suspend logic
-         try {
-+          const updatedResearcher = {
-+            ...row,
-+            status: "SUSPENDED",
-+            timestamps: {
-+              ...row.timestamps,
-+              suspendedAt: new Date().getTime(),
-+            },
-+          }
-+          
-           await LAMP.Researcher.update(row.id, {
--            ...row,
--            status: "SUSPENDED",
--            timestamps: { ...row.timestamps, suspendedAt: new Date().getTime() },
-+            ...updatedResearcher
-           })
-           enqueueSnackbar("Suspended researcher", { variant: "success" })
--          onResearchersUpdate([{ ...row, status: "SUSPENDED" }])
-+          setActiveButtonTable({ id: null, action: null })
-+          onResearchersUpdate([updatedResearcher])
-         } catch {
-           enqueueSnackbar("Failed to suspend", { variant: "error" })
-         }
-       }}
-       handleUnSuspension={async () => {
--        // Unsuspend logic
-         try {
--          await LAMP.Researcher.update(row.id, { ...row, status: "ACTIVE" })
-+          const updatedResearcher = {
-+            ...row,
-+            status: "ACTIVE",
-+          }
-+          
-+          await LAMP.Researcher.update(row.id, updatedResearcher)
-           enqueueSnackbar("Unsuspended researcher", { variant: "success" })
--          onResearchersUpdate([{ ...row, status: "ACTIVE" }])
-+          setActiveButtonTable({ id: null, action: null })
-+          onResearchersUpdate([updatedResearcher])
-         } catch {
-           enqueueSnackbar("Failed to unsuspend", { variant: "error" })
-         }
-       }}
-       setConfirmationDialog={setConfirmationDialogTable}
-@@ -510,62 +576,6 @@ const ResearchersTable = ({
-     setEditingResearcher(null)
-   }
- 
--  // Handle cell edit
--  const handleCellEdit = (rowIndex: number, columnKey: string, value: any) => {
--    setEditedData((prev) => ({
--      ...prev,
--      [`${rowIndex}-${columnKey}`]: value,
--    }))
--  }
--
--  const handleSaveEdit = async () => {
--    try {
--      // Group edits by row
--      const rowEdits = {}
--      console.log("HEY THE ROWEDITS", rowEdits)
--      Object.entries(editedData).forEach(([key, value]) => {
--        const [rowIndex, columnKey] = key.split("-")
--        if (!rowEdits[rowIndex]) rowEdits[rowIndex] = {}
--        rowEdits[rowIndex][columnKey] = value
--      })
--
--      let updatedResearcher
--
--      console.log("HEY THE ROWEDITS", rowEdits)
--      // Update each modified row
--      for (const [rowIndex, updates] of Object.entries(rowEdits)) {
--        const currentResearcher = data[Number(rowIndex)]
--        if (!currentResearcher || typeof currentResearcher !== "object") {
--          console.error("Invalid researcher data")
--          continue
--        }
--
--        updatedResearcher = {
--          ...currentResearcher,
--          ...(updates as Partial<ResearcherData>),
--        } as ResearcherData
--
--        // Ensure we have an ID before updating
--        if (!updatedResearcher.id) {
--          console.error("Missing researcher ID")
--          continue
--        }
--
--        await LAMP.Researcher.update(updatedResearcher.id, updatedResearcher)
--      }
--
--      enqueueSnackbar("Successfully updated researcher(s)", { variant: "success" })
--      setEditedData({})
--      setIsEditing(false)
--      setSelectedRow(null)
--      setActiveButton(null)
--      // refreshResearchers?.()
--      onResearchersUpdate([updatedResearcher])
--    } catch (error) {
--      enqueueSnackbar("Failed to update researcher(s)", { variant: "error" })
--    }
--  }
--
-   const copyToClipboard = (text: string, event: React.MouseEvent) => {
-     navigator.clipboard
-       .writeText(text)
-@@ -585,70 +595,6 @@ const ResearchersTable = ({
-     }
-   }
- 
--  // Update renderCell to include copy functionality
--  const renderCell = (rowIndex: number, columnKey: string, value: any, row: any) => {
--    const isEditable = editable_columns.includes(columnKey) && activeButton === "edit" && selectedRow === rowIndex
--
--    if (!isEditable) {
--      return (
--        <div
--          className={!activeButton && columnKey != "loggedIn" ? classes.copyableCell : undefined}
--          onClick={(e) => handleCellClick(e, value, rowIndex, row)}
--        >
--          {formatValue(value, columnKey)}
--        </div>
--      )
--    }
--
--    const editValue = editedData[`${rowIndex}-${columnKey}`] ?? value
--    return (
--      <input
--        type="text"
--        value={editValue || ""}
--        onChange={(e) => {
--          handleCellEdit(rowIndex, columnKey, e.target.value)
--          setIsEditing(true)
--        }}
--        className="w-full px-2 py-1 border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
--        onClick={(e) => e.stopPropagation()}
--      />
--    )
--  }
--
--  const handleButtonClick = (buttonType: string) => {
--    if (activeButton === buttonType) {
--      // Deactivate button and clear selections
--      setActiveButton(null)
--      setSelectedRow(null)
--      setSelectedRows([])
--      setResearcherSelected(null)
--      setResearchersSelected([])
--    } else {
--      // Activate button and clear previous selections
--      setActiveButton(buttonType)
--      setSelectedRow(null)
--      setSelectedRows([])
--      setResearcherSelected(null)
--      setResearchersSelected([])
--    }
--  }
--
--  useEffect(() => {
--    console.log("researchers selected", researchersSelected)
--  }, [researchersSelected])
--
--  const confirmAction = async (status) => {
--    if (status === "Yes") {
--      let successCount = 0
--      let failureCount = 0
--
--      const researchersToUpdate = researchersSelected.length > 0 ? researchersSelected : [researcherSelected]
--      let updatedResearchers
--
--      // Assuming researchers is an array of researcher objects
--      for (const researcher of researchersToUpdate) {
--        try {
--          // Get credentials first
--          const credentials = await LAMP.Credential.list(researcher.id)
--          const filteredCreds = credentials.filter((c) => c.hasOwnProperty("origin"))
--
--          // Delete all credentials
--          await Promise.all(
--            filteredCreds.map((cred) =>
--              LAMP.Credential.delete(researcher.id, cred["access_key"]).catch((error) => {
--                console.error(`Failed to delete credential ${cred["access_key"]}:`, error)
--                throw error
--              })
--            )
--          )
--
--          // After credentials are deleted, delete the researcher
--          const deleteResult = (await LAMP.Researcher.delete(researcher.id)) as any
--
--          if (deleteResult?.error === undefined) {
--            enqueueSnackbar(t("Successfully deleted the investigator and all associated credentials."), {
--              variant: "success",
--            })
--            successCount++
--          } else {
--            failureCount++
--            enqueueSnackbar(t("Failed to delete the investigator."), {
--              variant: "error",
--            })
--          }
--        } catch (error) {
--          failureCount++
--          enqueueSnackbar(t("Failed to delete the investigator or their credentials."), {
--            variant: "error",
--          })
--          console.error(`Error in deletion process for researcher ${researcher.id}:`, error)
--        }
--      }
--
--      // Show appropriate notification based on results
--      if (successCount > 0 && failureCount === 0) {
--        enqueueSnackbar(
--          successCount === 1
--            ? t("Successfully deleted the investigator.")
--            : t("Successfully deleted all investigators."),
--          { variant: "success" }
--        )
--      } else if (successCount > 0 && failureCount > 0) {
--        enqueueSnackbar(
--          t(`Successfully deleted ${successCount} investigator(s), but failed to delete ${failureCount}.`),
--          { variant: "warning" }
--        )
--      } else {
--        enqueueSnackbar(t("Failed to delete the investigators."), { variant: "error" })
--      }
--
--      refreshResearchers()
--      // onResearchersUpdate(researchersToUpdate)
--      setConfirmationDialog(0)
--      setResearchersSelected([])
--      setResearcherSelected(null)
--      setActiveButton(null)
--    } else {
--      setConfirmationDialog(0)
--      setResearcherSelected(null)
--    }
--  }
--
-   const formatValue = (value: any, key: string) => {
-     console.log(value, key)
-     if (key === "loggedIn") return <StatusIndicator isOnline={value} />
-@@ -677,11 +623,6 @@ const ResearchersTable = ({
-     return path.includes(".") ? get(obj, path, "") : obj[path]
-   }
- 
--  if (isLoading) return <div className="w-full p-4 text-center text-gray-500">Loading...</div>
--  if (!data.length) return <div className="w-full p-4 text-center text-gray-500">{emptyStateMessage}</div>
--
--  const getCellClass = (value) => {
--    if (value === null || value === undefined) {
--      return "px-2 py-2 text-center whitespace-nowrap"
--    }
--    const wordCount = String(value).trim().split(/\s+/).length
--    return `px-2 py-2 text-center ${wordCount > 3 ? "whitespace-normal" : "whitespace-nowrap"}`
--  }
--
--  const updateData = async (updatedResearchers) => {}
--
--  const handleSuspension = async () => {
--    try {
--      console.log("Researcher selected suspended,", researcherSelected)
--
--      const researchersToUpdate = researchersSelected.length > 0 ? researchersSelected : [researcherSelected]
--      let updatedResearchers = []
--      // Create an array of promises for all updates
--      const updatePromises = researchersToUpdate.map(async (researcher) => {
--        try {
--          const updatedResearcher = {
--            ...researcher,
--            status: "SUSPENDED",
--            timestamps: {
--              ...researcher.timestamps,
--              suspendedAt: new Date().getTime(),
--            },
--          }
--
--          await LAMP.Researcher.update(researcher.id, updatedResearcher)
--          updatedResearchers.push(updatedResearcher)
--          return { success: true, id: researcher.id }
--        } catch (error) {
--          console.error(`Error suspending researcher ${researcher.id}:`, error)
--          return { success: false, id: researcher.id, error }
--        }
--      })
--
--      // Wait for all updates to complete
--      const results = await Promise.all(updatePromises)
--      const successCount = results.filter((r) => r.success).length
--      const failureCount = results.filter((r) => !r.success).length
--
--      // Show appropriate notification based on results
--      if (failureCount === 0) {
--        enqueueSnackbar(`Successfully suspended ${successCount} researcher(s)`, { variant: "success" })
--      } else if (successCount > 0) {
--        enqueueSnackbar(`Suspended ${successCount} researcher(s), failed to update ${failureCount}`, {
--          variant: "warning",
--        })
--      } else {
--        enqueueSnackbar("Failed to suspend researchers", { variant: "error" })
--      }
--
--      // Reset selections and refresh data
--      setResearchersSelected([])
--      setResearcherSelected(null)
--      setActiveButton(null)
--      setSelectedRow(null)
--      setSelectedRows([])
--      // refreshResearchers();
--      onResearchersUpdate(updatedResearchers)
--    } catch (error) {
--      console.error("Error in handleSuspension:", error)
--      enqueueSnackbar("Error suspending researchers", { variant: "error" })
--    }
--  }
--
--  const handleUnSuspension = async () => {
--    try {
--      console.log("Researcher selected unsuspected", researcherSelected)
--
--      const researchersToUpdate = researchersSelected.length > 0 ? researchersSelected : [researcherSelected]
--      let updatedResearchers = []
--      // Create an array of promises for all updates
--      const updatePromises = researchersToUpdate.map(async (researcher) => {
--        try {
--          const updatedResearcher = {
--            ...researcher,
--            status: "ACTIVE",
--            // No need to update suspendedAt timestamp when unsuspending
--          }
--
--          await LAMP.Researcher.update(researcher.id, updatedResearcher)
--          updatedResearchers.push(updatedResearcher)
--          return { success: true, id: researcher.id }
--        } catch (error) {
--          console.error(`Error unsuspending researcher ${researcher.id}:`, error)
--          return { success: false, id: researcher.id, error }
--        }
--      })
--
--      // Wait for all updates to complete
--      const results = await Promise.all(updatePromises)
--      const successCount = results.filter((r) => r.success).length
--      const failureCount = results.filter((r) => !r.success).length
--
--      // Show appropriate notification based on results
--      if (failureCount === 0) {
--        enqueueSnackbar(`Successfully unsuspended ${successCount} researcher(s)`, { variant: "success" })
--      } else if (successCount > 0) {
--        enqueueSnackbar(`Unsuspended ${successCount} researcher(s), failed to update ${failureCount}`, {
--          variant: "warning",
--        })
--      } else {
--        enqueueSnackbar("Failed to unsuspend researchers", { variant: "error" })
--      }
--
--      // Reset selections and refresh data
--      setResearchersSelected([])
--      setResearcherSelected(null)
--      setActiveButton(null)
--      setSelectedRow(null)
--      setSelectedRows([])
--      // refreshResearchers();
--      onResearchersUpdate(updatedResearchers)
--    } catch (error) {
--      console.error("Error in handleUnSuspension:", error)
--      enqueueSnackbar("Error unsuspending researchers", { variant: "error" })
--    }
--  }
-+  if (isLoading) return <div className="w-full p-4 text-center text-gray-500">Loading...</div>
-+  if (!data.length) return <div className="w-full p-4 text-center text-gray-500">{emptyStateMessage}</div>
- 
-   return (
-     <React.Fragment>
-@@ -738,165 +679,6 @@ const ResearchersTable = ({
-       </div>
-     </React.Fragment>
-   )
--  return (
--    <React.Fragment>
--      <div className="table-container">
--        {showCopyTooltip && <CopyTooltip text="Copied!" position={tooltipPosition} />}
--        <ConfirmationDialog
--          confirmationDialog={confirmationDialog}
--          open={confirmationDialog > 0}
--          onClose={() => setConfirmationDialog(0)}
--          confirmAction={confirmAction}
--          confirmationMsg="Are you sure you want to delete this investigator(s)?."
--        />
--        <table
--          style={{
--            minWidth: "100%",
--            borderCollapse: "separate",
--            borderSpacing: 0,
--            tableLayout: "auto",
--          }}
--        >
--          <thead>
--            <tr
--              style={{
--                position: "sticky",
--                top: 0,
--                zIndex: 1,
--                backgroundColor: "rgb(213 213 213)",
--              }}
--            >
--              {selectedColumns.map((col, index) => (
--                <th
--                  key={col.id}
--                  style={{
--                    padding: "0.75rem 1rem",
--                    textAlign: "left",
--                    fontSize: "0.75rem",
--                    fontWeight: 500,
--                    textTransform: "uppercase",
--                    letterSpacing: "0.05em",
--                    borderBottom: "1px solid rgb(229, 231, 235)",
--                    whiteSpace: "nowrap",
--                    background:
--                      index === selectedColumns.length - 1
--                        ? "linear-gradient(to right, rgb(213, 212, 212),rgb(183, 183, 183))" // 3D effect for last column
--                        : "rgb(213, 212, 212)", // Same styling for all other columns
--                    boxShadow: index === selectedColumns.length - 1 ? "-3px 0px 5px rgba(0, 0, 0, 0.2)" : "none",
--                    borderLeft: index === selectedColumns.length - 1 ? "3px solid #9e9e9e" : "none",
--                    zIndex: index === selectedColumns.length - 1 ? 2 : "auto",
--                    position: index === selectedColumns.length - 1 ? "sticky" : "static",
--                    right: index === selectedColumns.length - 1 ? 0 : "auto",
--                  }}
--                  className={index === selectedColumns.length - 1 ? "sticky-column" : ""}
--                >
--                  {formatValue(col.label, "")}
--                </th>
--              ))}
--            </tr>
--          </thead>
--          <tbody>
--            {data.map((row, rowIndex) => (
--              <tr
--                key={rowIndex}
--                className={`${classes.tableRow} ${
--                  selectedRow === rowIndex || selectedRows.includes(rowIndex) ? classes.selectedRow : ""
--                }`}
--              >
--                {selectedColumns.map((col, index) => (
--                  <td
--                    key={`${rowIndex}-${col.id}`}
--                    style={{
--                      padding: "0.75rem 1rem",
--                      fontSize: "0.875rem",
--                      color: "rgb(17, 24, 39)",
--                      borderBottom: "1px solid rgb(229, 231, 235)",
--                      whiteSpace: "nowrap",
--                      background:
--                        index === selectedColumns.length - 1
--                          ? "linear-gradient(to right, #ffffff, #f5f5f5)" // 3D effect for last column
--                          : !Object.keys(row).includes("status") || row.status === "ACTIVE"
--                          ? "white"
--                          : "rgb(243, 243, 243)", // Same design for other columns #e0e0e0
--                      boxShadow: index === selectedColumns.length - 1 ? "-3px 0px 5px rgba(0, 0, 0, 0.2)" : "none",
--                      borderLeft: index === selectedColumns.length - 1 ? "3px solid #bdbdbd" : "none",
--                      zIndex: index === selectedColumns.length - 1 ? 1 : "auto",
--                      position: index === selectedColumns.length - 1 ? "sticky" : "static",
--                      right: index === selectedColumns.length - 1 ? 0 : "auto",
--                    }}
--                    className={index === selectedColumns.length - 1 ? "sticky-column" : ""}
--                  >
--                    {/* {renderCell(rowIndex, key, getValue(row, key), row)} */}
--                    {index === selectedColumns.length - 1 ? (
--                      <TableActionsDiv
--                        row={row}
--                        rowIndex={rowIndex}
--                        history={history}
--                        setSelectedRow={setSelectedRow}
--                        selectedRow={selectedRow}
--                        setActiveButton={setActiveButton}
--                        activeButton={activeButton}
--                        researcherSelected={researcherSelected}
--                        setResearcherSelected={setResearcherSelected}
--                        changeElement={changeElement}
--                        isEditing={isEditing}
--                        setIsEditing={setIsEditing}
--                        setEditedData={setEditedData}
--                        handleSaveEdit={handleSaveEdit}
--                        handleSuspension={handleSuspension}
--                        handleUnSuspension={handleUnSuspension}
--                        setConfirmationDialog={setConfirmationDialog}
--                      />
--                    ) : (
--                      renderCell(rowIndex, col.id, getValue(row, col.id), row)
--                    )}
--                  </td>
--                ))}
--              </tr>
--            ))}
--          </tbody>
--        </table>
--      </div>
--    </React.Fragment>
--  )
- }
- 
- export default ResearchersTable
++             await LAMP.Researcher.update(row.id, updatedResearcher)
++             enqueueSnackbar("Suspended researcher", { variant: "success" })
++             setActiveButtonTable({ id: null, action: null })
++             onResearchersUpdate([updatedResearcher])
++           } catch {
++             enqueueSnackbar("Failed to suspend", { variant: "error" })
++           }
++         } else if (buttonType === "unsuspend") {
++           // Handle unsuspend
++           try {
++             const updatedResearcher = {
++               ...row,
++               status: "ACTIVE",
++             }
++             await LAMP.Researcher.update(row.id, updatedResearcher)
++             enqueueSnackbar("Unsuspended researcher", { variant: "success" })
++             setActiveButtonTable({ id: null, action: null })
++             onResearchersUpdate([updatedResearcher])
++           } catch {
++             enqueueSnackbar("Failed to unsuspend", { variant: "error" })
++           }
++         }
++       }
++     } else if (buttonType === "passwordEdit") {
++       setPasswordDialogResearcher(row)
++       setShowPasswordDialog(true)
++       setUpdatedPassword("")
++       setConfirmPassword("")
++       setPasswordError("")
++     }
++   }
++
++   return (
++     <div className="table-actions-container">
++       {/* Visualize Researcher */}
++       <div className="table-actions-icon-container" onClick={() => handleActionClick("arrow_forward")}>
++         <VisualizeResearcher className="table-actions-icon" style={{ transform: "scaleX(-1)" }} />
++       </div>
++
++       {/* View Researcher */}
++       <div className="table-actions-icon-container" onClick={() => handleActionClick("view")}>
++         <ViewResearcher className="table-actions-icon" />
++       </div>
++
++       {/* Edit Researcher */}
++       <div
++         className={`table-actions-icon-container ${isActive("edit") ? "active" : ""}`}
++         onClick={() => handleActionClick("edit")}
++       >
++         <Edit className="table-actions-icon" />
++       </div>
++
++       {/* Save Researcher */}
++       <div
++         className={`table-actions-icon-container ${isEditing ? "" : "disabled-icon-container"}`}
++         onClick={() => (isEditing ? handleActionClick("save") : null)}
++       >
++         <Save className={`table-actions-icon ${isEditing ? "" : "disabled-icon"}`} />
++       </div>
++
++       {/* Password Edit */}
++       <div className="table-actions-icon-container">
++         <PasswordEdit className="table-actions-icon" onClick={() => handleActionClick("passwordEdit")} />
++       </div>
++
++       {/* Suspend/Unsuspend Researcher */}
++       <div
++         className="table-actions-icon-container"
++         onClick={() => handleActionClick(isSuspended ? "unsuspend" : "suspend")}
++       >
++         {isSuspended ? <UnSuspend className="table-actions-icon" /> : <Suspend className="table-actions-icon" />}
++       </div>
++
++       {/* Delete Researcher */}
++       <div
++         className={`table-actions-icon-container ${isActive("delete") ? "active" : ""}`}
++         onClick={() => handleActionClick("delete")}
++       >
++         <Delete className="table-actions-icon" />
++       </div>
++     </div>
++   )
++ }
++
++ // Password dialog handlers
++ const handleSubmitPassword = async () => {
++   try {
++     if (updatedPassword !== confirmPassword) {
++       setPasswordError("Passwords do not match")
++       return
++     }
++
++     console.log("IN THE UPDATED PASSWORD", confirmPassword)
++
++     try {
++       console.log("Attempting to update credential...")
++       const credlist = await LAMP.Credential.list(passwordDialogResearcher.id)
++       const response = (await LAMP.Credential.update(passwordDialogResearcher.id, passwordDialogResearcher.email, {
++         ...(credlist[0] as any),
++         secret_key: confirmPassword,
++       })) as any
++       console.log("Update response:", response)
++
++       if (response && response.error === "404.no-such-credentials") {
++         console.log("Attempting to create new credential...")
++         await LAMP.Credential.create(passwordDialogResearcher.id, passwordDialogResearcher.email, confirmPassword)
++         enqueueSnackbar("Successfully created new credential", { variant: "success" })
++       } else {
++         enqueueSnackbar("Successfully updated credential", { variant: "success" })
++       }
++     } catch (updateError) {
++       console.error("Operation error:", updateError)
++       throw updateError
++     }
++
++     setShowPasswordDialog(false)
++     setPasswordDialogResearcher(null)
++   } catch (error) {
++     console.error("Final error:", error)
++     enqueueSnackbar(`Failed to create/update credential: ${error.message || "Unknown error"}`, { variant: "error" })
++   }
++ }
++
++ const handleClosePasswordDialog = () => {
++   setShowPasswordDialog(false)
++   setPasswordError("")
++   setPasswordDialogResearcher(null)
++ }
+
+  // const confirmActionTable = async (status) => {
+  //   if (status === "Yes" && editingResearcher) {
+  //     try {
+  //       await LAMP.Researcher.delete(editingResearcher.id)
+  //       enqueueSnackbar("Deleted researcher", { variant: "success" })
+  //       refreshResearchers?.()
+  //     } catch {
+  //       enqueueSnackbar("Failed to delete", { variant: "error" })
+  //     }
+  //   }
+  //   setConfirmationDialogTable(false)
+  //   setEditingResearcher(null)
+  // }
+
+  const confirmActionTable = async (status) => {
+    if (status === "Yes" && editingResearcher) {
+      try {
+        const credentials = await LAMP.Credential.list(editingResearcher.id)
+        const filteredCreds = credentials.filter((c) => c.hasOwnProperty("origin"))
+
+        await Promise.all(
+          filteredCreds.map((cred) =>
+            LAMP.Credential.delete(editingResearcher.id, cred["access_key"]).catch((error) => {
+              console.error(`Failed to delete credential ${cred["access_key"]}:`, error)
+              throw error
+            })
+          )
+        )
+
+        const deleteResult = (await LAMP.Researcher.delete(editingResearcher.id)) as any
+
+        if (deleteResult?.error === undefined) {
+          enqueueSnackbar(t("Successfully deleted the investigator and all associated credentials."), {
+            variant: "success",
+          })
+        } else {
+          enqueueSnackbar(t("Failed to delete the investigator."), {
+            variant: "error",
+          })
+        }
+        refreshResearchers?.()
+      } catch (error) {
+        enqueueSnackbar(t("Failed to delete the investigator or their credentials."), {
+          variant: "error",
+        })
+        console.error(`Error in deletion process for researcher ${editingResearcher.id}:`, error)
+      }
+    }
+    setConfirmationDialogTable(false)
+    setEditingResearcher(null)
+  }
+
+  // ... rest of the component logic remains the same ...
+
+  return (
+    <React.Fragment>
+      <div className="table-container">
+        {showCopyTooltip && <CopyTooltip text="Copied!" position={tooltipPosition} />}
+        <ConfirmationDialog
+          confirmationDialog={confirmationDialogTable ? 1 : 0}
+          open={!!confirmationDialogTable}
+          onClose={() => setConfirmationDialogTable(false)}
+          confirmAction={confirmActionTable}
+          confirmationMsg="Are you sure you want to delete this investigator?"
+        />
++       {/* Password Reset Dialog */}
++       <Dialog open={showPasswordDialog} onClose={handleClosePasswordDialog} aria-labelledby="form-dialog-title">
++         <DialogTitle id="form-dialog-title">Reset Researcher Password</DialogTitle>
++         <DialogContent>
++           {passwordError && (
++             <Typography color="error" variant="body2" gutterBottom>
++               {passwordError}
++             </Typography>
++           )}
++           <TextField
++             autoFocus
++             margin="dense"
++             id="new-password"
++             label="New Password"
++             type="password"
++             fullWidth
++             value={updatedPassword}
++             onChange={(e) => setUpdatedPassword(e.target.value)}
++           />
++           <TextField
++             margin="dense"
++             id="confirm-password"
++             label="Confirm Password"
++             type="password"
++             fullWidth
++             value={confirmPassword}
++             onChange={(e) => setConfirmPassword(e.target.value)}
++           />
++         </DialogContent>
++         <DialogActions>
++           <Button onClick={handleClosePasswordDialog} color="primary">
++             Close
++           </Button>
++           <Button onClick={handleSubmitPassword} color="primary" variant="contained">
++             Submit
++           </Button>
++         </DialogActions>
++       </Dialog>
+        <CommonTable
+          data={data}
+          columns={columns}
+          actions={actions}
+          selectable={true}
+          selectedRows={selectedRows}
+          onSelectRow={(ids) => setSelectedRows(ids)}
+          onSelectAll={() => setSelectedRows(selectedRows.length === data.length ? [] : data.map((r) => r.id))}
+          sortConfig={{ field: null, direction: null }}
+          onSort={() => {}}
+          indexmap={data.reduce((acc, r, i) => ({ ...acc, [r.id]: i }), {})}
+          renderCell={renderCellContent}
+          filters={filters}
+          onFilter={setFilters}
+          filterDisplay="menu"
+          categorizeItems={null}
+        />
+      </div>
+    </React.Fragment>
+  )

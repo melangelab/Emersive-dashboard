@@ -181,19 +181,8 @@ export default function StudyCreator({
         })
         studiesData.participant_count = 0
         handleNewStudy(studiesData)
-        // setStudyDetails({
-        //   name: "",
-        //   purpose: StudyPurpose.P,
-        //   piInstitution: resins || "",
-        //   collaboratingInstitutions: [],
-        //   hasFunding: false,
-        //   hasEthicsPermission: false,
-        //   state: StudyState.DEV,
-        //   description: "",
-        // })
         setLoading(false)
         setStudyCreated(true)
-        // handleClose()
       })
       .catch((e) => {
         enqueueSnackbar(`${t("An error occured while creating new study - studyName.", { studyName: studyName })}`, {

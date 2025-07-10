@@ -24,6 +24,7 @@ import { ReactComponent as SensorIcon } from "../../../icons/NewIcons/sensor-on-
 import { createPortal } from "react-dom"
 import "../../Admin/admin.css"
 import AddIcon from "@material-ui/icons/Add"
+import { Refresh } from "@mui/icons-material"
 
 const useStyles = makeStyles((theme) =>
   createStyles({
@@ -129,7 +130,8 @@ export default function AddSensor({
 
   const addOrUpdateSensor = () => {
     setSensorDialog(false)
-    setSensors()
+    // setSensors()
+    props.refreshSensors?.()
   }
 
   return (

@@ -248,7 +248,6 @@ const TableActionsDiv = ({
         console.error("Operation error:", updateError)
         throw updateError
       }
-
       setShowPasswordDialog(false)
     } catch (error) {
       console.error("Final error:", error)
@@ -493,6 +492,11 @@ const ResearchersTable = ({
   const [filters, setFilters] = useState({})
   const [activeButtonTable, setActiveButtonTable] = useState({ id: null, action: null })
   const [confirmationDialogTable, setConfirmationDialogTable] = useState(false)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [updatedPassword, setUpdatedPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [passwordError, setPasswordError] = useState("")
+  const [passwordDialogResearcher, setPasswordDialogResearcher] = useState(null)
 
   useEffect(() => {
     console.warn("Active button table changed:", activeButtonTable)
@@ -545,93 +549,286 @@ const ResearchersTable = ({
   }
 
   // Actions column
-  const actions = (row) => (
-    <TableActionsDiv
-      key={row.id + "-" + activeButtonTable.id + "-" + activeButtonTable.action}
-      row={row}
-      rowIndex={data.findIndex((r) => r.id === row.id)}
-      history={history}
-      setSelectedRow={setSelectedRow}
-      selectedRow={selectedRow}
-      setActiveButton={(abt) => {
-        console.warn("Setting active button from row:", row.id, "with row, action:", abt)
-        setActiveButtonTable({ id: abt.id, action: abt.action })
-      }}
-      activeButton={activeButtonTable}
-      researcherSelected={editingResearcher}
-      setResearcherSelected={setEditingResearcher}
-      changeElement={changeElement}
-      isEditing={!!editingResearcher && editingResearcher.id === row.id}
-      setIsEditing={() => setEditingResearcher(row)}
-      setEditedData={setEditedData}
-      handleSaveEdit={async () => {
-        // Save logic (similar to before)
-        try {
-          const rowEdits = {}
-          Object.entries(editedData).forEach(([key, value]) => {
-            if (key.startsWith(`${row.id}-`)) {
-              const columnKey = key.replace(`${row.id}-`, "")
-              rowEdits[columnKey] = value
-            }
-          })
+  const actions = useCallback(
+    (row) => {
+      console.warn("Rendering actions for row:", row, "activeButtonTable:", activeButtonTable)
+      const isSuspended = row.status === "SUSPENDED"
+      const isActive = (action) => activeButtonTable.id === row.id && activeButtonTable.action === action
+      const isEditing = editingResearcher?.id === row.id
 
-          const updatedResearcher = { ...row, ...rowEdits }
-          await LAMP.Researcher.update(row.id, updatedResearcher)
-          enqueueSnackbar("Successfully updated researcher", { variant: "success" })
-          const newEditedData = { ...editedData }
-          Object.keys(newEditedData).forEach((key) => {
-            if (key.startsWith(`${row.id}-`)) {
-              delete newEditedData[key]
-            }
-          })
-          setEditedData(newEditedData)
-          setEditingResearcher(null)
-          setActiveButtonTable({ id: null, action: null })
-          onResearchersUpdate([updatedResearcher])
-        } catch {
-          enqueueSnackbar("Failed to update researcher", { variant: "error" })
-        }
-      }}
-      handleSuspension={async () => {
-        // Suspend logic
-        try {
-          const updatedResearcher = {
-            ...row,
-            status: "SUSPENDED",
-            timestamps: {
-              ...row.timestamps,
-              suspendedAt: new Date().getTime(),
-            },
-          }
+      const handleActionClick = async (buttonType) => {
+        setEditingResearcher(row)
+        setSelectedRow(data.findIndex((r) => r.id === row.id))
+        console.warn("handleActionClick has row:", row, "activeButtonTable:", activeButtonTable)
 
-          await LAMP.Researcher.update(row.id, {
-            ...updatedResearcher,
-          })
-          enqueueSnackbar("Suspended researcher", { variant: "success" })
-          setActiveButtonTable({ id: null, action: null })
-          onResearchersUpdate([updatedResearcher])
-        } catch {
-          enqueueSnackbar("Failed to suspend", { variant: "error" })
-        }
-      }}
-      handleUnSuspension={async () => {
-        // Unsuspend logic
-        try {
-          const updatedResearcher = {
-            ...row,
-            status: "ACTIVE",
+        if (buttonType === "arrow_forward") {
+          history.push(`/researcher/${row.id}/studies`)
+        } else if (buttonType === "view") {
+          changeElement?.({ researcher: row, idx: data.findIndex((r) => r.id === row.id) })
+        } else if (buttonType === "save") {
+          // Save logic
+          try {
+            const rowEdits = {}
+            Object.entries(editedData).forEach(([key, value]) => {
+              if (key.startsWith(`${row.id}-`)) {
+                const columnKey = key.replace(`${row.id}-`, "")
+                rowEdits[columnKey] = value
+              }
+            })
+
+            const updatedResearcher = { ...row, ...rowEdits }
+            await LAMP.Researcher.update(row.id, updatedResearcher)
+            enqueueSnackbar("Successfully updated researcher", { variant: "success" })
+            const newEditedData = { ...editedData }
+            Object.keys(newEditedData).forEach((key) => {
+              if (key.startsWith(`${row.id}-`)) {
+                delete newEditedData[key]
+              }
+            })
+            setEditedData(newEditedData)
+            setEditingResearcher(null)
+            setActiveButtonTable({ id: null, action: null })
+            onResearchersUpdate([updatedResearcher])
+          } catch {
+            enqueueSnackbar("Failed to update researcher", { variant: "error" })
           }
-          await LAMP.Researcher.update(row.id, updatedResearcher)
-          enqueueSnackbar("Unsuspended researcher", { variant: "success" })
-          setActiveButtonTable({ id: null, action: null })
-          onResearchersUpdate([updatedResearcher])
-        } catch {
-          enqueueSnackbar("Failed to unsuspend", { variant: "error" })
+        } else if (buttonType === "delete") {
+          setConfirmationDialogTable(true)
+        } else if (["edit", "suspend", "unsuspend"].includes(buttonType)) {
+          if (isActive(buttonType)) {
+            setActiveButtonTable({ id: null, action: null })
+            setEditingResearcher(null)
+          } else {
+            setActiveButtonTable({ id: row.id, action: buttonType })
+            if (buttonType === "suspend") {
+              // Handle suspend
+              try {
+                const updatedResearcher = {
+                  ...row,
+                  status: "SUSPENDED",
+                  timestamps: {
+                    ...row.timestamps,
+                    suspendedAt: new Date().getTime(),
+                  },
+                }
+
+                await LAMP.Researcher.update(row.id, updatedResearcher)
+                console.warn("suspended researcher:", updatedResearcher)
+                enqueueSnackbar("Suspended researcher", { variant: "success" })
+                setActiveButtonTable({ id: null, action: null })
+                onResearchersUpdate([updatedResearcher])
+                // refreshResearchers?.()
+              } catch {
+                enqueueSnackbar("Failed to suspend", { variant: "error" })
+              }
+            } else if (buttonType === "unsuspend") {
+              // Handle unsuspend
+              try {
+                const updatedResearcher = {
+                  ...row,
+                  status: "ACTIVE",
+                }
+                await LAMP.Researcher.update(row.id, updatedResearcher)
+                console.warn("unsuspended researcher:", updatedResearcher)
+                enqueueSnackbar("Unsuspended researcher", { variant: "success" })
+                setActiveButtonTable({ id: null, action: null })
+                onResearchersUpdate([updatedResearcher])
+                // refreshResearchers?.()
+              } catch {
+                enqueueSnackbar("Failed to unsuspend", { variant: "error" })
+              }
+            }
+          }
+        } else if (buttonType === "passwordEdit") {
+          setPasswordDialogResearcher(row)
+          setShowPasswordDialog(true)
+          setUpdatedPassword("")
+          setConfirmPassword("")
+          setPasswordError("")
         }
-      }}
-      setConfirmationDialog={setConfirmationDialogTable}
-    />
+      }
+
+      return (
+        <div className="table-actions-container">
+          {/* Visualize Researcher */}
+          <div className="table-actions-icon-container" onClick={() => handleActionClick("arrow_forward")}>
+            <VisualizeResearcher className="table-actions-icon" style={{ transform: "scaleX(-1)" }} />
+          </div>
+
+          {/* View Researcher */}
+          <div className="table-actions-icon-container" onClick={() => handleActionClick("view")}>
+            <ViewResearcher className="table-actions-icon" />
+          </div>
+
+          {/* Edit Researcher */}
+          <div
+            className={`table-actions-icon-container ${isActive("edit") ? "active" : ""}`}
+            onClick={() => handleActionClick("edit")}
+          >
+            <Edit className="table-actions-icon" />
+          </div>
+
+          {/* Save Researcher */}
+          <div
+            className={`table-actions-icon-container ${isEditing ? "" : "disabled-icon-container"}`}
+            onClick={() => (isEditing ? handleActionClick("save") : null)}
+          >
+            <Save className={`table-actions-icon ${isEditing ? "" : "disabled-icon"}`} />
+          </div>
+
+          {/* Password Edit */}
+          <div className="table-actions-icon-container">
+            <PasswordEdit className="table-actions-icon" onClick={() => handleActionClick("passwordEdit")} />
+          </div>
+
+          {/* Suspend/Unsuspend Researcher */}
+          <div
+            className="table-actions-icon-container"
+            onClick={() => handleActionClick(isSuspended ? "unsuspend" : "suspend")}
+          >
+            {isSuspended ? <UnSuspend className="table-actions-icon" /> : <Suspend className="table-actions-icon" />}
+          </div>
+
+          {/* Delete Researcher */}
+          <div
+            className={`table-actions-icon-container ${isActive("delete") ? "active" : ""}`}
+            onClick={() => handleActionClick("delete")}
+          >
+            <Delete className="table-actions-icon" />
+          </div>
+        </div>
+      )
+    },
+    [activeButtonTable, editingResearcher, editedData]
   )
+
+  const handleSubmitPassword = async () => {
+    try {
+      if (updatedPassword !== confirmPassword) {
+        setPasswordError("Passwords do not match")
+        return
+      }
+      console.log("IN THE UPDATED PASSWORD", confirmPassword)
+      try {
+        console.log("Attempting to update credential...")
+        const credlist = await LAMP.Credential.list(passwordDialogResearcher.id)
+        const response = (await LAMP.Credential.update(passwordDialogResearcher.id, passwordDialogResearcher.email, {
+          ...(credlist[0] as any),
+          secret_key: confirmPassword,
+        })) as any
+        console.log("Update response:", response)
+        if (response && response.error === "404.no-such-credentials") {
+          console.log("Attempting to create new credential...")
+          await LAMP.Credential.create(passwordDialogResearcher.id, passwordDialogResearcher.email, confirmPassword)
+          enqueueSnackbar("Successfully created new credential", { variant: "success" })
+        } else {
+          enqueueSnackbar("Successfully updated credential", { variant: "success" })
+        }
+      } catch (updateError) {
+        console.error("Operation error:", updateError)
+        throw updateError
+      }
+      setShowPasswordDialog(false)
+      setPasswordDialogResearcher(null)
+    } catch (error) {
+      console.error("Final error:", error)
+      enqueueSnackbar(`Failed to create/update credential: ${error.message || "Unknown error"}`, { variant: "error" })
+    }
+  }
+
+  const handleClosePasswordDialog = () => {
+    setShowPasswordDialog(false)
+    setPasswordError("")
+    setPasswordDialogResearcher(null)
+  }
+
+  // (row) => (
+  //   <TableActionsDiv
+  //     key={row.id + "-" + activeButtonTable.id + "-" + activeButtonTable.action}
+  //     row={row}
+  //     rowIndex={data.findIndex((r) => r.id === row.id)}
+  //     history={history}
+  //     setSelectedRow={setSelectedRow}
+  //     selectedRow={selectedRow}
+  //     setActiveButton={(abt) => {
+  //       console.warn("Setting active button from row:", row.id, "with row, action:", abt)
+  //       setActiveButtonTable({ id: abt.id, action: abt.action })
+  //     }}
+  //     activeButton={activeButtonTable}
+  //     researcherSelected={editingResearcher}
+  //     setResearcherSelected={setEditingResearcher}
+  //     changeElement={changeElement}
+  //     isEditing={!!editingResearcher && editingResearcher.id === row.id}
+  //     setIsEditing={() => setEditingResearcher(row)}
+  //     setEditedData={setEditedData}
+  //     handleSaveEdit={async () => {
+  //       // Save logic (similar to before)
+  //       try {
+  //         const rowEdits = {}
+  //         Object.entries(editedData).forEach(([key, value]) => {
+  //           if (key.startsWith(`${row.id}-`)) {
+  //             const columnKey = key.replace(`${row.id}-`, "")
+  //             rowEdits[columnKey] = value
+  //           }
+  //         })
+
+  //         const updatedResearcher = { ...row, ...rowEdits }
+  //         await LAMP.Researcher.update(row.id, updatedResearcher)
+  //         enqueueSnackbar("Successfully updated researcher", { variant: "success" })
+  //         const newEditedData = { ...editedData }
+  //         Object.keys(newEditedData).forEach((key) => {
+  //           if (key.startsWith(`${row.id}-`)) {
+  //             delete newEditedData[key]
+  //           }
+  //         })
+  //         setEditedData(newEditedData)
+  //         setEditingResearcher(null)
+  //         setActiveButtonTable({ id: null, action: null })
+  //         onResearchersUpdate([updatedResearcher])
+  //       } catch {
+  //         enqueueSnackbar("Failed to update researcher", { variant: "error" })
+  //       }
+  //     }}
+  //     handleSuspension={async () => {
+  //       // Suspend logic
+  //       try {
+  //         const updatedResearcher = {
+  //           ...row,
+  //           status: "SUSPENDED",
+  //           timestamps: {
+  //             ...row.timestamps,
+  //             suspendedAt: new Date().getTime(),
+  //           },
+  //         }
+
+  //         await LAMP.Researcher.update(row.id, {
+  //           ...updatedResearcher,
+  //         })
+  //         enqueueSnackbar("Suspended researcher", { variant: "success" })
+  //         setActiveButtonTable({ id: null, action: null })
+  //         onResearchersUpdate([updatedResearcher])
+  //       } catch {
+  //         enqueueSnackbar("Failed to suspend", { variant: "error" })
+  //       }
+  //     }}
+  //     handleUnSuspension={async () => {
+  //       // Unsuspend logic
+  //       try {
+  //         const updatedResearcher = {
+  //           ...row,
+  //           status: "ACTIVE",
+  //         }
+  //         await LAMP.Researcher.update(row.id, updatedResearcher)
+  //         enqueueSnackbar("Unsuspended researcher", { variant: "success" })
+  //         setActiveButtonTable({ id: null, action: null })
+  //         onResearchersUpdate([updatedResearcher])
+  //       } catch {
+  //         enqueueSnackbar("Failed to unsuspend", { variant: "error" })
+  //       }
+  //     }}
+  //     setConfirmationDialog={setConfirmationDialogTable}
+  //   />
+  // )
 
   // const confirmActionTable = async (status) => {
   //   if (status === "Yes" && editingResearcher) {
@@ -1053,6 +1250,44 @@ const ResearchersTable = ({
           confirmAction={confirmActionTable}
           confirmationMsg="Are you sure you want to delete this investigator?"
         />
+        {/* Password Reset Dialog */}
+        <Dialog open={showPasswordDialog} onClose={handleClosePasswordDialog} aria-labelledby="form-dialog-title">
+          <DialogTitle id="form-dialog-title">Reset Researcher Password</DialogTitle>
+          <DialogContent>
+            {passwordError && (
+              <Typography color="error" variant="body2" gutterBottom>
+                {passwordError}
+              </Typography>
+            )}
+            <TextField
+              autoFocus
+              margin="dense"
+              id="new-password"
+              label="New Password"
+              type="password"
+              fullWidth
+              value={updatedPassword}
+              onChange={(e) => setUpdatedPassword(e.target.value)}
+            />
+            <TextField
+              margin="dense"
+              id="confirm-password"
+              label="Confirm Password"
+              type="password"
+              fullWidth
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClosePasswordDialog} color="primary">
+              Close
+            </Button>
+            <Button onClick={handleSubmitPassword} color="primary" variant="contained">
+              Submit
+            </Button>
+          </DialogActions>
+        </Dialog>
         <CommonTable
           data={data}
           columns={columns}

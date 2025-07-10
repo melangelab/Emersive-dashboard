@@ -919,7 +919,7 @@ const AddStudy = ({ studies, researcherId, newStudyObj, setParticipants, updated
   }
 
   const handleNewStudyData = (data) => {
-    setParticipants()
+    // setParticipants()
     newStudyObj(data)
     updatedDataStudy(data)
   }

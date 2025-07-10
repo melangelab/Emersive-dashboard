@@ -140,6 +140,7 @@ export default function AddUser({
       setShowErrorMsg(true)
       return false
     } else {
+      let updatedParticipants = []
       setIsCreatingParticipant(true)
       setStudyBtnClicked(true)
       let newCount = 1
@@ -150,7 +151,6 @@ export default function AddUser({
 
         let id = typeof idData === "object" ? idData.id : idData
         let newParticipant: any = {}
-
         if (typeof idData === "object") {
           newParticipant = idData
         } else {
@@ -238,7 +238,7 @@ export default function AddUser({
 
           const studyParticipants = currentStudy?.participants
           const participantCreated = await LAMP.Participant.view(newParticipant.id)
-          const updatedParticipants = [...studyParticipants, participantCreated]
+          updatedParticipants = [...studyParticipants, participantCreated]
 
           const updatedStudy = {
             ...currentStudy,
@@ -295,7 +295,7 @@ export default function AddUser({
         // await LAMP.Researcher.update(_owner.data.Researcher, {"timestamps.lastActivityAt": new Date()} as any).then(()=>console.log("successfully updated for participant", id))
         ids = [...ids, id]
       }
-      setParticipants()
+      // setParticipants()
     }
     setSelectedStudy("")
     closePopUp(2)

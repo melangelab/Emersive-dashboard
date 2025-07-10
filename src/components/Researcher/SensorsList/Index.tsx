@@ -631,6 +631,7 @@ export default function SensorsList({
                 researcherId={researcherId}
                 title={title}
                 resemail={props.resemail}
+                refreshSensors={searchFilterSensors}
               />
             }
             actions={["refresh", "search", "grid", "table", "filter", "download"]}
@@ -648,7 +649,7 @@ export default function SensorsList({
           {!tabularView ? (
             <div className="" style={{ overflow: "auto" }}>
               <Grid container spacing={3} className="cards-grid">
-                {sensors !== null && sensors.length > 0 ? (
+                {sensors !== null && sensors?.length > 0 ? (
                   <>
                     {(paginatedSensors ?? []).map((item, index) => (
                       <Grid item xs={12} sm={12} md={6} lg={4} key={item.id}>
