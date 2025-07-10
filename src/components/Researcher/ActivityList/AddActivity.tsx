@@ -312,6 +312,7 @@ export default function AddActivity({
                     "lamp.mood_tracker",
                     "lamp.video_recording",
                     "lamp.recording",
+                    "lamp.tips",
                   ].includes(x.id)
                 ).length > 0 && (
                   <React.Fragment>
@@ -329,6 +330,7 @@ export default function AddActivity({
                           "lamp.mood_tracker",
                           "lamp.video_recording",
                           "lamp.recording",
+                          "lamp.tips",
                         ].includes(x.id)
                       )
                       .map((x) => (
@@ -358,6 +360,8 @@ export default function AddActivity({
                       "lamp.stories",
                       "lamp.mood_tracker",
                       "lamp.video_recording",
+                      "lamp.recording",
+                      "lamp.tips",
                     ].includes(x.id)
                 ).length > 0 && [
                   <MenuItem divider key="head" disabled className={classes.borderTop}>
@@ -375,6 +379,7 @@ export default function AddActivity({
                           "lamp.mood_tracker",
                           "lamp.video_recording",
                           "lamp.recording",
+                          "lamp.tips",
                         ].includes(x.id)
                     )
                     .map((x) => (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { get } from "lodash"
 import dayjs from "dayjs"
 import Credentials from "../Credentials"
@@ -545,92 +545,95 @@ const ResearchersTable = ({
   }
 
   // Actions column
-  const actions = (row) => (
-    <TableActionsDiv
-      key={row.id + "-" + activeButtonTable.id + "-" + activeButtonTable.action}
-      row={row}
-      rowIndex={data.findIndex((r) => r.id === row.id)}
-      history={history}
-      setSelectedRow={setSelectedRow}
-      selectedRow={selectedRow}
-      setActiveButton={(abt) => {
-        console.warn("Setting active button from row:", row.id, "with row, action:", abt)
-        setActiveButtonTable({ id: abt.id, action: abt.action })
-      }}
-      activeButton={activeButtonTable}
-      researcherSelected={editingResearcher}
-      setResearcherSelected={setEditingResearcher}
-      changeElement={changeElement}
-      isEditing={!!editingResearcher && editingResearcher.id === row.id}
-      setIsEditing={() => setEditingResearcher(row)}
-      setEditedData={setEditedData}
-      handleSaveEdit={async () => {
-        // Save logic (similar to before)
-        try {
-          const rowEdits = {}
-          Object.entries(editedData).forEach(([key, value]) => {
-            if (key.startsWith(`${row.id}-`)) {
-              const columnKey = key.replace(`${row.id}-`, "")
-              rowEdits[columnKey] = value
-            }
-          })
+  const actions = useCallback(
+    (row) => (
+      <TableActionsDiv
+        key={row.id + "-" + activeButtonTable.id + "-" + activeButtonTable.action}
+        row={row}
+        rowIndex={data.findIndex((r) => r.id === row.id)}
+        history={history}
+        setSelectedRow={setSelectedRow}
+        selectedRow={selectedRow}
+        setActiveButton={(abt) => {
+          console.warn("Setting active button from row:", row.id, "with row, action:", abt)
+          setActiveButtonTable({ id: abt.id, action: abt.action })
+        }}
+        activeButton={activeButtonTable}
+        researcherSelected={editingResearcher}
+        setResearcherSelected={setEditingResearcher}
+        changeElement={changeElement}
+        isEditing={!!editingResearcher && editingResearcher.id === row.id}
+        setIsEditing={() => setEditingResearcher(row)}
+        setEditedData={setEditedData}
+        handleSaveEdit={async () => {
+          // Save logic (similar to before)
+          try {
+            const rowEdits = {}
+            Object.entries(editedData).forEach(([key, value]) => {
+              if (key.startsWith(`${row.id}-`)) {
+                const columnKey = key.replace(`${row.id}-`, "")
+                rowEdits[columnKey] = value
+              }
+            })
 
-          const updatedResearcher = { ...row, ...rowEdits }
-          await LAMP.Researcher.update(row.id, updatedResearcher)
-          enqueueSnackbar("Successfully updated researcher", { variant: "success" })
-          const newEditedData = { ...editedData }
-          Object.keys(newEditedData).forEach((key) => {
-            if (key.startsWith(`${row.id}-`)) {
-              delete newEditedData[key]
+            const updatedResearcher = { ...row, ...rowEdits }
+            await LAMP.Researcher.update(row.id, updatedResearcher)
+            enqueueSnackbar("Successfully updated researcher", { variant: "success" })
+            const newEditedData = { ...editedData }
+            Object.keys(newEditedData).forEach((key) => {
+              if (key.startsWith(`${row.id}-`)) {
+                delete newEditedData[key]
+              }
+            })
+            setEditedData(newEditedData)
+            setEditingResearcher(null)
+            setActiveButtonTable({ id: null, action: null })
+            onResearchersUpdate([updatedResearcher])
+          } catch {
+            enqueueSnackbar("Failed to update researcher", { variant: "error" })
+          }
+        }}
+        handleSuspension={async () => {
+          // Suspend logic
+          try {
+            const updatedResearcher = {
+              ...row,
+              status: "SUSPENDED",
+              timestamps: {
+                ...row.timestamps,
+                suspendedAt: new Date().getTime(),
+              },
             }
-          })
-          setEditedData(newEditedData)
-          setEditingResearcher(null)
-          setActiveButtonTable({ id: null, action: null })
-          onResearchersUpdate([updatedResearcher])
-        } catch {
-          enqueueSnackbar("Failed to update researcher", { variant: "error" })
-        }
-      }}
-      handleSuspension={async () => {
-        // Suspend logic
-        try {
-          const updatedResearcher = {
-            ...row,
-            status: "SUSPENDED",
-            timestamps: {
-              ...row.timestamps,
-              suspendedAt: new Date().getTime(),
-            },
-          }
 
-          await LAMP.Researcher.update(row.id, {
-            ...updatedResearcher,
-          })
-          enqueueSnackbar("Suspended researcher", { variant: "success" })
-          setActiveButtonTable({ id: null, action: null })
-          onResearchersUpdate([updatedResearcher])
-        } catch {
-          enqueueSnackbar("Failed to suspend", { variant: "error" })
-        }
-      }}
-      handleUnSuspension={async () => {
-        // Unsuspend logic
-        try {
-          const updatedResearcher = {
-            ...row,
-            status: "ACTIVE",
+            await LAMP.Researcher.update(row.id, {
+              ...updatedResearcher,
+            })
+            enqueueSnackbar("Suspended researcher", { variant: "success" })
+            setActiveButtonTable({ id: null, action: null })
+            onResearchersUpdate([updatedResearcher])
+          } catch {
+            enqueueSnackbar("Failed to suspend", { variant: "error" })
           }
-          await LAMP.Researcher.update(row.id, updatedResearcher)
-          enqueueSnackbar("Unsuspended researcher", { variant: "success" })
-          setActiveButtonTable({ id: null, action: null })
-          onResearchersUpdate([updatedResearcher])
-        } catch {
-          enqueueSnackbar("Failed to unsuspend", { variant: "error" })
-        }
-      }}
-      setConfirmationDialog={setConfirmationDialogTable}
-    />
+        }}
+        handleUnSuspension={async () => {
+          // Unsuspend logic
+          try {
+            const updatedResearcher = {
+              ...row,
+              status: "ACTIVE",
+            }
+            await LAMP.Researcher.update(row.id, updatedResearcher)
+            enqueueSnackbar("Unsuspended researcher", { variant: "success" })
+            setActiveButtonTable({ id: null, action: null })
+            onResearchersUpdate([updatedResearcher])
+          } catch {
+            enqueueSnackbar("Failed to unsuspend", { variant: "error" })
+          }
+        }}
+        setConfirmationDialog={setConfirmationDialogTable}
+      />
+    ),
+    [activeButtonTable, data, selectedRow, editingResearcher, editedData]
   )
 
   // const confirmActionTable = async (status) => {
