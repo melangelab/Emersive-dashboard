@@ -283,13 +283,13 @@ export default function Researchers({ history, updateStore, adminType, authType,
       visible: false,
       sortable: true,
     },
-    {
-      id: "actions",
-      label: "Actions",
-      value: (s) => "", // Action buttons rendered separately
-      visible: true,
-      sortable: false,
-    },
+    // {
+    //   id: "actions",
+    //   label: "Actions",
+    //   value: (s) => "", // Action buttons rendered separately
+    //   visible: true,
+    //   sortable: false,
+    // },
   ])
 
   const columnsNames = {

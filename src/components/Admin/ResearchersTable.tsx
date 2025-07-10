@@ -50,6 +50,7 @@ import { ReactComponent as Download } from "../../icons/NewIcons/progress-downlo
 
 import "./admin.css"
 import SearchBox from "../SearchBox"
+import CommonTable, { TableColumn } from "../Researcher/CommonTable"
 
 interface ColumnConfig {
   [key: string]: string
@@ -167,8 +168,9 @@ const TableActionsDiv = ({
   setResearcherSelected,
   ...props
 }) => {
+  console.warn("TableActionsDiv props: row.id", row.id, "activeButton", activeButton, props.key)
   // Helper function to determine if this row has the active button
-  const isActiveForThisRow = (buttonType) => activeButton === buttonType && selectedRow === rowIndex
+  const isActiveForThisRow = (buttonType) => activeButton.id === row.id && activeButton.action === buttonType
   const [updatedPassword, setUpdatedPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
@@ -177,6 +179,9 @@ const TableActionsDiv = ({
   const actionTriggeredRef = React.useRef(false)
   const { enqueueSnackbar } = useSnackbar()
 
+  useEffect(() => {
+    console.warn("received activebutton", activeButton)
+  }, [activeButton])
   // Helper function to determine suspend/unsuspend state
   const isSuspended = () => {
     return "status" in row && row.status === "SUSPENDED"
@@ -197,11 +202,11 @@ const TableActionsDiv = ({
     } else if (["edit", "suspend", "unsuspend"].includes(buttonType)) {
       // Reset the action triggered flag when changing the active button
       actionTriggeredRef.current = false
-
-      if (activeButton === buttonType) {
-        setActiveButton(null)
+      console.warn("Action triggered for button:", buttonType, activeButton)
+      if (activeButton.id === row.id && activeButton.action === buttonType) {
+        setActiveButton({ id: null, action: null })
       } else {
-        setActiveButton(buttonType)
+        setActiveButton({ id: row.id, action: buttonType })
       }
     } else if (buttonType === "passwordEdit") {
       // Open the password reset dialog
@@ -257,30 +262,29 @@ const TableActionsDiv = ({
   }
 
   useEffect(() => {
-    // Create a local variable to hold the current researcher
     const currentResearcher = row
-
+    console.warn("Current researcher:", currentResearcher, actionTriggeredRef.current)
     // Only proceed if the action hasn't been triggered yet and we have the right conditions
     if (!actionTriggeredRef.current) {
-      if (activeButton === "suspend" && rowIndex === selectedRow) {
+      if (activeButton.action === "suspend" && activeButton.id === row.id) {
         actionTriggeredRef.current = true
         props.handleSuspension()
-        setActiveButton(null)
-      } else if (activeButton === "unsuspend" && rowIndex === selectedRow) {
+        setActiveButton({ id: null, action: null })
+      } else if (activeButton.action === "unsuspend" && activeButton.id === row.id) {
         actionTriggeredRef.current = true
         props.handleUnSuspension()
-        setActiveButton(null)
+        setActiveButton({ id: null, action: null })
       }
     }
 
     // Cleanup function to reset the flag when unmounting or when dependencies change
     return () => {
       // Only reset under specific conditions to prevent unwanted re-triggers
-      if (activeButton !== "suspend" && activeButton !== "unsuspend") {
+      if (activeButton.action !== "suspend" && activeButton.action !== "unsuspend") {
         actionTriggeredRef.current = false
       }
     }
-  }, [activeButton, selectedRow, rowIndex])
+  }, [activeButton, selectedRow, rowIndex, row.id])
 
   return (
     <>
@@ -297,7 +301,9 @@ const TableActionsDiv = ({
 
         {/* Edit Researcher */}
         <div
-          className={`table-actions-icon-container ${isActiveForThisRow("edit") ? "active" : ""}`}
+          className={`table-actions-icon-container ${
+            activeButton.id === row.id && activeButton.action === "edit" ? "active" : ""
+          }`}
           onClick={() => handleActionClick("edit")}
         >
           <Edit className="table-actions-icon" />
@@ -326,7 +332,9 @@ const TableActionsDiv = ({
 
         {/* Delete Researcher */}
         <div
-          className={`table-actions-icon-container ${isActiveForThisRow("delete") ? "active" : ""}`}
+          className={`table-actions-icon-container ${
+            activeButton.id === row.id && activeButton.action === "delete" ? "active" : ""
+          }`}
           onClick={() => handleActionClick("delete")}
         >
           <Delete className="table-actions-icon" />
@@ -480,6 +488,202 @@ const ResearchersTable = ({
 
   const [showCopyTooltip, setShowCopyTooltip] = useState(false)
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+
+  const [editingResearcher, setEditingResearcher] = useState(null)
+  const [filters, setFilters] = useState({})
+  const [activeButtonTable, setActiveButtonTable] = useState({ id: null, action: null })
+  const [confirmationDialogTable, setConfirmationDialogTable] = useState(false)
+
+  useEffect(() => {
+    console.warn("Active button table changed:", activeButtonTable)
+  }, [activeButtonTable])
+
+  const columns: TableColumn[] = selectedColumns.map((col) => ({
+    id: col.id,
+    label: col.label,
+    value: col.value,
+    visible: true,
+    sortable: col.sortable,
+    filterable: true,
+    filterType: "text",
+  }))
+
+  const renderCellContent = (column, row) => {
+    const isEditable =
+      editable_columns.includes(column.id) && activeButtonTable?.id === row.id && activeButtonTable?.action === "edit"
+    if (!isEditable) {
+      return (
+        <div
+          className={!activeButtonTable.action && column.id !== "loggedIn" ? classes.copyableCell : undefined}
+          onClick={(e) => {
+            if (!activeButtonTable.action && row[column.id] && column.id !== "loggedIn") {
+              const textValue =
+                typeof row[column.id] === "object" ? JSON.stringify(row[column.id]) : String(row[column.id])
+              navigator.clipboard.writeText(textValue)
+              setTooltipPosition({ x: e.clientX, y: e.clientY })
+              setShowCopyTooltip(true)
+              setTimeout(() => setShowCopyTooltip(false), 1000)
+            }
+          }}
+        >
+          {formatValue(row[column.id], column.id)}
+        </div>
+      )
+    }
+    const editKey = `${row.id}-${column.id}`
+    const currentValue = editedData[editKey] !== undefined ? editedData[editKey] : row[column.id]
+
+    return (
+      <input
+        type="text"
+        value={currentValue ?? ""}
+        onChange={(e) => setEditedData((prev) => ({ ...prev, [editKey]: e.target.value }))}
+        className="w-full px-2 py-1 border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        onClick={(e) => e.stopPropagation()}
+      />
+    )
+  }
+
+  // Actions column
+  const actions = (row) => (
+    <TableActionsDiv
+      key={row.id + "-" + activeButtonTable.id + "-" + activeButtonTable.action}
+      row={row}
+      rowIndex={data.findIndex((r) => r.id === row.id)}
+      history={history}
+      setSelectedRow={setSelectedRow}
+      selectedRow={selectedRow}
+      setActiveButton={(abt) => {
+        console.warn("Setting active button from row:", row.id, "with row, action:", abt)
+        setActiveButtonTable({ id: abt.id, action: abt.action })
+      }}
+      activeButton={activeButtonTable}
+      researcherSelected={editingResearcher}
+      setResearcherSelected={setEditingResearcher}
+      changeElement={changeElement}
+      isEditing={!!editingResearcher && editingResearcher.id === row.id}
+      setIsEditing={() => setEditingResearcher(row)}
+      setEditedData={setEditedData}
+      handleSaveEdit={async () => {
+        // Save logic (similar to before)
+        try {
+          const rowEdits = {}
+          Object.entries(editedData).forEach(([key, value]) => {
+            if (key.startsWith(`${row.id}-`)) {
+              const columnKey = key.replace(`${row.id}-`, "")
+              rowEdits[columnKey] = value
+            }
+          })
+
+          const updatedResearcher = { ...row, ...rowEdits }
+          await LAMP.Researcher.update(row.id, updatedResearcher)
+          enqueueSnackbar("Successfully updated researcher", { variant: "success" })
+          const newEditedData = { ...editedData }
+          Object.keys(newEditedData).forEach((key) => {
+            if (key.startsWith(`${row.id}-`)) {
+              delete newEditedData[key]
+            }
+          })
+          setEditedData(newEditedData)
+          setEditingResearcher(null)
+          setActiveButtonTable({ id: null, action: null })
+          onResearchersUpdate([updatedResearcher])
+        } catch {
+          enqueueSnackbar("Failed to update researcher", { variant: "error" })
+        }
+      }}
+      handleSuspension={async () => {
+        // Suspend logic
+        try {
+          const updatedResearcher = {
+            ...row,
+            status: "SUSPENDED",
+            timestamps: {
+              ...row.timestamps,
+              suspendedAt: new Date().getTime(),
+            },
+          }
+
+          await LAMP.Researcher.update(row.id, {
+            ...updatedResearcher,
+          })
+          enqueueSnackbar("Suspended researcher", { variant: "success" })
+          setActiveButtonTable({ id: null, action: null })
+          onResearchersUpdate([updatedResearcher])
+        } catch {
+          enqueueSnackbar("Failed to suspend", { variant: "error" })
+        }
+      }}
+      handleUnSuspension={async () => {
+        // Unsuspend logic
+        try {
+          const updatedResearcher = {
+            ...row,
+            status: "ACTIVE",
+          }
+          await LAMP.Researcher.update(row.id, updatedResearcher)
+          enqueueSnackbar("Unsuspended researcher", { variant: "success" })
+          setActiveButtonTable({ id: null, action: null })
+          onResearchersUpdate([updatedResearcher])
+        } catch {
+          enqueueSnackbar("Failed to unsuspend", { variant: "error" })
+        }
+      }}
+      setConfirmationDialog={setConfirmationDialogTable}
+    />
+  )
+
+  // const confirmActionTable = async (status) => {
+  //   if (status === "Yes" && editingResearcher) {
+  //     try {
+  //       await LAMP.Researcher.delete(editingResearcher.id)
+  //       enqueueSnackbar("Deleted researcher", { variant: "success" })
+  //       refreshResearchers?.()
+  //     } catch {
+  //       enqueueSnackbar("Failed to delete", { variant: "error" })
+  //     }
+  //   }
+  //   setConfirmationDialogTable(false)
+  //   setEditingResearcher(null)
+  // }
+
+  const confirmActionTable = async (status) => {
+    if (status === "Yes" && editingResearcher) {
+      try {
+        const credentials = await LAMP.Credential.list(editingResearcher.id)
+        const filteredCreds = credentials.filter((c) => c.hasOwnProperty("origin"))
+
+        await Promise.all(
+          filteredCreds.map((cred) =>
+            LAMP.Credential.delete(editingResearcher.id, cred["access_key"]).catch((error) => {
+              console.error(`Failed to delete credential ${cred["access_key"]}:`, error)
+              throw error
+            })
+          )
+        )
+
+        const deleteResult = (await LAMP.Researcher.delete(editingResearcher.id)) as any
+
+        if (deleteResult?.error === undefined) {
+          enqueueSnackbar(t("Successfully deleted the investigator and all associated credentials."), {
+            variant: "success",
+          })
+        } else {
+          enqueueSnackbar(t("Failed to delete the investigator."), {
+            variant: "error",
+          })
+        }
+        refreshResearchers?.()
+      } catch (error) {
+        enqueueSnackbar(t("Failed to delete the investigator or their credentials."), {
+          variant: "error",
+        })
+        console.error(`Error in deletion process for researcher ${editingResearcher.id}:`, error)
+      }
+    }
+    setConfirmationDialogTable(false)
+    setEditingResearcher(null)
+  }
 
   // Handle cell edit
   const handleCellEdit = (rowIndex: number, columnKey: string, value: any) => {
@@ -689,7 +893,7 @@ const ResearchersTable = ({
   }
 
   const formatValue = (value: any, key: string) => {
-    console.log(value, key)
+    console.warn(value, key)
     if (key === "loggedIn") return <StatusIndicator isOnline={value} />
     if (!value) return "--"
 
@@ -729,7 +933,7 @@ const ResearchersTable = ({
 
   const handleSuspension = async () => {
     try {
-      console.log("Researcher selected suspended,", researcherSelected)
+      console.warn("Researcher selected suspended,", researcherSelected)
 
       const researchersToUpdate = researchersSelected.length > 0 ? researchersSelected : [researcherSelected]
       let updatedResearchers = []
@@ -786,7 +990,7 @@ const ResearchersTable = ({
 
   const handleUnSuspension = async () => {
     try {
-      console.log("Researcher selected unsuspected", researcherSelected)
+      console.warn("Researcher selected unsuspected", researcherSelected)
 
       const researchersToUpdate = researchersSelected.length > 0 ? researchersSelected : [researcherSelected]
       let updatedResearchers = []
@@ -838,6 +1042,37 @@ const ResearchersTable = ({
     }
   }
 
+  return (
+    <React.Fragment>
+      <div className="table-container">
+        {showCopyTooltip && <CopyTooltip text="Copied!" position={tooltipPosition} />}
+        <ConfirmationDialog
+          confirmationDialog={confirmationDialogTable ? 1 : 0}
+          open={!!confirmationDialogTable}
+          onClose={() => setConfirmationDialogTable(false)}
+          confirmAction={confirmActionTable}
+          confirmationMsg="Are you sure you want to delete this investigator?"
+        />
+        <CommonTable
+          data={data}
+          columns={columns}
+          actions={actions}
+          selectable={true}
+          selectedRows={selectedRows}
+          onSelectRow={(ids) => setSelectedRows(ids)}
+          onSelectAll={() => setSelectedRows(selectedRows.length === data.length ? [] : data.map((r) => r.id))}
+          sortConfig={{ field: null, direction: null }}
+          onSort={() => {}}
+          indexmap={data.reduce((acc, r, i) => ({ ...acc, [r.id]: i }), {})}
+          renderCell={renderCellContent}
+          filters={filters}
+          onFilter={setFilters}
+          filterDisplay="menu"
+          categorizeItems={null}
+        />
+      </div>
+    </React.Fragment>
+  )
   return (
     <React.Fragment>
       <div className="table-container">

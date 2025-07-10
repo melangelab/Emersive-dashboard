@@ -212,6 +212,9 @@ export default function AddActivity({
     "lamp.dcog": `${t("D-Cog")}`,
     "lamp.video_recording": `${t("Video Recording")}`,
     "lamp.mood_tracker": `${t("Mood Tracker")}`,
+    "lamp.form_builder": `${t("Form Builder")}`,
+    "lamp.cbt_thought_record": `${t("CBT Thought Record")}`,
+    "lamp.stories": `${t("Stories")}`,
   }
 
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
@@ -306,6 +309,9 @@ export default function AddActivity({
                     "lamp.survey",
                     "lamp.cbt_thought_record",
                     "lamp.stories",
+                    "lamp.mood_tracker",
+                    "lamp.video_recording",
+                    "lamp.recording",
                   ].includes(x.id)
                 ).length > 0 && (
                   <React.Fragment>
@@ -322,6 +328,7 @@ export default function AddActivity({
                           "lamp.stories",
                           "lamp.mood_tracker",
                           "lamp.video_recording",
+                          "lamp.recording",
                         ].includes(x.id)
                       )
                       .map((x) => (
@@ -341,7 +348,6 @@ export default function AddActivity({
                       ))}
                   </React.Fragment>
                 )}
-                {/*           */}
                 {activitySpecs.filter(
                   (x) =>
                     ![
@@ -362,10 +368,13 @@ export default function AddActivity({
                       (x) =>
                         ![
                           "lamp.group",
-                          "lamp.survey",
                           "lamp.form_builder",
+                          "lamp.survey",
                           "lamp.cbt_thought_record",
+                          "lamp.stories",
+                          "lamp.mood_tracker",
                           "lamp.video_recording",
+                          "lamp.recording",
                         ].includes(x.id)
                     )
                     .map((x) => (

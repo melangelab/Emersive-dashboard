@@ -28,7 +28,7 @@ export const useStyles = makeStyles((theme: Theme) =>
     viewGrid: {
       margin: 0,
       width: "100%",
-      height: "calc(100vh - 100px)",
+      height: "750px",
       overflow: "hidden",
     },
     infoContainer: {
@@ -433,160 +433,178 @@ const ViewItems: React.FC<ViewItemsProps> = ({
   )
 
   return (
-    <Grid container spacing={0} className={classes.viewGrid}>
-      <Grid item xs={12} md={submissionInfo ? 7 : 12} className={classes.infoContainer}>
-        <Paper elevation={1} className={`${classes.infoPaper} ${isEditing ? "editing-mode" : ""}`}>
-          {fields.map((field) => (
-            <Box key={field.id} className={classes.fieldContainer}>
-              <Typography className={classes.viewLabel}>{field.label}</Typography>
+    <>
+      {footerButtons}
+      {isEditing && onSave && (
+        <Button
+          variant="contained"
+          className={classes.editButton}
+          onClick={() => onSave(editedValues)}
+          disabled={loading}
+        >
+          {loading ? "Saving..." : "Save Changes"}
+        </Button>
+      )}
+      <Grid container spacing={0} className={classes.viewGrid}>
+        <Grid item xs={12} md={submissionInfo ? 7 : 12} className={classes.infoContainer}>
+          <Paper elevation={1} className={`${classes.infoPaper} ${isEditing ? "editing-mode" : ""}`}>
+            {fields.map((field) => (
+              <Box key={field.id} className={classes.fieldContainer}>
+                <Typography className={classes.viewLabel}>{field.label}</Typography>
 
-              {isEditing && field.editable ? (
-                field.type === "image" ? (
-                  <Box className={classes.imageUploader}>
-                    <ImageUploader
-                      value={editedValues[field.id] || field.value}
-                      onChange={(value) => handleValueChange(field.id, value)}
-                      disabled={!isEditing}
-                    />
-                  </Box>
-                ) : field.type === "multi-text" ? (
-                  <Box>
+                {isEditing && field.editable ? (
+                  field.type === "image" ? (
+                    <Box className={classes.imageUploader}>
+                      <ImageUploader
+                        value={editedValues[field.id] || field.value}
+                        onChange={(value) => handleValueChange(field.id, value)}
+                        disabled={!isEditing}
+                      />
+                    </Box>
+                  ) : field.type === "multi-text" ? (
+                    <Box>
+                      <TextField
+                        className={classes.viewInput}
+                        value={currentTextValue}
+                        onChange={(e) => setCurrentTextValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && currentTextValue.trim()) {
+                            const currentValues = editedValues[field.id] || []
+                            if (!currentValues.includes(currentTextValue.trim())) {
+                              handleValueChange(field.id, [...currentValues, currentTextValue.trim()])
+                              setCurrentTextValue("")
+                            }
+                          }
+                        }}
+                        fullWidth
+                        variant="outlined"
+                        size="small"
+                        placeholder={t("Press Enter to add")}
+                      />
+                      <Box display="flex" flexWrap="wrap" mt={1}>
+                        {(editedValues[field.id] || []).map((value, index) => (
+                          <Chip
+                            key={index}
+                            label={value}
+                            onDelete={() => {
+                              const newValues = [...(editedValues[field.id] || [])]
+                              newValues.splice(index, 1)
+                              handleValueChange(field.id, newValues)
+                            }}
+                            className={classes.selectedChip}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  ) : field.type === "select" ? (
                     <TextField
                       className={classes.viewInput}
-                      value={currentTextValue}
-                      onChange={(e) => setCurrentTextValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && currentTextValue.trim()) {
-                          const currentValues = editedValues[field.id] || []
-                          if (!currentValues.includes(currentTextValue.trim())) {
-                            handleValueChange(field.id, [...currentValues, currentTextValue.trim()])
-                            setCurrentTextValue("")
-                          }
-                        }
-                      }}
+                      value={editedValues[field.id] !== undefined ? editedValues[field.id] : field.value}
+                      onChange={(e) => handleValueChange(field.id, e.target.value)}
                       fullWidth
                       variant="outlined"
                       size="small"
-                      placeholder={t("Press Enter to add")}
-                    />
-                    <Box display="flex" flexWrap="wrap" mt={1}>
-                      {(editedValues[field.id] || []).map((value, index) => (
-                        <Chip
-                          key={index}
-                          label={value}
-                          onDelete={() => {
-                            const newValues = [...(editedValues[field.id] || [])]
-                            newValues.splice(index, 1)
-                            handleValueChange(field.id, newValues)
-                          }}
-                          className={classes.selectedChip}
-                        />
-                      ))}
-                    </Box>
-                  </Box>
-                ) : field.type === "select" ? (
-                  <TextField
-                    className={classes.viewInput}
-                    value={editedValues[field.id] !== undefined ? editedValues[field.id] : field.value}
-                    onChange={(e) => handleValueChange(field.id, e.target.value)}
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    select
-                  >
-                    {field.options?.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                ) : field.type === "multiselect" ? (
-                  <FormControl variant="outlined" size="small" className={classes.selectFormControl}>
-                    <InputLabel id={`${field.id}-label`} />
-                    {/* {field.label}</InputLabel> */}
-                    <Select
-                      labelId={`${field.id}-label`}
-                      multiple
-                      value={editedValues[field.id] !== undefined ? editedValues[field.id] : field.value}
-                      onChange={(e) => handleValueChange(field.id, e.target.value)}
-                      className={classes.multiSelect}
-                      renderValue={(selected: string[]) => (
-                        <Box display="flex" flexWrap="wrap" style={{ gap: 0.5 }}>
-                          {selected.map((value) => {
-                            const option = field.options?.find((opt) => opt.value === value)
-                            return (
-                              <Chip
-                                key={value}
-                                label={option?.label || value}
-                                className={classes.selectedChip}
-                                size="small"
-                              />
-                            )
-                          })}
-                        </Box>
-                      )}
-                      label={field.label}
+                      select
                     >
                       {field.options?.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
-                          <Checkbox
-                            checked={
-                              (editedValues[field.id] !== undefined ? editedValues[field.id] : field.value)?.indexOf(
-                                option.value
-                              ) > -1
-                            }
-                          />
-                          <ListItemText primary={option.label} />
+                          {option.label}
                         </MenuItem>
                       ))}
-                    </Select>
-                  </FormControl>
-                ) : (
-                  <TextField
-                    className={classes.viewInput}
-                    value={editedValues[field.id] !== undefined ? editedValues[field.id] : field.value}
-                    onChange={(e) => handleValueChange(field.id, e.target.value)}
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    multiline={field.type === "multiline"}
-                    minRows={field.type === "multiline" ? 3 : 1}
-                    type={field.type === "phone" ? "tel" : field.type === "email" ? "email" : "text"}
-                  />
-                )
-              ) : field.type === "image" ? (
-                <Box className={classes.imageUploader}>
-                  {field.value ? (
-                    <img src={field.value} alt="Activity" />
+                    </TextField>
+                  ) : field.type === "multiselect" ? (
+                    <FormControl variant="outlined" size="small" className={classes.selectFormControl}>
+                      <InputLabel id={`${field.id}-label`} />
+                      {/* {field.label}</InputLabel> */}
+                      <Select
+                        labelId={`${field.id}-label`}
+                        multiple
+                        value={editedValues[field.id] !== undefined ? editedValues[field.id] : field.value}
+                        onChange={(e) => handleValueChange(field.id, e.target.value)}
+                        className={classes.multiSelect}
+                        renderValue={(selected: string[]) => (
+                          <Box display="flex" flexWrap="wrap" style={{ gap: 0.5 }}>
+                            {selected.map((value) => {
+                              const option = field.options?.find((opt) => opt.value === value)
+                              return (
+                                <Chip
+                                  key={value}
+                                  label={option?.label || value}
+                                  className={classes.selectedChip}
+                                  size="small"
+                                />
+                              )
+                            })}
+                          </Box>
+                        )}
+                        label={field.label}
+                      >
+                        {field.options?.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            <Checkbox
+                              checked={
+                                (editedValues[field.id] !== undefined ? editedValues[field.id] : field.value)?.indexOf(
+                                  option.value
+                                ) > -1
+                              }
+                            />
+                            <ListItemText primary={option.label} />
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   ) : (
-                    <Typography variant="body2" color="textSecondary">
-                      No image uploaded
-                    </Typography>
-                  )}
-                </Box>
-              ) : field.type === "multiselect" ? (
-                <Box display="flex" flexWrap="wrap" style={{ gap: 1 }}>
-                  {(field.value || []).map((value: string) => {
-                    const option = field.options?.find((opt) => opt.value === value)
-                    return <Chip key={value} label={option?.label || value} size="small" variant="outlined" />
-                  })}
-                </Box>
-              ) : field.type === "multi-text" ? (
-                <Box display="flex" flexWrap="wrap" style={{ gap: 1 }}>
-                  {(field.value || []).map((value: string, index: number) => (
-                    <Chip key={index} label={value} size="small" variant="outlined" className={classes.selectedChip} />
-                  ))}
-                </Box>
-              ) : (
-                <Typography className={`${classes.viewValue} ${field.type === "email" ? "email-value" : ""}`}>
-                  {field.value || "-"}
-                </Typography>
-              )}
-              <Divider className={classes.viewDivider} />
-            </Box>
-          ))}
-          {additionalContent}
-          {additionalContent && <Divider className={classes.viewDivider} />}
+                    <TextField
+                      className={classes.viewInput}
+                      value={editedValues[field.id] !== undefined ? editedValues[field.id] : field.value}
+                      onChange={(e) => handleValueChange(field.id, e.target.value)}
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      multiline={field.type === "multiline"}
+                      minRows={field.type === "multiline" ? 3 : 1}
+                      type={field.type === "phone" ? "tel" : field.type === "email" ? "email" : "text"}
+                    />
+                  )
+                ) : field.type === "image" ? (
+                  <Box className={classes.imageUploader}>
+                    {field.value ? (
+                      <img src={field.value} alt="Activity" />
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">
+                        No image uploaded
+                      </Typography>
+                    )}
+                  </Box>
+                ) : field.type === "multiselect" ? (
+                  <Box display="flex" flexWrap="wrap" style={{ gap: 1 }}>
+                    {(field.value || []).map((value: string) => {
+                      const option = field.options?.find((opt) => opt.value === value)
+                      return <Chip key={value} label={option?.label || value} size="small" variant="outlined" />
+                    })}
+                  </Box>
+                ) : field.type === "multi-text" ? (
+                  <Box display="flex" flexWrap="wrap" style={{ gap: 1 }}>
+                    {(field.value || []).map((value: string, index: number) => (
+                      <Chip
+                        key={index}
+                        label={value}
+                        size="small"
+                        variant="outlined"
+                        className={classes.selectedChip}
+                      />
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography className={`${classes.viewValue} ${field.type === "email" ? "email-value" : ""}`}>
+                    {field.value || "-"}
+                  </Typography>
+                )}
+                <Divider className={classes.viewDivider} />
+              </Box>
+            ))}
+            {additionalContent}
+            {/* {additionalContent && <Divider className={classes.viewDivider} />}
           {footerButtons}
           {isEditing && onSave && (
             <Button
@@ -597,37 +615,38 @@ const ViewItems: React.FC<ViewItemsProps> = ({
             >
               {loading ? "Saving..." : "Save Changes"}
             </Button>
-          )}
-        </Paper>
-      </Grid>
-      {submissionInfo && (
-        <Grid item xs={12} md={5} className={classes.sideContainer}>
-          <Paper elevation={3} className={classes.sidePaper}>
-            <div className={classes.tabsContainer}>
-              <div
-                className={`${classes.tab} ${activeTab === "developer" ? classes.activeTab : classes.inactiveTab}`}
-                onClick={() => setActiveTab("developer")}
-              >
-                Developer Info
-              </div>
-              {tabs.map((tab) => (
-                <div
-                  key={tab.id}
-                  className={`${classes.tab} ${activeTab === tab.id ? classes.activeTab : classes.inactiveTab}`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {tab.label}
-                </div>
-              ))}
-            </div>
-
-            <Box className={classes.tabContent}>
-              {activeTab === "developer" ? renderSubmissionInfo() : tabs.find((tab) => tab.id === activeTab)?.content}
-            </Box>
+          )} */}
           </Paper>
         </Grid>
-      )}
-    </Grid>
+        {submissionInfo && (
+          <Grid item xs={12} md={5} className={classes.sideContainer}>
+            <Paper elevation={3} className={classes.sidePaper}>
+              <div className={classes.tabsContainer}>
+                <div
+                  className={`${classes.tab} ${activeTab === "developer" ? classes.activeTab : classes.inactiveTab}`}
+                  onClick={() => setActiveTab("developer")}
+                >
+                  Developer Info
+                </div>
+                {tabs.map((tab) => (
+                  <div
+                    key={tab.id}
+                    className={`${classes.tab} ${activeTab === tab.id ? classes.activeTab : classes.inactiveTab}`}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    {tab.label}
+                  </div>
+                ))}
+              </div>
+
+              <Box className={classes.tabContent}>
+                {activeTab === "developer" ? renderSubmissionInfo() : tabs.find((tab) => tab.id === activeTab)?.content}
+              </Box>
+            </Paper>
+          </Grid>
+        )}
+      </Grid>
+    </>
   )
 }
 

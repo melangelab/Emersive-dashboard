@@ -16,8 +16,10 @@ import MoodTrackerBuilder from "./MoodTrackerBuilder"
 const useStyles = makeStyles((theme) => ({
   root: {
     padding: theme.spacing(3),
-    maxWidth: "100%",
+    width: "100%",
     margin: "0 auto",
+    height: "100%",
+    overflowY: "auto",
   },
 }))
 
@@ -492,7 +494,7 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
   }
 
   const footerButtons = (
-    <Box display="flex" justifyContent="flex-end" style={{ gap: 2 }} mt={2}>
+    <Box display="flex" justifyContent="flex-end" style={{ gap: 2 }} mt={1} mb={1}>
       <Button onClick={onCancel}>{t("Cancel")}</Button>
       <Button variant="contained" color="primary" onClick={handleSave} disabled={loading}>
         {loading ? t("Creating...") : t("Create Activity")}
