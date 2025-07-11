@@ -13,7 +13,6 @@ interface StudyObject {
     ResearcherID: string
     access_scope: number
   }[]
-
   description?: string
   purpose: "practice" | "support" | "research" | "other"
   studyType?: string
@@ -239,12 +238,6 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
     if (sharedParticipants.length > 0) Service.addData("participants", sharedParticipants, researcherId)
     if (sharedActivities.length > 0) Service.addData("activities", sharedActivities, researcherId)
     if (sharedSensors.length > 0) Service.addData("sensors", sharedSensors, researcherId)
-    // Service.addData("studies", sharedStudies)
-    // const currentStudyFilter = localStorage.getItem("studyFilter_" + researcherId)
-    // if (currentStudyFilter) {
-    //   const allStudies = JSON.parse(localStorage.getItem("studies_" + researcherId) || "[]")
-    //   localStorage.setItem("studies_" + researcherId, JSON.stringify([...allStudies, ...sharedStudiesList]))
-    // }
   }
 }
 
@@ -252,6 +245,7 @@ export const saveStudyData = (result, type) => {
   Service.update("studies", result, type === "activities" ? "activity_count" : "sensor_count", "study_id")
   Service.addData(type, result[type])
 }
+
 const saveSettings = (newVal, key) => {
   Service.update("participants", newVal, key, "id")
 }

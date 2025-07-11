@@ -333,7 +333,11 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
   }, [newStudy])
 
   useEffect(() => {
-    if (updatedData !== null) getAllStudies()
+    if (updatedData !== null) {
+      getAllStudies()
+      // Reset the updatedData after processing
+      setUpdatedData(null)
+    }
   }, [updatedData])
 
   useEffect(() => {
@@ -375,7 +379,9 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
   const getAllStudies = async () => {
     Service.getAll("studies", researcherId).then((studies) => {
       setStudies(sortStudies(studies, order))
+      console.log("STUDIES FETCHED FROM getAllStudies,", studies)
     })
+
     Service.getAll("sharedstudies", researcherId).then((study_data) => {
       setsharedStudies(sortStudies(study_data, order))
     })

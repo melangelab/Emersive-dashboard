@@ -1,6 +1,7 @@
 import { userDbPromise } from "./UserDB"
 import { dbPromise } from "./AdminDB"
 
+type Tablespace = "researcher" | "studies" | "participants" | "activities" | "sensors" | "sharedstudies"
 class DBService {
   getAll(tablespace: any, researcherId?: string, user?: boolean) {
     return dbPromise
@@ -177,6 +178,7 @@ class DBService {
           if (researcherId) {
             store.put({ ...d, researcherId })
           } else {
+            console.log("adding data, inside the addData", d)
             store.put(d)
           }
         })

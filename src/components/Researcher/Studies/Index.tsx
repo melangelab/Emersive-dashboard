@@ -870,7 +870,7 @@ export const canViewStudy = (study, researcherId) => {
   return accessLevel >= ACCESS_LEVELS.VIEW
 }
 
-const AddStudy = ({ studies, researcherId, newStudyObj, setParticipants, updatedDataStudy, ...props }) => {
+const AddStudy = ({ studies, researcherId, newStudyObj, refreshStudies, updatedDataStudy, ...props }) => {
   const [slideOpen, setSlideOpen] = useState(false)
   const sliderclasses = slideStyles()
   const [addParticipantStudy, setAddParticipantStudy] = useState(false)
@@ -919,9 +919,9 @@ const AddStudy = ({ studies, researcherId, newStudyObj, setParticipants, updated
   }
 
   const handleNewStudyData = (data) => {
-    setParticipants()
     newStudyObj(data)
     updatedDataStudy(data)
+    refreshStudies()
   }
 
   return (
@@ -1303,10 +1303,6 @@ export default function StudiesList({
     getSharedStudies()
   }, [newStudy])
 
-  // useEffect(() => {
-  //   if ((studies || []).length > 0) setAllStudies(studies)
-  //   else setAllStudies([])
-  // }, [studies])
   useEffect(() => {
     combineStudies()
   }, [studies, sharedStudies])
@@ -1360,6 +1356,10 @@ export default function StudiesList({
   }, [search])
 
   const handleUpdatedStudyObject = (data) => {
+    setAllStudies((prevStudies) => {
+      const updatedStudies = [...(prevStudies || []), { ...newStudy, isShared: false }]
+      return updatedStudies
+    })
     upatedDataStudy(data)
   }
 
@@ -2267,7 +2267,7 @@ export default function StudiesList({
                 researcherId={researcherId}
                 studies={allStudies ?? null}
                 newStudyObj={setNewStudy}
-                setParticipants={searchFilterStudies}
+                refreshStudies={searchFilterStudies}
                 updatedDataStudy={handleUpdatedStudyObject}
               />
             }

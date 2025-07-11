@@ -272,7 +272,7 @@ export default function PatientStudyCreator({
       let newStudyId = studyData.data
       let newUriStudyID = "?study_id=" + newStudyId
       if (duplicateStudyName) {
-        Service.getDataByKey("studies", duplicateStudyName, "id").then((studyAllData: any) => {
+        Service.getDataByKey("studies", duplicateStudyName, "id").then(async (studyAllData: any) => {
           let gnameArray = Array.isArray(studyAllData[0]?.gname) ? [...studyAllData[0].gname] : []
           if (groupNames && groupNames.length > 0) {
             gnameArray.push(...groupNames)
@@ -285,7 +285,7 @@ export default function PatientStudyCreator({
             activity_count: studyAllData.length > 0 ? studyAllData[0].activity_count : 0,
             sensor_count: studyAllData.length > 0 ? studyAllData[0].sensor_count : 0,
           }
-          Service.addData("studies", [newStudyData])
+          await Service.addData("studies", [newStudyData])
           console.log("checking psc", newStudyData)
           fetchResult(authString, authId, "activity" + newUriStudyID, "researcher").then((result) => {
             let filteredActivities = (result?.activities || []).filter(

@@ -175,7 +175,18 @@ export default function StudyCreator({
           sensor_count: 0,
         }
         console.log("studies created here", study, studiesData, result)
-        Service.addData("studies", [studiesData])
+
+        // DEBUG: Check current studies in IndexDB before adding
+        const currentStudies = await Service.getAll("studies", researcherId)
+        console.log("Current studies in IndexDB BEFORE adding:", currentStudies)
+
+        // Wait for IndexDB update to complete
+        await Service.addData("studies", [studiesData], researcherId)
+
+        // DEBUG: Check studies in IndexDB after adding
+        const updatedStudies = await Service.getAll("studies", researcherId)
+        console.log("Updated studies in IndexDB AFTER adding:", updatedStudies)
+
         enqueueSnackbar(`${t("Successfully created new study - studyName.", { studyName: studyName })}`, {
           variant: "success",
         })
