@@ -647,7 +647,7 @@ export default function SensorsList({
             downloadTarget={"sensors"}
           />
           {!tabularView ? (
-            <div className="" style={{ overflow: "auto" }}>
+            <div className="content-container">
               <Grid container spacing={3} className="cards-grid">
                 {sensors !== null && sensors?.length > 0 ? (
                   <>

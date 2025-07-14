@@ -13,6 +13,8 @@ const DonutChart = ({ data }) => {
 
   const COLORS = ["#8BC34A", "#A5D6FF"] // Green and light blue
 
+  console.log("Formatted Data for Donut Chart:", formattedData)
+
   // Custom label renderer with better positioning
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name, value }) => {
     const radius = outerRadius + 30 // Increase this value to move labels further out
@@ -36,25 +38,33 @@ const DonutChart = ({ data }) => {
 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <ResponsiveContainer width="100%" height={250}>
-        <PieChart>
-          <Pie
-            data={formattedData}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={80}
-            paddingAngle={2}
-            dataKey="value"
-            labelLine={false}
-            label={renderCustomizedLabel}
-          >
-            {formattedData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index]} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
+      {formattedData.reduce((sum, item) => sum + item.value, 0) === 0 ? (
+        <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
+          <Typography variant="h6" style={{ textAlign: "center", color: "#888" }}>
+            None of the participants logged in yet
+          </Typography>
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={250}>
+          <PieChart>
+            <Pie
+              data={formattedData}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={80}
+              paddingAngle={2}
+              dataKey="value"
+              labelLine={false}
+              label={renderCustomizedLabel}
+            >
+              {formattedData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index]} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      )}
     </div>
   )
 }

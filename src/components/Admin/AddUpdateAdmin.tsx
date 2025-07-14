@@ -13,13 +13,17 @@ import {
   Button,
   useMediaQuery,
   useTheme,
+  Slide,
   Divider,
+  Backdrop,
 } from "@material-ui/core"
 import LAMP, { Researcher } from "lamp-core"
 import { useSnackbar } from "notistack"
 import { useTranslation } from "react-i18next"
 import AddIcon from "@material-ui/icons/Add"
 import EditIcon from "@material-ui/icons/Edit"
+import { createPortal } from "react-dom"
+import { slideStyles } from "../Researcher/ParticipantList/AddButton"
 
 import { ReactComponent as ResearcherIconFilled } from "../../icons/NewIcons/crown.svg"
 
@@ -107,6 +111,8 @@ export default function AddUpdateAdmin({
 
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
 
+  const sliderclasses = slideStyles()
+
   const handleInputChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -169,12 +175,17 @@ export default function AddUpdateAdmin({
 
         if (response.ok) {
           const result2 = await response.json()
-          console.log("✅ Email sent successfully:", result2.message)
+          enqueueSnackbar(t("✅ Email sent successfully."), { variant: "success" })
           if (result2?.result === "Credential Exists") {
             setInfoMsg(
               "A researcher already exists for this email ID. You can use the same credentials or reset them through the link sent via email."
             )
           }
+          refreshAdmins?.()
+          setAdminCreated(result.data)
+          enqueueSnackbar(admin ? t("Successfully updated admin.") : t("Successfully created admin."), {
+            variant: "success",
+          })
         } else {
           const errorData = await response.json() // Get error details
           console.error("❌ Failed to send email:", errorData.message)
@@ -191,14 +202,9 @@ export default function AddUpdateAdmin({
       setName?.(`${formData.firstName} ${formData.lastName}`.trim())
     } else {
       resetForm()
-      refreshAdmins?.()
     }
-    enqueueSnackbar(admin ? t("Successfully updated admin.") : t("Successfully created admin."), {
-      variant: "success",
-    })
-    refreshAdmins()
-    setAdminCreated(null)
     setOpen(false)
+    setAdminCreated(undefined)
   }
 
   const resetForm = () => {
@@ -221,117 +227,108 @@ export default function AddUpdateAdmin({
         <AddIcon onClick={() => setOpen(true)} />
       </Fab>
 
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        PaperProps={{
-          style: {
-            position: "absolute",
-            top: "8.5%",
-            left: "64%",
-            margin: "0px",
-            height: "91.4vh",
-          },
-        }}
-        // style={{margin:0}}
-        BackdropProps={{
-          style: {
-            backgroundColor: "rgba(0, 0, 0, 0.1)", // Adjust the alpha value for transparency
-          },
-        }}
-      >
-        <DialogContent className={classes.dialogContent}>
-          <div className="add-researcher-header">
-            <div className="add-researcher-icon">
-              <ResearcherIconFilled />
-            </div>
-            <p>ADD NEW ADMIN</p>
-          </div>
+      {open &&
+        createPortal(
+          <>
+            <Backdrop className={sliderclasses.backdrop} open={open} onClick={() => setOpen(false)} />
+            <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+              <Box className={sliderclasses.slidePanel} onClick={(e) => e.stopPropagation()}>
+                <div className="add-researcher-header">
+                  <div className="add-researcher-icon">
+                    <ResearcherIconFilled />
+                  </div>
+                  <p>ADD NEW ADMIN</p>
+                </div>
 
-          {!adminCreated ? (
-            <>
-              <TextField
-                margin="dense"
-                label={t("First Name")}
-                fullWidth
-                value={formData.firstName}
-                onChange={handleInputChange("firstName")}
-                required
-              />
-              <TextField
-                margin="dense"
-                label={t("Last Name")}
-                fullWidth
-                value={formData.lastName}
-                onChange={handleInputChange("lastName")}
-                required
-              />
-              <TextField
-                margin="dense"
-                label={t("Email")}
-                type="email"
-                fullWidth
-                value={formData.email}
-                onChange={handleInputChange("email")}
-                required
-              />
-              <TextField
-                margin="dense"
-                label={t("Username")}
-                fullWidth
-                value={formData.username}
-                onChange={handleInputChange("username")}
-                required
-              />
-            </>
-          ) : (
-            <>
-              <Divider />
-              <p style={{ padding: "20px", whiteSpace: "pre-line" }}>
-                New Admin - {formData?.firstName} {formData?.lastName} - has been successfully added.
-                {"\n"}A set password mail has been successfully sent to the email -{formData?.email}.{"\n"}The link will
-                expire after 24 hours.
-              </p>
-              {infoMsg ? <p style={{ padding: "20px", whiteSpace: "pre-line", marginTop: "10px" }}>{infoMsg}</p> : null}
-              <Divider />
-            </>
-          )}
-        </DialogContent>
-        <DialogActions style={{ justifyContent: "flex-start", padding: "8px 24px", marginTop: 0 }}>
-          {!adminCreated ? (
-            <>
-              <Button onClick={handleClose} color="primary">
-                {t("Cancel")}
-              </Button>
-              <Button
-                onClick={addAdmin}
-                color="primary"
-                disabled={!formData.firstName.trim() || !formData.lastName.trim()}
-              >
-                {t("Add")}
-              </Button>
-            </>
-          ) : (
-            <button
-              onClick={handleSuccess}
-              style={{
-                backgroundColor: "#FEE2D4",
-                color: "#C06E3C",
-                border: "none",
-                borderRadius: "12px",
-                padding: "10px 24px",
-                fontSize: "16px",
-                fontWeight: "500",
-                cursor: "pointer",
-                boxShadow: "none",
-                textTransform: "uppercase",
-              }}
-            >
-              EXIT
-            </button>
-          )}
-        </DialogActions>
-      </Dialog>
+                {!adminCreated ? (
+                  <>
+                    <TextField
+                      margin="dense"
+                      label={t("First Name")}
+                      fullWidth
+                      value={formData.firstName}
+                      onChange={handleInputChange("firstName")}
+                      required
+                    />
+                    <TextField
+                      margin="dense"
+                      label={t("Last Name")}
+                      fullWidth
+                      value={formData.lastName}
+                      onChange={handleInputChange("lastName")}
+                      required
+                    />
+                    <TextField
+                      margin="dense"
+                      label={t("Email")}
+                      type="email"
+                      fullWidth
+                      value={formData.email}
+                      onChange={handleInputChange("email")}
+                      required
+                    />
+                    <TextField
+                      margin="dense"
+                      label={t("Username")}
+                      fullWidth
+                      value={formData.username}
+                      onChange={handleInputChange("username")}
+                      required
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Divider />
+                    <p style={{ padding: "20px", whiteSpace: "pre-line" }}>
+                      New Admin - {formData?.firstName} {formData?.lastName} - has been successfully added.
+                      {"\n"}A set password mail has been successfully sent to the email -{formData?.email}.{"\n"}The
+                      link will expire after 24 hours.
+                    </p>
+                    {infoMsg ? (
+                      <p style={{ padding: "20px", whiteSpace: "pre-line", marginTop: "10px" }}>{infoMsg}</p>
+                    ) : null}
+                    <Divider />
+                  </>
+                )}
+                <Box style={{ justifyContent: "flex-start", padding: "8px 24px", marginTop: 0 }}>
+                  {!adminCreated ? (
+                    <>
+                      <Button onClick={handleClose} color="primary">
+                        {t("Cancel")}
+                      </Button>
+                      <Button
+                        onClick={addAdmin}
+                        color="primary"
+                        disabled={!formData.firstName.trim() || !formData.lastName.trim()}
+                      >
+                        {t("Add")}
+                      </Button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleSuccess}
+                      style={{
+                        backgroundColor: "#FEE2D4",
+                        color: "#C06E3C",
+                        border: "none",
+                        borderRadius: "12px",
+                        padding: "10px 24px",
+                        fontSize: "16px",
+                        fontWeight: "500",
+                        cursor: "pointer",
+                        boxShadow: "none",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      EXIT
+                    </button>
+                  )}
+                </Box>
+              </Box>
+            </Slide>
+          </>,
+          document.body
+        )}
     </Box>
   )
 }

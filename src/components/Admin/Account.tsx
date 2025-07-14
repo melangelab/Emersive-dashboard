@@ -96,6 +96,7 @@ const useStyles = makeStyles((theme) => ({
   },
   formContainer: {
     width: "100%",
+    height: "100%",
     padding: theme.spacing(4, 2),
     backgroundColor: "#FFFFFF",
     overflowY: "auto",
@@ -143,10 +144,14 @@ const useStyles = makeStyles((theme) => ({
   },
   socialConnect: {
     maxWidth: 600,
+    display: "flex",
+    flexDirection: "row",
     marginTop: theme.spacing(2),
   },
   deleteAccount: {
     maxWidth: 600,
+    display: "flex",
+    flexDirection: "row",
     marginTop: theme.spacing(2),
   },
   gridContainer: {
@@ -158,6 +163,7 @@ const useStyles = makeStyles((theme) => ({
   gridItem: {
     width: "100%",
     display: "flex",
+    flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -201,6 +207,22 @@ const useStyles = makeStyles((theme) => ({
     top: "50%",
     transform: "translateY(-50%)",
     zIndex: 1,
+  },
+  sectionTitle: {
+    fontSize: "1.1rem",
+    fontWeight: 500,
+    marginBottom: theme.spacing(2),
+    color: "#333",
+  },
+  socialConnectButtons: {
+    display: "flex",
+    flexDirection: "column",
+    gap: theme.spacing(2),
+  },
+  deleteAccountSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: theme.spacing(2),
   },
 }))
 
@@ -493,16 +515,6 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
 
   return (
     <React.Fragment>
-      {/* <div className={classes.headerContainer}>
-        <div className={classes.profileContainer}>
-          <ProfileIcon className="profile-icon" />
-          <div className="profile-text-container">
-            <p className="profile-text">{props.title}</p>
-            <p className="profile-sub-text">{authType}</p>
-          </div>
-        </div>
-      </div> */}
-
       <AdminHeader
         adminType={adminType}
         authType={authType}
@@ -510,7 +522,7 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
         pageLocation="Account"
       />
       <div className="body-container">
-        <div className={classes.tabsContainer}>
+        {/* <div className={classes.tabsContainer}>
           {tabs.map((tab, index) => (
             <div
               key={index}
@@ -520,7 +532,7 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
               {tab}
             </div>
           ))}
-        </div>
+        </div> */}
 
         <div className={classes.formContainer}>
           {currentTab === 0 && (
@@ -710,9 +722,125 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
                 {/* Right Column - Profile Photo */}
                 <Grid item xs={12} md={5} className={classes.gridItem}>
                   <div className={classes.profileSection}>
-                    <div className={classes.userPhoto}>
-                      <ProfileIcon style={{ width: 80, height: 80 }} />
+                    {/* Profile Photo */}
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
+                      <div className={classes.userPhoto}>
+                        <ProfileIcon style={{ width: 80, height: 80 }} />
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Social Connect Section */}
+                  <div className={classes.socialConnect}>
+                    <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+                      <Typography className={classes.sectionTitle}>Social Connect</Typography>
+                      <Typography variant="body2" style={{ marginBottom: "16px", color: "#666" }}>
+                        Connect your account with these services for simplified login and enhanced features.
+                      </Typography>
+                    </div>
+                    <div className={classes.socialConnectButtons}>
+                      <Button
+                        variant="contained"
+                        style={{
+                          backgroundColor: "#4285F4",
+                          color: "#FFFFFF",
+                          textTransform: "none",
+                          padding: "12px 20px",
+                        }}
+                      >
+                        Connect with Google
+                      </Button>
+                      {/* <Button
+                        variant="contained"
+                        style={{
+                          backgroundColor: "#FF6600",
+                          color: "#FFFFFF",
+                          textTransform: "none",
+                          padding: "12px 20px",
+                        }}
+                      >
+                        Connect with MindOrange
+                      </Button> */}
+                    </div>
+                  </div>
+
+                  {/* Delete Account Section */}
+                  <div className={classes.deleteAccount}>
+                    <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+                      <Typography className={classes.sectionTitle} style={{ color: "#EB8367" }}>
+                        Delete Your Account
+                      </Typography>
+                      <Typography variant="body2" style={{ marginBottom: "16px", color: "#666" }}>
+                        Warning: This action cannot be undone. All your data, settings, and information will be
+                        permanently deleted.
+                      </Typography>
+                    </div>
+                    {!showDeleteConfirmation ? (
+                      <div className={classes.deleteAccountSection}>
+                        <Button
+                          variant="contained"
+                          disabled={userId === "admin"}
+                          style={{
+                            backgroundColor: "#EB8367",
+                            color: "#FFFFFF",
+                            textTransform: "none",
+                            opacity: userId === "admin" ? 0.5 : 1,
+                            width: "fit-content",
+                          }}
+                          onClick={handleDeleteAccount}
+                        >
+                          Delete Account
+                        </Button>
+                        {userId === "admin" && (
+                          <Typography variant="body2" style={{ color: "#EB8367", marginTop: "8px" }}>
+                            This account belongs to System Admin and can't be deleted.
+                          </Typography>
+                        )}
+                      </div>
+                    ) : (
+                      <div className={classes.deleteAccountSection}>
+                        <Typography variant="body2" style={{ marginBottom: "12px", color: "#666" }}>
+                          Are you sure you want to delete your account? This action cannot be undone.
+                        </Typography>
+                        <div style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
+                          <input
+                            type="checkbox"
+                            checked={confirmDelete}
+                            onChange={(e) => setConfirmDelete(e.target.checked)}
+                            id="confirm-delete"
+                          />
+                          <label htmlFor="confirm-delete" style={{ marginLeft: "8px", fontSize: "14px" }}>
+                            I understand this action is permanent and cannot be reversed
+                          </label>
+                        </div>
+                        <div style={{ display: "flex", gap: "12px" }}>
+                          <Button
+                            variant="contained"
+                            style={{
+                              backgroundColor: "#EB8367",
+                              color: "#FFFFFF",
+                              textTransform: "none",
+                              fontSize: "14px",
+                              padding: "8px 16px",
+                            }}
+                            onClick={handleConfirmDelete}
+                            disabled={!confirmDelete}
+                          >
+                            Confirm Delete
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            style={{
+                              fontSize: "14px",
+                              padding: "8px 16px",
+                            }}
+                            onClick={handleCancelDelete}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </Grid>
               </Grid>
@@ -758,7 +886,7 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
           )}
 
           {/* Social Connect Tab */}
-          {currentTab === 1 && (
+          {/* {currentTab === 1 && (
             <div className={classes.socialConnect}>
               <Typography variant="body1" style={{ marginBottom: "20px" }}>
                 Connect your account with these services for simplified login and enhanced features.
@@ -788,10 +916,10 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
                 </Button>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Delete Account Tab */}
-          {currentTab === 2 && (
+          {/* {currentTab === 2 && (
             <div className={classes.deleteAccount}>
               <Typography variant="h6" style={{ color: "#EB8367", marginBottom: "10px" }}>
                 Delete Your Account
@@ -878,7 +1006,7 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
                 </div>
               )}
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </React.Fragment>

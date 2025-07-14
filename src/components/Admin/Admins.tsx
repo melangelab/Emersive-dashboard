@@ -3,9 +3,6 @@ import React, { useState, useEffect, useMemo } from "react"
 import SearchBox from "../SearchBox"
 import { useTranslation } from "react-i18next"
 
-import { ReactComponent as ProfileIcon } from "../../icons/NewIcons/ProfileIcon.svg"
-import { ReactComponent as RefreshIcon } from "../../icons/NewIcons/rotate-reverse.svg"
-import { ReactComponent as Download } from "../../icons/NewIcons/progress-download.svg"
 import { ReactComponent as DeleteIcon } from "../../icons/NewIcons/trash-xmark.svg"
 import { ReactComponent as PasswordEdit } from "../../icons/NewIcons/password-lock.svg"
 import { ReactComponent as PasswordEditFilled } from "../../icons/NewIcons/password-lock-filled.svg"
@@ -320,8 +317,16 @@ export default function Admins({ title, authType, adminType, history }) {
               Authorization: "Basic " + authString,
             },
           })
-          // if (!response.error) {
-          // }
+
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.message || "Failed to delete admin")
+          } else {
+            const updatedAdmins = admins.filter((admin) => admin.emailAddress !== selectedAdmin.emailAddress)
+            setAdmins(updatedAdmins)
+            setFilteredAdmins(updatedAdmins)
+            setSelectedAdmins(updatedAdmins)
+          }
         } catch (error) {
           console.error(error)
         }
@@ -586,26 +591,6 @@ export default function Admins({ title, authType, adminType, history }) {
 
         {selectedAdmin && (
           <>
-            {/* <AdminDetailsDialog
-                  Admin={selectedAdmin}
-                  open={detailsDialogOpen}
-                  onClose={() => {
-                    setDetailsDialogOpen(false);
-                    setSelectedAdmin(null);
-                    setActiveButton({ id: null, action: null});
-                  }}
-                  onSave={async (updatedAdmin) => {
-                    try {
-                    //   await handleUpdateAdmin(selectedAdmin.id, updatedAdmin);
-                      setDetailsDialogOpen(false);
-                      setSelectedAdmin(null);
-                      setActiveButton({ id: null, action: null});
-                    } catch (error) {
-                      console.error("Error updating Admin:", error);
-                    }
-                  }}
-                /> */}
-
             <ConfirmationDialog
               open={confirmationDialog > 0}
               onClose={() => {
@@ -624,25 +609,6 @@ export default function Admins({ title, authType, adminType, history }) {
 
   return (
     <>
-      {/* <div className="header-container">
-        <div className="action-container">
-          <SearchBox searchData={setSearch} />
-          <div className="icon-container" onClick={() => handleHeaderIconClick("refresh")}>
-            <RefreshIcon className={`refresh-icon ${selectedIcon === "refresh" ? "selected" : ""}`} />
-          </div>
-          <div className="icon-container" onClick={() => handleHeaderIconClick("download")}>
-            <Download className={`download-icon ${selectedIcon === "download" ? "selected" : ""}`} />
-          </div>
-          <AddUpdateAdmin refreshAdmins={refreshAdmins} admin={null} admins={admins} />
-          <div className="profile-container">
-            <ProfileIcon className="profile-icon" />
-            <div className="profile-text-container">
-              <p className="profile-text">Hi! {title}</p>
-              <p className="profile-sub-text">{authType}</p>
-            </div>
-          </div>
-        </div>
-      </div> */}
       <AdminHeader
         adminType={adminType}
         authType={authType}

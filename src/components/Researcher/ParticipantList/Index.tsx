@@ -1622,7 +1622,7 @@ export default function ParticipantList({
               downloadTarget={"participants"}
             />
             {!tabularView ? (
-              <div className="" style={{ overflow: "auto" }}>
+              <div className="content-container">
                 <Grid container spacing={3} className="cards-grid">
                   {!!participants && participants.length > 0 ? (
                     <>

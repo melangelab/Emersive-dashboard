@@ -68,7 +68,7 @@ const CommonTable = ({
   filterDisplay = "menu" as "menu" | "row",
   filterMatchModeOptions = null,
   itemclass = "items",
-  key = null,
+  key = "table",
   dataKeyprop = "id",
   ...props
 }) => {
@@ -274,7 +274,7 @@ const CommonTable = ({
     setTimeout(calculateHeaderHeight, 100) // Small delay to ensure DOM is ready
   }, [currentTheme])
   return (
-    <div className="table-container">
+    <div className="content-container">
       <DataTable
         key={key}
         value={processedData}

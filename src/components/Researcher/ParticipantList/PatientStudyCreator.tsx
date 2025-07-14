@@ -285,7 +285,7 @@ export default function PatientStudyCreator({
             activity_count: studyAllData.length > 0 ? studyAllData[0].activity_count : 0,
             sensor_count: studyAllData.length > 0 ? studyAllData[0].sensor_count : 0,
           }
-          await Service.addData("studies", [newStudyData])
+          await Service.addData("studies", [newStudyData], researcherId)
           console.log("checking psc", newStudyData)
           fetchResult(authString, authId, "activity" + newUriStudyID, "researcher").then((result) => {
             let filteredActivities = (result?.activities || []).filter(
@@ -367,7 +367,7 @@ export default function PatientStudyCreator({
       }
       newStudyData.timestamps = timestamps
     }
-    Service.addData("studies", [newStudyData])
+    Service.addData("studies", [newStudyData], researcherId)
     if (!!studyName) updateStudyLocalStorage(authId, studyName)
     handleNewStudy(newStudyData)
 

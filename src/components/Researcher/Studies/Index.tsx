@@ -1580,6 +1580,13 @@ export default function StudiesList({
     // const [isEditing, setIsEditing] = useState(false)
     // const [editedValues, setEditedValues] = useState({})
     const [filters, setFilters] = useState({})
+    useEffect(() => {
+      setEditedData({ inital: "empty" })
+      console.warn("initial editedData set to empty")
+    }, [])
+    useEffect(() => {
+      console.log("editedData changed:", editedData)
+    }, [editedData])
 
     const editableColumns = [
       "name",
@@ -1638,7 +1645,7 @@ export default function StudiesList({
       } else {
         // Start editing new study
         setEditingStudy(study)
-        setEditedData({})
+        // setEditedData({})
         setActiveButton({ id: study.id, action: "edit" })
       }
     }
@@ -1806,6 +1813,7 @@ export default function StudiesList({
         <InputText
           value={editedData[columnKey] ?? value}
           onChange={(e) => {
+            console.log("InputText changed", e.target.value, columnKey, "editedData:", editedData, "value:", value)
             setEditedData((prev) => ({
               ...prev,
               [columnKey]: e.target.value,
@@ -2278,7 +2286,7 @@ export default function StudiesList({
             downloadTarget={"studies"}
           />
           {!tabularView ? (
-            <div className="" style={{ overflow: "auto" }}>
+            <div className="content-container" style={{ overflow: "auto" }}>
               <Grid container spacing={3} className="cards-grid">
                 {allStudies !== null && (allStudies || []).length > 0 ? (
                   (allStudies || []).map((study) => (

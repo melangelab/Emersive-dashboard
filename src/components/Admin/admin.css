@@ -291,15 +291,16 @@
   overflow: auto;
 }
 
-.table-container {
+.content-container {
   height: 100%;
   position: relative;
-  border-radius: 20px;
-  border: 1px solid rgb(229, 231, 235);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  /* border-radius: 5px; */
+  /* border: 1px solid rgb(229, 231, 235); */
+  /* box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); */
   display: flex;
   flex-direction: column;
   overflow: auto;
+  padding: 5px 14px 5px 5px;
 }
 
 .MuiCardActions-root,
@@ -308,22 +309,22 @@
   display: none;
 }
 
-.table-container div.MuiInput-underline::before {
+.content-container div.MuiInput-underline::before {
   border-bottom: 0 !important;
 }
 
-.table-container div.MuiInput-underline::after {
+.content-container div.MuiInput-underline::after {
   border-bottom: 0 !important;
 }
 
-.table-container div.MuiInput-underline span.material-icons {
+.content-container div.MuiInput-underline span.material-icons {
   width: 100%;
   font-size: 27px;
   line-height: 23px;
   color: rgba(0, 0, 0, 0.04);
 }
 
-.table-container div.MuiInput-underline button {
+.content-container div.MuiInput-underline button {
   display: none;
 }
 
