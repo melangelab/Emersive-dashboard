@@ -1366,9 +1366,6 @@ const ResearchersTable = ({
           filters={filters}
           onFilter={setFilters}
           emptyStateMessage="No researchers found"
-          customClasses={{
-            tableContainer: "researchers-table-container",
-          }}
           paginator={true}
           itemclass="researchers"
           filterDisplay="row"

@@ -836,7 +836,7 @@ export default function ActivityList({
     const isCommunity = activity.isCommunityActivity
 
     return (
-      <span className="p-datatable-action-buttons">
+      <span className="action-buttons">
         {/* View button */}
         {activeButton.id === activity.id && activeButton.action === "view" ? (
           <ViewFilledIcon
@@ -1337,12 +1337,13 @@ export default function ActivityList({
       },
     },
     {
-      id: "study",
+      id: "study_name",
       label: "Study",
-      value: (a) => ({
-        name: a.study_name,
-        id: a.study_id,
-      }),
+      value: (a) => a.study_name,
+      //   ({
+      //   name: a.study_name,
+      //   id: a.study_id,
+      // }),
       visible: true,
       sortable: true,
       filterable: true,

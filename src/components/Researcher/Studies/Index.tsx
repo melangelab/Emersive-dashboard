@@ -1059,7 +1059,9 @@ export default function StudiesList({
   const [formState, setFormState] = useState({})
   const [detailsStudyId, setDetailsStudyId] = useState(null)
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
+  const [unSuspendDialogOpen, setUnSuspendDialogOpen] = useState(false)
   const [studyToSuspend, setStudyToSuspend] = useState(null)
+  const [studyToUnSuspend, setStudyToUnSuspend] = useState(null)
   const [viewMode, setViewMode] = useState("grid")
   const [tabularView, setTabularView] = useState(false)
   const [CopyDialogOpen, setCopyDialogOpen] = useState(false)
@@ -1106,6 +1108,17 @@ export default function StudiesList({
     setStudyToSuspend(null)
   }
 
+  const handleOpenUnSuspendDialog = (study, setActiveButton) => {
+    setStudyToUnSuspend(study)
+    setUnSuspendDialogOpen(true)
+    setActiveButton({ id: null, action: null })
+  }
+
+  const handleCloseUnSuspendDialog = () => {
+    setUnSuspendDialogOpen(false)
+    setStudyToUnSuspend(null)
+  }
+
   const handleOpenCopyDialog = (study) => {
     setStudyToCopy(study)
     setCopyDialogOpen(true)
@@ -1127,6 +1140,20 @@ export default function StudiesList({
       }
       handleUpdateStudy(studyToSuspend.id, updatedStudy)
       handleCloseSuspendDialog()
+    }
+  }
+
+  const confirmUnSuspend = () => {
+    if (studyToUnSuspend) {
+      const updatedStudy = {
+        ...studyToUnSuspend,
+        timestamps: {
+          ...studyToUnSuspend.timestamps,
+          suspendedAt: null,
+        },
+      }
+      handleUpdateStudy(studyToUnSuspend.id, updatedStudy)
+      handleCloseUnSuspendDialog()
     }
   }
 
@@ -1479,6 +1506,40 @@ export default function StudiesList({
     },
   ])
 
+  // useEffect(() => {
+  //   if (allresearchers && allresearchers.length > 0) {
+  //     setColumns((prevColumns) => {
+  //       // Find if ownership column already exists
+  //       const ownershipColIndex = prevColumns.findIndex((col) => col.id === "isShared")
+
+  //       if (ownershipColIndex >= 0) {
+  //         // Update existing ownership column
+  //         const updatedColumns = [...prevColumns]
+  //         updatedColumns[ownershipColIndex] = {
+  //           id: "ownership",
+  //           label: "Ownership",
+  //           value: (p) => getparent(p.parentResearcher) || getparent(researcherId),
+  //           visible: true,
+  //           sortable: true,
+  //         }
+  //         return updatedColumns
+  //       } else {
+  //         // Add ownership column
+  //         return [
+  //           ...prevColumns,
+  //           {
+  //             id: "ownership",
+  //             label: "Ownership",
+  //             value: (p) => getparent(p.parentResearcher) || getparent(researcherId),
+  //             visible: true,
+  //             sortable: true,
+  //           },
+  //         ]
+  //       }
+  //     })
+  //   }
+  // }, [allresearchers])
+
   const [openAddResearcherDialog, setOpenAddResearcherDialog] = useState(false)
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [selectedStudyForDialog, setSelectedStudyForDialog] = useState(null)
@@ -1829,13 +1890,14 @@ export default function StudiesList({
       if (!allStudies) return []
 
       const sortableData = [...allStudies]
-      if (sortConfig.field === "index") {
-        sortableData.sort((a, b) => {
-          const aIndex = originalIndexMap[a.id]
-          const bIndex = originalIndexMap[b.id]
-          return sortConfig.direction === "asc" ? aIndex - bIndex : bIndex - aIndex
-        })
-      } else if (sortConfig.field) {
+      // if (sortConfig.field === "index") {
+      //   sortableData.sort((a, b) => {
+      //     const aIndex = originalIndexMap[a.id]
+      //     const bIndex = originalIndexMap[b.id]
+      //     return sortConfig.direction === "asc" ? aIndex - bIndex : bIndex - aIndex
+      //   })
+      // } else
+      if (sortConfig.field) {
         sortableData.sort((a, b) => {
           const aValue = a[sortConfig.field] || ""
           const bValue = b[sortConfig.field] || ""
@@ -1946,20 +2008,39 @@ export default function StudiesList({
         {canEditStudy(study, researcherId) && (
           <>
             <span className={`${classes.actionIcon} action-icon-suspend`}>
-              {studyToSuspend?.id === study.id ? (
+              {!study.timestamps?.suspendedAt ? (
+                activeButton.id === study.id && activeButton.action === "suspend" ? (
+                  <SuspendFilledIcon
+                    className="selected"
+                    onClick={() => {
+                      setActiveButton({ id: study.id, action: "suspend" })
+                      handleOpenSuspendDialog(study)
+                    }}
+                    style={{ cursor: "pointer", width: 24, height: 24 }}
+                  />
+                ) : (
+                  <SuspendIcon
+                    onClick={() => {
+                      setActiveButton({ id: study.id, action: "suspend" })
+                      handleOpenSuspendDialog(study)
+                    }}
+                    style={{ cursor: "pointer", width: 24, height: 24 }}
+                  />
+                )
+              ) : activeButton.id === study.id && activeButton.action === "suspend" ? (
                 <SuspendFilledIcon
                   className="selected"
                   onClick={() => {
                     setActiveButton({ id: study.id, action: "suspend" })
-                    handleOpenSuspendDialog(study)
+                    handleOpenUnSuspendDialog(study, setActiveButton)
                   }}
                   style={{ cursor: "pointer", width: 24, height: 24 }}
                 />
               ) : (
-                <SuspendIcon
+                <SuspendFilledIcon
                   onClick={() => {
                     setActiveButton({ id: study.id, action: "suspend" })
-                    handleOpenSuspendDialog(study)
+                    handleOpenUnSuspendDialog(study, setActiveButton)
                   }}
                   style={{ cursor: "pointer", width: 24, height: 24 }}
                 />
@@ -2029,6 +2110,10 @@ export default function StudiesList({
 
     const emersiveColumns = columns.map((col) => ({
       ...col,
+      value: (row) =>
+        col.id === "isShared"
+          ? `${getparent(row.parent)}(${getAccessLevelLabel(getResearcherAccessLevel(row, researcherId))})`
+          : col.value(row),
       renderCell:
         col.id === "isShared"
           ? (item) => renderCell(item, col)
@@ -2082,12 +2167,6 @@ export default function StudiesList({
             setActiveButton={setActiveButton}
             open={openDeleteDialog}
             onClose={handleCloseDialog}
-            // open={dialogType=="delete"}
-            // onClose={() => {
-            //   setOpenDeleteDialog(false);
-            //   setSelectedStudyForDialog(null);
-            //   setActiveButton({ id: null, action: null });
-            // }}
             viewMode={tabularView}
           />
         )}
@@ -2143,6 +2222,30 @@ export default function StudiesList({
             </Button>
           </DialogActions>
         </Dialog>
+        <Dialog
+          open={unSuspendDialogOpen}
+          onClose={handleCloseUnSuspendDialog}
+          scroll="paper"
+          aria-labelledby="alert-dialog-slide-title"
+          aria-describedby="alert-dialog-slide-description"
+          classes={{ paper: classes.manageStudyDialog }}
+        >
+          <DialogTitle>Remove Study from Suspension</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to remove the study "{studyToUnSuspend?.name}" from suspension?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseUnSuspendDialog} color="secondary">
+              Cancel
+            </Button>
+            <Button onClick={confirmUnSuspend} color="primary">
+              Remove from Suspension
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <Dialog
           open={CopyDialogOpen}
           onClose={handleCloseCopyDialog}
@@ -2563,22 +2666,42 @@ export default function StudiesList({
                           )}
                           {canEditStudy(study, researcherId) && (
                             <>
-                              {studyToSuspend?.id === study.id ? (
+                              {!study.timestamps?.suspendedAt ? (
+                                activeButton.id === study.id && activeButton.action === "suspend" ? (
+                                  <SuspendFilledIcon
+                                    className={`${studycardclasses.actionIcon} selected`}
+                                    onClick={() => {
+                                      setActiveButton({ id: study.id, action: "suspend" })
+                                      handleOpenSuspendDialog(study)
+                                    }}
+                                  />
+                                ) : (
+                                  <SuspendIcon
+                                    className={`${studycardclasses.actionIcon} ${
+                                      studyToSuspend?.id === study.id ? "selected" : ""
+                                    }`}
+                                    onClick={() => {
+                                      setActiveButton({ id: study.id, action: "suspend" })
+                                      handleOpenSuspendDialog(study)
+                                    }}
+                                  />
+                                )
+                              ) : activeButton.id === study.id && activeButton.action === "suspend" ? (
                                 <SuspendFilledIcon
                                   className={`${studycardclasses.actionIcon} selected`}
                                   onClick={() => {
                                     setActiveButton({ id: study.id, action: "suspend" })
-                                    handleOpenSuspendDialog(study)
+                                    handleOpenUnSuspendDialog(study, setActiveButton)
                                   }}
                                 />
                               ) : (
-                                <SuspendIcon
+                                <SuspendFilledIcon
                                   className={`${studycardclasses.actionIcon} ${
                                     studyToSuspend?.id === study.id ? "selected" : ""
                                   }`}
                                   onClick={() => {
                                     setActiveButton({ id: study.id, action: "suspend" })
-                                    handleOpenSuspendDialog(study)
+                                    handleOpenUnSuspendDialog(study, setActiveButton)
                                   }}
                                 />
                               )}
@@ -2693,6 +2816,29 @@ export default function StudiesList({
                           </Button>
                           <Button onClick={confirmSuspend} color="primary">
                             Suspend
+                          </Button>
+                        </DialogActions>
+                      </Dialog>
+                      <Dialog
+                        open={unSuspendDialogOpen}
+                        onClose={handleCloseUnSuspendDialog}
+                        scroll="paper"
+                        aria-labelledby="alert-dialog-slide-title"
+                        aria-describedby="alert-dialog-slide-description"
+                        classes={{ paper: classes.manageStudyDialog }}
+                      >
+                        <DialogTitle>Remove Study from Suspension</DialogTitle>
+                        <DialogContent>
+                          <Typography>
+                            Are you sure you want to remove the study "{studyToUnSuspend?.name}" from suspension?
+                          </Typography>
+                        </DialogContent>
+                        <DialogActions>
+                          <Button onClick={handleCloseUnSuspendDialog} color="secondary">
+                            Cancel
+                          </Button>
+                          <Button onClick={confirmUnSuspend} color="primary">
+                            Remove from Suspension
                           </Button>
                         </DialogActions>
                       </Dialog>

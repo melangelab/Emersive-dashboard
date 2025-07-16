@@ -1,310 +1,37 @@
---- ResearchersTable.tsx (original)
-+++ ResearchersTable.tsx (updated)
-@@ -1,4 +1,4 @@
--import CommonTable from './CommonTable'
-+import EmersiveTable from './EmersiveTable'
- 
- const ResearchersTable = ({
-   editable_columns,
-@@ -85,7 +85,7 @@
-   }, [editingResearcher])
-   
-   const columns: TableColumn[] = useMemo(() => {
--    console.warn(
-+    console.log(
-       "Generating new columns with selectedColumns:",
-       selectedColumns,
-       "activeButtonTable:",
-@@ -93,12 +93,12 @@
-     )
-     const cols = selectedColumns.map((col) => ({
-       id: col.id,
-       label: col.label,
--      value: col.value,
-+      value: (row) => getValue(row, col.value),
-       visible: true,
-       sortable: col.sortable,
-       filterable: true,
-       filterType: "text",
-+      renderCell: (row) => renderCellContent(col, row),
-     }))
-     return [...cols]
-   }, [
-@@ -113,7 +113,7 @@
-   ])
-   
-   const memoizedData = useMemo(() => {
--    console.warn("memoized data changed", data, activeButtonTable)
-+    console.log("memoized data changed", data, activeButtonTable)
-     return data.map((row) =>
-       row.id === activeButtonTable.id && activeButtonTable.action === "edit" ? { ...row, __editing: true } : row
-     )
-@@ -171,7 +171,7 @@
-   // Actions column
-   const actions = useCallback(
-     (row) => {
--      console.warn("Rendering actions for row:", row, "activeButtonTable:", activeButtonTable)
-+      console.log("Rendering actions for row:", row, "activeButtonTable:", activeButtonTable)
-       const currentActiveButton = activeButtonTableRef.current
-       const currentEditingResearcher = editingResearcherRef.current
-       const currentData = dataRef.current
-@@ -186,13 +186,13 @@
-       const handleActionClick = async (buttonType) => {
-         setEditingResearcher(row)
-         setSelectedRow(data.findIndex((r) => r.id === row.id))
--        console.warn(
-+        console.log(
-           "handleActionClick has row:",
-           row,
-           "activeButtonTable:",
-           activeButtonTable,
-           "editingResearcher:",
-           editingResearcher
-         )
--        console.warn(
-+        console.log(
-           "handleActionClick has row:",
-           row,
-           "activeButtonTable:",
-@@ -275,7 +275,7 @@
-               } catch {
-                 enqueueSnackbar("Failed to suspend", { variant: "error" })
-               }
-@@ -289,7 +289,7 @@
-                 }
-                 await LAMP.Researcher.update(row.id, updatedResearcher)
--                console.warn("unsuspended researcher:", updatedResearcher)
-+                console.log("unsuspended researcher:", updatedResearcher)
-                 enqueueSnackbar("Unsuspended researcher", { variant: "success" })
-                 setActiveButtonTable({ id: null, action: null })
-                 onResearchersUpdate([updatedResearcher])
-@@ -341,126 +341,6 @@
-     [activeButtonTable, editingResearcher, memoizedData]
-   )
- 
--  // (row) => (
--  //   <TableActionsDiv
--  //     key={row.id + "-" + activeButtonTable.id + "-" + activeButtonTable.action}
--  //     row={row}
--  //     rowIndex={data.findIndex((r) => r.id === row.id)}
--  //     history={history}
--  //     setSelectedRow={setSelectedRow}
--  //     selectedRow={selectedRow}
--  //     setActiveButton={(abt) => {
--  //       console.warn("Setting active button from row:", row.id, "with row, action:", abt)
--  //       setActiveButtonTable({ id: abt.id, action: abt.action })
--  //     }}
--  //     activeButton={activeButtonTable}
--  //     researcherSelected={editingResearcher}
--  //     setResearcherSelected={setEditingResearcher}
--  //     changeElement={changeElement}
--  //     isEditing={!!editingResearcher && editingResearcher.id === row.id}
--  //     setIsEditing={() => setEditingResearcher(row)}
--  //     setEditedData={setEditedData}
--  //     handleSaveEdit={async () => {
--  //       // Save logic (similar to before)
--  //       try {
--  //         const rowEdits = {}
--  //         Object.entries(editedData).forEach(([key, value]) => {
--  //           if (key.startsWith(`${row.id}-`)) {
--  //             const columnKey = key.replace(`${row.id}-`, "")
--  //             rowEdits[columnKey] = value
--  //           }
--  //         })
--
--  //         const updatedResearcher = { ...row, ...rowEdits }
--  //         await LAMP.Researcher.update(row.id, updatedResearcher)
--  //         enqueueSnackbar("Successfully updated researcher", { variant: "success" })
--  //         const newEditedData = { ...editedData }
--  //         Object.keys(newEditedData).forEach((key) => {
--  //           if (key.startsWith(`${row.id}-`)) {
--  //             delete newEditedData[key]
--  //           }
--  //         })
--  //         setEditedData(newEditedData)
--  //         setEditingResearcher(null)
--  //         setActiveButtonTable({ id: null, action: null })
--  //         onResearchersUpdate([updatedResearcher])
--  //       } catch {
--  //         enqueueSnackbar("Failed to update researcher", { variant: "error" })
--  //       }
--  //     }}
--  //     handleSuspension={async () => {
--  //       // Suspend logic
--  //       try {
--  //         const updatedResearcher = {
--  //           ...row,
--  //           status: "SUSPENDED",
--  //           timestamps: {
--  //             ...row.timestamps,
--  //             suspendedAt: new Date().getTime(),
--  //           },
--  //         }
--
--  //         await LAMP.Researcher.update(row.id, {
--  //           ...updatedResearcher,
--  //         })
--  //         enqueueSnackbar("Suspended researcher", { variant: "success" })
--  //         setActiveButtonTable({ id: null, action: null })
--  //         onResearchersUpdate([updatedResearcher])
--  //       } catch {
--  //         enqueueSnackbar("Failed to suspend", { variant: "error" })
--  //       }
--  //     }}
--  //     handleUnSuspension={async () => {
--  //       // Unsuspend logic
--  //       try {
--  //         const updatedResearcher = {
--  //           ...row,
--  //           status: "ACTIVE",
--  //         }
--  //         await LAMP.Researcher.update(row.id, updatedResearcher)
--  //         enqueueSnackbar("Unsuspended researcher", { variant: "success" })
--  //         setActiveButtonTable({ id: null, action: null })
--  //         onResearchersUpdate([updatedResearcher])
--  //       } catch {
--  //         enqueueSnackbar("Failed to unsuspend", { variant: "error" })
--  //       }
--  //     }}
--  //     setConfirmationDialog={setConfirmationDialogTable}
--  //   />
--  // )
--
--  // const confirmActionTable = async (status) => {
--  //   if (status === "Yes" && editingResearcher) {
--  //     try {
--  //       await LAMP.Researcher.delete(editingResearcher.id)
--  //       enqueueSnackbar("Deleted researcher", { variant: "success" })
--  //       refreshResearchers?.()
--  //     } catch {
--  //       enqueueSnackbar("Failed to delete", { variant: "error" })
--  //     }
--  //   }
--  //   setConfirmationDialogTable(false)
--  //   setEditingResearcher(null)
--  // }
--
-   const confirmActionTable = async (status) => {
-     if (status === "Yes" && editingResearcher) {
-       try {
-@@ -509,7 +389,7 @@
-   const handleSaveEdit = async () => {
-     try {
-       // Group edits by row
-       const rowEdits = {}
--      console.log("HEY THE ROWEDITS", rowEdits)
-+      console.log("Processing row edits:", rowEdits)
-       Object.entries(editedData).forEach(([key, value]) => {
-         const [rowIndex, columnKey] = key.split("-")
-         if (!rowEdits[rowIndex]) rowEdits[rowIndex] = {}
-@@ -518,7 +398,7 @@
- 
-       let updatedResearcher
- 
--      console.log("HEY THE ROWEDITS", rowEdits)
-+      console.log("Final row edits:", rowEdits)
-       // Update each modified row
-       for (const [rowIndex, updates] of Object.entries(rowEdits)) {
-         const currentResearcher = data[Number(rowIndex)]
-@@ -617,7 +497,7 @@
-   const handleSuspension = async () => {
-     try {
--      console.warn("Researcher selected suspended,", researcherSelected)
-+      console.log("Researcher selected suspended:", researcherSelected)
- 
-       const researchersToUpdate = researchersSelected.length > 0 ? researchersSelected : [researcherSelected]
-       let updatedResearchers = []
-@@ -671,7 +551,7 @@
- 
-   const handleUnSuspension = async () => {
-     try {
--      console.warn("Researcher selected unsuspected", researcherSelected)
-+      console.log("Researcher selected unsuspended:", researcherSelected)
- 
-       const researchersToUpdate = researchersSelected.length > 0 ? researchersSelected : [researcherSelected]
-       let updatedResearchers = []
-@@ -714,6 +594,26 @@
-     }
-   }
- 
-+  // Add getItemKey function for EmersiveTable
-+  const getItemKey = (item) => item.id
-+
-+  // Add selection handlers for EmersiveTable
-+  const handleSelectionChange = (item, checked) => {
-+    if (checked) {
-+      setResearchersSelected([...researchersSelected, item])
-+    } else {
-+      setResearchersSelected(researchersSelected.filter(r => r.id !== item.id))
-+    }
-+  }
-+
-+  const handleSelectAllRows = (checked) => {
-+    if (checked) {
-+      setResearchersSelected([...data])
-+    } else {
-+      setResearchersSelected([])
-+    }
-+  }
-+
-   return (
-     <React.Fragment>
-       <div className="table-container">
-@@ -763,21 +663,19 @@
-             </Button>
-           </DialogActions>
-         </Dialog>
--        <CommonTable
-+        <EmersiveTable
-           data={memoizedData}
-           columns={columns}
-           actions={actions}
-           selectable={true}
--          selectedRows={selectedRows}
--          onSelectRow={(ids) => setSelectedRows(ids)}
--          onSelectAll={() => setSelectedRows(selectedRows.length === data.length ? [] : data.map((r) => r.id))}
-+          selectedItems={researchersSelected}
-+          onSelectionChange={handleSelectionChange}
-+          onSelectAll={handleSelectAllRows}
-+          getItemKey={getItemKey}
-           sortConfig={sortConfig}
-           onSort={(field) => {
--            console.log("sorting at", field, sortConfig)
-             setSortConfig({
-               field,
-               direction: sortConfig.field === field && sortConfig.direction === "asc" ? "desc" : "asc",
-             })
-           }}
--          indexmap={data.reduce((acc, r, i) => ({ ...acc, [r.id]: i }), {})}
--          renderCell={renderCellContent}
-+          indexmap={data.reduce((acc, r, i) => ({ ...acc, [r.id]: i + 1 }), {})}
-           filters={filters}
-           onFilter={setFilters}
-           filterDisplay="menu"
-           categorizeItems={null}
--          key={activeButtonTable.id ? `${activeButtonTable.id}-${activeButtonTable.action}` : "researcher-table"}
-+          emptyStateMessage="No researchers found"
-+          customClasses={{
-+            tableContainer: "researchers-table-container"
-+          }}
-         />
-       </div>
-     </React.Fragment>
-@@ -790,7 +688,7 @@
-   const formatValue = (value: any, key: string) => {
--    console.warn(value, key)
-+    console.log("Formatting value:", value, key)
-     if (key === "loggedIn") return <StatusIndicator isOnline={value} />
-     if (!value) return "--"
- 
-@@ -810,6 +708,12 @@
-     return value
-   }
- 
-+  // Add getValue helper function for column value extraction
-+  const getValue = (obj: any, path: string) => {
-+    return path.includes(".") ? get(obj, path, "") : obj[path]
-+  }
-+
-   if (isLoading) return <div className="w-full p-4 text-center text-gray-500">Loading...</div>
-   if (!data.length) return <div className="w-full p-4 text-center text-gray-500">{emptyStateMessage}</div>
+              {!study.timestamps?.suspendedAt ? (
+                activeButton.id === study.id && activeButton.action === "suspend" ? (
+                <SuspendFilledIcon
+                  className={`${studycardclasses.actionIcon} selected`}
+                  onClick={() => {
+                    setActiveButton({ id: study.id, action: "suspend" })
+                    handleOpenSuspendDialog(study)
+                  }}
+                />
+              ) : (
+                <SuspendIcon
+                  className={`${studycardclasses.actionIcon} ${studyToSuspend?.id === study.id ? "selected" : ""}`}
+                  onClick={() => {
+                    setActiveButton({ id: study.id, action: "suspend" })
+                    handleOpenSuspendDialog(study)
+                  }}
+                />
+              )
+            ) : (
+            activeButton.id === study.id && activeButton.action === "suspend" ? (
+                <SuspendFilledIcon
+                  className={`${studycardclasses.actionIcon} selected`}
+                  onClick={() => {
+                    setActiveButton({ id: study.id, action: "suspend" })
+                    handleOpenUnSuspendDialog(study, setActiveButton)
+                  }}
+                />
+              ) : (
+                <SuspendFilledIcon
+                  className={`${studycardclasses.actionIcon} ${studyToSuspend?.id === study.id ? "selected" : ""}`}
+                  onClick={() => {
+                    setActiveButton({ id: study.id, action: "suspend" })
+                    handleOpenUnSuspendDialog(study, setActiveButton)
+                  }}
+                />
+              ))
+            }

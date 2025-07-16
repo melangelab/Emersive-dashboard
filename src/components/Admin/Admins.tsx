@@ -352,13 +352,14 @@ export default function Admins({ title, authType, adminType, history }) {
       if (!filteredAdmins) return []
 
       const sortableData = [...filteredAdmins]
-      if (sortConfig.field === "index") {
-        sortableData.sort((a, b) => {
-          const aIndex = originalIndexMap[a.emailAddress]
-          const bIndex = originalIndexMap[b.emailAddress]
-          return sortConfig.direction === "asc" ? aIndex - bIndex : bIndex - aIndex
-        })
-      } else if (sortConfig.field) {
+      // if (sortConfig.field === "index") {
+      //   sortableData.sort((a, b) => {
+      //     const aIndex = originalIndexMap[a.emailAddress]
+      //     const bIndex = originalIndexMap[b.emailAddress]
+      //     return sortConfig.direction === "asc" ? aIndex - bIndex : bIndex - aIndex
+      //   })
+      // } else
+      if (sortConfig.field) {
         sortableData.sort((a, b) => {
           const aValue = a[sortConfig.field] || ""
           const bValue = b[sortConfig.field] || ""

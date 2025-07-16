@@ -666,6 +666,7 @@ export default function ParticipantList({
       label: "Study",
       value: (p) => p.study_name,
       visible: true,
+      sortable: true,
       filterable: true,
       filterType: "text",
       filterPlaceholder: "Filter by Study",
@@ -1220,6 +1221,28 @@ export default function ParticipantList({
           </Box> */}
           <Box component="span" className={classes.actionIcon}>
             {activeButton.id === participant.id && activeButton.action === "view" ? (
+              <VisualiseFilledIcon
+                className="active"
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "view" })
+                  onParticipantSelect(participant.id)
+                  setActiveButton({ id: null, action: null })
+                }}
+                style={{ transform: "scaleX(-1)" }}
+              />
+            ) : (
+              <VisualiseIcon
+                onClick={() => {
+                  setActiveButton({ id: participant.id, action: "view" })
+                  onParticipantSelect(participant.id)
+                  setActiveButton({ id: null, action: null })
+                }}
+                style={{ transform: "scaleX(-1)" }}
+              />
+            )}
+          </Box>
+          <Box component="span" className={classes.actionIcon}>
+            {activeButton.id === participant.id && activeButton.action === "view" ? (
               <ViewFilledIcon
                 className="active"
                 onClick={() => {
@@ -1235,26 +1258,6 @@ export default function ParticipantList({
                   setActiveButton({ id: participant.id, action: "view" })
                   // onParticipantSelect(participant.id)
                   handleViewParticipant(participant)
-                  setActiveButton({ id: null, action: null })
-                }}
-              />
-            )}
-          </Box>
-          <Box component="span" className={classes.actionIcon}>
-            {activeButton.id === participant.id && activeButton.action === "view" ? (
-              <VisualiseFilledIcon
-                className="active"
-                onClick={() => {
-                  setActiveButton({ id: participant.id, action: "view" })
-                  onParticipantSelect(participant.id)
-                  setActiveButton({ id: null, action: null })
-                }}
-              />
-            ) : (
-              <VisualiseIcon
-                onClick={() => {
-                  setActiveButton({ id: participant.id, action: "view" })
-                  onParticipantSelect(participant.id)
                   setActiveButton({ id: null, action: null })
                 }}
               />
@@ -1312,13 +1315,15 @@ export default function ParticipantList({
                       setActiveButton({ id: participant.id, action: "suspend" })
                       handleOpenUnSuspendDialog(participant, setActiveButton)
                     }}
+                    style={{ cursor: "pointer", width: 24, height: 24 }}
                   />
                 ) : (
-                  <SuspendIcon
+                  <SuspendFilledIcon
                     onClick={() => {
                       setActiveButton({ id: participant.id, action: "suspend" })
                       handleOpenUnSuspendDialog(participant, setActiveButton)
                     }}
+                    style={{ cursor: "pointer", width: 24, height: 24 }}
                   />
                 )}
               </Box>
@@ -1419,10 +1424,10 @@ export default function ParticipantList({
           paginator={true}
         />
 
-        <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
+        {/* <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
           <DialogTitle>Suspend Participant</DialogTitle>
           <DialogContent>
-            <Typography>Are you sure you want to suspend the participant "{participantToSuspend?.name}"?</Typography>
+            <Typography>Are you sure you want to suspend the participant "{participantToSuspend?.name || participantToSuspend?.username || participantToSuspend?.id}"?</Typography>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseSuspendDialog} color="secondary">
@@ -1438,7 +1443,7 @@ export default function ParticipantList({
           <DialogTitle>Removal of Participant from Suspension</DialogTitle>
           <DialogContent>
             <Typography>
-              Are you sure you want to undo suspension of the participant "{participantToUnSuspend?.name}"?
+              Are you sure you want to undo suspension of the participant "{participantToUnSuspend?.name || participantToUnSuspend?.username || participantToUnSuspend?.id }"?
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -1449,7 +1454,7 @@ export default function ParticipantList({
               Undo Suspension
             </Button>
           </DialogActions>
-        </Dialog>
+        </Dialog> */}
         <Dialog
           open={confirmationDialog}
           onClose={() => {
@@ -1714,7 +1719,8 @@ export default function ParticipantList({
               <DialogTitle>Suspend Participant</DialogTitle>
               <DialogContent>
                 <Typography>
-                  Are you sure you want to suspend the participant "{participantToSuspend?.name}"?
+                  Are you sure you want to suspend the participant "
+                  {participantToSuspend?.name || participantToSuspend?.username || participantToSuspend?.id}"?
                 </Typography>
               </DialogContent>
               <DialogActions>
@@ -1730,7 +1736,8 @@ export default function ParticipantList({
               <DialogTitle>Removal of Participant from Suspension</DialogTitle>
               <DialogContent>
                 <Typography>
-                  Are you sure you want to undo suspension of the participant "{participantToUnSuspend?.name}"?
+                  Are you sure you want to undo suspension of the participant "
+                  {participantToUnSuspend?.name || participantToUnSuspend?.username || participantToUnSuspend?.id}"?
                 </Typography>
               </DialogContent>
               <DialogActions>

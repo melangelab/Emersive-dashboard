@@ -416,13 +416,12 @@ export default function ParticipantListItem({
 
       try {
         console.log("Attempting to update credential...", activeButton.id, participant)
-        const credlist = await LAMP.Credential.list(activeButton.id)
-        const response = (await LAMP.Credential.update(activeButton.id, participant.email, {
-          ...(credlist[0] as any),
-          secret_key: confirmPassword,
-        })) as any
+        const response: any = await LAMP.Credential.update(
+          activeButton.id,
+          participant.email,
+          JSON.stringify({ secret_key: confirmPassword })
+        )
         console.log("Update response:", response)
-
         // Check if response contains error
         if (response && response.error === "404.no-such-credentials") {
           console.log("Attempting to create new credential...")
