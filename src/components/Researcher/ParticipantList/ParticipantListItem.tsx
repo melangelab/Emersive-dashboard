@@ -524,6 +524,29 @@ export default function ParticipantListItem({
         </Box>
         <Box className={participantcardclasses.actionButtons}>
           {!!notificationColumn && <NotificationSettings participant={participant} />}
+          {activeButton.id === participant.id && activeButton.action === "enter" ? (
+            <VisualiseFilledIcon
+              className={`${participantcardclasses.actionIcon} active`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "enter" })
+                onParticipantSelect(participant.id)
+                setActiveButton({ id: null, action: null })
+              }}
+              style={{ transform: "scaleX(-1)" }}
+            />
+          ) : (
+            <VisualiseIcon
+              className={`${participantcardclasses.actionIcon} ${
+                activeButton.id === participant.id && activeButton.action === "enter" ? "active" : ""
+              }`}
+              onClick={() => {
+                setActiveButton({ id: participant.id, action: "enter" })
+                onParticipantSelect(participant.id)
+                setActiveButton({ id: null, action: null })
+              }}
+              style={{ transform: "scaleX(-1)" }}
+            />
+          )}
           {activeButton.id === participant.id && activeButton.action === "view" ? (
             <ViewFilledIcon
               className={`${participantcardclasses.actionIcon} active`}
@@ -543,27 +566,6 @@ export default function ParticipantListItem({
                 setActiveButton({ id: participant.id, action: "view" })
                 onViewParticipant(participant)
                 // onParticipantSelect(participant.id)
-                setActiveButton({ id: null, action: null })
-              }}
-            />
-          )}
-          {activeButton.id === participant.id && activeButton.action === "enter" ? (
-            <VisualiseFilledIcon
-              className={`${participantcardclasses.actionIcon} active`}
-              onClick={() => {
-                setActiveButton({ id: participant.id, action: "enter" })
-                onParticipantSelect(participant.id)
-                setActiveButton({ id: null, action: null })
-              }}
-            />
-          ) : (
-            <VisualiseIcon
-              className={`${participantcardclasses.actionIcon} ${
-                activeButton.id === participant.id && activeButton.action === "enter" ? "active" : ""
-              }`}
-              onClick={() => {
-                setActiveButton({ id: participant.id, action: "enter" })
-                onParticipantSelect(participant.id)
                 setActiveButton({ id: null, action: null })
               }}
             />

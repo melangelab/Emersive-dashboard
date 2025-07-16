@@ -96,6 +96,7 @@ import StudyGroupCreator from "./StudyGroupCreator"
 import PatientStudyCreator from "../ParticipantList/PatientStudyCreator"
 import { FilterMatchMode } from "primereact/api"
 import { createPortal } from "react-dom"
+import EmersiveTable, { ColumnConfig } from "../EmersiveTable"
 
 export const studycardStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -1376,7 +1377,7 @@ export default function StudiesList({
     return date ? new Date(date).toLocaleDateString() : "Not available"
   }
 
-  const [columns, setColumns] = useState<CommonTableColumn[]>([
+  const [columns, setColumns] = useState<ColumnConfig[]>([
     {
       id: "id",
       label: "Study ID",
@@ -1518,7 +1519,7 @@ export default function StudiesList({
   }
   const originalIndexMap = useMemo(() => {
     return (allStudies || []).reduce((acc, study, index) => {
-      acc[study.id] = index
+      acc[study.id] = index + 1
       return acc
     }, {})
   }, [allStudies])
@@ -1740,7 +1741,7 @@ export default function StudiesList({
       setFilters(initFilters())
     }, [])
 
-    const renderCell = (column: any, row: any) => {
+    const renderCell = (row: any, column: ColumnConfig) => {
       const hasEditAccess = canEditStudy(row, researcherId)
       console.log("hasEditAccess", hasEditAccess)
       const columnKey = column.id
@@ -2025,19 +2026,35 @@ export default function StudiesList({
         "Shared Studies": items.filter((s) => s.isShared),
       }
     }
+
+    const emersiveColumns = columns.map((col) => ({
+      ...col,
+      renderCell:
+        col.id === "isShared"
+          ? (item) => renderCell(item, col)
+          : editableColumns.includes(col.id)
+          ? (item) => renderCell(item, col)
+          : undefined,
+    }))
     return (
       <>
-        <CommonTable
+        <EmersiveTable
           data={sortedData || allStudies || []}
-          columns={columns.filter((col) => col.visible)}
+          columns={emersiveColumns.filter((col) => col.visible)}
           actions={actions}
-          selectable={true}
+          getItemKey={(item) => item.id}
           selectedRows={selectedRows}
-          onSelectRow={(id) => {
-            setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+          // onSelectRow={(id) => {
+          //   setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+          // }}
+          onSelectRow={(selectedIds) => {
+            setSelectedRows(selectedIds)
           }}
-          onSelectAll={() => {
-            setSelectedRows((prev) => (prev.length === allStudies.length ? [] : allStudies.map((s) => s.id)))
+          // onSelectAll={() => {
+          //   setSelectedRows((prev) => (prev.length === allStudies.length ? [] : allStudies.map((s) => s.id)))
+          // }}
+          onSelectAll={(selected) => {
+            setSelectedRows(selected ? allStudies.map((s) => s.id) : [])
           }}
           sortConfig={sortConfig}
           onSort={(field) => {
@@ -2048,16 +2065,14 @@ export default function StudiesList({
             })
           }}
           indexmap={originalIndexMap}
-          renderCell={renderCell}
-          // editingStudy={editingStudy}
-          activeButton={activeButton}
-          showCategoryHeaders={false}
-          // categorizeItems={categorizeItems}
-          categorizeItems={null}
           filters={filters}
           onFilter={(newFilters) => setFilters(newFilters)}
-          filterDisplay="menu"
-          filterMatchModeOptions={filterMatchModeOptions}
+          selectable={true}
+          paginator={true}
+          emptyStateMessage="No studies found"
+          filterDisplay="row"
+          itemclass="studies"
+          dataKeyprop="id"
         />
         {selectedStudyForDialog && (
           <DeleteStudy

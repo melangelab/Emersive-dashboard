@@ -92,6 +92,7 @@ import AddButton from "./AddButton"
 
 import "../researcher.css"
 import { FilterMatchMode } from "primereact/api"
+import EmersiveTable from "../EmersiveTable"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -619,6 +620,19 @@ export default function ParticipantList({
       filterable: true,
       filterType: "text",
       filterPlaceholder: "Filter by Username",
+      renderCell: (p) => (
+        <ParticipantName
+          participant={p}
+          updateParticipant={(nameVal) => {
+            setParticipants((prevParticipants) =>
+              prevParticipants.map((participant) =>
+                participant.id === p.id ? { ...participant, name: nameVal } : participant
+              )
+            )
+          }}
+          openSettings={false}
+        />
+      ),
     },
     {
       id: "email",
@@ -660,7 +674,7 @@ export default function ParticipantList({
       id: "ownership",
       label: "Ownership",
       // value: (a) => a.isShared ? `Shared` : "Owner",
-      value: (p) => getParentResearcher(p.parentResearcher) || getParentResearcher(researcherId),
+      value: (p) => getParentResearcher(p.parentResearcher) || getParentResearcher(researcherId) || "Owner",
       visible: true,
       sortable: true,
       filterable: true,
@@ -705,6 +719,19 @@ export default function ParticipantList({
       label: "Login Status",
       value: (p) => p.isLoggedIn,
       visible: true,
+      renderCell: (p) => (
+        <Chip
+          label={p.isLoggedIn ? "Online" : "Offline"}
+          size="small"
+          color={p.isLoggedIn ? "primary" : "default"}
+          variant={p.isLoggedIn ? "default" : "outlined"}
+          style={{
+            backgroundColor: p.isLoggedIn ? "#e8f5e8" : "#f5f5f5",
+            color: p.isLoggedIn ? "#2e7d32" : "#757575",
+            fontWeight: 500,
+          }}
+        />
+      ),
       filterable: true,
       filterType: "dropdown",
       filterOptions: [
@@ -885,7 +912,7 @@ export default function ParticipantList({
 
   const TableView_Mod = () => {
     console.log("sharedstudies table", sharedstudies)
-    const [sortConfig, setSortConfig] = useState({ field: "index", direction: "asc" })
+    const [sortConfig, setSortConfig] = useState({ field: "index", direction: "asc" as "desc" | "asc" })
     const [selectedRows, setSelectedRows] = useState([])
     const classes = useModularTableStyles()
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
@@ -1031,33 +1058,30 @@ export default function ParticipantList({
       const columnKey = column.id
       const value = column.value(row)
 
-      if (column.id === "username") {
-        return (
-          <ParticipantName
-            participant={row}
-            updateParticipant={(nameVal) => {
-              setParticipants((prevParticipants) =>
-                prevParticipants.map((p) => (p.id === row.id ? { ...p, name: nameVal } : p))
-              )
-            }}
-            openSettings={false}
-          />
-        )
-      } else if (column.id === "isLoggedIn") {
-        return (
-          <Typography
-            variant="body2"
-            style={{
-              color: row.isLoggedIn ? "#2e7d32" : "#c62828",
-              fontWeight: 500,
-            }}
-          >
-            {row.isLoggedIn ? "Online" : "Offline"}
-          </Typography>
-        )
-      }
-      // else {
-      //   return column.value(row)
+      // if (column.id === "username") {
+      //   return (
+      //     <ParticipantName
+      //       participant={row}
+      //       updateParticipant={(nameVal) => {
+      //         setParticipants((prevParticipants) =>
+      //           prevParticipants.map((p) => (p.id === row.id ? { ...p, name: nameVal } : p))
+      //         )
+      //       }}
+      //       openSettings={false}
+      //     />
+      //   )
+      // } else if (column.id === "isLoggedIn") {
+      //   return (
+      //     <Typography
+      //       variant="body2"
+      //       style={{
+      //         color: row.isLoggedIn ? "#2e7d32" : "#c62828",
+      //         fontWeight: 500,
+      //       }}
+      //     >
+      //       {row.isLoggedIn ? "Online" : "Offline"}
+      //     </Typography>
+      //   )
       // }
 
       const isEditable =
@@ -1068,33 +1092,34 @@ export default function ParticipantList({
         canEditParticipant(row, studies, researcherId, sharedstudies)
 
       if (!isEditable) {
-        // Handle special non-editable displays
-        if (column.id === "isLoggedIn") {
-          return (
-            <Typography
-              variant="body2"
-              style={{
-                color: row.isLoggedIn ? "#2e7d32" : "#c62828",
-                fontWeight: 500,
-              }}
-            >
-              {row.isLoggedIn ? "Online" : "Offline"}
-            </Typography>
-          )
-        } else if (column.id === "username") {
-          return (
-            <ParticipantName
-              participant={row}
-              updateParticipant={(nameVal) => {
-                setParticipants((prevParticipants) =>
-                  prevParticipants.map((p) => (p.id === row.id ? { ...p, name: nameVal } : p))
-                )
-              }}
-              openSettings={false}
-            />
-          )
+        // if (column.id === "isLoggedIn") {
+        //   return (
+        //     <Typography
+        //       variant="body2"
+        //       style={{
+        //         color: row.isLoggedIn ? "#2e7d32" : "#c62828",
+        //         fontWeight: 500,
+        //       }}
+        //     >
+        //       {row.isLoggedIn ? "Online" : "Offline"}
+        //     </Typography>
+        //   )
+        // } else if (column.id === "username") {
+        //   return (
+        //     <ParticipantName
+        //       participant={row}
+        //       updateParticipant={(nameVal) => {
+        //         setParticipants((prevParticipants) =>
+        //           prevParticipants.map((p) => (p.id === row.id ? { ...p, name: nameVal } : p))
+        //         )
+        //       }}
+        //       openSettings={false}
+        //     />
+        //   )
+        // }
+        if (column.renderCell) {
+          return column.renderCell(row)
         }
-
         return <div className={classes.cellContent}>{value}</div>
       }
       const fieldConfig = fieldConfigs[columnKey]
@@ -1155,7 +1180,7 @@ export default function ParticipantList({
 
     const originalIndexMap = useMemo(() => {
       return (participants || []).reduce((acc, participant, index) => {
-        acc[participant.id] = index
+        acc[participant.id] = index + 1
         return acc
       }, {})
     }, [participants])
@@ -1333,6 +1358,18 @@ export default function ParticipantList({
       )
     }
 
+    const columns_table = useMemo(() => {
+      return columns.map((col) => {
+        if (editableColumns.includes(col.id)) {
+          return {
+            ...col,
+            renderCell: (row) => renderCellContent(col, row),
+          }
+        }
+        return col
+      })
+    }, [columns, editableColumns, activeButton, editedData])
+
     const initFilters = () => {
       const baseFilters = {
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -1351,10 +1388,11 @@ export default function ParticipantList({
 
     return (
       <>
-        <CommonTable
-          data={sortedData || participants || []}
-          columns={columns.filter((col) => col.visible).map((col) => ({ ...col, sortable: true }))}
+        <EmersiveTable
+          data={participants || []} // sortedData ||
+          columns={columns_table.filter((col) => col.visible).map((col) => ({ ...col, sortable: true }))}
           actions={actions}
+          getItemKey={(participant) => participant.id}
           selectable={true}
           selectedRows={selectedRows}
           onSelectRow={(id) => {
@@ -1371,14 +1409,14 @@ export default function ParticipantList({
             })
           }}
           indexmap={originalIndexMap}
-          renderCell={renderCellContent}
           categorizeItems={null}
           showCategoryHeaders={false}
-          // 3. Pass filter props
           filters={filters}
-          onFilter={(newFilters) => setFilters(newFilters)}
-          filterDisplay="row" // row
-          // filterMatchModeOptions={filterMatchModeOptions}
+          onFilter={(newFilters) => setFilters({ ...initFilters(), ...newFilters })}
+          filterDisplay="row"
+          emptyStateMessage="No participants found"
+          itemclass="participants"
+          paginator={true}
         />
 
         <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>

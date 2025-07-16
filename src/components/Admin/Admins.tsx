@@ -43,6 +43,7 @@ import AdminHeader from "../Header"
 import ActionsComponent from "./ActionsComponent"
 import CommonTable, { TableColumn } from "../Researcher/CommonTable"
 import { FilterMatchMode } from "primereact/api"
+import EmersiveTable, { ColumnConfig } from "../Researcher/EmersiveTable"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -154,7 +155,7 @@ export default function Admins({ title, authType, adminType, history }) {
 
   const TableView_Mod = () => {
     const userId = LAMP.Auth._auth.id
-    const [sortConfig, setSortConfig] = useState({ field: "name", direction: "desc" })
+    const [sortConfig, setSortConfig] = useState({ field: "name", direction: "desc" as "asc" | "desc" })
     const [selectedRows, setSelectedRows] = useState([])
     const classes = useModularTableStyles()
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
@@ -172,53 +173,55 @@ export default function Admins({ title, authType, adminType, history }) {
 
     const classesTemp = useStyles()
 
-    const [columns, setColumns] = useState<TableColumn[]>([
-      {
-        id: "role",
-        label: "Admin role",
-        value: (s) => s.role,
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterType: "text",
-      },
-      {
-        id: "userName",
-        label: "Username",
-        value: (s) => s.userName || "-",
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterType: "text",
-      },
-      {
-        id: "firstName",
-        label: "First Name",
-        value: (s) => s.firstName,
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterType: "text",
-      },
-      {
-        id: "lastName",
-        label: "Last Name",
-        value: (s) => s.lastName,
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterType: "text",
-      },
-      {
-        id: "emailAddress",
-        label: "Email ID",
-        value: (s) => s.emailAddress,
-        visible: true,
-        sortable: true,
-        filterable: true,
-        filterType: "text",
-      },
-    ])
+    const [columns, setColumns] = useState<ColumnConfig[]>(
+      [
+        {
+          id: "role",
+          label: "Admin role",
+          value: (s) => s.role,
+          visible: true,
+          sortable: true,
+          filterable: true,
+          filterType: "text" as const,
+        },
+        {
+          id: "userName",
+          label: "Username",
+          value: (s) => s.userName || "-",
+          visible: true,
+          sortable: true,
+          filterable: true,
+          filterType: "text" as const,
+        },
+        {
+          id: "firstName",
+          label: "First Name",
+          value: (s) => s.firstName,
+          visible: true,
+          sortable: true,
+          filterable: true,
+          filterType: "text" as const,
+        },
+        {
+          id: "lastName",
+          label: "Last Name",
+          value: (s) => s.lastName,
+          visible: true,
+          sortable: true,
+          filterable: true,
+          filterType: "text" as const,
+        },
+        {
+          id: "emailAddress",
+          label: "Email ID",
+          value: (s) => s.emailAddress,
+          visible: true,
+          sortable: true,
+          filterable: true,
+          filterType: "text" as const,
+        },
+      ].map((col) => ({ ...col, renderCell: (row) => renderCell(col, row) }))
+    )
 
     const editable_columns = ["firstName", "lastName", "userName"]
 
@@ -340,7 +343,7 @@ export default function Admins({ title, authType, adminType, history }) {
 
     const originalIndexMap = useMemo(() => {
       return (Array.isArray(admins) ? admins : []).reduce((acc, admin, index) => {
-        acc[admin.emailAddress] = index
+        acc[admin.emailAddress] = index + 1
         return acc
       }, {})
     }, [admins])
@@ -523,19 +526,25 @@ export default function Admins({ title, authType, adminType, history }) {
 
     return (
       <>
-        <CommonTable
+        <EmersiveTable
           data={sortedData || filteredAdmins || []}
           columns={columns.filter((col) => col.visible).map((col) => ({ ...col, value: col.value, sortable: true }))}
           actions={actions}
-          selectable={true}
+          getItemKey={(admin) => admin.emailAddress}
           selectedRows={selectedRows}
           onSelectRow={(id) => {
             console.log("Selected row ID:", id)
-            setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+            // setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+            setSelectedRows(id)
           }}
-          onSelectAll={() => {
-            setSelectedRows((prev) => (prev.length === admins.length ? [] : admins.map((p) => p.emailAddress)))
-          }}
+          onSelectAll={
+            // () => {
+            //   setSelectedRows((prev) => (prev.length === admins.length ? [] : admins.map((p) => p.emailAddress)))
+            // }
+            (selected) => {
+              setSelectedRows(selected ? admins.map((p) => p.emailAddress) : [])
+            }
+          }
           sortConfig={sortConfig}
           onSort={(field) => {
             setSortConfig({
@@ -544,11 +553,14 @@ export default function Admins({ title, authType, adminType, history }) {
             })
           }}
           indexmap={originalIndexMap}
-          renderCell={renderCell}
-          categorizeItems={null}
           filters={filters}
-          onFilter={(newFilters) => setFilters(newFilters)}
-          filterDisplay="menu" // row
+          onFilter={(newFilters) => setFilters({ ...initFilters(), ...newFilters })}
+          itemclass="admins"
+          dataKeyprop="emailAddress"
+          paginator={true}
+          rows={5}
+          emptyStateMessage="No Admins found"
+          filterDisplay="row"
         />
 
         <Dialog open={showPasswordDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">

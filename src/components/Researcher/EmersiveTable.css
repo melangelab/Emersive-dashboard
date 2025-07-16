@@ -1,0 +1,376 @@
+/* EmersiveTable.css */
+
+.emersive-table-container {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
+    "Droid Sans", "Helvetica Neue", sans-serif;
+}
+
+.emersive-table-container .MuiTableContainer-root {
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e0e0;
+}
+
+.emersive-table-container .MuiTable-root {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+/* Header Styles */
+.emersive-table-container .MuiTableHead-root {
+  background-color: #fff;
+}
+
+.emersive-table-container .MuiTableHead-root .MuiTableCell-head {
+  padding: 12px 16px;
+  color: #333;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-bottom: 2px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  background-color: #fff;
+  z-index: 2;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* Body Styles */
+.emersive-table-container .MuiTableBody-root .MuiTableRow-root {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.emersive-table-container .MuiTableBody-root .MuiTableRow-root:hover {
+  background-color: #f8f9fa;
+}
+
+.emersive-table-container .MuiTableBody-root .MuiTableRow-root:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.emersive-table-container .MuiTableBody-root .MuiTableRow-root:nth-child(even):hover {
+  background-color: #f0f1f3;
+}
+
+.emersive-table-container .MuiTableCell-body {
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  vertical-align: middle;
+}
+
+/* Checkbox Styles */
+.emersive-table-checkbox-column {
+  width: 48px;
+  padding: 0 12px !important;
+}
+
+.emersive-table-checkbox {
+  padding: 4px;
+  color: #ccc;
+}
+
+.emersive-table-checkbox.Mui-checked {
+  color: #7599ff;
+}
+
+.emersive-table-checkbox .MuiSvgIcon-root {
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+}
+
+/* Index Column */
+.emersive-table-index-cell {
+  width: 60px;
+  color: #5d93f4;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Header Cell Styles */
+.emersive-table-header-cell {
+  background-color: #fff;
+  color: #333;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.emersive-table-header-cell.sticky-left {
+  left: 0;
+  z-index: 11;
+}
+
+.emersive-table-header-cell.sticky-right {
+  right: 0;
+  z-index: 11;
+}
+
+/* Action Cell Styles */
+.emersive-table-action-cell {
+  position: sticky;
+  right: 0;
+  background-color: #fff;
+  box-shadow: -2px 0px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+  /* min-width: 160px; */
+  padding: 12px 16px;
+}
+
+.emersive-table-action-cell::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: #e0e0e0;
+}
+
+.emersive-table-action-buttons {
+  display: flex;
+  gap: 8px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.emersive-table-action-buttons:hover {
+  opacity: 1;
+}
+
+.emersive-table-action-buttons > * {
+  flex-shrink: 0;
+}
+
+.emersive-table-action-icon {
+  width: 24px;
+  height: 24;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.4;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.emersive-table-action-icon path {
+  fill: rgba(0, 0, 0, 0.8);
+}
+
+.emersive-table-action-icon:hover {
+  opacity: 1;
+}
+
+.emersive-table-action-icon:hover path {
+  fill: #06b0f0;
+}
+
+/* Sort Button */
+.emersive-table-sort-button {
+  padding: 4px;
+  margin-left: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.emersive-table-sort-button:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.emersive-table-sort-button svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.3;
+  fill: #333;
+}
+
+.emersive-table-sort-button.active svg {
+  opacity: 1;
+}
+
+/* Column Header */
+.emersive-table-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  cursor: pointer;
+  user-select: none;
+}
+
+.emersive-table-column-header:hover .emersive-table-sort-button svg {
+  opacity: 1;
+}
+
+/* Category Header */
+.emersive-table-category-header {
+  background-color: #f5f5f5;
+  padding: 8px 16px;
+}
+
+.emersive-table-category-header .MuiTypography-root {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+/* Cell Content */
+.emersive-table-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.emersive-table-copyable-cell {
+  cursor: copy;
+  position: relative;
+  font-weight: 500;
+  color: #215f9a;
+  transition: background-color 0.2s;
+}
+
+.emersive-table-copyable-cell:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.emersive-table-study-cell {
+  cursor: pointer;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.emersive-table-study-cell:hover .studyId {
+  display: block;
+}
+
+/* Version Badge */
+.emersive-table-version-badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #fdede8;
+  color: #eb8367;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+/* Filter Row */
+.emersive-table-filter-row .MuiTableCell-root {
+  padding: 8px 16px;
+  border-bottom: 2px solid rgba(224, 224, 224, 0.6);
+}
+
+.emersive-table-filter-input {
+  width: 100%;
+}
+
+.emersive-table-filter-input .MuiInputBase-root {
+  font-size: 0.875rem;
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+.emersive-table-filter-input .MuiInputBase-input {
+  padding: 8px 12px;
+}
+
+.emersive-table-filter-select {
+  width: 100%;
+}
+
+.emersive-table-filter-select .MuiSelect-select {
+  font-size: 0.875rem;
+  padding: 8px 12px;
+}
+
+.emersive-table-active-filter {
+  background-color: rgba(117, 153, 255, 0.1);
+  border-color: #7599ff;
+}
+
+/* Global Filter */
+.emersive-table-global-filter {
+  margin: 16px;
+}
+
+.emersive-table-global-filter .MuiInputBase-root {
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+/* Pagination */
+.emersive-table-pagination-container {
+  border-top: 1px solid rgba(224, 224, 224, 0.4);
+  background-color: #fff;
+  padding: 8px 16px;
+}
+
+.emersive-table-pagination-info {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* Empty State */
+.emersive-table-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .emersive-table-container .MuiTableCell-head,
+  .emersive-table-container .MuiTableCell-body {
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+  }
+
+  .emersive-table-action-buttons {
+    gap: 4px;
+  }
+
+  .emersive-table-action-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Scrollbar styling */
+.emersive-table-container .MuiTableContainer-root::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.emersive-table-container .MuiTableContainer-root::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.emersive-table-container .MuiTableContainer-root::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.emersive-table-container .MuiTableContainer-root::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react"
-import ModularTable, { ColumnConfig } from "./ModularTable"
+import EmersiveTable, { ColumnConfig } from "../EmersiveTable"
+// import ModularTable, { ColumnConfig } from "./ModularTable"
 import {
   Box,
   FormControl,
@@ -166,7 +167,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
     return true
   }
   const columns = useMemo(() => {
-    const allColumns: TableColumn[] = [
+    const allColumns: ColumnConfig[] = [
       {
         id: "name",
         label: "Name",
@@ -831,14 +832,14 @@ const SensorTable: React.FC<SensorTableProps> = ({
   })
   const originalIndexMap = useMemo(() => {
     return (sensors || []).reduce((acc, sensor, index) => {
-      acc[sensor.id] = index
+      acc[sensor.id] = index + 1
       return acc
     }, {})
   }, [sensors])
 
   return (
     <>
-      <CommonTable
+      <EmersiveTable
         data={sensors}
         columns={columns}
         actions={sensorActions}
@@ -853,11 +854,18 @@ const SensorTable: React.FC<SensorTableProps> = ({
         }}
         filters={filters}
         onFilter={(newFilters) => {
-          setFilters(newFilters)
+          setFilters({ ...initFilters(), ...newFilters })
         }}
         filterDisplay="row"
+        selectedRows={[]}
         onSelectRow={() => {}}
-        onSelectAll={() => {}}
+        selectable={true}
+        getItemKey={(item) => item.id}
+        emptyStateMessage="No sensors found"
+        paginator={true}
+        rows={5}
+        rowsPerPageOptions={[2, 5, 10, 20, 50, 100]}
+        itemclass="sensors"
         key={editingSensor ? `${editingSensor.id}-${mode}` : null}
       />
 

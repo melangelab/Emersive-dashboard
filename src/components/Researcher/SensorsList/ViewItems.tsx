@@ -445,7 +445,7 @@ const ViewItems: React.FC<ViewItemsProps> = ({
           {loading ? "Saving..." : "Save Changes"}
         </Button>
       )}
-      <Grid container spacing={0} className={classes.viewGrid}>
+      <Grid container spacing={0} className="view-element-grid">
         <Grid item xs={12} md={submissionInfo ? 7 : 12} className={classes.infoContainer}>
           <Paper elevation={1} className={`${classes.infoPaper} ${isEditing ? "editing-mode" : ""}`}>
             {fields.map((field) => (
