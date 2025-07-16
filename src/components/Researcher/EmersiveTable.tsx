@@ -429,7 +429,7 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
         className={customClasses?.tableContainer || "emersive-table-container"}
         // style={{ height: paginator ? "calc(100% - 120px)" : "100%" }}
       >
-        <Table stickyHeader>
+        <Table stickyHeader className="emersive-table">
           <TableHead>
             {/* Main Header Row */}
             <TableRow>

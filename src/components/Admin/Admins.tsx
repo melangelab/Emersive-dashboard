@@ -635,9 +635,7 @@ export default function Admins({ title, authType, adminType, history }) {
           addComponent={<AddUpdateAdmin refreshAdmins={refreshAdmins} admin={null} admins={admins} />}
           actions={["refresh", "search"]}
         />
-        <div className="table-container">
-          <TableView_Mod />
-        </div>
+        <TableView_Mod />
       </div>
     </>
   )

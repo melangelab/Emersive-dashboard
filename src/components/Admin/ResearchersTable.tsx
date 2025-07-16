@@ -1298,81 +1298,81 @@ const ResearchersTable = ({
 
   return (
     <React.Fragment>
-      <div className="table-container">
-        {showCopyTooltip && <CopyTooltip text="Copied!" position={tooltipPosition} />}
-        <ConfirmationDialog
-          confirmationDialog={confirmationDialogTable ? 1 : 0}
-          open={!!confirmationDialogTable}
-          onClose={() => setConfirmationDialogTable(false)}
-          confirmAction={confirmActionTable}
-          confirmationMsg="Are you sure you want to delete this investigator?"
-        />
-        {/* Password Reset Dialog */}
-        <Dialog open={showPasswordDialog} onClose={handleClosePasswordDialog} aria-labelledby="form-dialog-title">
-          <DialogTitle id="form-dialog-title">Reset Researcher Password</DialogTitle>
-          <DialogContent>
-            {passwordError && (
-              <Typography color="error" variant="body2" gutterBottom>
-                {passwordError}
-              </Typography>
-            )}
-            <TextField
-              autoFocus
-              margin="dense"
-              id="new-password"
-              label="New Password"
-              type="password"
-              fullWidth
-              value={updatedPassword}
-              onChange={(e) => setUpdatedPassword(e.target.value)}
-            />
-            <TextField
-              margin="dense"
-              id="confirm-password"
-              label="Confirm Password"
-              type="password"
-              fullWidth
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleClosePasswordDialog} color="primary">
-              Close
-            </Button>
-            <Button onClick={handleSubmitPassword} color="primary" variant="contained">
-              Submit
-            </Button>
-          </DialogActions>
-        </Dialog>
-        <EmersiveTable
-          data={data}
-          columns={columns}
-          actions={actions}
-          selectable={true}
-          selectedItems={researchersSelected}
-          onSelectionChange={handleSelectionChange}
-          onSelectAll={handleSelectAllRows}
-          getItemKey={(item) => item.id}
-          sortConfig={sortConfig}
-          onSort={(field) => {
-            console.log("sorting at", field, sortConfig)
-            setSortConfig({
-              field,
-              direction: sortConfig.field === field && sortConfig.direction === "asc" ? "desc" : "asc",
-            })
-          }}
-          indexmap={data.reduce((acc, r, i) => ({ ...acc, [r.id]: i + 1 }), {})}
-          filters={filters}
-          onFilter={setFilters}
-          emptyStateMessage="No researchers found"
-          paginator={true}
-          itemclass="researchers"
-          filterDisplay="row"
-          rows={5}
-          dataKeyprop="id"
-        />
-      </div>
+      {/* <div className="table-container"> */}
+      {showCopyTooltip && <CopyTooltip text="Copied!" position={tooltipPosition} />}
+      <ConfirmationDialog
+        confirmationDialog={confirmationDialogTable ? 1 : 0}
+        open={!!confirmationDialogTable}
+        onClose={() => setConfirmationDialogTable(false)}
+        confirmAction={confirmActionTable}
+        confirmationMsg="Are you sure you want to delete this investigator?"
+      />
+      {/* Password Reset Dialog */}
+      <Dialog open={showPasswordDialog} onClose={handleClosePasswordDialog} aria-labelledby="form-dialog-title">
+        <DialogTitle id="form-dialog-title">Reset Researcher Password</DialogTitle>
+        <DialogContent>
+          {passwordError && (
+            <Typography color="error" variant="body2" gutterBottom>
+              {passwordError}
+            </Typography>
+          )}
+          <TextField
+            autoFocus
+            margin="dense"
+            id="new-password"
+            label="New Password"
+            type="password"
+            fullWidth
+            value={updatedPassword}
+            onChange={(e) => setUpdatedPassword(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            id="confirm-password"
+            label="Confirm Password"
+            type="password"
+            fullWidth
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClosePasswordDialog} color="primary">
+            Close
+          </Button>
+          <Button onClick={handleSubmitPassword} color="primary" variant="contained">
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <EmersiveTable
+        data={data}
+        columns={columns}
+        actions={actions}
+        selectable={true}
+        selectedItems={researchersSelected}
+        onSelectionChange={handleSelectionChange}
+        onSelectAll={handleSelectAllRows}
+        getItemKey={(item) => item.id}
+        sortConfig={sortConfig}
+        onSort={(field) => {
+          console.log("sorting at", field, sortConfig)
+          setSortConfig({
+            field,
+            direction: sortConfig.field === field && sortConfig.direction === "asc" ? "desc" : "asc",
+          })
+        }}
+        indexmap={data.reduce((acc, r, i) => ({ ...acc, [r.id]: i + 1 }), {})}
+        filters={filters}
+        onFilter={setFilters}
+        emptyStateMessage="No researchers found"
+        paginator={true}
+        itemclass="researchers"
+        filterDisplay="row"
+        rows={5}
+        dataKeyprop="id"
+      />
+      {/* </div> */}
     </React.Fragment>
   )
   return (
