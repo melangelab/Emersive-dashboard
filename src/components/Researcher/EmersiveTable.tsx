@@ -405,6 +405,14 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
     }
   }
 
+  useEffect(() => {
+    const headerRow = document.querySelector(".emersive-table thead tr:first-of-type")
+    if (headerRow) {
+      const height = headerRow.getBoundingClientRect().height
+      document.documentElement.style.setProperty("--emersive-header-height", `${height}px`)
+    }
+  }, [])
+
   return (
     <div className="content-container">
       {/* Global Filter */}
@@ -497,7 +505,7 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
                   </TableCell>
                 ))}
 
-              <TableCell className={`emersive-table-header-cell sticky-right`}>Actions</TableCell>
+              <TableCell className="emersive-table-header-cell sticky-right">Actions</TableCell>
             </TableRow>
 
             {/* Filter Row */}
@@ -512,7 +520,7 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
                       {column.filterable ? renderFilterInput(column) : null}
                     </TableCell>
                   ))}
-                <TableCell></TableCell> {/* Actions column */}
+                <TableCell className="emersive-table-header-cell sticky-right"></TableCell> {/* Actions column */}
               </TableRow>
             )}
           </TableHead>

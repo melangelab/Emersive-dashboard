@@ -33,7 +33,7 @@ export const useStyles = makeStyles((theme: Theme) =>
     },
     infoContainer: {
       width: "100%",
-      height: "100%",
+      height: "99.5%",
       paddingRight: 0,
     },
     infoPaper: {
@@ -72,7 +72,7 @@ export const useStyles = makeStyles((theme: Theme) =>
     },
     sideContainer: {
       width: "100%",
-      height: "100%",
+      height: "99.5%",
     },
     sidePaper: {
       height: "100%",

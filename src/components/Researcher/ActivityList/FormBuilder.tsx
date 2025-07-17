@@ -604,9 +604,7 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
                     {["number", "dropdown", "checkbox", "radio"].includes(field.type) ? (
                       <>
                         <Divider sx={{ my: 2 }} />
-                        <div
-                          style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}
-                        >
+                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                           <FormControlLabel
                             style={{ textAlign: "center" }} // Centers label text if needed
                             control={
@@ -621,7 +619,7 @@ const FormBuilder = ({ onChange, formFieldsProp, formula }) => {
                       </>
                     ) : null}
                     <Divider sx={{ my: 2 }} />
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                       <Button
                         style={{ borderRadius: "10px", backgroundColor: "#0099ff", color: "white" }}
                         onClick={() => handleAddLogicClick(field, indx)}

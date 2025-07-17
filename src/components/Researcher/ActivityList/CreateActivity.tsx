@@ -15,11 +15,11 @@ import MoodTrackerBuilder from "./MoodTrackerBuilder"
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    padding: theme.spacing(3),
+    padding: "24px 24px 54px 24px",
     width: "100%",
     margin: "0 auto",
     height: "100%",
-    overflowY: "auto",
+    overflowY: "hidden",
   },
 }))
 
