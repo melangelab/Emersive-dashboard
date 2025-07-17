@@ -535,6 +535,9 @@ export default function ActivityList({
   const [duplicateLoading, setDuplicateLoading] = useState(false)
   const [sortConfig, setSortConfig] = useState({ field: null, direction: null })
   const [confirmationVersionDialog, setConfirmationVersionDialog] = useState(false)
+
+  const [selectedRows, setSelectedRows] = useState([])
+
   useInterval(
     () => {
       setLoading(true)
@@ -1841,6 +1844,17 @@ export default function ActivityList({
                     field,
                     direction: sortConfig.field === field && sortConfig.direction === "asc" ? "desc" : "asc",
                   })
+                }}
+                selectedRows={selectedRows}
+                onSelectRow={(ids) => {
+                  setSelectedRows(ids)
+                }}
+                onSelectAll={() => {
+                  setSelectedRows((prev) =>
+                    prev.length === [...activities, ...communityActivities].length
+                      ? []
+                      : [...activities, ...communityActivities].map((p) => p.id)
+                  )
                 }}
                 categorizeItems={categorizeActivities}
                 showCategoryHeaders={true}

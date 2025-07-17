@@ -173,7 +173,7 @@ export const studycardStyles = makeStyles((theme: Theme) =>
       //   backgroundColor: '#FDEDE8',
       // },
       "&.selected": {
-        backgroundColor: "rgba(253, 237, 232, 0.3)", // '#FDEDE8',
+        backgroundColor: "rgba(255, 223, 212, 0.3)", // '#FDEDE8',
       },
     },
     statNumber: {

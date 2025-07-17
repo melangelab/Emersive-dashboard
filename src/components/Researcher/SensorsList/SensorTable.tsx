@@ -88,6 +88,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
     start_time: null,
     end_time: null,
   })
+  const [selectedRows, setSelectedRows] = useState([])
   const [editingSensorFrequency, setEditingSensorFrequency] = useState(null)
   const [editingSensorDuration, setEditingSensorDuration] = useState(null)
   const [editingCellSensorSpec, setEditingCellSensorSpec] = useState(null)
@@ -857,8 +858,13 @@ const SensorTable: React.FC<SensorTableProps> = ({
           setFilters({ ...initFilters(), ...newFilters })
         }}
         filterDisplay="row"
-        selectedRows={[]}
-        onSelectRow={() => {}}
+        selectedRows={selectedRows}
+        onSelectRow={(ids) => {
+          setSelectedRows(ids)
+        }}
+        onSelectAll={() => {
+          setSelectedRows((prev) => (prev.length === sensors.length ? [] : sensors.map((p) => p.id)))
+        }}
         selectable={true}
         getItemKey={(item) => item.id}
         emptyStateMessage="No sensors found"

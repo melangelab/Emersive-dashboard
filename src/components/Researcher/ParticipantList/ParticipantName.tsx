@@ -19,12 +19,12 @@ export default function ParticipantName({ participant, updateParticipant, openSe
   const [editData, setEditData] = useState(false)
   const [editUserId, setEditUserId] = useState("")
   const [aliasName, setAliasName] = useState("")
-  const [name, setName] = useState(participant.name ?? "")
+  const [name, setName] = useState(participant.username ?? "")
 
   useEffect(() => {
     Service.getDataByKey("participants", [participant.id], "id").then((data) => {
-      setAliasName(data[0]?.name ?? participant.id ?? "")
-      setName(data[0]?.name ?? participant.id ?? "")
+      setAliasName(data[0]?.username ?? participant.id ?? "")
+      setName(data[0]?.username ?? participant.id ?? "")
     })
   }, [participant])
 
@@ -33,8 +33,19 @@ export default function ParticipantName({ participant, updateParticipant, openSe
   }, [openSettings])
 
   const editNameTextField = (id, event) => {
-    setEditData(true)
-    setEditUserId(id)
+    // setEditData(true)
+    // setEditUserId(id)
+    if (editUserId === id) {
+      setEditUserId("")
+      setTimeout(() => {
+        setEditData(true)
+        setEditUserId(id)
+      }, 0)
+    } else {
+      setEditData(true)
+      setEditUserId(id)
+    }
+    console.log("Pencil clicked participant:", id)
   }
 
   const updateName = (data) => {
@@ -43,6 +54,10 @@ export default function ParticipantName({ participant, updateParticipant, openSe
     setName(data?.trim() || "")
     updateParticipant(data?.trim() || "")
   }
+
+  useEffect(() => {
+    console.log("ParticipantName render", participant.id, editData, editUserId)
+  }, [editData, editUserId])
 
   return (
     <Box display="flex">

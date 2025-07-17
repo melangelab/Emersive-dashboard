@@ -92,7 +92,7 @@ import AddButton from "./AddButton"
 
 import "../researcher.css"
 import { FilterMatchMode } from "primereact/api"
-import EmersiveTable from "../EmersiveTable"
+import EmersiveTable, { ColumnConfig } from "../EmersiveTable"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -425,6 +425,7 @@ export default function ParticipantList({
           filteredData = filteredData.filter(
             (participant) =>
               participant.name?.toLowerCase().includes(searchTxt?.toLowerCase()) ||
+              participant.username?.toLowerCase().includes(searchTxt?.toLowerCase()) ||
               participant.id?.toLowerCase().includes(searchTxt?.toLowerCase())
           )
         }
@@ -593,7 +594,7 @@ export default function ParticipantList({
   }
 
   // Choose columns and values here btw we can do this later
-  const [columns, setColumns] = useState<CommonTableColumn[]>([
+  const [columns, setColumns] = useState<ColumnConfig[]>([
     {
       id: "id",
       label: "ID",
@@ -626,7 +627,7 @@ export default function ParticipantList({
           updateParticipant={(nameVal) => {
             setParticipants((prevParticipants) =>
               prevParticipants.map((participant) =>
-                participant.id === p.id ? { ...participant, name: nameVal } : participant
+                participant.id === p.id ? { ...participant, username: nameVal } : participant
               )
             )
           }}
@@ -1465,7 +1466,10 @@ export default function ParticipantList({
         >
           <DialogTitle>Removal of Participant from Study</DialogTitle>
           <DialogContent>
-            <Typography>Are you sure you want to delete the participant "{selectedParticipant?.name}"?</Typography>
+            <Typography>
+              Are you sure you want to delete the participant "
+              {selectedParticipant?.username || selectedParticipant?.name}"?
+            </Typography>
           </DialogContent>
           <DialogActions>
             <Button

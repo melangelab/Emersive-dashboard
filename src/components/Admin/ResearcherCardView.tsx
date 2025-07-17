@@ -465,13 +465,16 @@ export default function ResearcherCardView({
                   <Grid
                     container
                     className={participantcardclasses.statsGrid}
-                    style={{ padding: "6px 0", marginBottom: "8px" }}
+                    style={{ padding: "5px 25px", marginBottom: "8px" }}
                   >
                     <Grid
                       item
-                      xs={6}
-                      style={{ textAlign: "center", cursor: "pointer" }}
+                      xs={4}
+                      style={{ textAlign: "center", cursor: "pointer", padding: "8px" }}
                       onClick={() => handleStatClick(researcher, "studies")}
+                      className={`${participantcardclasses.statItem} ${
+                        selectedTab.id === researcher.id && selectedTab.tab === "studies" ? "selected" : ""
+                      }`}
                     >
                       <Typography
                         className={participantcardclasses.statNumber}
@@ -493,9 +496,12 @@ export default function ResearcherCardView({
                     </Grid>
                     <Grid
                       item
-                      xs={6}
-                      style={{ textAlign: "center", cursor: "pointer" }}
+                      xs={4}
+                      style={{ textAlign: "center", cursor: "pointer", padding: "8px" }}
                       onClick={() => handleStatClick(researcher, "participants")}
+                      className={`${participantcardclasses.statItem} ${
+                        selectedTab.id === researcher.id && selectedTab.tab === "participants" ? "selected" : ""
+                      }`}
                     >
                       <Typography
                         className={participantcardclasses.statNumber}
