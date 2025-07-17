@@ -161,7 +161,7 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
     // Apply column filters
     const activeFilters = onFilter ? filters : localFilters
     Object.entries(activeFilters).forEach(([columnId, filterValue]) => {
-      if (filterValue?.value && filterValue.value !== "") {
+      if (filterValue?.value !== null && filterValue.value !== undefined && filterValue.value !== "") {
         const column = columns.find((col) => col.id === columnId)
         if (column) {
           filtered = filtered.filter((item) => {
@@ -174,7 +174,7 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
               case "numeric":
                 return itemValue?.toString().includes(filterVal.toString())
               case "boolean":
-                return itemValue === filterVal
+                return Boolean(itemValue) === Boolean(filterVal)
               case "text":
               default:
                 return itemValue?.toString().toLowerCase().includes(filterVal.toLowerCase())
@@ -353,7 +353,7 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
 
   // Render filter input for column
   const renderFilterInput = (column: ColumnConfig) => {
-    const filterValue = (onFilter ? filters : localFilters)[column.id]?.value || ""
+    const filterValue = (onFilter ? filters : localFilters)[column.id]?.value ?? ""
 
     switch (column.filterType) {
       case "dropdown":
@@ -398,7 +398,7 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
                     <CancelRoundedIcon fontSize="small" />
                   </IconButton>
                 </InputAdornment>
-              ) : null,
+              ) : filterValue !== false ? null : null,
             }}
           />
         )

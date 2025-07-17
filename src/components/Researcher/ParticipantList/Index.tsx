@@ -1400,8 +1400,8 @@ export default function ParticipantList({
           getItemKey={(participant) => participant.id}
           selectable={true}
           selectedRows={selectedRows}
-          onSelectRow={(id) => {
-            setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+          onSelectRow={(ids) => {
+            setSelectedRows(ids)
           }}
           onSelectAll={() => {
             setSelectedRows((prev) => (prev.length === participants.length ? [] : participants.map((p) => p.id)))
