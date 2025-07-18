@@ -420,7 +420,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               className={`sidebar-item ${item.path.includes(activeRoute) ? "active" : ""}`}
               onClick={() => handleSidebarNavigation(item, index)}
             >
-              <ListItemIcon className={`sidebar-icon ${item.text === "Archived" ? "delete-sweep-icon" : ""}`}>
+              <ListItemIcon className={`sidebar-icon`}>
                 {item.path.includes(activeRoute) ? item.filledIcon : item.icon}
               </ListItemIcon>
               {sidebarCollapse ? null : <ListItemText primary={item.text} />}

@@ -44,8 +44,10 @@ import LAMP from "lamp-core"
 import useInterval from "../useInterval"
 import DataPortal from "../data_portal/DataPortal"
 
-import DeleteSweepIcon from "@material-ui/icons/DeleteSweep"
-import DeleteSweepOutlinedIcon from "@mui/icons-material/DeleteSweepOutlined"
+// import DeleteSweepIcon from "@material-ui/icons/DeleteSweep"
+// import DeleteSweepOutlinedIcon from "@mui/icons-material/DeleteSweepOutlined"
+import { ReactComponent as DeleteSweepIcon } from "../../icons/recycle-bin-filled.svg"
+import { ReactComponent as DeleteSweepOutlinedIcon } from "../../icons/recycle-bin.svg"
 
 import ArchivedView from "./ArchiveList/ArchivedItemsView"
 import ArchivedItemsView from "./ArchiveList/ArchivedItemsView"
@@ -305,10 +307,8 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
     {
       text: "Archived",
       path: `${currentBaseRoute}/archived`,
-      icon: (
-        <DeleteSweepOutlinedIcon style={{ width: 35, height: 35 }} className="delete-sweep-icon" fontSize="small" />
-      ),
-      filledIcon: <DeleteSweepIcon style={{ width: 35, height: 35 }} />,
+      icon: <DeleteSweepOutlinedIcon />,
+      filledIcon: <DeleteSweepIcon />,
     },
   ]
 

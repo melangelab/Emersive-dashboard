@@ -22,10 +22,14 @@ import {
   FormControl,
   Chip,
 } from "@material-ui/core"
-import ArrowUpwardIcon from "@material-ui/icons/ArrowUpward"
-import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward"
+// import ArrowUpwardIcon from "@material-ui/icons/ArrowUpward"
+// import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward"
+import { ReactComponent as SortIcon } from "../../icons/sort-alt.svg"
+import { ReactComponent as SortAscIcon } from "../../icons/sort-size-up.svg"
+import { ReactComponent as SortDescIcon } from "../../icons/sort-size-down.svg"
+
 import SearchIcon from "@material-ui/icons/Search"
-import CancelRoundedIcon from "@material-ui/icons/CancelRounded"
+import { ReactComponent as FilterClearIcon } from "../../icons/NewIcons/filter-clear.svg"
 import "./EmersiveTable.css"
 
 // Enhanced column configuration
@@ -418,7 +422,7 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
               endAdornment: filterValue ? (
                 <InputAdornment position="end">
                   <IconButton size="small" onClick={() => handleFilterChange(column.id, "")}>
-                    <CancelRoundedIcon fontSize="small" />
+                    <FilterClearIcon style={{ width: 15, height: 15 }} />
                   </IconButton>
                 </InputAdornment>
               ) : filterValue !== false ? null : null,
@@ -486,12 +490,12 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
                   >
                     {sortConfig.field === "index" ? (
                       sortConfig.direction === "asc" ? (
-                        <ArrowUpwardIcon style={{ width: 15, height: 15 }} />
+                        <SortAscIcon style={{ width: 15, height: 15 }} />
                       ) : (
-                        <ArrowDownwardIcon style={{ width: 15, height: 15 }} />
+                        <SortDescIcon style={{ width: 15, height: 15 }} />
                       )
                     ) : (
-                      <ArrowUpwardIcon style={{ width: 15, height: 15, opacity: 0.3 }} />
+                      <SortIcon style={{ width: 15, height: 15, opacity: 0.3 }} />
                     )}
                   </IconButton>
                 </Box>
@@ -515,12 +519,12 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
                         >
                           {sortConfig.field === column.id ? (
                             sortConfig.direction === "asc" ? (
-                              <ArrowUpwardIcon style={{ width: 15, height: 15 }} />
+                              <SortAscIcon style={{ width: 15, height: 15 }} />
                             ) : (
-                              <ArrowDownwardIcon style={{ width: 15, height: 15 }} />
+                              <SortDescIcon style={{ width: 15, height: 15 }} />
                             )
                           ) : (
-                            <ArrowUpwardIcon style={{ width: 15, height: 15, opacity: 0.3 }} />
+                            <SortIcon style={{ width: 15, height: 15, opacity: 0.3 }} />
                           )}
                         </IconButton>
                       )}
