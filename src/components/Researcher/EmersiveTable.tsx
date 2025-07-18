@@ -86,6 +86,9 @@ export interface EmersiveTableProps {
   tableKey?: string
   // Data key property
   dataKeyprop?: string
+  currentPage?: number
+  onPageChange?: (page: number) => void
+  onRowsPerPageChange?: (rowsPerPage: number) => void
 }
 
 const EmersiveTable: React.FC<EmersiveTableProps> = ({
@@ -121,19 +124,25 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
   itemclass = "items",
   tableKey = "table",
   dataKeyprop = "id",
+  currentPage,
+  onPageChange,
+  onRowsPerPageChange,
 }) => {
   // const classes = useStyles()
   // const modClasses = useModularTableStyles()
 
   // Local state for pagination
-  const [page, setPage] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(rows)
+  const [localPage, setLocalPage] = useState(0)
+  const [localRowsPerPage, setLocalRowsPerPage] = useState(rows)
 
   // Local state for global filter if not controlled
   const [localGlobalFilter, setLocalGlobalFilter] = useState(globalFilter)
 
   // Local state for filters if not controlled
   const [localFilters, setLocalFilters] = useState(filters)
+
+  const page = currentPage !== undefined ? currentPage : localPage
+  const rowsPerPage = localRowsPerPage
 
   // Handle sort click
   const handleSort = (columnId: string) => {
@@ -280,13 +289,23 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
 
   // Handle page change
   const handlePageChange = (event: unknown, newPage: number) => {
-    setPage(newPage)
+    if (onPageChange) {
+      onPageChange(newPage)
+    } else {
+      setLocalPage(newPage)
+    }
   }
 
   // Handle rows per page change
   const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
-    setPage(0)
+    const newRowsPerPage = parseInt(event.target.value, 10)
+    setLocalRowsPerPage(newRowsPerPage)
+
+    if (onRowsPerPageChange) {
+      onRowsPerPageChange(newRowsPerPage)
+    } else {
+      setLocalPage(0)
+    }
   }
 
   // Handle global filter change
@@ -297,7 +316,9 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
     } else {
       setLocalGlobalFilter(value)
     }
-    setPage(0) // Reset to first page when filtering
+    if (!onPageChange) {
+      setLocalPage(0)
+    }
   }
 
   // Calculate total items count (excluding category headers)
@@ -317,7 +338,9 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
     } else {
       setLocalFilters(newFilters)
     }
-    setPage(0) // Reset to first page when filtering
+    if (!onPageChange) {
+      setLocalPage(0)
+    }
   }
 
   // Handle select all

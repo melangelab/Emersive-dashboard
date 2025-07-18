@@ -472,6 +472,8 @@ const ResearchersTable = ({
   const [passwordError, setPasswordError] = useState("")
   const [passwordDialogResearcher, setPasswordDialogResearcher] = useState(null)
   const [sortConfig, setSortConfig] = useState({ field: null, direction: null })
+  const [currentPage, setCurrentPage] = useState(0)
+  const [currentRowsPerPage, setCurrentRowsPerPage] = useState(5)
 
   useEffect(() => {
     console.warn("Active button table changed:", activeButtonTable)
@@ -1296,6 +1298,15 @@ const ResearchersTable = ({
     }
   }
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage)
+  }
+
+  const handleRowsPerPageChange = (newRowsPerPage: number) => {
+    setCurrentRowsPerPage(newRowsPerPage)
+    setCurrentPage(0) // Reset to first page when changing rows per page
+  }
+
   return (
     <React.Fragment>
       {/* <div className="table-container"> */}
@@ -1369,8 +1380,11 @@ const ResearchersTable = ({
         paginator={true}
         itemclass="researchers"
         filterDisplay="row"
-        rows={5}
         dataKeyprop="id"
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        onRowsPerPageChange={handleRowsPerPageChange}
+        rows={currentRowsPerPage}
       />
       {/* </div> */}
     </React.Fragment>

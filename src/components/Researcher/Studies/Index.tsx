@@ -1632,6 +1632,9 @@ export default function StudiesList({
     searchFilterStudies()
   }
 
+  const [currentPage, setCurrentPage] = useState(0)
+  const [currentRowsPerPage, setCurrentRowsPerPage] = useState(5)
+
   const TableView_Mod = () => {
     const [sortConfig, setSortConfig] = useState({ field: null, direction: null })
     const [selectedRows, setSelectedRows] = useState([])
@@ -1642,13 +1645,6 @@ export default function StudiesList({
     // const [isEditing, setIsEditing] = useState(false)
     // const [editedValues, setEditedValues] = useState({})
     const [filters, setFilters] = useState({})
-    useEffect(() => {
-      setEditedData({ inital: "empty" })
-      console.warn("initial editedData set to empty")
-    }, [])
-    useEffect(() => {
-      console.log("editedData changed:", editedData)
-    }, [editedData])
 
     const editableColumns = [
       "name",
@@ -2121,6 +2117,16 @@ export default function StudiesList({
           ? (item) => renderCell(item, col)
           : undefined,
     }))
+
+    const handlePageChange = (newPage: number) => {
+      setCurrentPage(newPage)
+    }
+
+    const handleRowsPerPageChange = (newRowsPerPage: number) => {
+      setCurrentRowsPerPage(newRowsPerPage)
+      setCurrentPage(0) // Reset to first page when changing rows per page
+    }
+
     return (
       <>
         <EmersiveTable
@@ -2129,15 +2135,9 @@ export default function StudiesList({
           actions={actions}
           getItemKey={(item) => item.id}
           selectedRows={selectedRows}
-          // onSelectRow={(id) => {
-          //   setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
-          // }}
           onSelectRow={(selectedIds) => {
             setSelectedRows(selectedIds)
           }}
-          // onSelectAll={() => {
-          //   setSelectedRows((prev) => (prev.length === allStudies.length ? [] : allStudies.map((s) => s.id)))
-          // }}
           onSelectAll={(selected) => {
             setSelectedRows(selected ? allStudies.map((s) => s.id) : [])
           }}
@@ -2158,6 +2158,10 @@ export default function StudiesList({
           filterDisplay="row"
           itemclass="studies"
           dataKeyprop="id"
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          rows={currentRowsPerPage}
         />
         {selectedStudyForDialog && (
           <DeleteStudy

@@ -305,7 +305,9 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
     {
       text: "Archived",
       path: `${currentBaseRoute}/archived`,
-      icon: <DeleteSweepOutlinedIcon style={{ width: 35, height: 35 }} />,
+      icon: (
+        <DeleteSweepOutlinedIcon style={{ width: 35, height: 35 }} className="delete-sweep-icon" fontSize="small" />
+      ),
       filledIcon: <DeleteSweepIcon style={{ width: 35, height: 35 }} />,
     },
   ]

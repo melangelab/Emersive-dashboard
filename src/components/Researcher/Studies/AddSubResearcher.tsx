@@ -112,7 +112,7 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
         // console.log("Researchers with access scope:", response)
         const researchers = response.data
         console.log("All researchers:", researchers)
-        const filteredResearchers = researchers.filter((r) => r.id !== researcherId)
+        const filteredResearchers = researchers.filter((r) => r.id !== researcherId && r.id !== study.parent)
         setAvailableResearchers(filteredResearchers)
         const subResearchersWithAccessScope = {}
         study.sub_researchers.forEach((subResearcher) => {

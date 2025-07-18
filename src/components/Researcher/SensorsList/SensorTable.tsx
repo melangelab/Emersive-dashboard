@@ -93,6 +93,9 @@ const SensorTable: React.FC<SensorTableProps> = ({
   const [editingSensorDuration, setEditingSensorDuration] = useState(null)
   const [editingCellSensorSpec, setEditingCellSensorSpec] = useState(null)
   const [sortConfig, setSortConfig] = useState({ field: null, direction: null })
+  const [currentPage, setCurrentPage] = useState(0)
+  const [currentRowsPerPage, setCurrentRowsPerPage] = useState(5)
+
   const initFilters = () => {
     return {
       global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -838,6 +841,15 @@ const SensorTable: React.FC<SensorTableProps> = ({
     }, {})
   }, [sensors])
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage)
+  }
+
+  const handleRowsPerPageChange = (newRowsPerPage: number) => {
+    setCurrentRowsPerPage(newRowsPerPage)
+    setCurrentPage(0) // Reset to first page when changing rows per page
+  }
+
   return (
     <>
       <EmersiveTable
@@ -869,10 +881,12 @@ const SensorTable: React.FC<SensorTableProps> = ({
         getItemKey={(item) => item.id}
         emptyStateMessage="No sensors found"
         paginator={true}
-        rows={5}
-        rowsPerPageOptions={[2, 5, 10, 20, 50, 100]}
+        rows={currentRowsPerPage}
+        rowsPerPageOptions={[5, 10, 20, 50, 100]}
         itemclass="sensors"
-        key={editingSensor ? `${editingSensor.id}-${mode}` : null}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        onRowsPerPageChange={handleRowsPerPageChange}
       />
 
       <DetailModal

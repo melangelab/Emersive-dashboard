@@ -1,37 +1,12 @@
-              {!study.timestamps?.suspendedAt ? (
-                activeButton.id === study.id && activeButton.action === "suspend" ? (
-                <SuspendFilledIcon
-                  className={`${studycardclasses.actionIcon} selected`}
-                  onClick={() => {
-                    setActiveButton({ id: study.id, action: "suspend" })
-                    handleOpenSuspendDialog(study)
-                  }}
-                />
-              ) : (
-                <SuspendIcon
-                  className={`${studycardclasses.actionIcon} ${studyToSuspend?.id === study.id ? "selected" : ""}`}
-                  onClick={() => {
-                    setActiveButton({ id: study.id, action: "suspend" })
-                    handleOpenSuspendDialog(study)
-                  }}
-                />
-              )
-            ) : (
-            activeButton.id === study.id && activeButton.action === "suspend" ? (
-                <SuspendFilledIcon
-                  className={`${studycardclasses.actionIcon} selected`}
-                  onClick={() => {
-                    setActiveButton({ id: study.id, action: "suspend" })
-                    handleOpenUnSuspendDialog(study, setActiveButton)
-                  }}
-                />
-              ) : (
-                <SuspendFilledIcon
-                  className={`${studycardclasses.actionIcon} ${studyToSuspend?.id === study.id ? "selected" : ""}`}
-                  onClick={() => {
-                    setActiveButton({ id: study.id, action: "suspend" })
-                    handleOpenUnSuspendDialog(study, setActiveButton)
-                  }}
-                />
-              ))
-            }
+      <span className={`${classes.actionIcon} action-icon-add-participant`}>
+        {props.activeButton?.id === study.id && props.activeButton?.action === "add_participant" ? (
+          <UserAddFilledIcon
+            className="active"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent event bubbling
+              setActiveButton({ id: study.id, action: "add_participant" })
+              setSelectedStudyForDialog(study)
+              setOpenAPTS(true)
+            }}
+          />
+        ) : (

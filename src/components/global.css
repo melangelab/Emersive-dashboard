@@ -87,7 +87,6 @@
   cursor: pointer;
 }
 
-/* Text styling */
 .sidebar-item .MuiListItemText-root .MuiTypography-root {
   font-size: 14px;
   color: #4d555b;
@@ -103,6 +102,37 @@
   background-color: rgba(228, 124, 98, 0.1);
   cursor: pointer;
 }
+/* 
+.delete-sweep-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+  min-width: 50px;
+  margin: 5px 5px 5px 0px;
+  border-radius: 100%;
+  transition: background-color 0.3s ease, width 0.3s ease, height 0.3s ease;
+  cursor: pointer;
+}
+
+.delete-sweep-icon svg {
+  width: 35px !important;
+  pointer-events: none;
+} */
+
+/* .delete-sweep-icon svg {
+  stroke-width: 0.01 !important;
+  fill: none !important;
+}
+
+.delete-sweep-icon svg path {
+  stroke-width: 0.3 !important;
+}
+
+.delete-sweep-icon svg path {
+  fill: pink !important;
+  stroke-width: 0.5px !important;
+} */
 
 .sidebar-icon {
   display: flex;
@@ -127,7 +157,7 @@
 }
 
 .sidebar-item:hover svg path {
-  fill: #e47c62;
+  fill: #e47c62 !important;
 }
 
 .sidebar-item:hover .MuiTypography-root {

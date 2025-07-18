@@ -537,6 +537,8 @@ export default function ActivityList({
   const [confirmationVersionDialog, setConfirmationVersionDialog] = useState(false)
 
   const [selectedRows, setSelectedRows] = useState([])
+  const [currentPage, setCurrentPage] = useState(0)
+  const [currentRowsPerPage, setCurrentRowsPerPage] = useState(5)
 
   useInterval(
     () => {
@@ -1861,7 +1863,6 @@ export default function ActivityList({
                 filters={filters}
                 onFilter={(newFilters) => setFilters({ ...initFilters(), ...newFilters })}
                 filterDisplay="row"
-                tableKey={editingActivity ? `${editingActivity.id}-${rowMode}-${JSON.stringify(editedValues)}` : null}
                 dataKeyprop={"id"}
                 emptyStateMessage={t("No activities found")}
                 onSelectionChange={(item, checked) => {
@@ -1871,6 +1872,16 @@ export default function ActivityList({
                     setSelectedActivities((prev) => prev.filter((i) => i.id !== item.id))
                   }
                 }}
+                rowsPerPageOptions={[2, 5, 10, 25, 50, 100]}
+                currentPage={currentPage}
+                onPageChange={(newPage: number) => {
+                  setCurrentPage(newPage)
+                }}
+                onRowsPerPageChange={(newRowsPerPage: number) => {
+                  setCurrentRowsPerPage(newRowsPerPage)
+                  setCurrentPage(0) // Reset to first page when changing rows per page
+                }}
+                rows={currentRowsPerPage}
               />
               <ConfirmationDialog
                 open={confirmationVersionDialog}

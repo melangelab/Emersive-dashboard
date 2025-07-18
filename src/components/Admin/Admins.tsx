@@ -153,6 +153,9 @@ export default function Admins({ title, authType, adminType, history }) {
     )
   }
 
+  const [currentPage, setCurrentPage] = useState(0)
+  const [currentRowsPerPage, setCurrentRowsPerPage] = useState(5)
+
   const TableView_Mod = () => {
     const userId = LAMP.Auth._auth.id
     const [sortConfig, setSortConfig] = useState({ field: "name", direction: "desc" as "asc" | "desc" })
@@ -525,6 +528,15 @@ export default function Admins({ title, authType, adminType, history }) {
       }
     }
 
+    const handlePageChange = (newPage: number) => {
+      setCurrentPage(newPage)
+    }
+
+    const handleRowsPerPageChange = (newRowsPerPage: number) => {
+      setCurrentRowsPerPage(newRowsPerPage)
+      setCurrentPage(0) // Reset to first page when changing rows per page
+    }
+
     return (
       <>
         <EmersiveTable
@@ -535,17 +547,11 @@ export default function Admins({ title, authType, adminType, history }) {
           selectedRows={selectedRows}
           onSelectRow={(id) => {
             console.log("Selected row ID:", id)
-            // setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
             setSelectedRows(id)
           }}
-          onSelectAll={
-            // () => {
-            //   setSelectedRows((prev) => (prev.length === admins.length ? [] : admins.map((p) => p.emailAddress)))
-            // }
-            (selected) => {
-              setSelectedRows(selected ? admins.map((p) => p.emailAddress) : [])
-            }
-          }
+          onSelectAll={(selected) => {
+            setSelectedRows(selected ? admins.map((p) => p.emailAddress) : [])
+          }}
           sortConfig={sortConfig}
           onSort={(field) => {
             setSortConfig({
@@ -559,9 +565,12 @@ export default function Admins({ title, authType, adminType, history }) {
           itemclass="admins"
           dataKeyprop="emailAddress"
           paginator={true}
-          rows={5}
           emptyStateMessage="No Admins found"
           filterDisplay="row"
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          rows={currentRowsPerPage}
         />
 
         <Dialog open={showPasswordDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">

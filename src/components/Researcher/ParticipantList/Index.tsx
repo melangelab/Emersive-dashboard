@@ -912,6 +912,9 @@ export default function ParticipantList({
     return () => clearInterval(statusInterval)
   }, [participants])
 
+  const [currentPage, setCurrentPage] = useState(0)
+  const [currentRowsPerPage, setCurrentRowsPerPage] = useState(5)
+
   const TableView_Mod = () => {
     console.log("sharedstudies table", sharedstudies)
     const [sortConfig, setSortConfig] = useState({ field: "index", direction: "asc" as "desc" | "asc" })
@@ -1392,6 +1395,15 @@ export default function ParticipantList({
       setFilters(initFilters())
     }, [columns])
 
+    const handlePageChange = (newPage: number) => {
+      setCurrentPage(newPage)
+    }
+
+    const handleRowsPerPageChange = (newRowsPerPage: number) => {
+      setCurrentRowsPerPage(newRowsPerPage)
+      setCurrentPage(0) // Reset to first page when changing rows per page
+    }
+
     return (
       <>
         <EmersiveTable
@@ -1423,6 +1435,10 @@ export default function ParticipantList({
           emptyStateMessage="No participants found"
           itemclass="participants"
           paginator={true}
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          rows={currentRowsPerPage}
         />
 
         {/* <Dialog open={suspendDialogOpen} onClose={handleCloseSuspendDialog}>
