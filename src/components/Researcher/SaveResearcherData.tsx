@@ -115,7 +115,6 @@ const fetchSharedStudies = async (researcherId) => {
       sensors: (study.sensors || []).map((s) => ({ ...s, researcherId })),
       participants: (study.participants || []).map((p) => ({ ...p, researcherId })),
     }))
-
     // Add to ServiceDB
     try {
       Service.addData("sharedstudies", processedSharedStudies, researcherId) // TODO add researcherId to addData call
@@ -203,6 +202,7 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
   // })
   const sharedStudies = await fetchSharedStudies(researcherId)
   sharedStudiesList = sharedStudies.map((study) => study.name)
+  const sharedStudyIds = sharedStudies.map((study) => study.id)
 
   let studiesSelected =
     localStorage.getItem("studies_" + researcherId) !== null
@@ -215,29 +215,150 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
   localStorage.setItem("sharedstudies_" + researcherId, JSON.stringify(sharedStudiesList))
   if (sharedStudies && sharedStudies.length > 0) {
     console.log("Shared studies fetched:", sharedStudies)
-    let sharedParticipants = []
-    let sharedActivities = []
-    let sharedSensors = []
+    // let sharedParticipants = []
+    // let sharedActivities = []
+    // let sharedSensors = []
+    // sharedStudies.forEach((study) => {
+    //   const parentResearcher = study.parent || ""
+    //   if (study.participants && study.participants.length > 0) {
+    //     sharedParticipants = sharedParticipants.concat(
+    //       study.participants.map((p) => ({ ...p, isShared: true, parentResearcher }))
+    //     )
+    //   }
+    //   if (study.activities && study.activities.length > 0) {
+    //     sharedActivities = sharedActivities.concat(
+    //       study.activities.map((a) => ({ ...a, isShared: true, parentResearcher }))
+    //     )
+    //   }
+    //   if (study.sensors && study.sensors.length > 0) {
+    //     sharedSensors = sharedSensors.concat(study.sensors.map((s) => ({ ...s, isShared: true, parentResearcher })))
+    //   }
+    // })
+    // if (sharedParticipants.length > 0) Service.addData("participants", sharedParticipants, researcherId)
+    // if (sharedActivities.length > 0) Service.addData("activities", sharedActivities, researcherId)
+    // if (sharedSensors.length > 0) Service.addData("sensors", sharedSensors, researcherId)
+    const sharedStudyIdsString = sharedStudyIds.map((id) => `'${id}'`).join(",")
+    LAMP.API.query(
+      "($studyIds := [" +
+        sharedStudyIdsString +
+        "];" +
+        " $filterAudioOut := function($obj) { $obj ~> |$|{}, ['audio']| };" +
+        " $sharedData := $map($studyIds, function($studyId) {" +
+        "   {" +
+        "     'study_id': $studyId," +
+        "     'study_name': $LAMP.Study.get($studyId).name," +
+        "     'participants': [$map($LAMP.Participant.list($studyId), function($p) {" +
+        "       {" +
+        "         'name': $LAMP.Tag.get($p.id,'lamp.name')[0]," +
+        "         'is_deleted': $LAMP.Tag.get($p.id,'lamp.is_deleted')," +
+        "         'id': $p.id," +
+        "         'study_id': $studyId," +
+        "         'study_name': $LAMP.Study.get($studyId).name," +
+        "         'group_name': $LAMP.Tag.get($p.id,'lamp.group_name')," +
+        "         'firstName': $p.firstName," +
+        "         'lastName': $p.lastName," +
+        "         'username': $p.username," +
+        "         'email': $p.email," +
+        "         'mobile': $p.mobile," +
+        "         'researcherNote': $p.researcherNote," +
+        "         'userAge': $p.userAge," +
+        "         'isLoggedIn': $p.isLoggedIn," +
+        "         'systemTimestamps': $p.systemTimestamps," +
+        "         'gender': $p.gender," +
+        "         'address': $p.address," +
+        "         'caregiverName': $p.caregiverName," +
+        "         'caregiverRelation': $p.caregiverRelation," +
+        "         'caregiverMobile': $p.caregiverMobile," +
+        "         'caregiverEmail': $p.caregiverEmail," +
+        "         'hospitalId': $p.hospitalId," +
+        "         'otherHealthIds': $p.otherHealthIds," +
+        "         'isSuspended': $p.isSuspended" +
+        "       }" +
+        "     })]," +
+        "     'activities': [$map($LAMP.Activity.list($studyId, false, false, true), function($activity) {" +
+        "       $merge([$filterAudioOut($activity), {" +
+        "         'study_id': $studyId," +
+        "         'study_name': $LAMP.Study.get($studyId).name" +
+        "       }])" +
+        "     })]," +
+        "     'sensors': [$map($LAMP.Sensor.list($studyId), function($sensor) {" +
+        "       $merge([$sensor, {" +
+        "         'study_id': $studyId," +
+        "         'study_name': $LAMP.Study.get($studyId).name" +
+        "       }])" +
+        "     })]" +
+        "   }" +
+        " });" +
+        " $sharedData)"
+    )
+      .then((sharedData: any) => {
+        console.log("Shared data fetched:", sharedData)
+        let allSharedParticipants = []
+        let allSharedActivities = []
+        let allSharedSensors = []
 
-    sharedStudies.forEach((study) => {
-      const parentResearcher = study.parent || ""
-      if (study.participants && study.participants.length > 0) {
-        sharedParticipants = sharedParticipants.concat(
-          study.participants.map((p) => ({ ...p, isShared: true, parentResearcher }))
-        )
-      }
-      if (study.activities && study.activities.length > 0) {
-        sharedActivities = sharedActivities.concat(
-          study.activities.map((a) => ({ ...a, isShared: true, parentResearcher }))
-        )
-      }
-      if (study.sensors && study.sensors.length > 0) {
-        sharedSensors = sharedSensors.concat(study.sensors.map((s) => ({ ...s, isShared: true, parentResearcher })))
-      }
-    })
-    if (sharedParticipants.length > 0) Service.addData("participants", sharedParticipants, researcherId)
-    if (sharedActivities.length > 0) Service.addData("activities", sharedActivities, researcherId)
-    if (sharedSensors.length > 0) Service.addData("sensors", sharedSensors, researcherId)
+        const studyParentMap = {}
+        sharedStudies.forEach((study) => {
+          studyParentMap[study.id] = study.parent || ""
+        })
+        const studyDataArray = Array.isArray(sharedData) ? sharedData : [sharedData]
+        studyDataArray.forEach((studyData) => {
+          const parentResearcher = studyParentMap[studyData.study_id] || ""
+          if (studyData.participants && studyData.participants.length > 0) {
+            allSharedParticipants = allSharedParticipants.concat(
+              studyData.participants.map((p) => ({ ...p, isShared: true, parentResearcher }))
+            )
+          }
+
+          if (studyData.activities && studyData.activities.length > 0) {
+            allSharedActivities = allSharedActivities.concat(
+              studyData.activities.map((a) => ({ ...a, isShared: true, parentResearcher }))
+            )
+          }
+
+          if (studyData.sensors && studyData.sensors.length > 0) {
+            allSharedSensors = allSharedSensors.concat(
+              studyData.sensors.map((s) => ({ ...s, isShared: true, parentResearcher }))
+            )
+          }
+        })
+
+        if (allSharedParticipants.length > 0) {
+          Service.addData("participants", allSharedParticipants, researcherId)
+        }
+        if (allSharedActivities.length > 0) {
+          Service.addData("activities", allSharedActivities, researcherId)
+        }
+        if (allSharedSensors.length > 0) {
+          Service.addData("sensors", allSharedSensors, researcherId)
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching shared studies data:", error)
+        let sharedParticipants = []
+        let sharedActivities = []
+        let sharedSensors = []
+
+        sharedStudies.forEach((study) => {
+          const parentResearcher = study.parent || ""
+          if (study.participants && study.participants.length > 0) {
+            sharedParticipants = sharedParticipants.concat(
+              study.participants.map((p) => ({ ...p, isShared: true, parentResearcher }))
+            )
+          }
+          if (study.activities && study.activities.length > 0) {
+            sharedActivities = sharedActivities.concat(
+              study.activities.map((a) => ({ ...a, isShared: true, parentResearcher }))
+            )
+          }
+          if (study.sensors && study.sensors.length > 0) {
+            sharedSensors = sharedSensors.concat(study.sensors.map((s) => ({ ...s, isShared: true, parentResearcher })))
+          }
+        })
+        if (sharedParticipants.length > 0) Service.addData("participants", sharedParticipants, researcherId)
+        if (sharedActivities.length > 0) Service.addData("activities", sharedActivities, researcherId)
+        if (sharedSensors.length > 0) Service.addData("sensors", sharedSensors, researcherId)
+      })
   }
 }
 

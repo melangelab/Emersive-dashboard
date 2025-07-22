@@ -32,6 +32,7 @@ import {
   useMediaQuery,
   useTheme,
   TextField,
+  Tooltip,
 } from "@material-ui/core"
 import TimeAgo from "javascript-time-ago"
 import en from "javascript-time-ago/locale/en"
@@ -430,7 +431,7 @@ export default function ParticipantList({
           )
         }
         const sortedData = sortData(filteredData, selectedData, "id")
-        console.log("sortedData", sortedData)
+        console.log("sortedData", sortedData, selectedData, filteredData)
         console.log("participantData", participantData)
         setParticipants(sortedData)
         setPaginatedParticipants(sortedData.slice(page * rowCount, page * rowCount + rowCount))
@@ -914,6 +915,11 @@ export default function ParticipantList({
 
   const [currentPage, setCurrentPage] = useState(0)
   const [currentRowsPerPage, setCurrentRowsPerPage] = useState(5)
+  const [hasCredentials, setHasCredentials] = useState({})
+  const [credentialTooltipOpen, setCredentialTooltipOpen] = useState({})
+  useEffect(() => {
+    console.log("hasCredentials changed", hasCredentials)
+  }, [hasCredentials])
 
   const TableView_Mod = () => {
     console.log("sharedstudies table", sharedstudies)
@@ -924,6 +930,7 @@ export default function ParticipantList({
     const [selectedParticipant, setSelectedParticipant] = useState(null)
     const [editingParticipant, setEditingParticipant] = useState(null)
     const [editedData, setEditedData] = useState({})
+
     const editableColumns = [
       "firstName",
       "lastName",
@@ -1215,6 +1222,58 @@ export default function ParticipantList({
       return sortableData
     }, [participants, sortConfig, originalIndexMap])
 
+    const checkCredentials = async (participantId) => {
+      try {
+        const credentials = await LAMP.Credential.list(participantId)
+        const hasValidCredentials =
+          credentials &&
+          Array.isArray(credentials) &&
+          credentials.length > 0 &&
+          credentials.some((cred) => cred && Object.keys(cred).length > 0)
+        setHasCredentials((prev) => ({
+          ...prev,
+          [participantId]: hasValidCredentials,
+        }))
+        return hasValidCredentials
+      } catch (error) {
+        console.error("Error checking credentials:", error)
+        setHasCredentials((prev) => ({
+          ...prev,
+          [participantId]: false,
+        }))
+        return false
+      }
+    }
+
+    const handleVisualize = async (participantId) => {
+      setActiveButton({ id: participantId, action: "enter" })
+      const credentialsExist = await checkCredentials(participantId)
+      // if (!credentialsExist) {
+      //   setCredentialTooltipOpen(prev => ({
+      //     ...prev,
+      //     [participantId]: true
+      //   }))
+      //   setTimeout(() => {
+      //     setCredentialTooltipOpen(prev => ({
+      //       ...prev,
+      //       [participantId]: false
+      //     }))
+      //     setActiveButton({ id: null, action: null })
+      //   }, 1000)
+      //   return
+      // }
+      if (!credentialsExist) {
+        enqueueSnackbar(`This participant with ID:${participantId} has not created their credentials yet`, {
+          variant: "warning",
+          autoHideDuration: 3000,
+        })
+        setActiveButton({ id: null, action: null })
+        return
+      }
+      onParticipantSelect(participantId)
+      setActiveButton({ id: null, action: null })
+    }
+
     const actions = (participant) => {
       const pStudy = studies.filter((study) => study.id === participant.study_id)[0]
 
@@ -1223,28 +1282,58 @@ export default function ParticipantList({
           {/* <Box component="span" className={classes.actionIcon}>
             {notificationColumn && <NotificationSettings participant={participant} />}
           </Box> */}
+          {/* <Tooltip 
+            title="This participant has not created their credentials yet"
+            open={hasCredentials[participant.id] === false && credentialTooltipOpen[participant.id]}
+            arrow
+            disableFocusListener
+            disableHoverListener
+            disableTouchListener
+            PopperProps={{
+              style: { zIndex: 9999 },
+              placement: 'top',
+              modifiers: [
+                {
+                  name: "preventOverflow",
+                  options: {
+                    boundary: "viewport",
+                    padding: 8
+                  }
+                },
+                {
+                  name: "flip",
+                  options: {
+                    fallbackPlacements: ['top', 'bottom', 'left', 'right'],
+                  }
+                }
+              ]
+            }}
+          > */}
           <Box component="span" className={classes.actionIcon}>
             {activeButton.id === participant.id && activeButton.action === "view" ? (
               <VisualiseFilledIcon
                 className="active"
                 onClick={() => {
-                  setActiveButton({ id: participant.id, action: "view" })
-                  onParticipantSelect(participant.id)
-                  setActiveButton({ id: null, action: null })
+                  // setActiveButton({ id: participant.id, action: "view" })
+                  // onParticipantSelect(participant.id)
+                  // setActiveButton({ id: null, action: null })
+                  handleVisualize(participant.id)
                 }}
                 style={{ transform: "scaleX(-1)" }}
               />
             ) : (
               <VisualiseIcon
                 onClick={() => {
-                  setActiveButton({ id: participant.id, action: "view" })
-                  onParticipantSelect(participant.id)
-                  setActiveButton({ id: null, action: null })
+                  // setActiveButton({ id: participant.id, action: "view" })
+                  // onParticipantSelect(participant.id)
+                  // setActiveButton({ id: null, action: null })
+                  handleVisualize(participant.id)
                 }}
                 style={{ transform: "scaleX(-1)" }}
               />
             )}
           </Box>
+          {/* </Tooltip> */}
           <Box component="span" className={classes.actionIcon}>
             {activeButton.id === participant.id && activeButton.action === "view" ? (
               <ViewFilledIcon
@@ -1559,9 +1648,11 @@ export default function ParticipantList({
       </Backdrop>
       {viewingParticipant ? (
         <Header
-          authType={LAMP.Auth._type}
+          authType={"Researcher"}
           title={props.ptitle}
-          pageLocation={`${props.ptitle} > Participants > ${viewingParticipant.firstName} ${viewingParticipant.lastName}`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Participants > ${
+            viewingParticipant.firstName
+          } ${viewingParticipant.lastName}`}
         />
       ) : (
         // <ItemViewHeader
@@ -1613,7 +1704,11 @@ export default function ParticipantList({
         //   refresh={searchParticipants}
         // />
 
-        <Header authType={LAMP.Auth._type} title={props.ptitle} pageLocation={`${props.ptitle} > Participants`} />
+        <Header
+          authType={"Researcher"}
+          title={props.ptitle}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Participants`}
+        />
       )}
       {viewingParticipant ? (
         <div className="body-container">

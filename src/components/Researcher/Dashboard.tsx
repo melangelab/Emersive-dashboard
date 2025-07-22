@@ -38,14 +38,14 @@ import { ReactComponent as SensorsFilled } from "../../icons/NewIcons/sensor-on-
 import { ReactComponent as Studies } from "../../icons/NewIcons/flask-gear.svg"
 import { ReactComponent as StudiesFilled } from "../../icons/NewIcons/flask-gear-filled.svg"
 
+import { ReactComponent as AccountIcon } from "../../icons/NewIcons/shield-check.svg"
+import { ReactComponent as AccountIconFilled } from "../../icons/NewIcons/shield-check-filled.svg"
+
 import { useTranslation } from "react-i18next"
 import { Service } from "../DBService/DBService"
 import LAMP from "lamp-core"
 import useInterval from "../useInterval"
 import DataPortal from "../data_portal/DataPortal"
-
-// import DeleteSweepIcon from "@material-ui/icons/DeleteSweep"
-// import DeleteSweepOutlinedIcon from "@mui/icons-material/DeleteSweepOutlined"
 import { ReactComponent as DeleteSweepIcon } from "../../icons/recycle-bin-filled.svg"
 import { ReactComponent as DeleteSweepOutlinedIcon } from "../../icons/recycle-bin.svg"
 
@@ -59,6 +59,7 @@ import { useLayoutStyles } from "../GlobalStyles"
 
 import { styled } from "@mui/material/styles"
 import "../Admin/admin.css"
+import Account from "../Admin/Account"
 
 const IconWrapper = styled("span")({
   display: "inline-flex",
@@ -310,6 +311,12 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
       icon: <DeleteSweepOutlinedIcon />,
       filledIcon: <DeleteSweepIcon />,
     },
+    {
+      text: "Account",
+      path: `${currentBaseRoute}/account`,
+      icon: <AccountIcon />,
+      filledIcon: <AccountIconFilled />,
+    },
   ]
 
   useInterval(
@@ -467,6 +474,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   resemail={researcher?.email}
                   sharedstudies={sharedstudies}
                   setSharedStudies={setsharedStudies}
+                  adminName={props.adminName}
                 />
               )}
               {tab === "activities" && (
@@ -485,6 +493,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   onLogout={props.onLogout}
                   sharedstudies={sharedstudies}
                   setSharedStudies={setsharedStudies}
+                  adminName={props.adminName}
                 />
               )}
               {tab === "sensors" && (
@@ -506,6 +515,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   onLogout={props.onLogout}
                   sharedstudies={sharedstudies}
                   setSharedStudies={setsharedStudies}
+                  adminName={props.adminName}
                 />
               )}
               {tab === "studies" && (
@@ -525,6 +535,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   resins={researcher?.institution}
                   sharedstudies={sharedstudies}
                   setSharedStudies={setsharedStudies}
+                  adminName={props.adminName}
                 />
               )}
               {tab === "sharedstudies" && (
@@ -537,6 +548,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   searchData={(data) => setSearch(data)}
                   newAdddeStudy={setNewStudy}
                   getAllStudies={getAllStudies}
+                  adminName={props.adminName}
                 />
               )}
               {tab === "archived" && (
@@ -557,6 +569,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   onLogout={props.onLogout}
                   selectedStudies={selectedStudies}
                   setSelectedStudies={setSelectedStudies}
+                  adminName={props.adminName}
                 />
               )}
               {tab === "portal" && (
@@ -571,6 +584,16 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                     name: researcher.name,
                   }}
                   data={LAMP.Auth}
+                />
+              )}
+              {tab === "account" && (
+                <Account
+                  pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Account`}
+                  onLogout={onLogout}
+                  title={props.ptitle}
+                  setIdentity={props.setIdentity}
+                  userType={"Researcher"}
+                  userId={researcherId}
                 />
               )}
             </>

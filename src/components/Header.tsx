@@ -38,7 +38,7 @@ export default function Header({ authType, title, ...props }) {
   return (
     <div className="header-container">
       <div className="page-title-container">
-        {authType === "admin" && !path.startsWith("/admin") && (
+        {!path.startsWith("/admin") && (
           <IconButton
             size="medium"
             // className=""

@@ -24,6 +24,7 @@ import {
   DialogTitle,
   Dialog,
   Button,
+  Tooltip,
 } from "@material-ui/core"
 import LAMP from "lamp-core"
 import { useSnackbar } from "notistack"
@@ -61,6 +62,7 @@ import { formatLastUse, getItemFrequency } from "../../Utils"
 import { fetchResult } from "../SaveResearcherData"
 import { canEditParticipant, canViewParticipant } from "./Index"
 import { canViewActivity } from "../ActivityList/Index"
+import { Alert } from "@mui/material"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -163,6 +165,8 @@ export default function ParticipantListItem({
   const [passwordError, setPasswordError] = useState("")
   const canEdit = canEditParticipant(participant, studies, researcherId, sharedstudies)
   const canView = canViewParticipant(participant, studies, researcherId, sharedstudies)
+  const [hasCredentials, setHasCredentials] = useState(null)
+  const [credentialTooltipOpen, setCredentialTooltipOpen] = useState(false)
 
   const stats = (participant, study) => {
     return [
@@ -364,11 +368,48 @@ export default function ParticipantListItem({
     setName({ ...user, name: nameVal })
   }
 
+  const checkCredentials = async () => {
+    try {
+      const credentials = await LAMP.Credential.list(participant.id)
+      console.log("Credentials for participant:", credentials)
+      const hasValidCredentials =
+        credentials &&
+        Array.isArray(credentials) &&
+        credentials.length > 0 &&
+        credentials.some((cred) => cred && Object.keys(cred).length > 0)
+      setHasCredentials(hasValidCredentials)
+      return hasValidCredentials
+    } catch (error) {
+      console.error("Error checking credentials:", error)
+      setHasCredentials(false)
+      return false
+    }
+  }
+
+  const handleVisualize = async () => {
+    setActiveButton({ id: participant.id, action: "enter" })
+
+    const credentialsExist = await checkCredentials()
+    if (!credentialsExist) {
+      setCredentialTooltipOpen(true)
+      setTimeout(() => {
+        setCredentialTooltipOpen(false)
+        setActiveButton({ id: null, action: null })
+      }, 1000)
+      return
+    }
+
+    onParticipantSelect(participant.id)
+    setActiveButton({ id: null, action: null })
+  }
+
   useEffect(() => {
     setName(user)
   }, [user])
 
-  useEffect(() => {}, [])
+  useEffect(() => {
+    checkCredentials()
+  }, [participant.id])
 
   const handleDelete = async (status) => {
     if (status === "Yes") {
@@ -517,35 +558,65 @@ export default function ParticipantListItem({
           {`GROUP: `}
           <strong>{`${participant.group_name || "Not enrolled in any Group"}`}</strong>
         </Typography>
+        {/* {hasCredentials === false && (
+          <Alert 
+            severity="warning" 
+          >
+            This participant has not created their credentials yet
+          </Alert>
+        )} */}
         <Box display={"flex"} flexDirection={"row"}>
           <Passive participant={participant} />
           <Active participant={participant} />
         </Box>
         <Box className={participantcardclasses.actionButtons}>
           {!!notificationColumn && <NotificationSettings participant={participant} />}
-          {activeButton.id === participant.id && activeButton.action === "enter" ? (
+          {/* {activeButton.id === participant.id && activeButton.action === "enter" ? (
             <VisualiseFilledIcon
-              className={`${participantcardclasses.actionIcon} active`}
+              className={`${participantcardclasses.actionIcon} ${hasCredentials === false ? 'disabled' : 'active'}`}
               onClick={() => {
                 setActiveButton({ id: participant.id, action: "enter" })
-                onParticipantSelect(participant.id)
+                hasCredentials && onParticipantSelect(participant.id)
                 setActiveButton({ id: null, action: null })
               }}
               style={{ transform: "scaleX(-1)" }}
             />
           ) : (
             <VisualiseIcon
-              className={`${participantcardclasses.actionIcon} ${
+              className={`${participantcardclasses.actionIcon}  ${hasCredentials === false ? 'disabled' : ''} ${
                 activeButton.id === participant.id && activeButton.action === "enter" ? "active" : ""
               }`}
               onClick={() => {
                 setActiveButton({ id: participant.id, action: "enter" })
-                onParticipantSelect(participant.id)
+                hasCredentials && onParticipantSelect(participant.id)
                 setActiveButton({ id: null, action: null })
               }}
               style={{ transform: "scaleX(-1)" }}
             />
-          )}
+          )} */}
+          <Tooltip
+            title={hasCredentials === false ? "This participant has not created their credentials yet" : ""}
+            open={credentialTooltipOpen}
+            arrow
+          >
+            <div>
+              {activeButton.id === participant.id && activeButton.action === "enter" ? (
+                <VisualiseFilledIcon
+                  className={`${participantcardclasses.actionIcon}  ${hasCredentials === false ? "alert" : "active"}`}
+                  onClick={handleVisualize}
+                  style={{ transform: "scaleX(-1)" }}
+                />
+              ) : (
+                <VisualiseIcon
+                  className={`${participantcardclasses.actionIcon}  ${hasCredentials === false ? "alert" : ""} ${
+                    activeButton.id === participant.id && activeButton.action === "enter" ? "active" : ""
+                  }`}
+                  onClick={handleVisualize}
+                  style={{ transform: "scaleX(-1)" }}
+                />
+              )}
+            </div>
+          </Tooltip>
           {activeButton.id === participant.id && activeButton.action === "view" ? (
             <ViewFilledIcon
               className={`${participantcardclasses.actionIcon} active`}

@@ -99,7 +99,11 @@ export default function ArchivedList({
         onLogout={props.onLogout}
       /> */}
 
-      <Header authType={LAMP.Auth._type} title={props.ptitle} pageLocation={`${props.ptitle} > Archived Items`} />
+      <Header
+        authType={"Researcher"}
+        title={props.ptitle}
+        pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Archived Items`}
+      />
 
       <div className="body-container">
         <ActionsComponent searchData={handleSearchData} actions={["search"]} />

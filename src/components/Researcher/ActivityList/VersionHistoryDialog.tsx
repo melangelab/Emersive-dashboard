@@ -222,6 +222,8 @@ export default function VersionHistoryDialog({
     )
   }
 
+  console.log("Activity Version History:", activity.versionHistorybuild)
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
@@ -231,7 +233,7 @@ export default function VersionHistoryDialog({
         </Box>
       </DialogTitle>
       <DialogContent>
-        {activity.versionHistorybuild?.map((version, index) => (
+        {activity.versionHistorybuild?.map?.((version, index) => (
           <Accordion key={version.id} expanded={expandedVersion === version.id} onChange={handleChange(version.id)}>
             <AccordionSummary
               expandIcon={<ExpandMoreIcon />}

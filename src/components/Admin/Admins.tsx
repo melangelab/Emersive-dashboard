@@ -306,7 +306,7 @@ export default function Admins({ title, authType, adminType, history }) {
       if (status === "Yes") {
         try {
           console.log("called before delete")
-          await LAMP.Credential.delete(selectedAdmin.emailAddress, selectedAdmin.emailAddress)
+          await LAMP.Credential.delete("null", selectedAdmin.emailAddress)
           console.log("called after delete")
 
           const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
@@ -631,12 +631,7 @@ export default function Admins({ title, authType, adminType, history }) {
 
   return (
     <>
-      <AdminHeader
-        adminType={adminType}
-        authType={authType}
-        title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
-        pageLocation="Admins"
-      />
+      <AdminHeader adminType={adminType} authType={authType} title={title} pageLocation="Admins" />
       <div className="body-container">
         <ActionsComponent
           searchData={(data) => setSearch(data)}

@@ -394,6 +394,20 @@ export const studycardStyles = makeStyles((theme: Theme) =>
           fill: "#215F9A",
         },
       },
+      "&.disabled": {
+        opacity: 0.5,
+        pointerEvents: "none",
+        cursor: "not-allowed",
+        "& path": {
+          fill: "#9fabb6ff",
+        },
+      },
+      "&.alert": {
+        opacity: 0.5,
+        "& path": {
+          fill: "#9fabb6ff",
+        },
+      },
       "&:hover path": {
         fill: "#06B0F0",
       },
@@ -709,6 +723,15 @@ export const useModularTableStyles = makeStyles((theme: Theme) =>
       minWidth: 120,
       "& .MuiSelect-root": {
         padding: theme.spacing(1),
+      },
+    },
+    tooltipContainer: {
+      position: "relative",
+      zIndex: 9999,
+      "& .MuiTooltip-tooltip": {
+        zIndex: 9999,
+        maxWidth: 300,
+        whiteSpace: "normal",
       },
     },
   })
@@ -2282,65 +2305,18 @@ export default function StudiesList({
       </Backdrop>
       {viewingStudy ? (
         <Header
-          authType={LAMP.Auth._type}
+          authType={"Researcher"}
           title={props.ptitle}
-          pageLocation={`${props.ptitle} > Studies > ${viewingStudy.name}`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Studies > ${
+            viewingStudy.name
+          }`}
         />
       ) : (
-        // <ItemViewHeader
-        //   ItemTitle="Study"
-        //   ItemName={viewingStudy.name}
-        //   searchData={handleSearchData}
-        //   authType={props.authType}
-        //   onEdit={handleEditStudy}
-        //   onSave={() => {
-        //     if (isEditing) {
-        //       handleSaveStudy()
-        //     }
-        //   }}
-        //   onPrevious={() => {
-        //     const currentIndex = allStudies.findIndex((s) => s.id === viewingStudy.id)
-        //     if (currentIndex > 0) {
-        //       const previousStudy = allStudies[currentIndex - 1]
-        //       if (canViewStudy(previousStudy, researcherId)) {
-        //         setViewingStudy(allStudies[currentIndex - 1])
-        //       } else {
-        //         enqueueSnackbar(t("You don't have permission to view this study"), { variant: "error" })
-        //       }
-        //     }
-        //   }}
-        //   onNext={() => {
-        //     const currentIndex = allStudies.findIndex((s) => s.id === viewingStudy.id)
-        //     if (currentIndex < allStudies.length - 1) {
-        //       const nextStudy = allStudies[currentIndex + 1]
-        //       if (canViewStudy(nextStudy, researcherId)) {
-        //         setViewingStudy(allStudies[currentIndex + 1])
-        //       } else {
-        //         enqueueSnackbar(t("You don't have permission to view this study"), { variant: "error" })
-        //       }
-        //     }
-        //   }}
-        //   onClose={handleCloseViewStudy}
-        //   disabledBtns={!canEditStudy(viewingStudy, researcherId)}
-        // />
-        <Header authType={LAMP.Auth._type} title={props.ptitle} pageLocation={`${props.ptitle} > Studies`} />
-        // <Header
-        //   studies={allStudies ?? null}
-        //   researcherId={researcherId}
-        //   searchData={handleSearchData}
-        //   setParticipants={searchFilterStudies}
-        //   newStudyObj={setNewStudy}
-        //   updatedDataStudy={handleUpdatedStudyObject}
-        //   title={props.ptitle}
-        //   authType={props.authType}
-        //   onLogout={props.onLogout}
-        //   onViewModechanged={setViewMode}
-        //   viewMode={viewMode}
-        //   resins={props.resins}
-        //   VisibleColumns={columns}
-        //   setVisibleColumns={setColumns}
-        //   refreshStudies={refreshingStudies}
-        // />
+        <Header
+          authType={"Researcher"}
+          title={props.ptitle}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Studies`}
+        />
       )}
       {viewingStudy ? (
         <div className="body-container">

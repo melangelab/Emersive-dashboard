@@ -363,7 +363,7 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
                   history={props.history}
                   adminType={adminType}
                   authType={authType}
-                  title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+                  title={props.ptitle}
                 />
               )}
             />
@@ -378,6 +378,7 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
                   adminType={adminType}
                   authType={authType}
                   onLogout={onLogout}
+                  title={props.ptitle}
                 />
               )}
             />
@@ -387,12 +388,7 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
             <Route
               path={`${path}/admins`}
               render={(routeProps) => (
-                <Admins
-                  history={props.history}
-                  adminType={adminType}
-                  authType={authType}
-                  title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
-                />
+                <Admins history={props.history} adminType={adminType} authType={authType} title={props.ptitle} />
               )}
             />
 
@@ -404,11 +400,12 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
                   {...props}
                   history={props.history}
                   updateStore={updateStore}
-                  adminType={adminType}
-                  authType={authType}
+                  userType={"Admin"}
                   onLogout={onLogout}
                   setIdentity={setIdentity}
-                  title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
+                  title={props.ptitle}
+                  pageLocation={`Account`}
+                  userId={LAMP.Auth._auth.id}
                 />
               )}
             />

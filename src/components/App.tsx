@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import { HashRouter, Route, Redirect, Switch, useLocation } from "react-router-dom"
 import { CssBaseline, Button, ThemeProvider, colors, Container, Typography, Paper } from "@material-ui/core"
 import { MuiPickersUtilsProvider } from "@material-ui/pickers"
@@ -134,6 +134,7 @@ function AppRouter({ ...props }) {
   const [showDemoMessage, setShowDemoMessage] = useState(true)
   const { t } = useTranslation()
   const serverAddressFro2FA = ["api-staging.lamp.digital", "api.lamp.digital"]
+  const [adminData, setAdminData] = useState(null)
 
   // useEffect(() => {
   //   let query = window.location.hash.split("?")
@@ -496,6 +497,23 @@ function AppRouter({ ...props }) {
     }
   }
 
+  const getAdminData = useCallback(async () => {
+    const id = state.auth.id
+    const type2 = await LAMP.Auth._type
+
+    if (id === type2) {
+      setAdminData(`${t("System Admin")}`)
+    } else {
+      const admin: any = await LAMP.Type.getAttachment(id, "emersive.profile")
+      console.log("Admin data:", admin["data"][0])
+      setAdminData(`${admin["data"][0]?.firstName + " " + admin["data"][0]?.lastName || "Unknown"}`)
+    }
+  }, [state.auth.id])
+
+  useEffect(() => {
+    getAdminData()
+  }, [getAdminData])
+
   let getResearcher = (id) => {
     if (id === "me" && state.authType === "researcher" && !Array.isArray(state.identity)) {
       id = state.identity.id
@@ -688,7 +706,6 @@ function AppRouter({ ...props }) {
                   const params = new URLSearchParams(queryPart)
                   const userType = params.get("user-type") // Extract userType
                   const token = params.get("token") // Extract token
-                  console.log("Found userType:", userType) // Debug log
                   console.log("Found token:", token) // Debug log
                   return { userType, token }
                 }
@@ -1058,7 +1075,7 @@ function AppRouter({ ...props }) {
             </React.Fragment>
           ) : (
             <React.Fragment>
-              <PageTitle>{`${t("Administrator")}`}</PageTitle>
+              <PageTitle>{`${adminData || "Loading..."} - Emersive`}</PageTitle>
               <Root
                 {...props}
                 updateStore={updateStore}
@@ -1067,8 +1084,7 @@ function AppRouter({ ...props }) {
                 goBack={props.history.goBack}
                 onLogout={() => reset()}
                 setIdentity={async (identity) => await reset(identity)}
-                // onComplete={() => props.history.replace(`/researcher/me/users`)}
-                // onComplete={() => props.history.replace("/researcher/me/studies")}
+                ptitle={adminData || "Loading..."}
               />
             </React.Fragment>
           )
@@ -1105,20 +1121,7 @@ function AppRouter({ ...props }) {
             </React.Fragment>
           ) : (
             <React.Fragment>
-              <PageTitle>{`${t("Administrator")}`}</PageTitle>
-              {/* <NavigationLayout
-                authType={state.authType}
-                title={
-                  state.adminType === "admin"
-                    ? "Administrator"
-                    : state.adminType === "practice_lead"
-                    ? "Practice Lead"
-                    : "User Administrator"
-                }
-                goBack={props.history.goBack}
-                onLogout={() => reset()}
-              > */}
-              {/* {let temp:any = LAMP.Auth._me; let temp2 = temp.} */}
+              <PageTitle>{`${adminData || "Loading..."} - Emersive`}</PageTitle>
               <Root
                 {...props}
                 updateStore={updateStore}
@@ -1127,8 +1130,7 @@ function AppRouter({ ...props }) {
                 goBack={props.history.goBack}
                 onLogout={() => reset()}
                 setIdentity={async (identity) => await reset(identity)}
-                // onComplete={() => props.history.replace(`/researcher/me/users`)}
-                // onComplete={() => props.history.replace(`/researcher/{me}/studies`)}
+                ptitle={adminData || "Loading..."}
               />
               {/* </NavigationLayout> */}
             </React.Fragment>
@@ -1190,12 +1192,9 @@ function AppRouter({ ...props }) {
                 onLogout={() => reset()}
                 setIdentity={async (identity) => await reset(identity)}
                 history={props.history}
+                adminName={adminData ? `${adminData} (Admin)` : null}
                 // headerConfig={headerConfig}
               />
-              {/* )} */}
-              {/* </GlobalHeader> */}
-              {/* </NavigationBar> */}
-              {/* </HeaderBar> */}
             </React.Fragment>
           )
         }

@@ -76,6 +76,8 @@ export default function Researcher({ researcher, onParticipantSelect, mode, tab,
         goBack={props.goBack}
         onLogout={props.onLogout}
         history={props.history}
+        adminName={props.adminName}
+        setIdentity={props.setIdentity}
       />
     </React.Fragment>
   )

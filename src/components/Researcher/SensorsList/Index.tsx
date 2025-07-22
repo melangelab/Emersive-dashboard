@@ -535,57 +535,16 @@ export default function SensorsList({
     <React.Fragment>
       {viewingSensor ? (
         <Header
-          authType={LAMP.Auth._type}
+          authType={"Researcher"}
           title={ptitle}
-          pageLocation={`${ptitle} > Sensors > ${viewingSensor.name}`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${ptitle} > Sensors > ${viewingSensor.name}`}
         />
       ) : (
-        // <ItemViewHeader
-        //   ItemTitle="Sensor"
-        //   ItemName={viewingSensor.name}
-        //   searchData={handleSearchData}
-        //   authType={authType}
-        //   onEdit={handleEditSensor}
-        //   onSave={() => {
-        //     if (isEditing) {
-        //       handleSaveSensor()
-        //     }
-        //   }}
-        //   onPrevious={() => {
-        //     const currentIndex = sensors.findIndex((s) => s.id === viewingSensor.id)
-        //     if (currentIndex > 0) {
-        //       setViewingSensor(sensors[currentIndex - 1])
-        //     }
-        //   }}
-        //   onNext={() => {
-        //     const currentIndex = sensors.findIndex((s) => s.id === viewingSensor.id)
-        //     if (currentIndex < sensors.length - 1) {
-        //       setViewingSensor(sensors[currentIndex + 1])
-        //     }
-        //   }}
-        //   onClose={handleCloseViewSensor}
-        //   disabledBtns={!canEditSensor(viewingSensor, studies, researcherId, props.sharedstudies)}
-        // />
-        // <Header
-        //   studies={studies}
-        //   researcherId={researcherId}
-        //   selectedSensors={selectedSensors}
-        //   searchData={handleSearchData}
-        //   setSelectedStudies={setSelectedStudies}
-        //   selectedStudies={selected}
-        //   setSensors={searchFilterSensors}
-        //   setOrder={setOrder}
-        //   order={order}
-        //   title={ptitle}
-        //   authType={authType}
-        //   onLogout={onLogout}
-        //   onViewModechanged={setViewMode}
-        //   viewMode={viewMode}
-        //   VisibleColumns={columns}
-        //   setVisibleColumns={setColumns}
-        //   resemail={props.resemail}
-        // />
-        <Header authType={LAMP.Auth._type} title={ptitle} pageLocation={`${ptitle} > Sensors`} />
+        <Header
+          authType={"Researcher"}
+          title={ptitle}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${ptitle} > Sensors`}
+        />
       )}
       {viewingSensor ? (
         <div className="body-container">

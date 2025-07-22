@@ -1649,9 +1649,11 @@ export default function ActivityList({
       </Backdrop>
       {viewingActivity ? (
         <Header
-          authType={LAMP.Auth._type}
+          authType={"Researcher"}
           title={props.ptitle}
-          pageLocation={`${props.ptitle} > Activities > ${viewingActivity.name}`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Activities > ${
+            viewingActivity.name
+          }`}
         />
       ) : (
         // <ItemViewHeader
@@ -1686,7 +1688,11 @@ export default function ActivityList({
         //     !canEditActivity(viewingActivity, studies, researcherId, props.sharedstudies)
         //   }
         // />
-        <Header authType={LAMP.Auth._type} title={props.ptitle} pageLocation={`${props.ptitle} > Activities`} />
+        <Header
+          authType={"Researcher"}
+          title={props.ptitle}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Activities`}
+        />
         // <Header
         //   studies={studies}
         //   researcherId={researcherId}

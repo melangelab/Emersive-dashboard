@@ -685,12 +685,7 @@ export default function Researchers({ history, updateStore, adminType, authType,
     <React.Fragment>
       {!crrViewResearcher.researcher ? (
         <>
-          <AdminHeader
-            adminType={adminType}
-            authType={authType}
-            title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
-            pageLocation="Researchers"
-          />
+          <AdminHeader adminType={adminType} authType={authType} title={props.title} pageLocation="Researchers" />
           <div className="body-container">
             <ActionsComponent
               searchData={(data) => setSearch(data)}

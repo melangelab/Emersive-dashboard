@@ -143,12 +143,7 @@ const AdminDashboard = (props) => {
 
   return (
     <>
-      <AdminHeader
-        adminType={props.adminType}
-        authType={props.authType}
-        title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
-        pageLocation="Dashboard"
-      />
+      <AdminHeader adminType={props.adminType} authType={props.authType} title={props.title} pageLocation="Dashboard" />
       <Grid container spacing={2} className="admin-dashboard-container">
         <Grid item xs={12} sm={6} md={6} className="dashboard-column">
           <Grid container spacing={2}>

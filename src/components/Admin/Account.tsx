@@ -18,7 +18,7 @@ import { Visibility, VisibilityOff, Edit, Close, Check } from "@material-ui/icon
 import LAMP, { Researcher } from "lamp-core"
 import { useSnackbar } from "notistack"
 import { Service } from "../DBService/DBService"
-import AdminHeader from "../Header"
+import Header from "../Header"
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -226,164 +226,149 @@ const useStyles = makeStyles((theme) => ({
   },
 }))
 
-const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...props }) => {
+// Data normalization utilities
+const normalizeProfileData = (data, userType) => {
+  if (userType === "Researcher") {
+    return {
+      id: data._id || data.id,
+      userName: data.username || data.userName,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      emailAddress: data.email || data.emailAddress,
+      password: data.password,
+      photo: data.photo || null,
+      role: "Researcher",
+      // Additional researcher fields
+      address: data.address,
+      institution: data.institution,
+      mobile: data.mobile,
+      status: data.status,
+      projectAccess: data.ProjectAccess || [],
+      participantCount: data.participantCount || 0,
+      studyCount: data.studyCount || 0,
+      loggedIn: data.loggedIn || false,
+    }
+  } else {
+    // Admin/System Admin
+    return {
+      id: data.id || data._id,
+      userName: data.userName || data.username,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      emailAddress: data.emailAddress || data.email,
+      password: data.password,
+      photo: data.photo || null,
+      role: data.role === "admin" ? "Admin" : "System Admin",
+      token: data.token,
+    }
+  }
+}
+
+// Field configuration for different user types
+const getEditableFields = (userType, userId) => {
+  const baseFields = ["firstName", "lastName"]
+
+  if (userType === "Researcher") {
+    return [...baseFields, "userName", "address", "institution", "mobile"]
+  } else {
+    // Admin fields - email not editable for system admin
+    const adminFields = [...baseFields, "userName"]
+    // if (userId !== "admin") {
+    //   adminFields.push('emailAddress')
+    // }
+    return adminFields
+  }
+}
+
+const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation, ...props }) => {
   const classes = useStyles()
-  const [currentTab, setCurrentTab] = useState(0)
-  const [showPassword, setShowPassword] = useState(false)
+  const { enqueueSnackbar } = useSnackbar()
+
+  // State management
   const [profile, setProfile] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
-  const [userId, setUserId] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  // Password update state
   const [updatedPassword, setUpdatedPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [passwordError, setPasswordError] = useState("")
 
-  const { enqueueSnackbar } = useSnackbar()
+  // Editing state
+  const [editingFields, setEditingFields] = useState({})
+  const [tempValues, setTempValues] = useState({})
 
-  const [editingFields, setEditingFields] = useState({
-    id: false,
-    userName: false,
-    firstName: false,
-    lastName: false,
-    emailAddress: false,
-    password: false,
-    photo: false,
-  })
-
-  const [tempValues, setTempValues] = useState({
-    id: "",
-    userName: "",
-    firstName: "",
-    lastName: "",
-    emailAddress: "",
-    password: "",
-    photo: "",
-  })
+  // Get editable fields based on user type
+  const editableFields = getEditableFields(userType, userId)
 
   useEffect(() => {
     fetchUserData()
-  }, [])
-
-  const handleTabChange = (index) => {
-    setCurrentTab(index)
-  }
-
-  const handleStartEditing = (field) => {
-    console.log("Editing field:", field)
-    setEditingFields((prev) => ({ ...prev, [field]: true }))
-    setTempValues((prev) => ({ ...prev, [field]: profile.data[field] || "" }))
-  }
-
-  const handleCancelEditing = (field) => {
-    setEditingFields((prev) => ({ ...prev, [field]: false }))
-  }
-
-  const handleFieldChange = (field) => (event) => {
-    setTempValues((prev) => ({ ...prev, [field]: event.target.value }))
-  }
-
-  const handleSaveField = async (field) => {
-    try {
-      let updatedProfile
-
-      if (field === "password") {
-        updatedProfile = {
-          ...profile,
-          data: {
-            ...profile.data,
-            ["password"]: confirmPassword,
-          },
-        }
-      } else {
-        updatedProfile = {
-          ...profile,
-          data: {
-            ...profile.data,
-            [field]: tempValues[field],
-          },
-        }
-      }
-
-      setProfile(updatedProfile)
-      setEditingFields((prev) => ({ ...prev, [field]: false }))
-
-      if (field === "password") {
-        // const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
-        // const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
-        // const response = await fetch(`${baseURL}/update-credential`, {
-        //   method: "PUT",
-        //   headers: {
-        //     "Content-Type": "application/json",
-        //     Authorization: "Basic " + authString,
-        //   },
-        //   body: {
-        //     type_id: LAMP.Auth._type === "admin" ? null : profile.data.id,
-        //     access_key: profile.data.emailAddress,
-        //     credential: {
-        //       access_key: profile.data.emailAddress,
-        //       secret_key: confirmPassword
-        //     }
-        //   } as any
-        // })
-      } else {
-        await LAMP.Type.setAttachment(userId, LAMP.Auth._type, "emersive.profile", updatedProfile.data)
-      }
-
-      enqueueSnackbar(`${field} updated successfully`, { variant: "success" })
-    } catch (error) {
-      console.error("Error updating field:", error)
-      enqueueSnackbar(`Failed to update ${field}`, { variant: "error" })
-
-      // Revert to original value on error
-      setTempValues((prev) => ({
-        ...prev,
-        [field]: profile.data[field] || "",
-      }))
-    }
-  }
+  }, [userId, userType])
 
   const fetchUserData = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      // Get the current user ID
-      const userId = await LAMP.Auth._auth.id
-      setUserId(userId)
+      let userData
 
-      // Fetch the profile data
-      let response: any = await LAMP.Type.getAttachment(userId, "emersive.profile")
+      if (userType === "Researcher") {
+        // Fetch researcher data
+        userData = await LAMP.Researcher.view(userId)
+        console.log("Researcher data fetched:", userData)
+      } else {
+        // Fetch admin/system admin data
+        const response: any = await LAMP.Type.getAttachment(userId, "emersive.profile")
 
-      if (!response || !response.data) {
-        throw new Error("Invalid profile data structure")
+        if (!response || !response.data || !response.data[0]) {
+          throw new Error("Invalid profile data structure")
+        }
+
+        userData = response.data[0]
+
+        // Add current user ID
+        const temp: any = LAMP.Auth._me
+        userData.id = temp.id
       }
 
-      const temp: any = LAMP.Auth._me
-      response.data[0]["id"] = temp.id
+      if (userId !== "admin") {
+        try {
+          const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
+          const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+          const params = new URLSearchParams({
+            access_key: userType === "Researcher" ? userData.email : userData.emailAddress,
+          }).toString()
 
-      const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
-      const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
-      const params = new URLSearchParams({
-        access_key: userId,
-      }).toString()
-      const credentialResponse: any = await fetch(`${baseURL}/view-credential?${params}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Basic " + authString,
-        },
+          const credentialResponse = await fetch(`${baseURL}/view-credential?${params}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic " + authString,
+            },
+          })
+
+          const credentialData = await credentialResponse.json()
+          console.log("Credential data fetched:", credentialData.data)
+          userData.password = credentialData.data
+        } catch (credError) {
+          console.warn("Could not fetch credential data:", credError)
+        }
+      }
+
+      // Normalize the data
+      const normalizedData = normalizeProfileData(userData, userType)
+      setProfile({ data: normalizedData })
+
+      // Initialize temp values
+      const initialTempValues = {}
+      editableFields.forEach((field) => {
+        initialTempValues[field] = normalizedData[field] || ""
       })
-
-      const response2 = await credentialResponse.json()
-
-      response.data[0]["password"] = response2.data
-
-      console.log("FINAL PROFILE", response.data[0])
-      setProfile({ data: response.data[0] })
+      setTempValues(initialTempValues)
     } catch (error) {
       console.error("Error fetching user data:", error)
       setError("Failed to load profile data")
@@ -392,8 +377,210 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
     }
   }
 
-  const handleTogglePassword = () => {
-    setShowPassword(!showPassword)
+  const handleStartEditing = (field) => {
+    if (!editableFields.includes(field)) return
+
+    setEditingFields((prev) => ({ ...prev, [field]: true }))
+    setTempValues((prev) => ({ ...prev, [field]: profile.data[field] || "" }))
+  }
+
+  const handleCancelEditing = (field) => {
+    setEditingFields((prev) => ({ ...prev, [field]: false }))
+    setTempValues((prev) => ({ ...prev, [field]: profile.data[field] || "" }))
+  }
+
+  const handleFieldChange = (field) => (event) => {
+    setTempValues((prev) => ({ ...prev, [field]: event.target.value }))
+  }
+
+  const mapFieldsToActuals = (field) => {
+    switch (field) {
+      case "userName":
+        return "username"
+      case "emailAddress":
+        return "email"
+      default:
+        return field
+    }
+  }
+
+  const handleSaveField = async (field) => {
+    ;``
+    try {
+      const updatedProfile = {
+        ...profile,
+        data: {
+          ...profile.data,
+          [field]: tempValues[field],
+        },
+      }
+
+      setProfile(updatedProfile)
+      setEditingFields((prev) => ({ ...prev, [field]: false }))
+
+      // Save to backend based on user type
+      if (userType === "Researcher") {
+        // Update researcher data
+        const updateResearcher = { ...profile.data, [mapFieldsToActuals(field)]: tempValues[field] }
+        console.log("Updating researcher data:", updateResearcher)
+        await LAMP.Researcher.update(userId, updateResearcher)
+      } else {
+        // Update admin profile attachment
+        await LAMP.Type.setAttachment(userId, LAMP.Auth._type, "emersive.profile", updatedProfile.data)
+      }
+
+      enqueueSnackbar(`${field} updated successfully`, { variant: "success" })
+    } catch (error) {
+      console.error("Error updating field:", error)
+      enqueueSnackbar(`Failed to update ${field}`, { variant: "error" })
+
+      // Revert on error
+      setTempValues((prev) => ({
+        ...prev,
+        [field]: profile.data[field] || "",
+      }))
+      setEditingFields((prev) => ({ ...prev, [field]: false }))
+    }
+  }
+
+  const handlePasswordUpdate = async () => {
+    try {
+      if (updatedPassword !== confirmPassword) {
+        setPasswordError("Passwords do not match")
+        return
+      }
+
+      // if (updatedPassword.length < 6) {
+      //   setPasswordError("Password must be at least 6 characters long")
+      //   return
+      // }
+      let response
+      let typeId
+
+      if (userType === "Researcher") {
+        const resp: any = LAMP.Type.getAttachment(profile.data.emailAddress, "emersive.profile")
+        if (!resp || !resp.data || !resp.data[0]) {
+          typeId = null
+        } else {
+          typeId = userId
+        }
+      } else {
+        typeId = null
+      }
+
+      response = await LAMP.Credential.update(
+        typeId,
+        profile.data.emailAddress,
+        JSON.stringify({ secret_key: updatedPassword })
+      )
+
+      // Update identity
+      const res = await setIdentity({
+        id: LAMP.Auth._auth.id,
+        password: confirmPassword,
+        serverAddress: LAMP.Auth._auth.serverAddress,
+      })
+
+      if (res.userType === "researcher") {
+        if (res.auth.serverAddress === "demo.lamp.digital") {
+          const studiesSelected = JSON.parse(localStorage.getItem("studies_" + res.identity.id) || "[]")
+          if (studiesSelected.length === 0) {
+            const studiesList = [res.identity.name]
+            localStorage.setItem("studies_" + res.identity.id, JSON.stringify(studiesList))
+            localStorage.setItem("studyFilter_" + res.identity.id, JSON.stringify(1))
+          }
+        } else {
+          const researcherData = res.identity
+          researcherData.timestamps.lastLoginAt = new Date().getTime()
+          researcherData.loggedIn = true
+          await LAMP.Researcher.update(researcherData.id, researcherData)
+        }
+      }
+
+      await Service.deleteDB()
+      await Service.deleteUserDB()
+
+      // Update profile with new password
+      setProfile((prev) => ({
+        ...prev,
+        data: { ...prev.data, password: confirmPassword },
+      }))
+
+      setShowPasswordDialog(false)
+      setUpdatedPassword("")
+      setConfirmPassword("")
+      setPasswordError("")
+
+      enqueueSnackbar("Password updated successfully", { variant: "success" })
+    } catch (error) {
+      console.error("Password update error:", error)
+      enqueueSnackbar(`Failed to update password: ${error.message || "Unknown error"}`, { variant: "error" })
+    }
+  }
+
+  const handleDeleteAccount = () => {
+    setShowDeleteConfirmation(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    try {
+      if (userType === "Researcher") {
+        await LAMP.Researcher.delete(userId)
+      } else {
+        // Handle admin deletion logic if needed
+        console.log("Admin account deletion requested")
+      }
+
+      enqueueSnackbar("Account deleted successfully", { variant: "success" })
+      if (onLogout) {
+        onLogout()
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error)
+      enqueueSnackbar("Failed to delete account", { variant: "error" })
+    }
+  }
+
+  const renderField = (fieldKey, label, type = "text", readOnly = false) => {
+    const isEditable = editableFields.includes(fieldKey) && !readOnly
+    const isEditing = editingFields[fieldKey]
+    const value = isEditing ? tempValues[fieldKey] : profile?.data?.[fieldKey] || ""
+
+    return (
+      <div className={classes.formField}>
+        <Typography className={classes.inputLabel}>{label}</Typography>
+        <TextField
+          fullWidth
+          variant="outlined"
+          type={type}
+          value={value}
+          onChange={handleFieldChange(fieldKey)}
+          className={classes.textField}
+          disabled={!isEditing || readOnly}
+          InputProps={{
+            readOnly: readOnly,
+            endAdornment: isEditable && (
+              <InputAdornment position="end">
+                {!isEditing ? (
+                  <IconButton onClick={() => handleStartEditing(fieldKey)}>
+                    <Edit className={classes.editIcon} />
+                  </IconButton>
+                ) : (
+                  <>
+                    <IconButton onClick={() => handleSaveField(fieldKey)}>
+                      <Check className={classes.editIcon} />
+                    </IconButton>
+                    <IconButton onClick={() => handleCancelEditing(fieldKey)}>
+                      <Close className={classes.editIcon} />
+                    </IconButton>
+                  </>
+                )}
+              </InputAdornment>
+            ),
+          }}
+        />
+      </div>
+    )
   }
 
   if (isLoading) {
@@ -412,601 +599,263 @@ const Account = ({ updateStore, adminType, authType, onLogout, setIdentity, ...p
     )
   }
 
-  const tabs = ["Account", "Social Connect", "Delete Account"]
-
-  const handleDeleteAccount = () => {
-    setShowDeleteConfirmation(true)
-  }
-
-  const handleConfirmDelete = async () => {
-    try {
-      // Implement account deletion logic using LAMP API
-      // await LAMP.Researcher.delete(userId);
-      console.log("Account deleted successfully")
-      if (onLogout) {
-        onLogout()
-      }
-    } catch (error) {
-      console.error("Error deleting account:", error)
-    }
-  }
-
-  const handleCancelDelete = () => {
-    setShowDeleteConfirmation(false)
-    setConfirmDelete(false)
-  }
-
-  const handleCloseDialog = () => {
-    setShowPasswordDialog(false)
-    setPasswordError("")
-  }
-
-  const handleSubmitPassword = async () => {
-    try {
-      // Validate passwords
-      if (updatedPassword !== confirmPassword) {
-        setPasswordError("Passwords do not match")
-        return
-      }
-
-      let userType = await LAMP.Auth._type
-      let credlist
-      let response
-
-      if (userType === "admin") {
-        credlist = await LAMP.Credential.list(null)
-        console.log("CRED LIST", credlist)
-        const rightAdminIndex = credlist.findIndex((cred) => cred.access_key === userId)
-        response = await LAMP.Credential.update(null, userId, {
-          ...(credlist[rightAdminIndex].access_key || {}),
-          secret_key: confirmPassword,
-        })
-      } else {
-        const user: any = LAMP.Auth._me
-        credlist = await LAMP.Credential.list(user.id)
-        response = await LAMP.Credential.update(null, userId, {
-          ...(credlist[0] || {}),
-          secret_key: confirmPassword,
-        })
-      }
-      console.log("Update response:", response)
-
-      try {
-        const res = await setIdentity({
-          id: LAMP.Auth._auth.id,
-          password: confirmPassword,
-          serverAddress: LAMP.Auth._auth.serverAddress,
-        })
-
-        console.log("Identity set result:", res)
-
-        if (res.authType === "researcher") {
-          if (res.auth.serverAddress === "demo.lamp.digital") {
-            let studiesSelected =
-              localStorage.getItem("studies_" + res.identity.id) !== null
-                ? JSON.parse(localStorage.getItem("studies_" + res.identity.id))
-                : []
-            if (studiesSelected.length === 0) {
-              let studiesList = [res.identity.name]
-              localStorage.setItem("studies_" + res.identity.id, JSON.stringify(studiesList))
-              localStorage.setItem("studyFilter_" + res.identity.id, JSON.stringify(1))
-            }
-          } else {
-            let researcherT = res.identity
-            researcherT.timestamps.lastLoginAt = new Date().getTime()
-            researcherT.loggedIn = true
-            await LAMP.Researcher.update(researcherT.id, researcherT)
-          }
-        }
-
-        await Service.deleteDB()
-        await Service.deleteUserDB()
-      } catch (err) {
-        console.error("Error with auth request:", err)
-        enqueueSnackbar("Incorrect username, password, or server address.", { variant: "error" })
-      }
-      await handleSaveField("password")
-      setShowPasswordDialog(false)
-    } catch (error) {
-      console.error("Final error:", error)
-      enqueueSnackbar(`Failed to update credential: ${error.message || "Unknown error"}`, { variant: "error" })
-    }
-  }
+  const canDeleteAccount = userId !== "admin" && userType !== "System Admin"
 
   return (
     <React.Fragment>
-      <AdminHeader
-        adminType={adminType}
-        authType={authType}
-        title={LAMP.Auth._auth.id === "admin" ? "System Admin" : LAMP.Auth._type}
-        pageLocation="Account"
-      />
+      <Header authType={userType} title={title} pageLocation={pageLocation} />
       <div className="body-container">
-        {/* <div className={classes.tabsContainer}>
-          {tabs.map((tab, index) => (
-            <div
-              key={index}
-              className={`${classes.tab} ${currentTab === index ? classes.activeTab : ""}`}
-              onClick={() => handleTabChange(index)}
-            >
-              {tab}
-            </div>
-          ))}
-        </div> */}
-
         <div className={classes.formContainer}>
-          {currentTab === 0 && (
-            <>
-              <Grid container spacing={4}>
-                {/* Left Column - Profile Form */}
-                <Grid item xs={12} md={7}>
+          <Grid container spacing={4}>
+            <Grid item xs={12} md={7}>
+              {/* Basic Fields */}
+              {renderField("id", "ID", "text", true)}
+              {renderField("role", "Role", "text", true)}
+              {renderField("userName", "Username")}
+              {renderField("firstName", "First Name")}
+              {renderField("lastName", "Last Name")}
+              {renderField("emailAddress", "Email Address")}
+
+              {/* Researcher-specific fields */}
+              {userType === "Researcher" && (
+                <>
+                  {renderField("address", "Address")}
+                  {renderField("institution", "Institution")}
+                  {renderField("mobile", "Mobile")}
                   <div className={classes.formField}>
-                    <Typography className={classes.inputLabel}>ID</Typography>
+                    <Typography className={classes.inputLabel}>Status</Typography>
                     <TextField
                       fullWidth
                       variant="outlined"
-                      value={profile.data.id === "" ? "NA" : profile.data.id}
+                      value={profile?.data?.status || ""}
+                      className={classes.textField}
                       InputProps={{ readOnly: true }}
-                      className={classes.textField}
                     />
                   </div>
                   <div className={classes.formField}>
-                    <Typography className={classes.inputLabel}>Role</Typography>
+                    <Typography className={classes.inputLabel}>Participant Count</Typography>
                     <TextField
                       fullWidth
                       variant="outlined"
-                      value={
-                        profile?.data?.role === "system_admin"
-                          ? "System Admin"
-                          : profile?.data?.role === "admin"
-                          ? "Admin"
-                          : profile?.data?.role === "researcher"
-                          ? "Researcher"
-                          : "Participant"
-                      }
+                      value={profile?.data?.participantCount || 0}
+                      className={classes.textField}
                       InputProps={{ readOnly: true }}
-                      className={classes.textField}
                     />
                   </div>
                   <div className={classes.formField}>
-                    <Typography className={classes.inputLabel}>Username</Typography>
+                    <Typography className={classes.inputLabel}>Study Count</Typography>
                     <TextField
                       fullWidth
                       variant="outlined"
-                      value={editingFields.userName ? tempValues.userName : profile?.data?.userName || ""}
-                      onChange={handleFieldChange("userName")}
+                      value={profile?.data?.studyCount || 0}
                       className={classes.textField}
-                      disabled={!editingFields.userName}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            {!editingFields.userName ? (
-                              <IconButton onClick={() => handleStartEditing("userName")}>
-                                <Edit className={classes.editIcon} />
-                              </IconButton>
-                            ) : (
-                              <>
-                                <IconButton onClick={() => handleSaveField("userName")}>
-                                  <Check className={classes.editIcon} />
-                                </IconButton>
-                                <IconButton onClick={() => handleCancelEditing("userName")}>
-                                  <Close className={classes.editIcon} />
-                                </IconButton>
-                              </>
-                            )}
-                          </InputAdornment>
-                        ),
-                      }}
+                      InputProps={{ readOnly: true }}
                     />
                   </div>
-                  <div className={classes.formField}>
-                    <Typography className={classes.inputLabel}>First Name</Typography>
-                    <TextField
-                      fullWidth
-                      variant="outlined"
-                      value={editingFields.firstName ? tempValues.firstName : profile?.data?.firstName || ""}
-                      onChange={handleFieldChange("firstName")}
-                      className={classes.textField}
-                      disabled={!editingFields.firstName}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            {!editingFields.firstName ? (
-                              <IconButton onClick={() => handleStartEditing("firstName")}>
-                                <Edit className={classes.editIcon} />
-                              </IconButton>
-                            ) : (
-                              <>
-                                <IconButton onClick={() => handleSaveField("firstName")}>
-                                  <Check className={classes.editIcon} />
-                                </IconButton>
-                                <IconButton onClick={() => handleCancelEditing("firstName")}>
-                                  <Close className={classes.editIcon} />
-                                </IconButton>
-                              </>
-                            )}
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </div>
-                  <div className={classes.formField}>
-                    <Typography className={classes.inputLabel}>Last Name</Typography>
-                    <TextField
-                      fullWidth
-                      variant="outlined"
-                      value={editingFields.lastName ? tempValues.lastName : profile?.data?.lastName || ""}
-                      onChange={handleFieldChange("lastName")}
-                      className={classes.textField}
-                      disabled={!editingFields.lastName}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            {!editingFields.lastName ? (
-                              <IconButton onClick={() => handleStartEditing("lastName")}>
-                                <Edit className={classes.editIcon} />
-                              </IconButton>
-                            ) : (
-                              <>
-                                <IconButton onClick={() => handleSaveField("lastName")}>
-                                  <Check className={classes.editIcon} />
-                                </IconButton>
-                                <IconButton onClick={() => handleCancelEditing("lastName")}>
-                                  <Close className={classes.editIcon} />
-                                </IconButton>
-                              </>
-                            )}
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </div>
-                  <div className={classes.formField}>
-                    <Typography className={classes.inputLabel}>Email Address</Typography>
-                    <TextField
-                      fullWidth
-                      variant="outlined"
-                      value={editingFields.emailAddress ? tempValues.emailAddress : profile?.data?.emailAddress || ""}
-                      onChange={handleFieldChange("emailAddress")}
-                      className={classes.textField}
-                      disabled={userId === "admin" ? true : !editingFields.emailAddress}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            {userId !== "admin" && !editingFields.emailAddress ? (
-                              <IconButton onClick={() => handleStartEditing("emailAddress")}>
-                                <Edit className={classes.editIcon} />
-                              </IconButton>
-                            ) : userId !== "admin" && editingFields.emailAddress ? (
-                              <>
-                                <IconButton onClick={() => handleSaveField("emailAddress")}>
-                                  <Check className={classes.editIcon} />
-                                </IconButton>
-                                <IconButton onClick={() => handleCancelEditing("emailAddress")}>
-                                  <Close className={classes.editIcon} />
-                                </IconButton>
-                              </>
-                            ) : null}
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </div>
-                  <div className={classes.formField}>
-                    <Typography className={classes.inputLabel}>Password</Typography>
-                    <TextField
-                      fullWidth
-                      variant="outlined"
-                      type={showPassword ? "text" : "password"}
-                      value={showPassword ? profile.data.password : "••••••••"} // Masked password display
-                      className={classes.textField}
-                      disabled={true}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            {LAMP.Auth._auth.id === "admin" ? null : (
-                              <IconButton onClick={() => setShowPasswordDialog(true)}>
-                                <Edit className={classes.editIcon} />
-                              </IconButton>
-                            )}
-                            <IconButton onClick={handleTogglePassword}>
-                              {!showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </div>
-                </Grid>
+                </>
+              )}
 
-                {/* Right Column - Profile Photo */}
-                <Grid item xs={12} md={5} className={classes.gridItem}>
-                  <div className={classes.profileSection}>
-                    {/* Profile Photo */}
-                    <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
-                      <div className={classes.userPhoto}>
-                        <ProfileIcon style={{ width: 80, height: 80 }} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Social Connect Section */}
-                  <div className={classes.socialConnect}>
-                    <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-                      <Typography className={classes.sectionTitle}>Social Connect</Typography>
-                      <Typography variant="body2" style={{ marginBottom: "16px", color: "#666" }}>
-                        Connect your account with these services for simplified login and enhanced features.
-                      </Typography>
-                    </div>
-                    <div className={classes.socialConnectButtons}>
-                      <Button
-                        variant="contained"
-                        style={{
-                          backgroundColor: "#4285F4",
-                          color: "#FFFFFF",
-                          textTransform: "none",
-                          padding: "12px 20px",
-                        }}
-                      >
-                        Connect with Google
-                      </Button>
-                      {/* <Button
-                        variant="contained"
-                        style={{
-                          backgroundColor: "#FF6600",
-                          color: "#FFFFFF",
-                          textTransform: "none",
-                          padding: "12px 20px",
-                        }}
-                      >
-                        Connect with MindOrange
-                      </Button> */}
-                    </div>
-                  </div>
-
-                  {/* Delete Account Section */}
-                  <div className={classes.deleteAccount}>
-                    <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-                      <Typography className={classes.sectionTitle} style={{ color: "#EB8367" }}>
-                        Delete Your Account
-                      </Typography>
-                      <Typography variant="body2" style={{ marginBottom: "16px", color: "#666" }}>
-                        Warning: This action cannot be undone. All your data, settings, and information will be
-                        permanently deleted.
-                      </Typography>
-                    </div>
-                    {!showDeleteConfirmation ? (
-                      <div className={classes.deleteAccountSection}>
-                        <Button
-                          variant="contained"
-                          disabled={userId === "admin"}
-                          style={{
-                            backgroundColor: "#EB8367",
-                            color: "#FFFFFF",
-                            textTransform: "none",
-                            opacity: userId === "admin" ? 0.5 : 1,
-                            width: "fit-content",
-                          }}
-                          onClick={handleDeleteAccount}
-                        >
-                          Delete Account
-                        </Button>
-                        {userId === "admin" && (
-                          <Typography variant="body2" style={{ color: "#EB8367", marginTop: "8px" }}>
-                            This account belongs to System Admin and can't be deleted.
-                          </Typography>
+              {/* Password Field */}
+              <div className={classes.formField}>
+                <Typography className={classes.inputLabel}>Password</Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  type={showPassword ? "text" : "password"}
+                  value={showPassword && profile?.data?.password ? profile.data.password : "••••••••"}
+                  className={classes.textField}
+                  disabled={true}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        {userId !== "admin" && (
+                          <IconButton onClick={() => setShowPasswordDialog(true)}>
+                            <Edit className={classes.editIcon} />
+                          </IconButton>
                         )}
-                      </div>
-                    ) : (
-                      <div className={classes.deleteAccountSection}>
-                        <Typography variant="body2" style={{ marginBottom: "12px", color: "#666" }}>
-                          Are you sure you want to delete your account? This action cannot be undone.
-                        </Typography>
-                        <div style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
-                          <input
-                            type="checkbox"
-                            checked={confirmDelete}
-                            onChange={(e) => setConfirmDelete(e.target.checked)}
-                            id="confirm-delete"
-                          />
-                          <label htmlFor="confirm-delete" style={{ marginLeft: "8px", fontSize: "14px" }}>
-                            I understand this action is permanent and cannot be reversed
-                          </label>
-                        </div>
-                        <div style={{ display: "flex", gap: "12px" }}>
-                          <Button
-                            variant="contained"
-                            style={{
-                              backgroundColor: "#EB8367",
-                              color: "#FFFFFF",
-                              textTransform: "none",
-                              fontSize: "14px",
-                              padding: "8px 16px",
-                            }}
-                            onClick={handleConfirmDelete}
-                            disabled={!confirmDelete}
-                          >
-                            Confirm Delete
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            style={{
-                              fontSize: "14px",
-                              padding: "8px 16px",
-                            }}
-                            onClick={handleCancelDelete}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </Grid>
-              </Grid>
-
-              <Dialog open={showPasswordDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
-                <DialogTitle id="form-dialog-title">Reset Password</DialogTitle>
-                <DialogContent>
-                  {passwordError && (
-                    <Typography color="error" variant="body2" gutterBottom>
-                      {passwordError}
-                    </Typography>
-                  )}
-                  <TextField
-                    autoFocus
-                    margin="dense"
-                    id="new-password"
-                    label="New Password"
-                    type="password"
-                    fullWidth
-                    value={updatedPassword}
-                    onChange={(e) => setUpdatedPassword(e.target.value)}
-                  />
-                  <TextField
-                    margin="dense"
-                    id="confirm-password"
-                    label="Confirm Password"
-                    type="password"
-                    fullWidth
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                </DialogContent>
-                <DialogActions>
-                  <Button onClick={handleCloseDialog} color="primary">
-                    Close
-                  </Button>
-                  <Button onClick={handleSubmitPassword} color="primary" variant="contained">
-                    Submit
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            </>
-          )}
-
-          {/* Social Connect Tab */}
-          {/* {currentTab === 1 && (
-            <div className={classes.socialConnect}>
-              <Typography variant="body1" style={{ marginBottom: "20px" }}>
-                Connect your account with these services for simplified login and enhanced features.
-              </Typography>
-              <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-                <Button
-                  variant="contained"
-                  style={{
-                    backgroundColor: "#4285F4",
-                    color: "#FFFFFF",
-                    textTransform: "none",
-                    padding: "12px 20px",
+                        <IconButton onClick={() => setShowPassword(!showPassword)}>
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
                   }}
-                >
-                  Connect with Google
-                </Button>
-                <Button
-                  variant="contained"
-                  style={{
-                    backgroundColor: "#FF6600",
-                    color: "#FFFFFF",
-                    textTransform: "none",
-                    padding: "12px 20px",
-                  }}
-                >
-                  Connect with MindOrange
-                </Button>
+                />
               </div>
-            </div>
-          )} */}
+            </Grid>
 
-          {/* Delete Account Tab */}
-          {/* {currentTab === 2 && (
-            <div className={classes.deleteAccount}>
-              <Typography variant="h6" style={{ color: "#EB8367", marginBottom: "10px" }}>
-                Delete Your Account
-              </Typography>
-              <Typography variant="body1" style={{ marginBottom: "20px" }}>
-                Warning: This action cannot be undone. All your data, settings, and information will be permanently
-                deleted.
-              </Typography>
-              {!showDeleteConfirmation ? (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    gap: "50px",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
+            {/* Right Column */}
+            <Grid item xs={12} md={5} className={classes.gridItem}>
+              {/* Profile Photo */}
+              <div className={classes.profileSection}>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
+                  <div className={classes.userPhoto}>
+                    <ProfileIcon style={{ width: 80, height: 80 }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Social Connect Section */}
+              <div className={classes.socialConnect}>
+                <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+                  <Typography className={classes.sectionTitle}>Social Connect</Typography>
+                  <Typography variant="body2" style={{ marginBottom: "16px", color: "#666" }}>
+                    Connect your account with these services for simplified login and enhanced features.
+                  </Typography>
+                </div>
+                <div className={classes.socialConnectButtons}>
                   <Button
                     variant="contained"
-                    disabled={userId === "admin"}
                     style={{
-                      backgroundColor: "#EB8367",
+                      backgroundColor: "#4285F4",
                       color: "#FFFFFF",
                       textTransform: "none",
-                      opacity: userId === "admin" ? 0.5 : 1,
+                      padding: "12px 20px",
                     }}
-                    onClick={handleDeleteAccount}
                   >
-                    <span
-                      style={{
-                        opacity: 1,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      Delete Account
-                    </span>
+                    Connect with Google
                   </Button>
-                  {userId === "admin" && (
-                    <Typography
-                      variant="h6"
-                      style={{
-                        color: "#EB8367",
-                        marginTop: "10px",
-                      }}
-                    >
-                      This account belongs to System Admin and can't be deleted.
-                    </Typography>
-                  )}
                 </div>
-              ) : (
-                <div>
-                  <Typography variant="body1" style={{ marginBottom: "15px" }}>
-                    Are you sure you want to delete your account? This action cannot be undone.
+              </div>
+
+              {/* Delete Account Section */}
+              <div className={classes.deleteAccount}>
+                <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+                  <Typography className={classes.sectionTitle} style={{ color: "#EB8367" }}>
+                    Delete Your Account
                   </Typography>
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}>
-                    <input
-                      type="checkbox"
-                      checked={confirmDelete}
-                      onChange={(e) => setConfirmDelete(e.target.checked)}
-                      id="confirm-delete"
-                    />
-                    <label htmlFor="confirm-delete" style={{ marginLeft: "10px" }}>
-                      I understand this action is permanent and cannot be reversed
-                    </label>
-                  </div>
-                  <div style={{ display: "flex", gap: "15px" }}>
+                  <Typography variant="body2" style={{ marginBottom: "16px", color: "#666" }}>
+                    Warning: This action cannot be undone. All your data, settings, and information will be permanently
+                    deleted.
+                  </Typography>
+                </div>
+                {!showDeleteConfirmation ? (
+                  <div className={classes.deleteAccountSection}>
                     <Button
                       variant="contained"
+                      disabled={!canDeleteAccount}
                       style={{
                         backgroundColor: "#EB8367",
                         color: "#FFFFFF",
                         textTransform: "none",
+                        opacity: !canDeleteAccount ? 0.5 : 1,
+                        width: "fit-content",
                       }}
-                      onClick={handleConfirmDelete}
-                      disabled={!confirmDelete}
+                      onClick={handleDeleteAccount}
                     >
-                      Confirm Delete
+                      Delete Account
                     </Button>
-                    <Button variant="outlined" onClick={handleCancelDelete}>
-                      Cancel
-                    </Button>
+                    {!canDeleteAccount && (
+                      <Typography variant="body2" style={{ color: "#EB8367", marginTop: "8px" }}>
+                        This account cannot be deleted.
+                      </Typography>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className={classes.deleteAccountSection}>
+                    <Typography variant="body2" style={{ marginBottom: "12px", color: "#666" }}>
+                      Are you sure you want to delete your account? This action cannot be undone.
+                    </Typography>
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
+                      <input
+                        type="checkbox"
+                        checked={confirmDelete}
+                        onChange={(e) => setConfirmDelete(e.target.checked)}
+                        id="confirm-delete"
+                      />
+                      <label htmlFor="confirm-delete" style={{ marginLeft: "8px", fontSize: "14px" }}>
+                        I understand this action is permanent and cannot be reversed
+                      </label>
+                    </div>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      <Button
+                        variant="contained"
+                        style={{
+                          backgroundColor: "#EB8367",
+                          color: "#FFFFFF",
+                          textTransform: "none",
+                          fontSize: "14px",
+                          padding: "8px 16px",
+                        }}
+                        onClick={handleConfirmDelete}
+                        disabled={!confirmDelete}
+                      >
+                        Confirm Delete
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        style={{
+                          fontSize: "14px",
+                          padding: "8px 16px",
+                        }}
+                        onClick={() => {
+                          setShowDeleteConfirmation(false)
+                          setConfirmDelete(false)
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Grid>
+          </Grid>
+
+          {/* Password Change Dialog */}
+          <Dialog
+            open={showPasswordDialog}
+            onClose={() => {
+              setShowPasswordDialog(false)
+              setPasswordError("")
+              setUpdatedPassword("")
+              setConfirmPassword("")
+            }}
+            aria-labelledby="form-dialog-title"
+          >
+            <DialogTitle id="form-dialog-title">Reset Password</DialogTitle>
+            <DialogContent>
+              {passwordError && (
+                <Typography color="error" variant="body2" gutterBottom>
+                  {passwordError}
+                </Typography>
               )}
-            </div>
-          )} */}
+              <TextField
+                autoFocus
+                margin="dense"
+                id="new-password"
+                label="New Password"
+                type="password"
+                fullWidth
+                value={updatedPassword}
+                onChange={(e) => setUpdatedPassword(e.target.value)}
+              />
+              <TextField
+                margin="dense"
+                id="confirm-password"
+                label="Confirm Password"
+                type="password"
+                fullWidth
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={() => {
+                  setShowPasswordDialog(false)
+                  setPasswordError("")
+                  setUpdatedPassword("")
+                  setConfirmPassword("")
+                }}
+                color="primary"
+              >
+                Cancel
+              </Button>
+              <Button onClick={handlePasswordUpdate} color="primary" variant="contained">
+                Update Password
+              </Button>
+            </DialogActions>
+          </Dialog>
         </div>
       </div>
     </React.Fragment>

@@ -358,16 +358,43 @@ export default function SensorDialog({
           }
           console.log("SENSOR OBJ in save sensor", sensorObj)
           Service.addData("sensors", [sensorObj])
-          Service.updateMultipleKeys(
-            "studies",
-            {
-              studies: [
-                { id: studiesObject.id, sensor_count: studiesObject.sensor_count ? studiesObject.sensor_count + 1 : 1 },
-              ],
-            },
-            ["sensor_count"],
-            "id"
-          )
+          LAMP.Sensor.view(sensorObj.id).then((sensorCreated) => {
+            console.log("SENSOR CREATED", sensorCreated, sensorObj)
+            const updatedSensors = [...studiesObject?.sensors, sensorCreated ?? sensorObj]
+            console.log("UPDATED SENSORS", updatedSensors)
+            const updatedStudy = { ...studiesObject, sensors: updatedSensors, sensor_count: updatedSensors.length ?? 1 }
+            console.log("UPDATED STUDY", updatedStudy)
+            LAMP.Study.update(selectedStudy, updatedStudy).then((res) => {
+              Service.update(
+                "studies",
+                {
+                  studies: [
+                    {
+                      id: selectedStudy,
+                      ...updatedStudy,
+                    },
+                  ],
+                },
+                "name",
+                "id"
+              )
+              Service.updateMultipleKeys(
+                "studies",
+                {
+                  studies: [
+                    {
+                      id: studiesObject.id,
+                      sensor_count: studiesObject.sensor_count ? studiesObject.sensor_count + 1 : 1,
+                      sensors: updatedSensors,
+                    },
+                  ],
+                },
+                ["sensor_count", "sensors"],
+                "id"
+              )
+            })
+          })
+
           enqueueSnackbar(`${t("Successfully created a sensor.")}`, {
             variant: "success",
           })
