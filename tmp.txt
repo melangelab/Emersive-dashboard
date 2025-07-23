@@ -588,6 +588,27 @@ export default function ParticipantList({
     const [selectedParticipant, setSelectedParticipant] = useState(null)
     const [editingParticipant, setEditingParticipant] = useState(null)
     const [editedData, setEditedData] = useState({})
+    const [tooltipState, setTooltipState] = useState({
+      visible: false,
+      message: '',
+      position: { top: 0, left: 0 },
+      participantId: null
+    });
+    const showTooltip = (message, event, participantId) => {
+      console.log("showTooltip called", message, event, participantId)
+      const rect = event.currentTarget.getBoundingClientRect();
+      setTooltipState({
+        visible: true,
+        message,
+        position: { top: rect.top - 40, left: rect.left },
+        participantId
+      });
+      
+      setTimeout(() => {
+        setTooltipState(prev => ({ ...prev, visible: false }));
+      }, 1000);
+    };
+
 
     const editableColumns = [
       "firstName",
@@ -833,46 +854,39 @@ export default function ParticipantList({
     const checkCredentials = async (participantId) => {
       try {
         const credentials = await LAMP.Credential.list(participantId)
-        console.log("Credentials for participant:", credentials, hasCredentials)
-        const hasValidCredentials = credentials && 
-          Array.isArray(credentials) && 
-          credentials.length > 0 && 
-          credentials.some(cred => cred && Object.keys(cred).length > 0)
-        setHasCredentials(prev => ({
-            ...prev,
-            [participantId]: hasValidCredentials
-          }))
-        console.log("Has valid credentials:", hasValidCredentials, participantId)
+        const hasValidCredentials =
+          credentials &&
+          Array.isArray(credentials) &&
+          credentials.length > 0 &&
+          credentials.some((cred) => cred && Object.keys(cred).length > 0)
+        setHasCredentials((prev) => ({
+          ...prev,
+          [participantId]: hasValidCredentials,
+        }))
         return hasValidCredentials
       } catch (error) {
         console.error("Error checking credentials:", error)
-        setHasCredentials(prev => ({
+        setHasCredentials((prev) => ({
           ...prev,
-          [participantId]: false
+          [participantId]: false,
         }))
         return false
       }
     }
-    
-    const handleVisualize = async (participantId) => {
+
+    const handleVisualize = async (participantId, event) => {
       setActiveButton({ id: participantId, action: "enter" })
-      console.log("handleVisualize called with participantId:", participantId)
       const credentialsExist = await checkCredentials(participantId)
+
       if (!credentialsExist) {
-        setCredentialTooltipOpen(prev => ({
-          ...prev,
-          [participantId]: true
-        }))
-        setTimeout(() => {
-          setCredentialTooltipOpen(prev => ({
-            ...prev,
-            [participantId]: false
-          }))
-          setActiveButton({ id: null, action: null })
-        }, 1000)
+        enqueueSnackbar(`This participant with ID:${participantId} has not created their credentials yet`, {
+          variant: "warning",
+          autoHideDuration: 3000,
+        })
+        showTooltip("This participant has not created their credentials yet", event, participantId);
+        setActiveButton({ id: null, action: null })
         return
       }
-      
       onParticipantSelect(participantId)
       setActiveButton({ id: null, action: null })
     }
@@ -885,49 +899,60 @@ export default function ParticipantList({
           {/* <Box component="span" className={classes.actionIcon}>
             {notificationColumn && <NotificationSettings participant={participant} />}
           </Box> */}
-          {credentialTooltipOpen[participant.id] && <Typography>This participant has not created their credentials yet</Typography> }
-          <Tooltip 
-            title={hasCredentials[participant.id]  === false ? "This participant has not created their credentials yet" : ""}
-            open={credentialTooltipOpen[participant.id] || false}
+          {/* <Tooltip 
+            title="This participant has not created their credentials yet"
+            open={hasCredentials[participant.id] === false && credentialTooltipOpen[participant.id]}
             arrow
+            disableFocusListener
+            disableHoverListener
+            disableTouchListener
             PopperProps={{
               style: { zIndex: 9999 },
+              placement: 'top',
               modifiers: [
                 {
                   name: "preventOverflow",
                   options: {
-                    boundary: "viewport"
+                    boundary: "viewport",
+                    padding: 8
+                  }
+                },
+                {
+                  name: "flip",
+                  options: {
+                    fallbackPlacements: ['top', 'bottom', 'left', 'right'],
                   }
                 }
               ]
             }}
-            classes={{ tooltip: classes.tooltipContainer }}
-          >
+          > */}
           <Box component="span" className={classes.actionIcon}>
             {activeButton.id === participant.id && activeButton.action === "view" ? (
               <VisualiseFilledIcon
-                className="active"
-                onClick={() => {
+                className={`${hasCredentials[participant.id] === false ? "alert" : "active"}`}
+                onClick={(event) => {
                   // setActiveButton({ id: participant.id, action: "view" })
                   // onParticipantSelect(participant.id)
                   // setActiveButton({ id: null, action: null })
-                  handleVisualize(participant.id)
+
+                  handleVisualize(participant.id, event)
                 }}
                 style={{ transform: "scaleX(-1)" }}
               />
             ) : (
               <VisualiseIcon
-                onClick={() => {
+                className={`${hasCredentials[participant.id] === false ? "alert" : ""}`}
+                onClick={(event) => {
                   // setActiveButton({ id: participant.id, action: "view" })
                   // onParticipantSelect(participant.id)
                   // setActiveButton({ id: null, action: null })
-                  handleVisualize(participant.id)
+                  handleVisualize(participant.id, event)
                 }}
                 style={{ transform: "scaleX(-1)" }}
               />
             )}
           </Box>
-          </Tooltip>
+          {/* </Tooltip> */}
           <Box component="span" className={classes.actionIcon}>
             {activeButton.id === participant.id && activeButton.action === "view" ? (
               <ViewFilledIcon
@@ -1139,7 +1164,6 @@ export default function ParticipantList({
           </DialogActions>
         </Dialog>
 
-
         {selectedParticipant && (
           <>
             <ParticipantDetailsDialog
@@ -1166,6 +1190,27 @@ export default function ParticipantList({
             />
           </>
         )}
+        {tooltipState.visible && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: tooltipState.position.top,
+              left: tooltipState.position.left,
+              backgroundColor: '#333',
+              color: '#fff',
+              padding: '5px 10px',
+              borderRadius: '4px',
+              fontSize: '12px',
+              zIndex: 9999,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              animation: 'fadeInOut 1s ease-in-out',
+              pointerEvents: 'none'
+            }}
+          >
+            {tooltipState.message}
+          </div>
+        )
+      }
       </>
     )
   }
@@ -1187,11 +1232,17 @@ export default function ParticipantList({
         <Header
           authType={"Researcher"}
           title={props.ptitle}
-          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Participants > ${viewingParticipant.firstName} ${viewingParticipant.lastName}`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Participants > ${
+            viewingParticipant.firstName
+          } ${viewingParticipant.lastName}`}
         />
       ) : (
 
-        <Header authType={"Researcher"} title={props.ptitle} pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Participants`} />
+        <Header
+          authType={"Researcher"}
+          title={props.ptitle}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Participants`}
+        />
       )}
       {viewingParticipant ? (
         <div className="body-container">

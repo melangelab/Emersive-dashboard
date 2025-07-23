@@ -388,3 +388,22 @@
 .emersive-table-container .MuiTableContainer-root::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}

@@ -498,6 +498,11 @@ function AppRouter({ ...props }) {
   }
 
   const getAdminData = useCallback(async () => {
+    if (!state.auth || !state.auth.id) {
+      setAdminData(null)
+      return
+    }
+
     const id = state.auth.id
     const type2 = await LAMP.Auth._type
 
@@ -508,11 +513,7 @@ function AppRouter({ ...props }) {
       console.log("Admin data:", admin["data"][0])
       setAdminData(`${admin["data"][0]?.firstName + " " + admin["data"][0]?.lastName || "Unknown"}`)
     }
-  }, [state.auth.id])
-
-  useEffect(() => {
-    getAdminData()
-  }, [getAdminData])
+  }, [state?.auth?.id])
 
   let getResearcher = (id) => {
     if (id === "me" && state.authType === "researcher" && !Array.isArray(state.identity)) {

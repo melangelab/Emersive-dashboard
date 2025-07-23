@@ -201,6 +201,7 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
   //   Service.addData("sharedstudies", sharedStudies)
   // })
   const sharedStudies = await fetchSharedStudies(researcherId)
+  // TODO : Fetchshared{items}
   sharedStudiesList = sharedStudies.map((study) => study.name)
   const sharedStudyIds = sharedStudies.map((study) => study.id)
 
@@ -238,6 +239,7 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
     // if (sharedActivities.length > 0) Service.addData("activities", sharedActivities, researcherId)
     // if (sharedSensors.length > 0) Service.addData("sensors", sharedSensors, researcherId)
     const sharedStudyIdsString = sharedStudyIds.map((id) => `'${id}'`).join(",")
+    const isSibling = LAMP.Auth._type === "researcher"
     LAMP.API.query(
       "($studyIds := [" +
         sharedStudyIdsString +
@@ -247,9 +249,11 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
         "   {" +
         "     'study_id': $studyId," +
         "     'study_name': $LAMP.Study.get($studyId).name," +
-        "     'participants': [$map($LAMP.Participant.list($studyId), function($p) {" +
+        "     'participants': [$map($LAMP.Participant.list($studyId, " +
+        isSibling +
+        "), function($p) {" +
         "       {" +
-        "         'name': $LAMP.Tag.get($p.id,'lamp.name')[0]," +
+        "         'name': $p.name," +
         "         'is_deleted': $LAMP.Tag.get($p.id,'lamp.is_deleted')," +
         "         'id': $p.id," +
         "         'study_id': $studyId," +
@@ -275,13 +279,17 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
         "         'isSuspended': $p.isSuspended" +
         "       }" +
         "     })]," +
-        "     'activities': [$map($LAMP.Activity.list($studyId, false, false, true), function($activity) {" +
+        "     'activities': [$map($LAMP.Activity.list($studyId, false, " +
+        isSibling +
+        ", true), function($activity) {" +
         "       $merge([$filterAudioOut($activity), {" +
         "         'study_id': $studyId," +
         "         'study_name': $LAMP.Study.get($studyId).name" +
         "       }])" +
         "     })]," +
-        "     'sensors': [$map($LAMP.Sensor.list($studyId), function($sensor) {" +
+        "     'sensors': [$map($LAMP.Sensor.list($studyId, false, " +
+        isSibling +
+        "), function($sensor) {" +
         "       $merge([$sensor, {" +
         "         'study_id': $studyId," +
         "         'study_name': $LAMP.Study.get($studyId).name" +
@@ -293,6 +301,9 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
     )
       .then((sharedData: any) => {
         console.log("Shared data fetched:", sharedData)
+        if (sharedData.error) {
+          throw new Error(sharedData.error)
+        }
         let allSharedParticipants = []
         let allSharedActivities = []
         let allSharedSensors = []
@@ -343,16 +354,36 @@ const saveStudiesAndParticipants = async (result, studies, researcherId) => {
           const parentResearcher = study.parent || ""
           if (study.participants && study.participants.length > 0) {
             sharedParticipants = sharedParticipants.concat(
-              study.participants.map((p) => ({ ...p, isShared: true, parentResearcher }))
+              study.participants.map((p) => ({
+                ...p,
+                isShared: true,
+                parentResearcher,
+                study_id: study.id,
+                study_name: study.name,
+              }))
             )
           }
           if (study.activities && study.activities.length > 0) {
             sharedActivities = sharedActivities.concat(
-              study.activities.map((a) => ({ ...a, isShared: true, parentResearcher }))
+              study.activities.map((a) => ({
+                ...a,
+                isShared: true,
+                parentResearcher,
+                study_id: study.id,
+                study_name: study.name,
+              }))
             )
           }
           if (study.sensors && study.sensors.length > 0) {
-            sharedSensors = sharedSensors.concat(study.sensors.map((s) => ({ ...s, isShared: true, parentResearcher })))
+            sharedSensors = sharedSensors.concat(
+              study.sensors.map((s) => ({
+                ...s,
+                isShared: true,
+                parentResearcher,
+                study_id: study.id,
+                study_name: study.name,
+              }))
+            )
           }
         })
         if (sharedParticipants.length > 0) Service.addData("participants", sharedParticipants, researcherId)

@@ -930,6 +930,26 @@ export default function ParticipantList({
     const [selectedParticipant, setSelectedParticipant] = useState(null)
     const [editingParticipant, setEditingParticipant] = useState(null)
     const [editedData, setEditedData] = useState({})
+    const [tooltipState, setTooltipState] = useState({
+      visible: false,
+      message: "",
+      position: { top: 0, left: 0 },
+      participantId: null,
+    })
+    const showTooltip = (message, event, participantId) => {
+      console.log("showTooltip called", message, event, participantId)
+      const rect = event.currentTarget.getBoundingClientRect()
+      setTooltipState({
+        visible: true,
+        message,
+        position: { top: rect.top - 40, left: rect.left },
+        participantId,
+      })
+
+      setTimeout(() => {
+        setTooltipState((prev) => ({ ...prev, visible: false }))
+      }, 1000)
+    }
 
     const editableColumns = [
       "firstName",
@@ -1245,7 +1265,7 @@ export default function ParticipantList({
       }
     }
 
-    const handleVisualize = async (participantId) => {
+    const handleVisualize = async (participantId, event) => {
       setActiveButton({ id: participantId, action: "enter" })
       const credentialsExist = await checkCredentials(participantId)
       // if (!credentialsExist) {
@@ -1267,6 +1287,7 @@ export default function ParticipantList({
           variant: "warning",
           autoHideDuration: 3000,
         })
+        showTooltip("This participant has not created their credentials yet", event, participantId)
         setActiveButton({ id: null, action: null })
         return
       }
@@ -1312,22 +1333,25 @@ export default function ParticipantList({
           <Box component="span" className={classes.actionIcon}>
             {activeButton.id === participant.id && activeButton.action === "view" ? (
               <VisualiseFilledIcon
-                className="active"
-                onClick={() => {
+                className={`${hasCredentials[participant.id] === false ? "alert" : "active"}`}
+                onClick={(event) => {
                   // setActiveButton({ id: participant.id, action: "view" })
                   // onParticipantSelect(participant.id)
                   // setActiveButton({ id: null, action: null })
-                  handleVisualize(participant.id)
+                  console.log("Visualize active clicked for participant", participant.id, event)
+                  handleVisualize(participant.id, event)
                 }}
                 style={{ transform: "scaleX(-1)" }}
               />
             ) : (
               <VisualiseIcon
-                onClick={() => {
+                className={`${hasCredentials[participant.id] === false ? "alert" : ""}`}
+                onClick={(event) => {
                   // setActiveButton({ id: participant.id, action: "view" })
                   // onParticipantSelect(participant.id)
                   // setActiveButton({ id: null, action: null })
-                  handleVisualize(participant.id)
+                  console.log("Visualize clicked for participant", participant.id, event)
+                  handleVisualize(participant.id, event)
                 }}
                 style={{ transform: "scaleX(-1)" }}
               />
@@ -1628,6 +1652,26 @@ export default function ParticipantList({
               pStudy={studies.find((s) => s.id === selectedParticipant.study_id)}
             />
           </>
+        )}
+        {tooltipState.visible && (
+          <div
+            style={{
+              position: "fixed",
+              top: tooltipState.position.top,
+              left: tooltipState.position.left,
+              backgroundColor: "#333",
+              color: "#fff",
+              padding: "5px 10px",
+              borderRadius: "4px",
+              fontSize: "12px",
+              zIndex: 9999,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+              animation: "fadeInOut 1s ease-in-out",
+              pointerEvents: "none",
+            }}
+          >
+            {tooltipState.message}
+          </div>
         )}
       </>
     )
