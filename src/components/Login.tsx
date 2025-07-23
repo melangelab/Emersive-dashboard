@@ -990,41 +990,31 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
   return (
     <Slide direction="right" in={true} mountOnEnter unmountOnExit>
       <ResponsiveMargin>
-        <Grid
-          container
-          justifyContent="center"
-          alignItems="center"
-          style={{ minHeight: "100vh", height: "100vh", width: "100vw" }}
-        >
+        <Grid container justifyContent="center" alignItems="center" className="login-page-container">
           {supportsSidebar && (
             <Grid item xs={12} md={7} className="line-art-container">
-              {/*<div className="line-art-div">*/}
-              {/*<LineArt className="line-art" />*/}
-              {/*</div>*/}
               <img className="corner top-left-corner" src={TopLeft} alt="top left corner" />
               <img className="corner bottom-right-corner" src={BottomRight} alt="bottom right corner" />
 
-              <Logo className="logo-component-login" style={{ zIndex: 1 }} />
+              <Logo className="logo-component-login" />
               <span className="platform-name-login">emersive</span>
               <span className="platform-tag-login">MOBILE SENSING RESEARCH</span>
             </Grid>
           )}
           <Grid item xs={12} md={supportsSidebar ? 5 : 12} className="grid-item">
-            <div className="fab-container">
+            {/* <div className="fab-container">
               <Fab
                 color="primary"
                 aria-label="select language"
-                // onClick={handleOpen}
                 onClick={(event) => setFabMenu(event.currentTarget)} // Open menu on click
                 size="small"
-                // style={{ position: "fixed", top: 16, right: 16 }}
               >
                 <TranslateIcon />
               </Fab>
               <Menu
-                anchorEl={fabMenu} // Position menu relative to Fab
-                open={Boolean(fabMenu)} // Open the menu if fabMenu is set
-                onClose={() => setFabMenu(null)} // Close menu on selection or outside click
+                anchorEl={fabMenu} 
+                open={Boolean(fabMenu)} 
+                onClose={() => setFabMenu(null)} 
               >
                 {Object.keys(locale_lang).map((key) => {
                   if (userLanguages.includes(key)) {
@@ -1033,8 +1023,8 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                         key={key}
                         value={key}
                         onClick={() => {
-                          setSelectedLanguage(key) // Set language on click
-                          setFabMenu(null) // Close menu
+                          setSelectedLanguage(key) 
+                          setFabMenu(null) 
                         }}
                       >
                         {`${locale_lang[key].native} (${locale_lang[key].english})`}
@@ -1047,12 +1037,10 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                 size="small"
                 color="primary"
                 aria-label="help"
-                // style={{ position: "fixed", top: 8, right: 8 }}
+                
                 onClick={(event) => setHelpMenu(event.currentTarget)}
               >
-                {/* <HelpCenterOutlined/> */}
                 <HelpIcon style={{ fontSize: "2.5 rem" }} />
-                {/* <Icon style={{ fontSize: "2rem", color:"#23c433" }}>help</Icon> */}
               </Fab>
               <Menu
                 id="simple-menu"
@@ -1098,7 +1086,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                   <b style={{ color: colors.grey["600"] }}>{`${t("Privacy Policy")}`}</b>
                 </MenuItem>
               </Menu>
-            </div>
+            </div> */}
             <div className="card-container">
               {showForgotPassword ? (
                 <>
@@ -1106,31 +1094,17 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                 </>
               ) : (
                 <>
-                  <h1
-                    style={{
-                      margin: "0px",
-                      marginBottom: "5px",
-                      alignSelf: "flex-start", // This centers only the h1
-                      fontWeight: "900",
-                      fontSize: "40px",
-                    }}
-                  >
-                    Sign in
-                  </h1>
-                  {/*<span style={{alignSelf:"flex-start" , width:"100%"}}>*/}
-                  {/*  <div>Don't have a study account ?</div>*/}
-                  {/*  <a href="https://example.com">Sign up</a>*/}
-                  {/*</span>*/}
+                  <h1 className="login-title">Sign in</h1>
 
-                  <form style={{ width: "100%" }} onSubmit={(e) => handleLogin(e)}>
-                    <Box display="flex" flexDirection="column">
+                  <form className="login-form" onSubmit={(e) => handleLogin(e)}>
+                    <Box display="flex" flexDirection="column" className="login-form-content">
                       <TextField
                         required
                         name="id"
                         type="email"
                         margin="normal"
                         variant="outlined"
-                        style={{ width: "100%", height: 50, marginTop: 30, marginBottom: 30 }}
+                        className="login-input login-input--email"
                         placeholder={`${t("Email")}`}
                         value={state.id || ""}
                         onChange={handleChange}
@@ -1147,7 +1121,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                         type="password"
                         margin="normal"
                         variant="outlined"
-                        style={{ width: "100%", height: 50, marginBottom: 20 }}
+                        className="login-input login-input--password"
                         placeholder="Password"
                         value={state.password || ""}
                         onChange={handleChange}
@@ -1162,94 +1136,39 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                           autoCapitalize: "off",
                         }}
                       />
-                      {/*<div className="forgot-container">*/}
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          width: "100%", // or set as needed
-                          fontFamily: "sans-serif",
-                          fontSize: "16px",
-                        }}
-                      >
-                        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+
+                      <div className="login-options">
+                        <label className="login-options__remember">
                           <input
                             type="checkbox"
-                            style={{ cursor: "pointer" }}
+                            className="login-options__checkbox"
                             checked={rememberMe}
                             onChange={handleRememberMeChange}
                           />
                           Remember me
                         </label>
-                        <h4
-                          style={{
-                            padding: "0px",
-                            fontWeight: 200,
-                            color: "rgb(26, 115, 232)",
-                            cursor: "pointer",
-                          }}
-                          onClick={() => setShowForgotPassword(true)}
-                        >
+                        <h4 className="login-options__forgot-link" onClick={() => setShowForgotPassword(true)}>
                           Forgot Password?
                         </h4>
                       </div>
-
-                      {/*</div>*/}
 
                       <Box className="button-nav" width={1} textAlign="center">
                         <Fab
                           variant="extended"
                           type="submit"
                           onClick={handleLogin}
-                          className={loginClick ? "loginDisabled" : ""}
-                          style={{
-                            background: "#cf825a", // Match your image's purple shade
-                            color: "white",
-                            width: "100%",
-                            height: "56px", // Consistent height (adjust as needed)
-                            borderRadius: "999px", // Pill shape
-                            fontWeight: "500",
-                            fontSize: "16px",
-                            textTransform: "none",
-                            position: "relative",
-                          }}
+                          className={`login-button ${loginClick ? "loginDisabled" : ""}`}
                         >
                           {t("Sign in")}
-                          <input
-                            type="submit"
-                            disabled={loginClick}
-                            style={{
-                              cursor: "pointer",
-                              position: "absolute",
-                              top: 0,
-                              bottom: 0,
-                              right: 0,
-                              left: 0,
-                              width: "100%",
-                              height: "100%",
-                              opacity: 0,
-                              border: "none",
-                              margin: 0,
-                              padding: 0,
-                            }}
-                          />
+                          <input type="submit" disabled={loginClick} className="login-button__hidden-submit" />
                         </Fab>
                       </Box>
 
-                      <div
-                        style={{
-                          alignSelf: "center",
-                          marginTop: "20px",
-                          fontSize: "clamp(0.5rem, 1.666vw + 0.333rem, 1.333rem)",
-                          fontWeight: "200",
-                        }}
-                      >
-                        -------or-------
-                      </div>
+                      <div className="login-divider">-------or-------</div>
+
                       {/* google login here */}
                       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-                        <div className="google-button" style={{ width: "100%", marginBottom: "20px" }}>
+                        <div className="google-login-container">
                           <GoogleLogin
                             onSuccess={handleGoogleSuccess}
                             onError={handleGoogleError}
@@ -1258,12 +1177,12 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                             text="signin_with"
                             locale={selectedLanguage}
                             size="large"
-                            width="100%" // Ensures the button takes the full width
+                            width="100%"
                             containerProps={{
                               style: {
                                 width: "100%",
                                 display: "flex",
-                                justifyContent: "center", // Center the button
+                                justifyContent: "center",
                               },
                             }}
                           />

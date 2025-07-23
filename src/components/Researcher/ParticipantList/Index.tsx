@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, useRef } from "react"
 import {
   Box,
   Grid,
@@ -33,6 +33,7 @@ import {
   useTheme,
   TextField,
   Tooltip,
+  Popover,
 } from "@material-ui/core"
 import TimeAgo from "javascript-time-ago"
 import en from "javascript-time-ago/locale/en"
@@ -917,9 +918,14 @@ export default function ParticipantList({
   const [currentRowsPerPage, setCurrentRowsPerPage] = useState(5)
   const [hasCredentials, setHasCredentials] = useState({})
   const [credentialTooltipOpen, setCredentialTooltipOpen] = useState({})
+  const [tooltipTimeouts, setTooltipTimeouts] = useState<{ [key: string]: NodeJS.Timeout }>({})
+
   useEffect(() => {
-    console.log("hasCredentials changed", hasCredentials)
+    console.warn("hasCredentials changed", hasCredentials)
   }, [hasCredentials])
+  useEffect(() => {
+    console.warn("credentialTooltipOpen changed", credentialTooltipOpen)
+  }, [credentialTooltipOpen])
 
   const TableView_Mod = () => {
     console.log("sharedstudies table", sharedstudies)
@@ -930,27 +936,6 @@ export default function ParticipantList({
     const [selectedParticipant, setSelectedParticipant] = useState(null)
     const [editingParticipant, setEditingParticipant] = useState(null)
     const [editedData, setEditedData] = useState({})
-    const [tooltipState, setTooltipState] = useState({
-      visible: false,
-      message: "",
-      position: { top: 0, left: 0 },
-      participantId: null,
-    })
-    const showTooltip = (message, event, participantId) => {
-      console.log("showTooltip called", message, event, participantId)
-      const rect = event.currentTarget.getBoundingClientRect()
-      setTooltipState({
-        visible: true,
-        message,
-        position: { top: rect.top - 40, left: rect.left },
-        participantId,
-      })
-
-      setTimeout(() => {
-        setTooltipState((prev) => ({ ...prev, visible: false }))
-      }, 1000)
-    }
-
     const editableColumns = [
       "firstName",
       "lastName",
@@ -1089,33 +1074,6 @@ export default function ParticipantList({
     const renderCellContent = (column, row) => {
       const columnKey = column.id
       const value = column.value(row)
-
-      // if (column.id === "username") {
-      //   return (
-      //     <ParticipantName
-      //       participant={row}
-      //       updateParticipant={(nameVal) => {
-      //         setParticipants((prevParticipants) =>
-      //           prevParticipants.map((p) => (p.id === row.id ? { ...p, name: nameVal } : p))
-      //         )
-      //       }}
-      //       openSettings={false}
-      //     />
-      //   )
-      // } else if (column.id === "isLoggedIn") {
-      //   return (
-      //     <Typography
-      //       variant="body2"
-      //       style={{
-      //         color: row.isLoggedIn ? "#2e7d32" : "#c62828",
-      //         fontWeight: 500,
-      //       }}
-      //     >
-      //       {row.isLoggedIn ? "Online" : "Offline"}
-      //     </Typography>
-      //   )
-      // }
-
       const isEditable =
         editableColumns.includes(columnKey) &&
         // editingParticipant?.id === row.id &&
@@ -1124,31 +1082,6 @@ export default function ParticipantList({
         canEditParticipant(row, studies, researcherId, sharedstudies)
 
       if (!isEditable) {
-        // if (column.id === "isLoggedIn") {
-        //   return (
-        //     <Typography
-        //       variant="body2"
-        //       style={{
-        //         color: row.isLoggedIn ? "#2e7d32" : "#c62828",
-        //         fontWeight: 500,
-        //       }}
-        //     >
-        //       {row.isLoggedIn ? "Online" : "Offline"}
-        //     </Typography>
-        //   )
-        // } else if (column.id === "username") {
-        //   return (
-        //     <ParticipantName
-        //       participant={row}
-        //       updateParticipant={(nameVal) => {
-        //         setParticipants((prevParticipants) =>
-        //           prevParticipants.map((p) => (p.id === row.id ? { ...p, name: nameVal } : p))
-        //         )
-        //       }}
-        //       openSettings={false}
-        //     />
-        //   )
-        // }
         if (column.renderCell) {
           return column.renderCell(row)
         }
@@ -1265,8 +1198,19 @@ export default function ParticipantList({
       }
     }
 
+    const clearTooltipTimeout = (participantId: string) => {
+      if (tooltipTimeouts[participantId]) {
+        clearTimeout(tooltipTimeouts[participantId])
+        setTooltipTimeouts((prev) => {
+          const { [participantId]: removed, ...rest } = prev
+          return rest
+        })
+      }
+    }
+
     const handleVisualize = async (participantId, event) => {
       setActiveButton({ id: participantId, action: "enter" })
+      clearTooltipTimeout(participantId)
       const credentialsExist = await checkCredentials(participantId)
       // if (!credentialsExist) {
       //   setCredentialTooltipOpen(prev => ({
@@ -1287,7 +1231,26 @@ export default function ParticipantList({
           variant: "warning",
           autoHideDuration: 3000,
         })
-        showTooltip("This participant has not created their credentials yet", event, participantId)
+        console.warn("Participant has no credentials", participantId)
+        setCredentialTooltipOpen((prev) => ({
+          ...prev,
+          [participantId]: true,
+        }))
+        const timeoutId = setTimeout(() => {
+          setCredentialTooltipOpen((prev) => ({
+            ...prev,
+            [participantId]: false,
+          }))
+          setActiveButton({ id: null, action: null })
+          setTooltipTimeouts((prev) => {
+            const { [participantId]: removed, ...rest } = prev
+            return rest
+          })
+        }, 3000)
+        setTooltipTimeouts((prev) => ({
+          ...prev,
+          [participantId]: timeoutId,
+        }))
         setActiveButton({ id: null, action: null })
         return
       }
@@ -1303,61 +1266,67 @@ export default function ParticipantList({
           {/* <Box component="span" className={classes.actionIcon}>
             {notificationColumn && <NotificationSettings participant={participant} />}
           </Box> */}
-          {/* <Tooltip 
+          <Tooltip
             title="This participant has not created their credentials yet"
             open={hasCredentials[participant.id] === false && credentialTooltipOpen[participant.id]}
             arrow
-            disableFocusListener
-            disableHoverListener
-            disableTouchListener
+            disableFocusListener={true}
+            disableHoverListener={true}
+            disableTouchListener={true}
+            enterDelay={0}
+            leaveDelay={0}
             PopperProps={{
               style: { zIndex: 9999 },
-              placement: 'top',
               modifiers: [
                 {
                   name: "preventOverflow",
                   options: {
                     boundary: "viewport",
-                    padding: 8
-                  }
+                    padding: 8,
+                    altAxis: true,
+                    mainAxis: true,
+                  },
                 },
                 {
                   name: "flip",
                   options: {
-                    fallbackPlacements: ['top', 'bottom', 'left', 'right'],
-                  }
-                }
-              ]
+                    fallbackPlacements: ["top", "bottom", "left", "right"],
+                    allowedAutoPlacements: ["top", "bottom", "left", "right"],
+                  },
+                },
+              ],
+              placement: "top",
             }}
-          > */}
-          <Box component="span" className={classes.actionIcon}>
-            {activeButton.id === participant.id && activeButton.action === "view" ? (
-              <VisualiseFilledIcon
-                className={`${hasCredentials[participant.id] === false ? "alert" : "active"}`}
-                onClick={(event) => {
-                  // setActiveButton({ id: participant.id, action: "view" })
-                  // onParticipantSelect(participant.id)
-                  // setActiveButton({ id: null, action: null })
-                  console.log("Visualize active clicked for participant", participant.id, event)
-                  handleVisualize(participant.id, event)
-                }}
-                style={{ transform: "scaleX(-1)" }}
-              />
-            ) : (
-              <VisualiseIcon
-                className={`${hasCredentials[participant.id] === false ? "alert" : ""}`}
-                onClick={(event) => {
-                  // setActiveButton({ id: participant.id, action: "view" })
-                  // onParticipantSelect(participant.id)
-                  // setActiveButton({ id: null, action: null })
-                  console.log("Visualize clicked for participant", participant.id, event)
-                  handleVisualize(participant.id, event)
-                }}
-                style={{ transform: "scaleX(-1)" }}
-              />
-            )}
-          </Box>
-          {/* </Tooltip> */}
+          >
+            <Box component="span" className={classes.actionIcon}>
+              {activeButton.id === participant.id && activeButton.action === "view" ? (
+                <VisualiseFilledIcon
+                  className={`${hasCredentials[participant.id] === false ? "alert" : "active"}`}
+                  onClick={(event) => {
+                    // setActiveButton({ id: participant.id, action: "view" })
+                    // onParticipantSelect(participant.id)
+                    // setActiveButton({ id: null, action: null })
+                    event.preventDefault()
+                    event.stopPropagation()
+                    console.log("Visualize active clicked for participant", participant.id, event)
+                    handleVisualize(participant.id, event)
+                  }}
+                  style={{ transform: "scaleX(-1)" }}
+                />
+              ) : (
+                <VisualiseIcon
+                  className={`${hasCredentials[participant.id] === false ? "alert" : ""}`}
+                  onClick={(event) => {
+                    // setActiveButton({ id: participant.id, action: "view" })
+                    // onParticipantSelect(participant.id)
+                    // setActiveButton({ id: null, action: null })
+                    handleVisualize(participant.id, event)
+                  }}
+                  style={{ transform: "scaleX(-1)" }}
+                />
+              )}
+            </Box>
+          </Tooltip>
           <Box component="span" className={classes.actionIcon}>
             {activeButton.id === participant.id && activeButton.action === "view" ? (
               <ViewFilledIcon
@@ -1652,26 +1621,6 @@ export default function ParticipantList({
               pStudy={studies.find((s) => s.id === selectedParticipant.study_id)}
             />
           </>
-        )}
-        {tooltipState.visible && (
-          <div
-            style={{
-              position: "fixed",
-              top: tooltipState.position.top,
-              left: tooltipState.position.left,
-              backgroundColor: "#333",
-              color: "#fff",
-              padding: "5px 10px",
-              borderRadius: "4px",
-              fontSize: "12px",
-              zIndex: 9999,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-              animation: "fadeInOut 1s ease-in-out",
-              pointerEvents: "none",
-            }}
-          >
-            {tooltipState.message}
-          </div>
         )}
       </>
     )
