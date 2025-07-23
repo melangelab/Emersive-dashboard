@@ -59,7 +59,7 @@ import { ReactComponent as PasswordIcon } from "../../../icons/NewIcons/password
 import { ReactComponent as PasswordFilledIcon } from "../../../icons/NewIcons/password-lock-filled.svg"
 import SetPassword from "../../SetPassword"
 import { formatLastUse, getItemFrequency } from "../../Utils"
-import { fetchResult } from "../SaveResearcherData"
+import { fetchCredentialsOfSharedParticipant, fetchResult } from "../SaveResearcherData"
 import { canEditParticipant, canViewParticipant } from "./Index"
 import { canViewActivity } from "../ActivityList/Index"
 import { Alert } from "@mui/material"
@@ -370,7 +370,14 @@ export default function ParticipantListItem({
 
   const checkCredentials = async () => {
     try {
-      const credentials = await LAMP.Credential.list(participant.id)
+      let credentials
+      if (participant.isShared) {
+        const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+        const result = await fetchCredentialsOfSharedParticipant(authString, participant.id)
+        credentials = result.data
+      } else {
+        credentials = await LAMP.Credential.list(participant.id)
+      }
       console.log("Credentials for participant:", credentials)
       const hasValidCredentials =
         credentials &&

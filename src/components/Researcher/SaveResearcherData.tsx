@@ -97,6 +97,27 @@ export const fetchPostData = async (authString, id, type, modal, methodType, bod
   return result
 }
 
+export const fetchCredentialsOfSharedParticipant = async (authString, participantId) => {
+  const baseUrl = "https://" + (!!LAMP.Auth._auth.serverAddress ? LAMP.Auth._auth.serverAddress : "api.lamp.digital")
+  try {
+    const response = await fetch(`${baseUrl}/participant/${participantId}/sharedcredentials`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Basic " + authString,
+      },
+    })
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || `Request failed with status ${response.status}`)
+    }
+    return await response.json()
+  } catch (error) {
+    console.error(`Error fetching shared credentials for participant ${participantId}:`, error)
+    throw error
+  }
+}
+
 const fetchSharedStudies = async (researcherId) => {
   try {
     const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password

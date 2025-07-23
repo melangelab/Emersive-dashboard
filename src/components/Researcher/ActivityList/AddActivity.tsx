@@ -215,6 +215,7 @@ export default function AddActivity({
     "lamp.form_builder": `${t("Form Builder")}`,
     "lamp.cbt_thought_record": `${t("CBT Thought Record")}`,
     "lamp.stories": `${t("Stories")}`,
+    "lamp.voice_recording": `${t("Voice Recording")}`,
   }
 
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
@@ -311,7 +312,7 @@ export default function AddActivity({
                     "lamp.stories",
                     "lamp.mood_tracker",
                     "lamp.video_recording",
-                    "lamp.recording",
+                    "lamp.voice_recording",
                     "lamp.tips",
                   ].includes(x.id)
                 ).length > 0 && (
@@ -329,7 +330,7 @@ export default function AddActivity({
                           "lamp.stories",
                           "lamp.mood_tracker",
                           "lamp.video_recording",
-                          "lamp.recording",
+                          "lamp.voice_recording",
                           "lamp.tips",
                         ].includes(x.id)
                       )
@@ -360,7 +361,7 @@ export default function AddActivity({
                       "lamp.stories",
                       "lamp.mood_tracker",
                       "lamp.video_recording",
-                      "lamp.recording",
+                      "lamp.voice_recording",
                       "lamp.tips",
                     ].includes(x.id)
                 ).length > 0 && [
@@ -378,7 +379,7 @@ export default function AddActivity({
                           "lamp.stories",
                           "lamp.mood_tracker",
                           "lamp.video_recording",
-                          "lamp.recording",
+                          "lamp.voice_recording",
                           "lamp.tips",
                         ].includes(x.id)
                     )

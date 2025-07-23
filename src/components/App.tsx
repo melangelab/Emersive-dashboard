@@ -510,8 +510,9 @@ function AppRouter({ ...props }) {
       setAdminData(`${t("System Admin")}`)
     } else {
       const admin: any = await LAMP.Type.getAttachment(id, "emersive.profile")
-      console.log("Admin data:", admin["data"][0])
-      setAdminData(`${admin["data"][0]?.firstName + " " + admin["data"][0]?.lastName || "Unknown"}`)
+      console.log("Admin data:", admin?.["data"]?.[0])
+      admin?.["data"]?.[0] &&
+        setAdminData(`${admin?.["data"]?.[0]?.firstName + " " + admin?.["data"]?.[0]?.lastName || "Unknown"}`)
     }
   }, [state?.auth?.id])
 

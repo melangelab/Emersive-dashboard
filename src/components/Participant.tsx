@@ -29,12 +29,26 @@ import locale_lang from "../locale_map.json"
 import VisualPopup from "./VisualPopup"
 // TODO changes here
 export async function getImage(activityId: string, spec: string) {
+  console.log("getImage", activityId, spec)
+  console.log(
+    "LAMP.Type.getAttachment response",
+    [
+      await LAMP.Type.getAttachment(
+        activityId,
+        spec === "lamp.survey" ? "lamp.dashboard.survey_description" : "emersive.activity.details"
+      ),
+    ].map((y: any) =>
+      !!y.error ? undefined : spec === "lamp.survey" ? y.data : Array.isArray(y.data) ? y.data[0] : y.data
+    )[0]
+  )
   return [
     await LAMP.Type.getAttachment(
       activityId,
       spec === "lamp.survey" ? "lamp.dashboard.survey_description" : "emersive.activity.details"
     ),
-  ].map((y: any) => (!!y.error ? undefined : y.data))[0]
+  ].map((y: any) =>
+    !!y.error ? undefined : spec === "lamp.survey" ? y.data : Array.isArray(y.data) ? y.data[0] : y.data
+  )[0]
 }
 
 const useStyles = makeStyles((theme: Theme) =>

@@ -54,6 +54,7 @@ const demoActivities = {
   "lamp.stories": "stories",
   "lamp.mood_tracker": "moodTracker",
   "lamp.video_recording": "videoRecording",
+  "lamp.voice_recording": "voiceRecording",
 }
 
 export default function EmbeddedActivity({ participant, activity, name, onComplete, noBack, tab, ...props }) {
@@ -254,6 +255,7 @@ export default function EmbeddedActivity({ participant, activity, name, onComple
           "lamp.stories",
           "lamp.mood_tracker",
           "lamp.video_recording",
+          "lamp.voice_recording",
           "lamp.tips",
         ].includes(currentActivity.spec)
       ) {

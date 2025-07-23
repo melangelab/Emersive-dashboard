@@ -84,7 +84,7 @@ import { ReactComponent as SaveIcon } from "../../../icons/NewIcons/floppy-disks
 import { ReactComponent as SaveFilledIcon } from "../../../icons/NewIcons/floppy-disks-filled.svg"
 import { ReactComponent as VisualiseIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
 import { ReactComponent as VisualiseFilledIcon } from "../../../icons/NewIcons/arrow-left-to-arc.svg"
-import { fetchGetData } from "../SaveResearcherData"
+import { fetchCredentialsOfSharedParticipant, fetchGetData } from "../SaveResearcherData"
 import CommonTable, { TableColumn as CommonTableColumn } from "../CommonTable"
 
 import Header from "../../Header"
@@ -1175,9 +1175,16 @@ export default function ParticipantList({
       return sortableData
     }, [participants, sortConfig, originalIndexMap])
 
-    const checkCredentials = async (participantId) => {
+    const checkCredentials = async (participantId, isShared = false) => {
       try {
-        const credentials = await LAMP.Credential.list(participantId)
+        let credentials
+        if (isShared) {
+          const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+          const result = await fetchCredentialsOfSharedParticipant(authString, participantId)
+          credentials = result.data
+        } else {
+          credentials = await LAMP.Credential.list(participantId)
+        }
         const hasValidCredentials =
           credentials &&
           Array.isArray(credentials) &&
@@ -1208,10 +1215,10 @@ export default function ParticipantList({
       }
     }
 
-    const handleVisualize = async (participantId, event) => {
+    const handleVisualize = async (participantId, isShared, event) => {
       setActiveButton({ id: participantId, action: "enter" })
       clearTooltipTimeout(participantId)
-      const credentialsExist = await checkCredentials(participantId)
+      const credentialsExist = await checkCredentials(participantId, isShared)
       // if (!credentialsExist) {
       //   setCredentialTooltipOpen(prev => ({
       //     ...prev,
@@ -1300,7 +1307,7 @@ export default function ParticipantList({
                     event.preventDefault()
                     event.stopPropagation()
                     console.log("Visualize active clicked for participant", participant.id, event)
-                    handleVisualize(participant.id, event)
+                    handleVisualize(participant.id, participant.isShared, event)
                   }}
                   style={{ transform: "scaleX(-1)" }}
                 />
@@ -1311,7 +1318,7 @@ export default function ParticipantList({
                     // setActiveButton({ id: participant.id, action: "view" })
                     // onParticipantSelect(participant.id)
                     // setActiveButton({ id: null, action: null })
-                    handleVisualize(participant.id, event)
+                    handleVisualize(participant.id, participant.isShared, event)
                   }}
                   style={{ transform: "scaleX(-1)" }}
                 />

@@ -455,7 +455,58 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
       // console.log("newActivity", newActivity)
       // // Add to local DB
       // await Service.addData("activities", [newActivity])
-
+      const studiesObject = await Service.getData("studies", editedValues.study_id)
+      const activitydata = await LAMP.Activity.view(newActivityId)
+      const newActivity = {
+        id: newActivityId,
+        ...activitydata,
+        settings: editedValues.settings,
+        description: editedValues.description,
+        formula4Fields: editedValues.formula4Fields,
+        photo: editedValues.photo,
+        showFeed: editedValues.showInFeed,
+        streak: editedValues.streak,
+        study_id: editedValues.study_id,
+        study_name: studies.find((s) => s.id === editedValues.study_id)?.name,
+      }
+      console.log("newActivity", newActivity)
+      await Service.addData("activities", [newActivity])
+      const updatedActivities = [...(studiesObject?.activities || []), activitydata ?? newActivity]
+      console.log("UPDATED ACTIVITIES", updatedActivities)
+      const updatedStudy = {
+        ...studiesObject,
+        activities: updatedActivities,
+        activity_count: updatedActivities.length ?? 1,
+      }
+      console.log("UPDATED STUDY", updatedStudy)
+      await LAMP.Study.update(editedValues.study_id, updatedStudy)
+      await Service.update(
+        "studies",
+        {
+          studies: [
+            {
+              id: editedValues.study_id,
+              ...updatedStudy,
+            },
+          ],
+        },
+        "name",
+        "id"
+      )
+      await Service.updateMultipleKeys(
+        "studies",
+        {
+          studies: [
+            {
+              id: studiesObject.id,
+              activity_count: studiesObject.activity_count ? studiesObject.activity_count + 1 : 1,
+              activities: updatedActivities,
+            },
+          ],
+        },
+        ["activity_count", "activities"],
+        "id"
+      )
       if (isSubscribed) {
         enqueueSnackbar(t("Activity created successfully"), { variant: "success" })
         const activitydata = await LAMP.Activity.view(newActivityId)
