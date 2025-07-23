@@ -515,6 +515,10 @@ function AppRouter({ ...props }) {
     }
   }, [state?.auth?.id])
 
+  useEffect(() => {
+    getAdminData()
+  }, [getAdminData])
+
   let getResearcher = (id) => {
     if (id === "me" && state.authType === "researcher" && !Array.isArray(state.identity)) {
       id = state.identity.id

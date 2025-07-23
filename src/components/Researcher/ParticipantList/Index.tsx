@@ -1227,11 +1227,6 @@ export default function ParticipantList({
       //   return
       // }
       if (!credentialsExist) {
-        enqueueSnackbar(`This participant with ID:${participantId} has not created their credentials yet`, {
-          variant: "warning",
-          autoHideDuration: 3000,
-        })
-        console.warn("Participant has no credentials", participantId)
         setCredentialTooltipOpen((prev) => ({
           ...prev,
           [participantId]: true,
@@ -1277,24 +1272,20 @@ export default function ParticipantList({
             leaveDelay={0}
             PopperProps={{
               style: { zIndex: 9999 },
-              modifiers: [
-                {
-                  name: "preventOverflow",
-                  options: {
-                    boundary: "viewport",
-                    padding: 8,
-                    altAxis: true,
-                    mainAxis: true,
-                  },
+              modifiers: {
+                preventOverflow: {
+                  enabled: true,
+                  boundariesElement: "viewport",
+                  padding: 8,
                 },
-                {
-                  name: "flip",
-                  options: {
-                    fallbackPlacements: ["top", "bottom", "left", "right"],
-                    allowedAutoPlacements: ["top", "bottom", "left", "right"],
-                  },
+                flip: {
+                  enabled: true,
+                  behavior: ["top", "bottom", "left", "right"],
                 },
-              ],
+                hide: {
+                  enabled: false,
+                },
+              },
               placement: "top",
             }}
           >
