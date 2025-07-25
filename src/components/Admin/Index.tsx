@@ -45,6 +45,7 @@ import { ReactComponent as AdminsIconFilled } from "../../icons/NewIcons/admin-a
 
 import AdminDashboard from "./AdminDashboard"
 import Account from "./Account"
+import DevLab from "./DevLab"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -383,7 +384,21 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
               )}
             />
 
-            <Route path={`${path}/dev-lab`} render={(routeProps) => <AdminDashboard {...routeProps} {...props} />} />
+            <Route
+              path={`${path}/dev-lab`}
+              render={(routeProps) => (
+                <DevLab
+                  history={props.history}
+                  updateStore={updateStore}
+                  onLogout={onLogout}
+                  adminType={adminType}
+                  authType={authType}
+                  title={props.ptitle}
+                  {...routeProps}
+                  {...props}
+                />
+              )}
+            />
 
             <Route
               path={`${path}/admins`}

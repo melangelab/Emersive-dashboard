@@ -15,7 +15,7 @@
   flex-direction: row;
   justify-content: space-between;
   border-bottom: 1px solid #dbdbdb;
-  padding: 20px;
+  padding: 10px;
 }
 
 .page-title-container {
@@ -129,7 +129,7 @@
 }
 
 .search-icon {
-  margin: 0px 0px 0px 2px;
+  margin: 0px 0px 0px 1px;
   height: 100%;
   position: absolute;
   display: flex;
@@ -313,7 +313,7 @@
 }
 
 .body-container {
-  overflow-y: visible;
+  overflow-y: auto;
   background-color: #f1f5f9;
   display: flex;
   flex-direction: column;
@@ -336,8 +336,12 @@
   /* box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); */
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  overflow-y: auto;
   padding: 5px 14px 5px 10px;
+}
+
+.tabular-view {
+  overflow-y: visible;
 }
 
 .MuiCardActions-root,

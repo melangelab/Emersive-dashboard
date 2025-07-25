@@ -87,6 +87,41 @@ interface LampDB extends DBSchema {
     }
     indexes: { id: string }
   }
+  devlabactivities: {
+    key: string
+    value: {
+      id: string
+      _parent: string
+      activityGuide: any
+      category: Array<any>
+      createdAt: string
+      creator: string
+      currentVersion: {
+        id: string
+        name: string
+        date: string
+        time: string
+      }
+      device: any
+      fetchedAt: string
+      groups: Array<any>
+      ignore_binary: boolean
+      includeVersions: boolean
+      isDevLabItem: boolean
+      name: string
+      reminder: any
+      schedule: Array<any>
+      scoreInterpretation: any
+      settings: any
+      shareTocommunity: boolean
+      sharingStudies: Array<any>
+      spec: string
+      study_id: string
+      study_name: string
+      versionHistory: Array<any>
+    }
+    indexes: { id: string; study_name: string }
+  }
 }
 
 export const dbPromise = idb.openDB<LampDB>(DATABASE_NAME, 1, {
@@ -117,6 +152,11 @@ export const dbPromise = idb.openDB<LampDB>(DATABASE_NAME, 1, {
     if (!lampDb.objectStoreNames.contains("sharedstudies")) {
       const sharedstudies = lampDb.createObjectStore("sharedstudies", { keyPath: "id" })
       sharedstudies.createIndex("id", "id", { unique: true })
+    }
+    if (!lampDb.objectStoreNames.contains("devlabactivities")) {
+      const devlabactivities = lampDb.createObjectStore("devlabactivities", { keyPath: "id" })
+      devlabactivities.createIndex("id", "id", { unique: true })
+      devlabactivities.createIndex("study_name", "study_name")
     }
   },
 })

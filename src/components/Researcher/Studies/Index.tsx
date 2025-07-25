@@ -97,6 +97,7 @@ import PatientStudyCreator from "../ParticipantList/PatientStudyCreator"
 import { FilterMatchMode } from "primereact/api"
 import { createPortal } from "react-dom"
 import EmersiveTable, { ColumnConfig } from "../EmersiveTable"
+import StudyAccordion from "./StudyAccordion"
 
 export const studycardStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -2352,6 +2353,13 @@ export default function StudiesList({
             }}
             onClose={handleCloseViewStudy}
           />
+          {/* <StudyAccordion
+            study={viewingStudy}
+            isEditing={isEditing}
+            onSave={handleSaveComplete}
+            researcherId={researcherId}
+            triggerSave={triggerSave}
+          /> */}
           <StudyDetailItem
             study={viewingStudy}
             isEditing={isEditing}

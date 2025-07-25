@@ -25,6 +25,7 @@ const useStyles = makeStyles((theme: Theme) =>
     },
   })
 )
+
 const demoActivities = {
   "lamp.spatial_span": "boxgame",
   "lamp.cats_and_dogs": "catsndogs",

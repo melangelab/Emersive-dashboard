@@ -441,32 +441,12 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
   }, [])
 
   return (
-    <div className="content-container">
-      {/* Global Filter */}
-      {/* <TextField
-        className="emersive-table-global-filter"
-        placeholder="Search..."
-        value={onGlobalFilter ? globalFilter : localGlobalFilter}
-        onChange={handleGlobalFilterChange}
-        variant="outlined"
-        size="small"
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-        }}
-      /> */}
-
-      <TableContainer
-        component={Paper}
-        className={customClasses?.tableContainer || "emersive-table-container"}
-        // style={{ height: paginator ? "calc(100% - 120px)" : "100%" }}
-      >
+    <div className="content-container tabular-view">
+      {/* <div className="table-header-snap-point"></div> */}
+      <TableContainer component={Paper} className={customClasses?.tableContainer || "emersive-table-container"}>
+        {/* <div className="table-content-wrapper"> */}
         <Table stickyHeader className="emersive-table">
           <TableHead>
-            {/* Main Header Row */}
             <TableRow>
               {selectable && (
                 <TableCell padding="checkbox" className="emersive-table-checkbox-column">
@@ -635,6 +615,7 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
             )}
           </TableBody>
         </Table>
+        {/* </div> */}
       </TableContainer>
 
       {/* Pagination */}

@@ -576,7 +576,7 @@ export default function SensorsList({
           />
         </div>
       ) : (
-        <div className="body-container">
+        <div className={`body-container`}>
           <ActionsComponent
             searchData={handleSearchData}
             refreshElements={searchFilterSensors}

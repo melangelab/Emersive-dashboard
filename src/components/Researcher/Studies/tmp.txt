@@ -1,0 +1,125 @@
+// StudyAccordion.tsx
+import React, { useState, useEffect } from "react";
+import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Typography,
+  // ... other imports ...
+} from "@material-ui/core";
+import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+
+// ... existing code ...
+
+const StudyAccordion: React.FC<StudyAccordionProps> = ({ /* ... */ }) => {
+  // ... existing state and hooks ...
+  
+  // State for accordion expansion
+  const [expanded, setExpanded] = useState<string | false>(false);
+  
+  const handleAccordionChange = (panel: string) => (
+    event: React.ChangeEvent<{}>, 
+    isExpanded: boolean
+  ) => {
+    setExpanded(isExpanded ? panel : false);
+  };
+
+  // ... existing helper functions ...
+
+  // Create accordion sections
+  const accordionSections = [
+    {
+      id: "study-basics",
+      title: t("Study Basics"),
+      content: (
+        <Grid container spacing={2}>
+          {fields.map((field) => (
+            <Grid item xs={12} sm={6} key={field.id}>
+              {renderField(field)}
+            </Grid>
+          ))}
+        </Grid>
+      )
+    },
+    {
+      id: "funding-ethics",
+      title: t("Funding & Ethics"),
+      content: <FundingAndEthicsContent />
+    },
+    {
+      id: "researchers",
+      title: t("Researchers"),
+      content: <ResearchersContent />
+    },
+    {
+      id: "statistics",
+      title: t("Statistics"),
+      content: <StatisticsContent />
+    },
+    {
+      id: "study-state",
+      title: t("Study State"),
+      content: <StudyStateContent />
+    },
+    {
+      id: "important-dates",
+      title: t("Important Dates"),
+      content: <DateContent />
+    },
+    {
+      id: "developer-info",
+      title: t("Developer Info"),
+      content: renderDeveloperInfo()
+    }
+  ];
+
+  // Function to render individual fields
+  const renderField = (field: FieldConfig) => {
+    // ... similar to ViewItems field rendering ...
+  };
+
+  // Function to render developer info
+  const renderDeveloperInfo = () => {
+    // ... similar to ViewItems' renderSubmissionInfo ...
+  };
+
+  return (
+    <div>
+      {/* Stats grid remains the same */}
+      <Grid container className={studycardclasses.statsGrid}>
+        {/* ... existing stats grid ... */}
+      </Grid>
+
+      {/* Accordions section */}
+      {accordionSections.map((section) => (
+        <Accordion 
+          key={section.id}
+          expanded={expanded === section.id}
+          onChange={handleAccordionChange(section.id)}
+        >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography>{section.title}</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {section.content}
+          </AccordionDetails>
+        </Accordion>
+      ))}
+
+      {/* Save button */}
+      {isEditing && (
+        <Button 
+          variant="contained" 
+          color="primary"
+          onClick={handleSave}
+          disabled={loading}
+          style={{ marginTop: 16 }}
+        >
+          {loading ? t("Saving...") : t("Save Changes")}
+        </Button>
+      )}
+    </div>
+  );
+};
+
+// ... existing helper components (FundingAndEthicsContent, etc.) ...
