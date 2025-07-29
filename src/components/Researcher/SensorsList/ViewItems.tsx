@@ -39,10 +39,13 @@ export const useStyles = makeStyles((theme: Theme) =>
     infoPaper: {
       padding: theme.spacing(3),
       position: "relative",
+      // display: "flex",
+      // flexDirection: "column",
+      // flex: 1,
       height: "100%",
       boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.1)",
       borderRadius: 4,
-      overflow: "auto",
+      // overflow: "auto",
       "&.editing-mode": {
         backgroundColor: "#fafafa",
       },
@@ -110,7 +113,7 @@ export const useStyles = makeStyles((theme: Theme) =>
     tabContent: {
       padding: theme.spacing(2),
       flexGrow: 1,
-      overflowY: "auto",
+      // overflowY: "auto",
       height: "100%",
     },
     editButton: {
@@ -225,7 +228,7 @@ export interface FieldConfig {
   editable?: boolean
   hide?: boolean
   type?: "text" | "multiline" | "multiselect" | "multi-text" | "select" | "date" | "email" | "phone" | "image"
-  options?: { value: string; label: string; disabled?: boolean }[]
+  options?: { value: string | number; label: string; disabled?: boolean }[]
 }
 
 export interface TabConfig {

@@ -18,8 +18,8 @@ const useStyles = makeStyles((theme) => ({
     padding: "24px 24px 54px 24px",
     width: "100%",
     margin: "0 auto",
-    height: "100%",
-    overflowY: "hidden",
+    // height: "100%",
+    // overflowY: "hidden",
   },
 }))
 

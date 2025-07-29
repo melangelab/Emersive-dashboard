@@ -19,6 +19,7 @@ import { slideStyles } from "../ParticipantList/AddButton"
 import { ReactComponent as UserIcon } from "../../../icons/NewIcons/users.svg"
 import { ReactComponent as AddIcon } from "../../../icons/NewIcons/add.svg"
 import { useTranslation } from "react-i18next"
+import { createPortal } from "react-dom"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -207,159 +208,151 @@ export default function AddParticipantToStudy({
   }
 
   return (
-    <>
-      <Backdrop
-        className={sliderclasses.backdrop}
-        style={{
-          backgroundColor: "transparent",
-        }}
-        open={open}
-        onClick={() => onclose()}
-      >
-        <Slide direction="left" in={open} mountOnEnter unmountOnExit>
-          <Box
-            className={`${sliderclasses.slidePanel} ${sliderclasses.TabSlidePanel}`}
-            onClick={(e) => e.stopPropagation()}
-            // style={{
-            //     top:"100px",
-            // }}
-          >
-            {!confirmationOpen ? (
-              <>
-                <Box className={sliderclasses.icon}>
-                  <UserIcon />
-                </Box>
-                <Typography variant="h6">ADD NEW PARTICIPANT</Typography>
-                <Divider className={sliderclasses.divider} />
+    <React.Fragment>
+      {open &&
+        createPortal(
+          <>
+            <Backdrop className={sliderclasses.backdrop} open={open} onClick={() => onclose()} />
+            <Slide direction="left" in={open} mountOnEnter unmountOnExit>
+              <Box className={`${sliderclasses.slidePanel}`} onClick={(e) => e.stopPropagation()}>
+                {!confirmationOpen ? (
+                  <>
+                    <Box className={sliderclasses.icon}>
+                      <UserIcon />
+                    </Box>
+                    <Typography variant="h6">ADD NEW PARTICIPANT</Typography>
+                    <Divider className={sliderclasses.divider} />
 
-                <TextField
-                  label="Researcher"
-                  fullWidth
-                  disabled
-                  margin="normal"
-                  value={title || researcherId}
-                  className={sliderclasses.field}
-                />
+                    <TextField
+                      label="Researcher"
+                      fullWidth
+                      disabled
+                      margin="normal"
+                      value={title || researcherId}
+                      className={sliderclasses.field}
+                    />
 
-                <TextField
-                  label="Select Study"
-                  fullWidth
-                  disabled
-                  margin="normal"
-                  value={study.name}
-                  className={sliderclasses.field}
-                />
+                    <TextField
+                      label="Select Study"
+                      fullWidth
+                      disabled
+                      margin="normal"
+                      value={study.name}
+                      className={sliderclasses.field}
+                    />
 
-                <TextField
-                  label="Select Group"
-                  fullWidth
-                  margin="normal"
-                  select
-                  value={selectedGroup}
-                  onChange={(e) => setSelectedGroup(e.target.value)}
-                  className={sliderclasses.field}
-                >
-                  {(study.gname || []).map((groupName, index) => (
-                    <MenuItem key={index} value={groupName}>
-                      {groupName}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                    <TextField
+                      label="Select Group"
+                      fullWidth
+                      margin="normal"
+                      select
+                      value={selectedGroup}
+                      onChange={(e) => setSelectedGroup(e.target.value)}
+                      className={sliderclasses.field}
+                    >
+                      {(study.gname || []).map((groupName, index) => (
+                        <MenuItem key={index} value={groupName}>
+                          {groupName}
+                        </MenuItem>
+                      ))}
+                    </TextField>
 
-                <Typography variant="h6" className={sliderclasses.headings}>
-                  PARTICIPANT DETAILS
-                </Typography>
-                <Divider className={sliderclasses.divider} />
+                    <Typography variant="h6" className={sliderclasses.headings}>
+                      PARTICIPANT DETAILS
+                    </Typography>
+                    <Divider className={sliderclasses.divider} />
 
-                <TextField
-                  label="First Name"
-                  fullWidth
-                  margin="normal"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className={sliderclasses.field}
-                  required
-                />
+                    <TextField
+                      label="First Name"
+                      fullWidth
+                      margin="normal"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className={sliderclasses.field}
+                      required
+                    />
 
-                <TextField
-                  label="Last Name"
-                  fullWidth
-                  margin="normal"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className={sliderclasses.field}
-                  required
-                />
+                    <TextField
+                      label="Last Name"
+                      fullWidth
+                      margin="normal"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className={sliderclasses.field}
+                      required
+                    />
 
-                <TextField
-                  label="Email"
-                  fullWidth
-                  margin="normal"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={sliderclasses.field}
-                  type="email"
-                />
+                    <TextField
+                      label="Email"
+                      fullWidth
+                      margin="normal"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className={sliderclasses.field}
+                      type="email"
+                    />
 
-                <TextField
-                  label="Mobile Number"
-                  fullWidth
-                  margin="normal"
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                  className={sliderclasses.field}
-                />
+                    <TextField
+                      label="Mobile Number"
+                      fullWidth
+                      margin="normal"
+                      value={mobile}
+                      onChange={(e) => setMobile(e.target.value)}
+                      className={sliderclasses.field}
+                    />
 
-                <TextField
-                  label="Notes"
-                  fullWidth
-                  margin="normal"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className={sliderclasses.field}
-                  multiline
-                  rows={3}
-                />
+                    <TextField
+                      label="Notes"
+                      fullWidth
+                      margin="normal"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className={sliderclasses.field}
+                      multiline
+                      rows={3}
+                    />
 
-                <Button className={sliderclasses.button} onClick={handleAddParticipant} fullWidth>
-                  Add Participant
-                </Button>
-              </>
-            ) : (
-              <>
-                <Box className={sliderclasses.icon}>
-                  <UserIcon />
-                </Box>
-                <Typography variant="h6">PARTICIPANT ADDED</Typography>
-                <Divider />
-                <Typography variant="body2" paragraph>
-                  New participant -{" "}
-                  <strong>
-                    {firstName} {lastName}
-                  </strong>{" "}
-                  - has been successfully added to the study <strong>{study.name}</strong>, Group{" "}
-                  <strong>{selectedGroup}</strong>.
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  Participant ID: <strong>{newParticipantId}</strong>
-                </Typography>
-                <Divider />
-                <Button
-                  className={sliderclasses.button}
-                  onClick={() => {
-                    setConfirmationOpen(false)
-                    resetForm()
-                    onclose()
-                  }}
-                  fullWidth
-                >
-                  Close
-                </Button>
-              </>
-            )}
-          </Box>
-        </Slide>
-      </Backdrop>
-    </>
+                    <Button className={sliderclasses.button} onClick={handleAddParticipant} fullWidth>
+                      Add Participant
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Box className={sliderclasses.icon}>
+                      <UserIcon />
+                    </Box>
+                    <Typography variant="h6">PARTICIPANT ADDED</Typography>
+                    <Divider />
+                    <Typography variant="body2" paragraph>
+                      New participant -{" "}
+                      <strong>
+                        {firstName} {lastName}
+                      </strong>{" "}
+                      - has been successfully added to the study <strong>{study.name}</strong>, Group{" "}
+                      <strong>{selectedGroup}</strong>.
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      Participant ID: <strong>{newParticipantId}</strong>
+                    </Typography>
+                    <Divider />
+                    <Button
+                      className={sliderclasses.button}
+                      onClick={() => {
+                        setConfirmationOpen(false)
+                        resetForm()
+                        onclose()
+                      }}
+                      fullWidth
+                    >
+                      Close
+                    </Button>
+                  </>
+                )}
+              </Box>
+            </Slide>
+          </>,
+          document.body
+        )}
+    </React.Fragment>
   )
 }

@@ -2392,7 +2392,7 @@ export default function StudiesList({
             downloadTarget={"studies"}
           />
           {!tabularView ? (
-            <div className="content-container" style={{ overflow: "auto" }}>
+            <div className="content-container">
               <Grid container spacing={3} className="cards-grid">
                 {allStudies !== null && (allStudies || []).length > 0 ? (
                   (allStudies || []).map((study) => (

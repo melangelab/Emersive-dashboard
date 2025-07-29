@@ -29,6 +29,7 @@ import { ReactComponent as SRAddIcon } from "../../../icons/NewIcons/users-alt.s
 import { ReactComponent as SRAddFilledIcon } from "../../../icons/NewIcons/users-alt-filled.svg"
 import { slideStyles } from "../ParticipantList/AddButton"
 import { ACCESS_LEVELS, getResearcherAccessLevel } from "./Index"
+import { createPortal } from "react-dom"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -294,149 +295,148 @@ export default function AddSubResearcher({ study, upatedDataStudy, researcherId,
 
   return (
     <React.Fragment>
-      <Backdrop
-        className={sliderclasses.backdrop}
-        style={{ backgroundColor: "transparent" }}
-        open={open}
-        onClick={onclose}
-      >
-        <Slide direction="left" in={open && !confirmationOpen} mountOnEnter unmountOnExit>
-          <Box
-            className={`${sliderclasses.slidePanel} ${sliderclasses.TabSlidePanel}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Box className={sliderclasses.icon}>
-              <SRAddFilledIcon />
-            </Box>
-            <Typography variant="h6">ADD SUB-RESEARCHERS</Typography>
-            {!hasEditAccess && (
-              <Typography variant="body2" color="textSecondary" style={{ marginTop: 8 }}>
-                {t("You have view-only access. Changes cannot be made.")}
-              </Typography>
-            )}
-            <Divider className={sliderclasses.divider} />
-            <Box className={sliderclasses.content}>
-              {loading ? (
-                <Typography>{t("Loading available researchers...")}</Typography>
-              ) : availableResearchers.length === 0 ? (
-                <Typography>{t("No researchers available.")}</Typography>
-              ) : (
-                availableResearchers.map((researcher) => (
-                  <Box key={researcher.id} className={sliderclasses.researcherRow}>
-                    <FormControlLabel
-                      className={sliderclasses.checkboxLabel}
-                      control={
-                        <Checkbox
-                          checked={!!selectedResearchers[researcher.id]}
-                          onChange={(e) => handleSelect(researcher.id, e.target.checked)}
-                          className={sliderclasses.checkbox}
-                          disabled={!hasEditAccess}
+      {open &&
+        createPortal(
+          <>
+            <Backdrop className={sliderclasses.backdrop} open={open} onClick={onclose} />
+            <Slide direction="left" in={open && !confirmationOpen} mountOnEnter unmountOnExit>
+              <Box className={`${sliderclasses.slidePanel}`} onClick={(e) => e.stopPropagation()}>
+                <Box className={sliderclasses.icon}>
+                  <SRAddFilledIcon />
+                </Box>
+                <Typography variant="h6">ADD SUB-RESEARCHERS</Typography>
+                {!hasEditAccess && (
+                  <Typography variant="body2" color="textSecondary" style={{ marginTop: 8 }}>
+                    {t("You have view-only access. Changes cannot be made.")}
+                  </Typography>
+                )}
+                <Divider className={sliderclasses.divider} />
+                <Box className={sliderclasses.content}>
+                  {loading ? (
+                    <Typography>{t("Loading available researchers...")}</Typography>
+                  ) : availableResearchers.length === 0 ? (
+                    <Typography>{t("No researchers available.")}</Typography>
+                  ) : (
+                    availableResearchers.map((researcher) => (
+                      <Box key={researcher.id} className={sliderclasses.researcherRow}>
+                        <FormControlLabel
+                          className={sliderclasses.checkboxLabel}
+                          control={
+                            <Checkbox
+                              checked={!!selectedResearchers[researcher.id]}
+                              onChange={(e) => handleSelect(researcher.id, e.target.checked)}
+                              className={sliderclasses.checkbox}
+                              disabled={!hasEditAccess}
+                            />
+                          }
+                          label={researcher.name || t("Unknown Researcher")}
                         />
-                      }
-                      label={researcher.name || t("Unknown Researcher")}
-                    />
-                    {selectedResearchers[researcher.id] && (
-                      <Select
-                        value={selectedResearchers[researcher.id].accessScope}
-                        onChange={(e) => handleAccessScopeChange(researcher.id, e.target.value)}
-                        className={sliderclasses.select}
-                        disabled={!hasEditAccess}
-                      >
-                        <MenuItem value={1}>{t("View")}</MenuItem>
-                        <MenuItem value={2}>{t("Edit")}</MenuItem>
-                        <MenuItem value={4}>{t("All")}</MenuItem>
-                      </Select>
-                    )}
-                  </Box>
-                ))
-              )}
-            </Box>
-            <Box display="flex" justifyContent="flex-start" style={{ gap: 8 }} mt={2}>
-              <Button className={sliderclasses.button} onClick={onclose} color="primary">
-                {t("Cancel")}
-              </Button>
-              <Button
-                className={sliderclasses.submitbutton}
-                onClick={handleAddResearchers}
-                color="primary"
-                variant="contained"
-                disabled={Object.keys(selectedResearchers).length === 0 || !hasEditAccess}
-              >
-                {t("Review Changes")}
-              </Button>
-            </Box>
-          </Box>
-        </Slide>
-        <Slide direction="left" in={confirmationOpen} mountOnEnter unmountOnExit>
-          <Box
-            className={`${sliderclasses.slidePanel} ${sliderclasses.TabSlidePanel}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Box className={sliderclasses.icon}>
-              <SRAddFilledIcon />
-            </Box>
-            <Typography variant="h6" className={sliderclasses.headings}>
-              CONFIRM CHANGES
-            </Typography>
-            <Divider className={sliderclasses.divider} />
-            {!hasEditAccess && (
-              <Typography variant="body2" color="textSecondary" style={{ marginTop: 8 }}>
-                {t("You have view-only access. Changes cannot be made.")}
-              </Typography>
-            )}
-            <Box className={sliderclasses.diffContainer}>
-              <Typography variant="subtitle1" gutterBottom>
-                The following changes will be applied:
-              </Typography>
-              {changes.length === 0 ? (
-                <Typography variant="body2">No changes to apply</Typography>
-              ) : (
-                changes.map((change, index) => (
-                  <Box
-                    key={index}
-                    className={sliderclasses.diffRow}
-                    bgcolor={change.type === "new" ? "#e6ffed" : change.type === "removed" ? "#ffeef0" : "#f1f8ff"}
-                    p={2}
-                    borderRadius={1}
-                    mb={1}
+                        {selectedResearchers[researcher.id] && (
+                          <Select
+                            value={selectedResearchers[researcher.id].accessScope}
+                            onChange={(e) => handleAccessScopeChange(researcher.id, e.target.value)}
+                            className={sliderclasses.select}
+                            disabled={!hasEditAccess}
+                          >
+                            <MenuItem value={1}>{t("View")}</MenuItem>
+                            <MenuItem value={2}>{t("Edit")}</MenuItem>
+                            <MenuItem value={4}>{t("All")}</MenuItem>
+                          </Select>
+                        )}
+                      </Box>
+                    ))
+                  )}
+                </Box>
+                <Box display="flex" justifyContent="flex-start" style={{ gap: 8 }} mt={2}>
+                  <Button className={sliderclasses.button} onClick={onclose} color="primary">
+                    {t("Cancel")}
+                  </Button>
+                  <Button
+                    className={sliderclasses.submitbutton}
+                    onClick={handleAddResearchers}
+                    color="primary"
+                    variant="contained"
+                    disabled={Object.keys(selectedResearchers).length === 0 || !hasEditAccess}
                   >
-                    <Typography variant="body2" style={{ fontFamily: "monospace" }}>
-                      {change.type === "new" && (
-                        <span style={{ color: "#22863a" }}>
-                          + Adding {change.researcher} with {change.accessLevel} access
-                        </span>
-                      )}
-                      {change.type === "modified" && (
-                        <span style={{ color: "#0366d6" }}>
-                          ~ Changing {change.researcher} access from {change.oldAccessLevel} to {change.newAccessLevel}
-                        </span>
-                      )}
-                      {change.type === "removed" && (
-                        <span style={{ color: "#d73a49" }}>
-                          - Removing {change.researcher} ({change.accessLevel} access)
-                        </span>
-                      )}
-                    </Typography>
-                  </Box>
-                ))
-              )}
-            </Box>
-
-            <Box className={sliderclasses.buttonContainer}>
-              <Button
-                className={sliderclasses.button}
-                disabled={!hasEditAccess}
-                onClick={() => setConfirmationOpen(false)}
+                    {t("Review Changes")}
+                  </Button>
+                </Box>
+              </Box>
+            </Slide>
+            <Slide direction="left" in={confirmationOpen} mountOnEnter unmountOnExit>
+              <Box
+                className={`${sliderclasses.slidePanel} ${sliderclasses.TabSlidePanel}`}
+                onClick={(e) => e.stopPropagation()}
               >
-                {t("Back")}
-              </Button>
-              <Button className={sliderclasses.submitbutton} onClick={handleConfirmChanges}>
-                {t("Confirm")}
-              </Button>
-            </Box>
-          </Box>
-        </Slide>
-      </Backdrop>
+                <Box className={sliderclasses.icon}>
+                  <SRAddFilledIcon />
+                </Box>
+                <Typography variant="h6" className={sliderclasses.headings}>
+                  CONFIRM CHANGES
+                </Typography>
+                <Divider className={sliderclasses.divider} />
+                {!hasEditAccess && (
+                  <Typography variant="body2" color="textSecondary" style={{ marginTop: 8 }}>
+                    {t("You have view-only access. Changes cannot be made.")}
+                  </Typography>
+                )}
+                <Box className={sliderclasses.diffContainer}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    The following changes will be applied:
+                  </Typography>
+                  {changes.length === 0 ? (
+                    <Typography variant="body2">No changes to apply</Typography>
+                  ) : (
+                    changes.map((change, index) => (
+                      <Box
+                        key={index}
+                        className={sliderclasses.diffRow}
+                        bgcolor={change.type === "new" ? "#e6ffed" : change.type === "removed" ? "#ffeef0" : "#f1f8ff"}
+                        p={2}
+                        borderRadius={1}
+                        mb={1}
+                      >
+                        <Typography variant="body2" style={{ fontFamily: "monospace" }}>
+                          {change.type === "new" && (
+                            <span style={{ color: "#22863a" }}>
+                              + Adding {change.researcher} with {change.accessLevel} access
+                            </span>
+                          )}
+                          {change.type === "modified" && (
+                            <span style={{ color: "#0366d6" }}>
+                              ~ Changing {change.researcher} access from {change.oldAccessLevel} to{" "}
+                              {change.newAccessLevel}
+                            </span>
+                          )}
+                          {change.type === "removed" && (
+                            <span style={{ color: "#d73a49" }}>
+                              - Removing {change.researcher} ({change.accessLevel} access)
+                            </span>
+                          )}
+                        </Typography>
+                      </Box>
+                    ))
+                  )}
+                </Box>
+
+                <Box className={sliderclasses.buttonContainer}>
+                  <Button
+                    className={sliderclasses.button}
+                    disabled={!hasEditAccess}
+                    onClick={() => setConfirmationOpen(false)}
+                  >
+                    {t("Back")}
+                  </Button>
+                  <Button className={sliderclasses.submitbutton} onClick={handleConfirmChanges}>
+                    {t("Confirm")}
+                  </Button>
+                </Box>
+              </Box>
+            </Slide>
+          </>,
+          document.body
+        )}
+      {/* </Backdrop> */}
     </React.Fragment>
   )
 }

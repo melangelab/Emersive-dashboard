@@ -99,7 +99,7 @@ const useStyles = makeStyles((theme) => ({
     height: "100%",
     padding: theme.spacing(4, 2),
     backgroundColor: "#FFFFFF",
-    overflowY: "auto",
+    overflow: "hidden", // No scroll here
   },
   formField: {
     marginBottom: theme.spacing(3),
@@ -162,10 +162,11 @@ const useStyles = makeStyles((theme) => ({
   },
   gridItem: {
     width: "100%",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
+    // height: "100%",
+    // display: "flex",
+    // flexDirection: "column",
+    // justifyContent: "center",
+    // alignItems: "center",
   },
   profileSection: {
     backgroundColor: "#f5f5f5",
@@ -606,8 +607,8 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
       <Header authType={userType} title={title} pageLocation={pageLocation} />
       <div className="body-container">
         <div className={classes.formContainer}>
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={7}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6} className={classes.gridItem}>
               {/* Basic Fields */}
               {renderField("id", "ID", "text", true)}
               {renderField("role", "Role", "text", true)}
@@ -684,8 +685,15 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
             </Grid>
 
             {/* Right Column */}
-            <Grid item xs={12} md={5} className={classes.gridItem}>
+            <Grid
+              item
+              xs={12}
+              md={6}
+              className={classes.gridItem}
+              style={{ display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "center" }}
+            >
               {/* Profile Photo */}
+              {/* <div> */}
               <div className={classes.profileSection}>
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
                   <div className={classes.userPhoto}>
@@ -798,6 +806,7 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
                   </div>
                 )}
               </div>
+              {/* </div> */}
             </Grid>
           </Grid>
 

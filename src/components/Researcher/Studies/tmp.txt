@@ -1,125 +1,272 @@
-// StudyAccordion.tsx
-import React, { useState, useEffect } from "react";
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Typography,
-  // ... other imports ...
-} from "@material-ui/core";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-
-// ... existing code ...
-
-const StudyAccordion: React.FC<StudyAccordionProps> = ({ /* ... */ }) => {
-  // ... existing state and hooks ...
-  
-  // State for accordion expansion
-  const [expanded, setExpanded] = useState<string | false>(false);
-  
-  const handleAccordionChange = (panel: string) => (
-    event: React.ChangeEvent<{}>, 
-    isExpanded: boolean
-  ) => {
-    setExpanded(isExpanded ? panel : false);
-  };
-
-  // ... existing helper functions ...
-
-  // Create accordion sections
-  const accordionSections = [
-    {
-      id: "study-basics",
-      title: t("Study Basics"),
-      content: (
-        <Grid container spacing={2}>
-          {fields.map((field) => (
-            <Grid item xs={12} sm={6} key={field.id}>
-              {renderField(field)}
-            </Grid>
-          ))}
-        </Grid>
-      )
-    },
-    {
-      id: "funding-ethics",
-      title: t("Funding & Ethics"),
-      content: <FundingAndEthicsContent />
-    },
-    {
-      id: "researchers",
-      title: t("Researchers"),
-      content: <ResearchersContent />
-    },
-    {
-      id: "statistics",
-      title: t("Statistics"),
-      content: <StatisticsContent />
-    },
-    {
-      id: "study-state",
-      title: t("Study State"),
-      content: <StudyStateContent />
-    },
-    {
-      id: "important-dates",
-      title: t("Important Dates"),
-      content: <DateContent />
-    },
-    {
-      id: "developer-info",
-      title: t("Developer Info"),
-      content: renderDeveloperInfo()
-    }
-  ];
-
-  // Function to render individual fields
-  const renderField = (field: FieldConfig) => {
-    // ... similar to ViewItems field rendering ...
-  };
-
-  // Function to render developer info
-  const renderDeveloperInfo = () => {
-    // ... similar to ViewItems' renderSubmissionInfo ...
-  };
-
-  return (
-    <div>
-      {/* Stats grid remains the same */}
-      <Grid container className={studycardclasses.statsGrid}>
-        {/* ... existing stats grid ... */}
-      </Grid>
-
-      {/* Accordions section */}
-      {accordionSections.map((section) => (
-        <Accordion 
-          key={section.id}
-          expanded={expanded === section.id}
-          onChange={handleAccordionChange(section.id)}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography>{section.title}</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            {section.content}
-          </AccordionDetails>
-        </Accordion>
-      ))}
-
-      {/* Save button */}
-      {isEditing && (
-        <Button 
-          variant="contained" 
-          color="primary"
-          onClick={handleSave}
-          disabled={loading}
-          style={{ marginTop: 16 }}
-        >
-          {loading ? t("Saving...") : t("Save Changes")}
-        </Button>
-      )}
-    </div>
-  );
-};
-
-// ... existing helper components (FundingAndEthicsContent, etc.) ...
+--- a/StudyAccordion.tsx
++++ b/StudyAccordion.tsx
+@@ -616,7 +616,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+             <ButtonGroup variant="contained" color="primary" className={classes.buttonGroup}>
+               <Button
+-                variant={editedValues.hasFunding ? "contained" : "outlined"}
+-                className={getButtonClasses(editedValues.hasFunding, !isEditing, classes)}
+-                onClick={() => handleValueChange("hasFunding", true)}
++                variant={tempEditedValues.hasFunding ? "contained" : "outlined"}
++                className={getButtonClasses(tempEditedValues.hasFunding, !isEditing, classes)}
++                onClick={() => handleValueChange("hasFunding", true)}
+                 disabled={!isEditing}
+                 // startIcon={<AttachMoney />}
+               >
+                 {t("Has Funding")}
+               </Button>
+               <Button
+-                variant={!editedValues.hasFunding ? "contained" : "outlined"}
+-                className={getButtonClasses(!editedValues.hasFunding, !isEditing, classes)}
+-                onClick={() => handleValueChange("hasFunding", false)}
++                variant={!tempEditedValues.hasFunding ? "contained" : "outlined"}
++                className={getButtonClasses(!tempEditedValues.hasFunding, !isEditing, classes)}
++                onClick={() => handleValueChange("hasFunding", false)}
+                 disabled={!isEditing}
+                 // startIcon={<MoneyOff />}
+               >
+@@ -627,7 +627,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+           </Paper>
+         </Grid>
+ 
+-        {editedValues.hasFunding && (
++        {tempEditedValues.hasFunding && (
+           <Grid item xs={12}>
+             <TextField
+               fullWidth
+               variant="outlined"
+               label={t("Funding Agency")}
+-              defaultValue={editedValues.fundingAgency}
+-              onBlur={(e) => handleValueChange("fundingAgency", e.target.value)}
++              value={tempEditedValues.fundingAgency}
++              onChange={(e) => handleValueChange("fundingAgency", e.target.value)}
+               disabled={!isEditing}
+               InputProps={{
+                 startAdornment: (
+@@ -649,7 +649,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+             <ButtonGroup variant="contained" color="primary" className={classes.buttonGroup}>
+               <Button
+-                variant={editedValues.hasEthicsPermission ? "contained" : "outlined"}
++                variant={tempEditedValues.hasEthicsPermission ? "contained" : "outlined"}
+                 // color={editedValues.hasEthicsPermission ? "primary" : "default"}
+-                className={getButtonClasses(editedValues.hasEthicsPermission, !isEditing, classes)}
+-                onClick={() => handleValueChange("hasEthicsPermission", true)}
++                className={getButtonClasses(tempEditedValues.hasEthicsPermission, !isEditing, classes)}
++                onClick={() => handleValueChange("hasEthicsPermission", true)}
+                 disabled={!isEditing}
+                 // startIcon={<CheckCircle />}
+               >
+                 {t("Has Permission")}
+               </Button>
+               <Button
+-                variant={!editedValues.hasEthicsPermission ? "contained" : "outlined"}
++                variant={!tempEditedValues.hasEthicsPermission ? "contained" : "outlined"}
+                 // color={!editedValues.hasEthicsPermission ? "primary" : "default"}
+-                className={getButtonClasses(!editedValues.hasEthicsPermission, !isEditing, classes)}
+-                onClick={() => handleValueChange("hasEthicsPermission", false)}
++                className={getButtonClasses(!tempEditedValues.hasEthicsPermission, !isEditing, classes)}
++                onClick={() => handleValueChange("hasEthicsPermission", false)}
+                 disabled={!isEditing}
+                 // startIcon={<Cancel />}
+               >
+@@ -661,7 +661,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+             </ButtonGroup>
+ 
+-            {editedValues.hasEthicsPermission && (
++            {tempEditedValues.hasEthicsPermission && (
+               <Box className={classes.uploadSection}>
+                 <input
+                   accept=".pdf,.doc,.docx"
+@@ -693,7 +693,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+                       </Button>
+                     </label>
+ 
+-                    {editedValues.ethicsPermissionDoc && (
++                    {tempEditedValues.ethicsPermissionDoc && (
+                       <Button
+                         variant="outlined"
+                         className={classes.viewButton}
+@@ -707,7 +707,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+                   </Box>
+                 </Box>
+ 
+-                {editedValues.ethicsPermissionDoc && (
++                {tempEditedValues.ethicsPermissionDoc && (
+                   <Chip
+                     label={t("Document uploaded")}
+                     color="primary"
+@@ -728,7 +728,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+     if (validResearchers === null) {
+       const fetchValidResearchers = async () => {
+         const results: ResearcherInfo[] = []
+         const rnames={}
+         await Promise.all(
+-          editedValues.sub_researchers?.map(async (researcher) => {
++          tempEditedValues.sub_researchers?.map(async (researcher) => {
+             try {
+               const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
+               const response = await fetchGetData(
+@@ -876,7 +876,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+   const StudyStateContent = () => (
+     <Box className={classes.tabContent}>
+       <FormControl fullWidth>
+         <InputLabel>{t("State")}</InputLabel>
+         <Select
+-          value={editedValues.state || "development"}
++          value={tempEditedValues.state || "development"}
+           disabled={!isEditing}
+           onChange={(e) => {
+             const newstate = e.target.value
+             handleValueChange("state", newstate)
+             handleValueChange("timestamps", {
+-              ...editedValues.timestamps,
+-              productionAt: newstate === "production" ? new Date() : editedValues.timestamps.productionAt,
+-              completedAt: newstate === "complete" ? new Date() : editedValues.timestamps.completedAt,
++              ...tempEditedValues.timestamps,
++              productionAt: newstate === "production" ? new Date() : tempEditedValues.timestamps.productionAt,
++              completedAt: newstate === "complete" ? new Date() : tempEditedValues.timestamps.completedAt,
+             })
+           }}
+         >
+@@ -937,7 +937,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+       const updatedTimestamps = {
+-        ...editedValues.timestamps,
+-        productionAt: newState === 'production' ? new Date() : editedValues.timestamps.productionAt,
+-        completedAt: newState === 'complete' ? new Date() : editedValues.timestamps.completedAt,
++        ...tempEditedValues.timestamps,
++        productionAt: newState === 'production' ? new Date() : tempEditedValues.timestamps.productionAt,
++        completedAt: newState === 'complete' ? new Date() : tempEditedValues.timestamps.completedAt,
+       }
+       console.log("handleStateChange",newState , tempEditedValues)
+-      const updatedValues = {...editedValues, state: newState, timestamps: updatedTimestamps}
++      const updatedValues = {...tempEditedValues, state: newState, timestamps: updatedTimestamps}
+       setEditedValues(updatedValues)
+       setTempEditedValues(updatedValues)
+       await handleSaveWithValues(updatedValues)
+@@ -965,7 +965,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+       hide: editedValues.purpose !== "research",
++      hide: tempEditedValues.purpose !== "research",
+     },
+     {
+       id: "piInstitution",
+@@ -1067,7 +1067,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+           field.type === "multi-text" ? (
+             <Box>
+               <TextField
+                 className={classes.viewInput}
+                 value={currentTextValue}
+                 onChange={(e) => setCurrentTextValue(e.target.value)}
+                 onKeyDown={(e) => {
+                   if (e.key === "Enter" && currentTextValue.trim()) {
+-                    const currentValues = editedValues[field.id] || []
++                    const currentValues = tempEditedValues[field.id] || []
+                     if (!currentValues.includes(currentTextValue.trim())) {
+                       handleValueChange(field.id, [...currentValues, currentTextValue.trim()])
+                       setCurrentTextValue("")
+@@ -1080,11 +1080,11 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+               />
+               <Box display="flex" flexWrap="wrap" mt={1}>
+-                {(editedValues[field.id] || []).map((value, index) => (
++                {(tempEditedValues[field.id] || []).map((value, index) => (
+                   <Chip
+                     key={index}
+                     label={value}
+                     onDelete={() => {
+-                      const newValues = [...(editedValues[field.id] || [])]
++                      const newValues = [...(tempEditedValues[field.id] || [])]
+                       newValues.splice(index, 1)
+                       handleValueChange(field.id, newValues)
+                     }}
+@@ -1098,7 +1098,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+           ) : field.type === "select" ? (
+             <TextField
+               className={classes.viewInput}
+-              value={editedValues[field.id] !== undefined ? editedValues[field.id] : field.value}
++              value={tempEditedValues[field.id] !== undefined ? tempEditedValues[field.id] : field.value}
+               onChange={(e) => handleValueChange(field.id, e.target.value)}
+               fullWidth
+               variant="outlined"
+@@ -1117,7 +1117,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+               <Select
+                 labelId={`${field.id}-label`}
+                 multiple
+-                value={editedValues[field.id] !== undefined ? editedValues[field.id] : field.value}
++                value={tempEditedValues[field.id] !== undefined ? tempEditedValues[field.id] : field.value}
+                 onChange={(e) => handleValueChange(field.id, e.target.value)}
+                 className={classes.multiSelect}
+                 renderValue={(selected: string[]) => (
+@@ -1138,7 +1138,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+                   <MenuItem key={option.value} value={option.value}>
+                     <Checkbox
+                       checked={
+-                        (editedValues[field.id] !== undefined ? editedValues[field.id] : field.value)?.indexOf(
++                        (tempEditedValues[field.id] !== undefined ? tempEditedValues[field.id] : field.value)?.indexOf(
+                           option.value
+                         ) > -1
+                       }
+@@ -1151,7 +1151,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+           ) : (
+             <TextField
+               className={classes.viewInput}
+-              value={editedValues[field.id] !== undefined ? editedValues[field.id] : field.value}
++              value={tempEditedValues[field.id] !== undefined ? tempEditedValues[field.id] : field.value}
+               onChange={(e) => handleValueChange(field.id, e.target.value)}
+               fullWidth
+               variant="outlined"
+@@ -1302,7 +1302,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+ 
+   const isAccordionComplete = (sectionId: string, editedValues: any) => {
+     if (editedValues.state !== 'development' && editedValues.state !== undefined) {
+       return 'locked'
+     }
+     
+     switch (sectionId) {
+       case 'study-basics':
+-        return !!(editedValues.name && editedValues.description && editedValues.purpose);
++        return !!(tempEditedValues.name && tempEditedValues.description && tempEditedValues.purpose);
+       case 'funding-ethics':
+-        return !!(editedValues.hasFunding !== undefined && editedValues.hasEthicsPermission !== undefined);
++        return !!(tempEditedValues.hasFunding !== undefined && tempEditedValues.hasEthicsPermission !== undefined);
+       case 'researchers':
+-        return !!(editedValues.sub_researchers && editedValues.sub_researchers.length > 0);
++        return !!(tempEditedValues.sub_researchers && tempEditedValues.sub_researchers.length > 0);
+       case 'groups':
+-        return !!(editedValues.gname && editedValues.gname.length > 0);
++        return !!(tempEditedValues.gname && tempEditedValues.gname.length > 0);
+       case 'participants':
+-        return !!(editedValues.participants && editedValues.participants.length > 0);
++        return !!(tempEditedValues.participants && tempEditedValues.participants.length > 0);
+       case 'activities':
+-        return !!(editedValues.activities && editedValues.activities.length > 0);
++        return !!(tempEditedValues.activities && tempEditedValues.activities.length > 0);
+       case 'sensors':
+-        return !!(editedValues.sensors && editedValues.sensors.length > 0);
++        return !!(tempEditedValues.sensors && tempEditedValues.sensors.length > 0);
+       case 'study-state':
+-        return !!(editedValues.state);
++        return !!(tempEditedValues.state);
+       default:
+         return false;
+     }
+@@ -1470,7 +1470,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+           {/* Right side - Activities list */}
+           <List>
+-            {editedValues.activities?.map((activity, index) => (
++            {tempEditedValues.activities?.map((activity, index) => (
+               <ListItem
+                 key={index}
+                 dense
+@@ -1495,7 +1495,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+           {/* Right side - Sensors list */}
+           <List>
+-            {editedValues.sensors?.map((sensor, index) => (
++            {tempEditedValues.sensors?.map((sensor, index) => (
+               <ListItem
+                 key={index}
+                 dense
+@@ -1570,7 +1570,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
+         {accordionSections.map((section, index) => {
+-          const completionStatus = isAccordionComplete(section.id, editedValues);
++          const completionStatus = isAccordionComplete(section.id, tempEditedValues);
+           const isComplete = completionStatus === true;
+           const isLocked = completionStatus === 'locked';
+           const isExpanded = expanded === section.id;
