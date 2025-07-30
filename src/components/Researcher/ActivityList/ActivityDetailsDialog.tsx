@@ -271,6 +271,7 @@ export default function ActivityDetailsDialog({ activity, open, onClose, onSave,
   const audioRef = useRef<HTMLAudioElement>(null)
   const audioPreviewRef = useRef<HTMLAudioElement>(null)
   const [isUploadedVideo, setisUploadedVideo] = useState(false)
+  const [updateSettings, setUpdateSettings] = useState(false)
   const handleVideoPreview = (video: string, type: "recorded" | "uploaded") => {
     setSelectedVideo({
       src: video,
@@ -421,27 +422,7 @@ export default function ActivityDetailsDialog({ activity, open, onClose, onSave,
 
       // Update in LAMP backend
       console.log("formState", formState)
-      // await LAMP.Activity.update(activity.id, formState)
-
-      // // Update in local DB
-      // const fieldsToUpdate = [
-      //   'name', 'spec', 'schedule', 'settings', 'category',
-      //   'creator', 'currentVersion', 'device', 'reminder',
-      //   'groups', 'sharingStudies', 'scoreInterpretation',
-      //   'activityGuide', 'formula4Fields'
-      // ]
-
-      // await Service.updateMultipleKeys(
-      //   "activities",
-      //   {
-      //     activities: [{
-      //       id: activity.id,
-      //       ...formState
-      //     }]
-      //   },
-      //   fieldsToUpdate,
-      //   "id"
-      // )
+      setUpdateSettings(true)
       onSave(formState)
       console.log("Activity updated successfully", formState)
       enqueueSnackbar("Activity updated successfully", { variant: "success", autoHideDuration: 1000 })

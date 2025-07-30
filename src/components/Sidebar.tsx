@@ -225,8 +225,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         } else {
           const temp: any = LAMP.Auth._me
           try {
-            const response: any = await LAMP.Type.getAttachment(temp.id, "emersive.profile")
-            const admin = response.data
+            const response: any = await LAMP.Type.getAttachment(temp.email, "emersive.profile")
+            const admin = response.data[0]
             if (admin) {
               setOtherRole({
                 email: admin.emailAddress,
@@ -237,6 +237,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 origin: null,
               })
             }
+            console.log("Fetched admin data:", admin, temp)
           } catch (error) {
             console.error("Error fetching emersive profile:", error)
           }
@@ -293,10 +294,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       console.log("Switching role...", otherRole)
       handleRoleDetailsPopoverClose()
       handleLogoutPopoverClose()
-
-      if (!otherRole.origin || !otherRole.email) {
-        throw new Error("Missing origin or email for role switch")
-      }
 
       const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
       const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
@@ -372,6 +369,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         if (otherRole.role === "Researcher") {
           console.log("Auth after switch:", LAMP.Auth._me, LAMP.Auth._auth, LAMP.Auth._type)
           window.location.replace(`/#/researcher/${otherRole.id}/studies`)
+        } else {
+          window.location.replace(`/`)
         }
 
         enqueueSnackbar(`Successfully switched to ${otherRole.role} role`, { variant: "success" })

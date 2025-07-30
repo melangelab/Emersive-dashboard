@@ -234,7 +234,6 @@ export const slideStyles = makeStyles((theme: Theme) =>
       maxHeight: "calc(100vh - 300px)",
       overflowY: "auto",
     },
-
     diffRow: {
       padding: theme.spacing(1.5),
       backgroundColor: "#e6ffed",

@@ -570,7 +570,7 @@ export default function NavigationLayout({
                     <MenuItem divider onClick={() => setConfirmLogout(true)}>
                       {`${t("Logout")}`}
                     </MenuItem>
-                    <MenuItem
+                    {/* <MenuItem
                       dense
                       onClick={() => {
                         setShowCustomizeMenu(undefined)
@@ -587,12 +587,12 @@ export default function NavigationLayout({
                       }}
                     >
                       <b style={{ color: colors.grey["600"] }}>{`${t("LAMP Community")}`}</b>
-                    </MenuItem>
+                    </MenuItem> */}
                     <MenuItem
                       dense
                       onClick={() => {
                         setShowCustomizeMenu(undefined)
-                        window.open("mailto:team@digitalpsych.org", "_blank")
+                        window.open("mailto:abhit.rana@anubhuti.tech", "_blank")
                       }}
                     >
                       <b style={{ color: colors.grey["600"] }}>{`${t("Contact Us")}`}</b>
