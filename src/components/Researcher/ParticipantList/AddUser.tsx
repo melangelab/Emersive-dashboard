@@ -163,7 +163,6 @@ export default function AddUser({
 
         if (duplicates.length > 0) {
           enqueueSnackbar(t("Participant with same email id already exists."), { variant: "error" })
-          setIsCreatingParticipant(false)
           resetForm()
           return
         }
@@ -256,17 +255,23 @@ export default function AddUser({
 
           const studyParticipants = currentStudy?.participants
           const participantCreated = await LAMP.Participant.view(newParticipant.id)
-          updatedParticipants = [...studyParticipants, participantCreated]
+          updatedParticipants = [...(studyParticipants || []), participantCreated]
 
           const updatedStudy = {
             ...currentStudy,
             participants: updatedParticipants,
             timestamps: updatedTimestamps,
           }
-
+          const updatedStudyForSDB = {
+            ...updatedStudy,
+            participants: updatedParticipants.map((p) => ({
+              ...p,
+              ...(isSharedStudy ? { isShared: true, parentResearcher: selectedStudyDetail?.researcherId } : {}),
+            })),
+          }
           // WHAT IS THE BELOW LOGIC and its not present in the AddParticipantToStudy
 
-          const fieldsToUpdate = ["timestamps"]
+          const fieldsToUpdate = ["timestamps", "participants", "participant_count"]
           LAMP.Study.update(selectedStudy, updatedStudy).then((res) => {
             Service.update(
               studyTableKey,
@@ -274,7 +279,8 @@ export default function AddUser({
                 [studyTableKey]: [
                   {
                     id: selectedStudy,
-                    ...updatedStudy,
+                    ...updatedStudyForSDB,
+                    participant_count: updatedParticipants.length,
                   },
                 ],
               },
@@ -287,7 +293,8 @@ export default function AddUser({
                 [studyTableKey]: [
                   {
                     id: selectedStudy,
-                    ...updatedStudy,
+                    ...updatedStudyForSDB,
+                    participant_count: updatedParticipants.length,
                   },
                 ],
               },
@@ -428,7 +435,7 @@ export default function AddUser({
                   onChange={(e) => setSelectedStudy(e.target.value)}
                   className={sliderclasses.field}
                 >
-                  {studies.concat(sharedstudies).map((study) => (
+                  {[...studies, ...sharedstudies].map((study) => (
                     <MenuItem key={study.id} value={study.id}>
                       {study.name}
                     </MenuItem>
@@ -443,12 +450,10 @@ export default function AddUser({
                   onChange={(e) => setSelectedGroup(e.target.value)}
                   className={sliderclasses.field}
                 >
-                  {(
-                    (selectedStudy &&
-                      (studies.find((study) => study.id === selectedStudy)?.gname ||
-                        sharedstudies.find((study) => study.id === selectedStudy)?.gname)) ||
-                    []
-                  ).map((groupName, index) => (
+                  {(() => {
+                    const selectedStudyObj = [...studies, ...sharedstudies].find((study) => study.id === selectedStudy)
+                    return selectedStudyObj?.gname || []
+                  })().map((groupName, index) => (
                     <MenuItem key={index} value={groupName}>
                       {groupName}
                     </MenuItem>
@@ -523,7 +528,8 @@ export default function AddUser({
                   </strong>{" "}
                   - has been successfully added to the study{" "}
                   <strong>
-                    {selectedStudy}, Group {selectedGroup}
+                    {[...studies, ...sharedstudies].find((s) => s.id === selectedStudy)?.name || selectedStudy}, Group{" "}
+                    {selectedGroup}
                   </strong>
                   . An account creation link has been successfully sent to the email -{" "}
                   <a href={`mailto:${email}`}>{email}</a>.
