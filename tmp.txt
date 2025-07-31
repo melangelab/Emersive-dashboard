@@ -1,164 +1,138 @@
---- a/StudyAccordion.tsx
-+++ b/StudyAccordion.tsx
-@@ -315,8 +315,8 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-       label: t("Researcher"),
-       value: researcherFormData.researcherId,
-       editable: true,
--      hide: true,
--      options: [Object.entries(availableResearchers).map(([key, value]) =>{value: key, label: value})], //[availableResearchers.forEach((item) => {"value": item.name, "label": item.id})],
-+      hide: false,
-+      options: Object.entries(availableResearchers).map(([key, value]) => ({value: key, label: value})),
-       type: "select"
-     },
-     {
-@@ -324,7 +324,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-       label: t("Access Scope"),
-       value: researcherFormData.accessScope,
-       editable: true,
--      hide: true,
-+      hide: false,
-       options: [{value: 1, label: "View"}, {value: 2, label: "Edit"}, {value: 4, label: "All"}],
-       type: "select"
-     }
-@@ -414,16 +414,32 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-           <Grid item xs={6}>
-             <Box>
-               {sharingFields.map((field) => (
-+                !field.hide && (
-                   <Box key={field.id} className={classes.fieldContainer}>
-                     <Typography className={classes.viewLabel}>{field.label}</Typography>
--                    {isEditing ? (
--                      <TextField
-+                    {isEditing && field.editable ? (
-+                      field.type === "select" ? (
-+                        <TextField
-+                          className={classes.viewInput}
-+                          value={field.value}
-+                          onChange={(e) => {
-+                            setResearcherFormData(prev => ({ 
-+                              ...prev, 
-+                              [field.id]: e.target.value 
-+                            }))
-+                          }}
-+                          fullWidth
-+                          variant="outlined"
-+                          size="small"
-+                          select
-+                        >
-+                          {field.options?.map((option) => (
-+                            <MenuItem key={option.value} value={option.value}>
-+                              {option.label}
-+                            </MenuItem>
-+                          ))}
-+                        </TextField>
-+                      ) : (
-+                        <TextField
-                         className={classes.viewInput}
-                         value={field.value}
-                         onChange={(e) => {
-@@ -436,6 +452,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-                         size="small"
-                         multiline={field.type === "multiline"}
-                         minRows={field.type === "multiline" ? 3 : 1}
-+                        />
-                       />
-                     ) : (
-                       <Typography className={classes.viewValue}>
-@@ -444,6 +461,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-                     )}
-                     <Divider className={classes.viewDivider} />
-                   </Box>
-+                )
-                 ))}
-             </Box>
-           </Grid>
-@@ -583,16 +601,32 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-             <Grid item xs={6}>
-               <Box>
-                 {groupFields.map((field) => (
-+                  !field.hide && (
-                     <Box key={field.id} className={classes.fieldContainer}>
-                       <Typography className={classes.viewLabel}>{field.label}</Typography>
--                      {isEditing ? (
--                        <TextField
-+                      {isEditing && field.editable ? (
-+                        field.type === "select" ? (
-+                          <TextField
-+                            className={classes.viewInput}
-+                            value={field.value}
-+                            onChange={(e) => {
-+                              const fieldMap = {
-+                                groupName: 'name',
-+                                groupNickname: 'nickname', 
-+                                groupDescription: 'description',
-+                                groupType: 'type',
-+                                notes: 'notes'
-+                              }
-+                              setGroupFormData(prev => ({ 
-+                                ...prev, 
-+                                [fieldMap[field.id]]: e.target.value 
-+                              }))
-+                            }}
-+                            fullWidth
-+                            variant="outlined"
-+                            size="small"
-+                            select
-+                          >
-+                            {field.options?.map((option) => (
-+                              <MenuItem key={option.value} value={option.value}>
-+                                {option.label}
-+                              </MenuItem>
-+                            ))}
-+                          </TextField>
-+                        ) : (
-+                          <TextField
-                           className={classes.viewInput}
-                           value={field.value}
-                           onChange={(e) => {
-@@ -609,6 +643,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-                           size="small"
-                           multiline={field.type === "multiline"}
-                           minRows={field.type === "multiline" ? 3 : 1}
-+                          />
-                         />
-                       ) : (
-                         <Typography className={classes.viewValue}>
-@@ -617,6 +652,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-                       )}
-                       <Divider className={classes.viewDivider} />
-                     </Box>
-+                  )
-                   ))}
-               </Box>
-             </Grid>
-@@ -717,6 +753,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-     return (
-       <Box key={field.id} className={classes.fieldContainer}>
-         <Typography className={classes.viewLabel}>{field.label}</Typography>
-+        {!field.hide && (
+@@ -74,6 +74,11 @@ export default function AddUser({
+         const duplicates = participants.filter((x) => `${x.emailAddress}` === email)
  
-         {isEditing && field.editable ? (
-           field.type === "image" ? (
-@@ -834,6 +871,9 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-             {field.value || "-"}
-           </Typography>
-         )}
-+        )}
-+        {field.hide && field.value && (
-+          <Typography className={classes.viewValue}>{field.value}</Typography>
-+        )}
-         <Divider className={classes.viewDivider} />
-       </Box>
-     )
-@@ -969,6 +1009,11 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSa
-         {accordionSections.map((section, index) => {
-           const isComplete = isAccordionComplete(section.id, editedValues);
-           const isExpanded = expanded === section.id;
+         if (duplicates.length > 0) {
+           enqueueSnackbar(t("Participant with same email id already exists."), { variant: "error" })
++          setIsCreatingParticipant(false)
++          setStudyBtnClicked(false)
+           resetForm()
+           return
+         }
+@@ -107,6 +112,14 @@ export default function AddUser({
+           // Update count in appropriate table
+           const studyTableKey = isSharedStudy ? "sharedstudies" : "studies"
+           Service.updateCount(studyTableKey, selectedStudy, "participant_count")
 +          
-+          // Filter fields based on hide property for rendering
-+          const visibleFields = section.id === 'groups' ? groupFields.filter(f => !f.hide) : 
-+                               section.id === 'researchers' ? sharingFields.filter(f => !f.hide) : 
-+                               null;
++          // Also update the combined studies state if using setParticipants
++          if (setParticipants) {
++            const allStudies = [...studies, ...sharedstudies]
++            const updatedStudyInState = allStudies.find(s => s.id === selectedStudy)
++            if (updatedStudyInState) {
++              // Trigger any parent component updates needed
++            }
++          }
            
-           return (
-             <Accordion key={section.id} expanded={isExpanded} onChange={handleAccordionChange(section.id)} className={classes.customAccordion} elevation={0} >
+           Service.getData(studyTableKey, selectedStudy).then((studiesObject) => {
+             handleNewStudy(studiesObject)
+@@ -130,12 +143,18 @@ export default function AddUser({
+           const studyParticipants = currentStudy?.participants
+           const participantCreated = await LAMP.Participant.view(newParticipant.id)
+-          updatedParticipants = [...studyParticipants, participantCreated]
++          updatedParticipants = [...(studyParticipants || []), participantCreated]
+ 
+           const updatedStudy = {
+             ...currentStudy,
+             participants: updatedParticipants,
+             timestamps: updatedTimestamps,
++            participant_count: updatedParticipants.length
++          }
++          
++          // Create separate object for Service DB with shared study fields if needed
++          const updatedStudyForSDB = {
++            ...updatedStudy,
++            participants: updatedParticipants.map(p => ({ ...p, ...(isSharedStudy ? { isShared: true, parentResearcher: selectedStudyDetail?.researcherId } : {}) }))
+           }
+ 
+           // WHAT IS THE BELOW LOGIC and its not present in the AddParticipantToStudy
+@@ -148,7 +167,7 @@ export default function AddUser({
+                 [studyTableKey]: [
+                   {
+                     id: selectedStudy,
+-                    ...updatedStudy,
++                    ...updatedStudyForSDB,
+                   },
+                 ],
+               },
+@@ -160,7 +179,7 @@ export default function AddUser({
+               {
+                 [studyTableKey]: [
+                   {
+                     id: selectedStudy,
+-                    ...updatedStudy,
++                    ...updatedStudyForSDB,
+                   },
+                 ],
+               },
+@@ -180,6 +199,14 @@ export default function AddUser({
+             ["timestamps"],
+             "id"
+           )
++          
++          // Update parent component state to reflect changes across both studies and sharedstudies
++          if (setParticipants) {
++            // Refresh participants list to include new participant with proper flags
++            const refreshedParticipants = await Service.getAll("participants")
++            setParticipants(refreshedParticipants)
++          }
+         }
+         // const _owner = await LAMP.Type.parent(id)
+         // await LAMP.Researcher.update(_owner.data.Researcher, {"timestamps.lastActivityAt": new Date()} as any).then(()=>console.log("successfully updated for participant", id))
+@@ -187,6 +214,10 @@ export default function AddUser({
+       }
+       // setParticipants()
+     }
++    
++    // Reset form and states
++    setIsCreatingParticipant(false)
++    setStudyBtnClicked(false)
+     setSelectedStudy("")
+     closePopUp(2)
+-    setIsCreatingParticipant(false)
+     // props.onClose as any
+   }
+@@ -215,6 +246,14 @@ export default function AddUser({
+       Service.getData(studyTableKey, selectedStudy).then((studiesObject) => {
+         handleNewStudy(studiesObject)
+       })
++      
++      // Update parent component state for demo participant
++      if (setParticipants) {
++        const refreshedParticipants = await Service.getAll("participants")
++        setParticipants(refreshedParticipants)
++      }
++      
+       setNewId(newParticipant.id)
+       closePopUp(2)
+       setSelectedStudy("")
+@@ -284,7 +323,7 @@ export default function AddUser({
+                   className={sliderclasses.field}
+                 >
+-                  {studies.concat(sharedstudies).map((study) => (
++                  {[...studies, ...sharedstudies].map((study) => (
+                     <MenuItem key={study.id} value={study.id}>
+                       {study.name}
+                     </MenuItem>
+@@ -299,7 +338,11 @@ export default function AddUser({
+                   className={sliderclasses.field}
+                 >
+-                  {((selectedStudy && (studies.find((study) => study.id === selectedStudy)?.gname || sharedstudies.find((study) => study.id === selectedStudy)?.gname)) || []).map(
++                  {(() => {
++                    const selectedStudyObj = [...studies, ...sharedstudies].find((study) => study.id === selectedStudy)
++                    return (selectedStudyObj?.gname || [])
++                  })().map(
+                     (groupName, index) => (
+                       <MenuItem key={index} value={groupName}>
+                         {groupName}
+@@ -387,7 +430,7 @@ export default function AddUser({
+                 <Typography variant="body2" paragraph>
+                   New participant -{" "}
+                   <strong>
+                     {firstName} {lastName}
+                   </strong>{" "}
+                   - has been successfully added to the study{" "}
+                   <strong>
+-                    {selectedStudy}, Group {selectedGroup}
++                    {[...studies, ...sharedstudies].find(s => s.id === selectedStudy)?.name || selectedStudy}, Group {selectedGroup}
+                   </strong>
+                   . An account creation link has been successfully sent to the email -{" "}
+                   <a href={`mailto:${email}`}>{email}</a>.

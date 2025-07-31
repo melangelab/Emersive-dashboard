@@ -998,7 +998,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
 
               <Logo className="logo-component-login" />
               <span className="platform-name-login">emersive</span>
-              <span className="platform-tag-login">MOBILE SENSING RESEARCH</span>
+              <span className="platform-tag-login">MOBILE SENSING FOR RESEARCH</span>
             </Grid>
           )}
           <Grid item xs={12} md={supportsSidebar ? 5 : 12} className="grid-item">

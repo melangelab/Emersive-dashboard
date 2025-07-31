@@ -480,6 +480,7 @@ export default function SensorListItem({
         studyId={sensor.study_id ?? null}
         addOrUpdateSensor={addOrUpdateSensor}
         allSensors={allSensors}
+        sharedstudies={sharedstudies}
       />
       <CopySensor
         sensor={sensor}

@@ -74,6 +74,7 @@ export default function AddUser({
   closePopUp,
   open,
   resemail,
+  sharedstudies,
   ...props
 }: {
   researcherId: any
@@ -83,6 +84,7 @@ export default function AddUser({
   handleNewStudy: Function
   closePopUp: Function
   open: any
+  sharedstudies?: any
   resemail: any
 } & DialogProps) {
   const classes = useStyles()
@@ -161,12 +163,15 @@ export default function AddUser({
 
         if (duplicates.length > 0) {
           enqueueSnackbar(t("Participant with same email id already exists."), { variant: "error" })
+          setIsCreatingParticipant(false)
           resetForm()
           return
         }
 
         const parentEmail = LAMP.Auth._auth.id === "admin" ? null : LAMP.Auth._auth.id
-        const selectedStudyDetail = studies.find((study) => study.id === selectedStudy)
+        const selectedStudyDetail =
+          studies.find((study) => study.id === selectedStudy) ||
+          sharedstudies.find((study) => study.id === selectedStudy)
         const researcherDetails = await LAMP.Researcher.view(selectedStudyDetail.researcherId)
         const researcherEmail = researcherDetails.email
 
@@ -202,16 +207,27 @@ export default function AddUser({
           enqueueSnackbar(`${t("Could not create credential for id.", { id: id })}`, { variant: "error" })
         } else {
           newParticipant.study_id = selectedStudy
-          newParticipant.study_name = studies.filter((study) => study.id === selectedStudy)[0]?.name
+          newParticipant.study_name =
+            studies.filter((study) => study.id === selectedStudy)[0]?.name ||
+            sharedstudies.filter((study) => study.id === selectedStudy)[0]?.name
           newParticipant.group_name = selectedGroup
           newParticipant.firstName = firstName
           newParticipant.lastName = lastName
           newParticipant.email = email
           newParticipant.mobile = mobile
           newParticipant.researcherNote = notes
-          Service.addData("participants", [newParticipant])
-          Service.updateCount("studies", selectedStudy, "participant_count")
-          Service.getData("studies", selectedStudy).then((studiesObject) => {
+          const isSharedStudy = !studies.find((study) => study.id === selectedStudy)
+          const selectedStudyDetail =
+            studies.find((study) => study.id === selectedStudy) ||
+            sharedstudies.find((study) => study.id === selectedStudy)
+          const participantForSDB = {
+            ...newParticipant,
+            ...(isSharedStudy ? { isShared: true, parentResearcher: selectedStudyDetail?.researcherId } : {}),
+          }
+          Service.addData("participants", [participantForSDB])
+          const studyTableKey = isSharedStudy ? "sharedstudies" : "studies"
+          Service.updateCount(studyTableKey, selectedStudy, "participant_count")
+          Service.getData(studyTableKey, selectedStudy).then((studiesObject) => {
             handleNewStudy(studiesObject)
           })
           console.log("LAMP.Participant.allByStudy", await LAMP.Participant.allByStudy(selectedStudy))
@@ -228,7 +244,9 @@ export default function AddUser({
           await LAMP.Participant.update(newParticipant.id, newParticipant).then((res) =>
             console.log("updaqted partiicpant", res)
           )
-          const currentStudy = studies.find((study) => study.id === selectedStudy)
+          const currentStudy =
+            studies.find((study) => study.id === selectedStudy) ||
+            sharedstudies.find((study) => study.id === selectedStudy)
           const timestamps = currentStudy.timestamps || {}
           const updatedTimestamps = {
             ...timestamps,
@@ -251,9 +269,9 @@ export default function AddUser({
           const fieldsToUpdate = ["timestamps"]
           LAMP.Study.update(selectedStudy, updatedStudy).then((res) => {
             Service.update(
-              "studies",
+              studyTableKey,
               {
-                studies: [
+                [studyTableKey]: [
                   {
                     id: selectedStudy,
                     ...updatedStudy,
@@ -264,9 +282,9 @@ export default function AddUser({
               "id"
             )
             Service.updateMultipleKeys(
-              "studies",
+              studyTableKey,
               {
-                studies: [
+                [studyTableKey]: [
                   {
                     id: selectedStudy,
                     ...updatedStudy,
@@ -278,9 +296,9 @@ export default function AddUser({
             )
           })
           await Service.updateMultipleKeys(
-            "studies",
+            studyTableKey,
             {
-              studies: [
+              [studyTableKey]: [
                 {
                   id: selectedStudy,
                   timestamps: updatedTimestamps,
@@ -320,15 +338,28 @@ export default function AddUser({
       setShowErrorMsg(true)
       return false
     } else {
-      let studyName = studies.filter((study) => study.id === selectedStudy)[0]?.name
+      let studyName =
+        studies.filter((study) => study.id === selectedStudy)[0]?.name ||
+        sharedstudies.filter((study) => study.id === selectedStudy)[0]?.name
       setStudyBtnClicked(true)
       let newParticipant: any = {}
+      const isSharedStudy = !studies.find((study) => study.id === selectedStudy)
+      const selectedStudyDetail =
+        studies.find((study) => study.id === selectedStudy) || sharedstudies.find((study) => study.id === selectedStudy)
+
       newParticipant.id = "U" + crypto.getRandomValues(new Uint32Array(1))[0].toString().substring(0, 8)
       newParticipant.study_id = selectedStudy
       newParticipant.study_name = studyName
-      Service.addData("participants", [newParticipant])
-      Service.updateCount("studies", selectedStudy, "participant_count")
-      Service.getData("studies", selectedStudy).then((studiesObject) => {
+
+      const participantForSDB = {
+        ...newParticipant,
+        ...(isSharedStudy ? { isShared: true, parentResearcher: selectedStudyDetail?.researcherId } : {}),
+      }
+      Service.addData("participants", [participantForSDB])
+
+      const studyTableKey = isSharedStudy ? "sharedstudies" : "studies"
+      Service.updateCount(studyTableKey, selectedStudy, "participant_count")
+      Service.getData(studyTableKey, selectedStudy).then((studiesObject) => {
         handleNewStudy(studiesObject)
       })
       setNewId(newParticipant.id)
@@ -397,7 +428,7 @@ export default function AddUser({
                   onChange={(e) => setSelectedStudy(e.target.value)}
                   className={sliderclasses.field}
                 >
-                  {studies.map((study) => (
+                  {studies.concat(sharedstudies).map((study) => (
                     <MenuItem key={study.id} value={study.id}>
                       {study.name}
                     </MenuItem>
@@ -412,13 +443,16 @@ export default function AddUser({
                   onChange={(e) => setSelectedGroup(e.target.value)}
                   className={sliderclasses.field}
                 >
-                  {((selectedStudy && studies.find((study) => study.id === selectedStudy)?.gname) || []).map(
-                    (groupName, index) => (
-                      <MenuItem key={index} value={groupName}>
-                        {groupName}
-                      </MenuItem>
-                    )
-                  )}
+                  {(
+                    (selectedStudy &&
+                      (studies.find((study) => study.id === selectedStudy)?.gname ||
+                        sharedstudies.find((study) => study.id === selectedStudy)?.gname)) ||
+                    []
+                  ).map((groupName, index) => (
+                    <MenuItem key={index} value={groupName}>
+                      {groupName}
+                    </MenuItem>
+                  ))}
                 </TextField>
                 <Typography variant="h6" className={sliderclasses.headings}>
                   PARTICIPANT DETAILS

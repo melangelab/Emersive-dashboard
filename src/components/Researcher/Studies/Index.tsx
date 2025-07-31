@@ -2308,7 +2308,7 @@ export default function StudiesList({
         <Header
           authType={"Researcher"}
           title={props.ptitle}
-          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Studies > ${
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Studies > ${
             viewingStudy.name
           }`}
         />
@@ -2316,7 +2316,7 @@ export default function StudiesList({
         <Header
           authType={"Researcher"}
           title={props.ptitle}
-          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Studies`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Studies`}
         />
       )}
       {viewingStudy ? (

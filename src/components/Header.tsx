@@ -29,16 +29,20 @@ import { ReactComponent as ProfileIcon } from "../icons/NewIcons/ProfileIcon.svg
 
 import "./Admin/admin.css"
 import { useRouteMatch } from "react-router-dom"
+import LAMP from "lamp-core"
 
 export default function Header({ authType, title, ...props }) {
   console.log("PROPS ORIGINAL KEYS", props.originalColumnKeys)
   console.log("PROPS auth type", props.authType)
   const { path } = useRouteMatch()
 
+  const userType = LAMP.Auth._type
+  console.log("Logging userType from the Header component:", userType)
+
   return (
     <div className="header-container">
       <div className="page-title-container">
-        {!path.startsWith("/admin") && (
+        {!path.startsWith("/admin") && !["researcher", "participant"].includes(userType) && (
           <IconButton
             size="medium"
             // className=""

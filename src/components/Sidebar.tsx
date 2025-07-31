@@ -187,8 +187,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     const fetchOtherUser = async () => {
       console.log("INSIDE FetchOtherUser-", LAMP.Auth._auth)
+      const userType = LAMP.Auth._type
       try {
-        if (LAMP.Auth._type === "admin") {
+        if (userType === "admin") {
           const temp: any = LAMP.Auth._me
 
           const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
@@ -224,8 +225,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           }
         } else {
           const temp: any = LAMP.Auth._me
+          console.log("temp in fetchOtherUser:", temp)
           try {
-            const response: any = await LAMP.Type.getAttachment(temp.email, "emersive.profile")
+            const response: any = await LAMP.Type.getAttachment(temp?.email || temp?.emailAddress, "emersive.profile")
+            console.log("Response from emersive profile:", temp?.email || temp?.emailAddress, response)
             const admin = response.data[0]
             if (admin) {
               setOtherRole({

@@ -537,13 +537,15 @@ export default function SensorsList({
         <Header
           authType={"Researcher"}
           title={ptitle}
-          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${ptitle} > Sensors > ${viewingSensor.name}`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${ptitle} (Researcher) > Sensors > ${
+            viewingSensor.name
+          }`}
         />
       ) : (
         <Header
           authType={"Researcher"}
           title={ptitle}
-          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${ptitle} > Sensors`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${ptitle} (Researcher) > Sensors`}
         />
       )}
       {viewingSensor ? (
@@ -591,6 +593,7 @@ export default function SensorsList({
                 title={title}
                 resemail={props.resemail}
                 refreshSensors={searchFilterSensors}
+                sharedstudies={props.sharedstudies}
               />
             }
             actions={["refresh", "search", "grid", "table", "filter", "download"]}

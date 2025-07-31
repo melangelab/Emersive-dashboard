@@ -149,6 +149,7 @@ export default function SensorDialog({
   allSensors,
   open,
   onclose,
+  sharedstudies,
   ...props
 }: {
   sensor?: Sensors
@@ -159,6 +160,7 @@ export default function SensorDialog({
   allSensors?: Array<any>
   open: any
   onclose: Function
+  sharedstudies?: Array<any>
 } & DialogProps) {
   const classes = useStyles()
   const sliderclasses = slideStyles()
@@ -269,7 +271,9 @@ export default function SensorDialog({
   }, [selectedStudy])
 
   useEffect(() => {
-    const study = studies?.find((study) => study?.id === selectedStudy)
+    const study =
+      studies?.find((study) => study?.id === selectedStudy) ||
+      sharedstudies?.find((study) => study?.id === selectedStudy)
     console.log("&&#$#&$#^$ grps", studies, study?.gname)
     setGroups(study?.gname)
   }, [selectedStudy])
@@ -319,7 +323,9 @@ export default function SensorDialog({
           name: sensorName.trim(),
           spec: sensorSpec,
           settings: sensorSettings,
-          study: studies.find((s) => s.id === selectedStudy)?.name,
+          study:
+            studies.find((s) => s.id === selectedStudy)?.name ||
+            sharedstudies.find((s) => s.id === selectedStudy)?.name,
         })
         setConfirmationOpen(true)
       })
@@ -343,35 +349,50 @@ export default function SensorDialog({
       .then((res: any) => {
         console.log("THE RESULT", res)
         let result = JSON.parse(JSON.stringify(res.data))
-        Service.getData("studies", selectedStudy).then((studiesObject) => {
+
+        const processStudyData = (studiesObject, isasharedstudy) => {
           let sensorObj = {
             id: result._id,
             name: sensorName.trim(),
             spec: sensorSpec,
             study_id: selectedStudy,
-            study_name: studies.filter((study) => study.id === selectedStudy)[0]?.name,
+            study_name:
+              studies.filter((study) => study.id === selectedStudy)[0]?.name ||
+              sharedstudies.filter((study) => study.id === selectedStudy)[0]?.name,
             // settings: result.settings,
             settings: sensorSettings,
             studies: result.studies,
             group: result.gname || selectedGroup,
             statusInUsers: result.statusInUsers,
           }
+          const sensorObjSDB = {
+            ...sensorObj,
+            ...(isasharedstudy ? { isShared: true, parentResearcher: result.creator } : {}),
+          }
           console.log("SENSOR OBJ in save sensor", sensorObj)
-          Service.addData("sensors", [sensorObj])
+          Service.addData("sensors", [sensorObjSDB])
           LAMP.Sensor.view(sensorObj.id).then((sensorCreated) => {
             console.log("SENSOR CREATED", sensorCreated, sensorObj)
-            const updatedSensors = [...studiesObject?.sensors, sensorCreated ?? sensorObj]
+            const updatedSensors = [...(studiesObject?.sensors || []), sensorCreated ?? sensorObj]
+            const updatedSensorsSDB = [...(studiesObject?.sensors || []), sensorCreated ?? sensorObjSDB]
             console.log("UPDATED SENSORS", updatedSensors)
             const updatedStudy = { ...studiesObject, sensors: updatedSensors, sensor_count: updatedSensors.length ?? 1 }
+            const updatedStudySDB = {
+              ...studiesObject,
+              sensors: updatedSensorsSDB,
+              sensor_count: updatedSensorsSDB.length ?? 1,
+            }
             console.log("UPDATED STUDY", updatedStudy)
+
             LAMP.Study.update(selectedStudy, updatedStudy).then((res) => {
+              const studyKey = isasharedstudy ? "sharedstudies" : "studies"
               Service.update(
-                "studies",
+                studyKey,
                 {
-                  studies: [
+                  [studyKey]: [
                     {
                       id: selectedStudy,
-                      ...updatedStudy,
+                      ...updatedStudySDB,
                     },
                   ],
                 },
@@ -379,13 +400,13 @@ export default function SensorDialog({
                 "id"
               )
               Service.updateMultipleKeys(
-                "studies",
+                studyKey,
                 {
-                  studies: [
+                  [studyKey]: [
                     {
                       id: studiesObject.id,
                       sensor_count: studiesObject.sensor_count ? studiesObject.sensor_count + 1 : 1,
-                      sensors: updatedSensors,
+                      sensors: updatedSensorsSDB,
                     },
                   ],
                 },
@@ -404,9 +425,23 @@ export default function SensorDialog({
             name: sensorName.trim(),
             spec: sensorSpec,
             settings: sensorSettings,
-            study: studies.find((s) => s.id === selectedStudy)?.name,
+            study:
+              studies.find((s) => s.id === selectedStudy)?.name ||
+              sharedstudies.find((s) => s.id === selectedStudy)?.name,
           })
           setConfirmationOpen(true)
+        }
+
+        Service.getData("studies", selectedStudy).then((studiesObject) => {
+          let isasharedstudy = false
+          if (!studiesObject?.id) {
+            Service.getData("sharedstudies", selectedStudy).then((sharedStudiesObject) => {
+              isasharedstudy = true
+              processStudyData(sharedStudiesObject, isasharedstudy)
+            })
+          } else {
+            processStudyData(studiesObject, isasharedstudy)
+          }
         })
       })
       .catch((e) => {
@@ -486,7 +521,7 @@ export default function SensorDialog({
               variant="filled"
               className={sliderclasses.field}
             >
-              {(studies || []).map((option) => (
+              {(studies.concat(sharedstudies) || []).map((option) => (
                 <MenuItem key={option.id} value={option.id} data-selected-study-name={t(option.name)}>
                   {t(option.name)}
                 </MenuItem>

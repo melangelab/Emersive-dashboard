@@ -182,6 +182,7 @@ export default function AddSensor({
               studyId={studyId ?? null}
               addOrUpdateSensor={addOrUpdateSensor}
               allSensors={allSensors}
+              sharedstudies={props.sharedstudies}
             />
           </>,
           document.body

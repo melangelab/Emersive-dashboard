@@ -474,6 +474,7 @@ export default function AddButton({ researcherId, studies, setParticipants, setD
         closePopUp={handleClosePopUp}
         title={props.title}
         resemail={props.resemail}
+        sharedstudies={props.sharedstudies}
       />
     </div>
   )

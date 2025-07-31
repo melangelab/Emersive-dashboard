@@ -47,7 +47,7 @@ const ResearcherMoreInfo = ({ element }) => {
     contributions: "Community Contributions",
     stats: [
       { title: "Assessments", count: 0 },
-      { title: "Activities", count: 6 },
+      { title: "Activities", count: 0 },
       { title: "Sensors", count: 0 },
     ],
   }
@@ -56,13 +56,13 @@ const ResearcherMoreInfo = ({ element }) => {
     <div className="more-info-content-container">
       <div className="m-f-header">
         <div className="tab-container">
-          <div
+          {/* <div
             className={`tab ${activeTab === "submission" ? "active" : ""}`}
             onClick={() => setActiveTab("submission")}
           >
             Submission Info
           </div>
-          <div className="separator">|</div>
+          <div className="separator">|</div> */}
           <div className={`tab ${activeTab === "studies" ? "active" : ""}`} onClick={() => setActiveTab("studies")}>
             Studies
           </div>

@@ -35,6 +35,7 @@ export default function UpdateSensor({
   studyId,
   setSensors,
   profile,
+  sharedstudies,
   ...props
 }: {
   studies?: Array<Object>
@@ -43,6 +44,7 @@ export default function UpdateSensor({
   studyId?: string
   setSensors?: Function
   profile?: boolean
+  sharedstudies?: Array<any>
 }) {
   const classes = useStyles()
   const [confirmationDialog, setConfirmationDialog] = React.useState(0)
@@ -117,6 +119,7 @@ export default function UpdateSensor({
         studyId={studyId ?? null}
         addOrUpdateSensor={addOrUpdateSensor}
         allSensors={allSensors}
+        sharedstudies={sharedstudies}
       />
     </Box>
   )

@@ -101,9 +101,10 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
 
   useEffect(() => {
     if (editedValues.study_id) {
-      const selectedStudy = studies.find((s) => s.id === editedValues.study_id)
+      const selectedStudy =
+        studies.find((s) => s.id === editedValues.study_id) || sharedstudies.find((s) => s.id === editedValues.study_id)
       if (selectedStudy) {
-        // Clear groups if they don't exist in new study
+        // Clear groups if they don't exist in new
         setEditedValues((prev) => ({
           ...prev,
           groups: prev.groups.filter((g) => selectedStudy.gname.includes(g)),
@@ -111,7 +112,7 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
       }
     }
     console.log("editedValues.study_id changed:", editedValues.study_id)
-  }, [editedValues.study_id, studies])
+  }, [editedValues.study_id, studies, sharedstudies])
 
   // Memoize the DynamicForm onChange handler
   const handleDynamicFormChange = useCallback((x) => {
@@ -455,8 +456,13 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
       // console.log("newActivity", newActivity)
       // // Add to local DB
       // await Service.addData("activities", [newActivity])
-      const studiesObject = await Service.getData("studies", editedValues.study_id)
-      const activitydata = await LAMP.Activity.view(newActivityId)
+      let studiesObject = await Service.getData("studies", editedValues.study_id)
+      let isasharedstudy = false
+      if (!studiesObject?.id) {
+        studiesObject = await Service.getData("sharedstudies", editedValues.study_id)
+        isasharedstudy = true
+      }
+      const activitydata = (await LAMP.Activity.view(newActivityId)) as any
       const newActivity = {
         id: newActivityId,
         ...activitydata,
@@ -467,26 +473,40 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
         showFeed: editedValues.showInFeed,
         streak: editedValues.streak,
         study_id: editedValues.study_id,
-        study_name: studies.find((s) => s.id === editedValues.study_id)?.name,
+        study_name:
+          studies.find((s) => s.id === editedValues.study_id)?.name ||
+          sharedstudies.find((s) => s.id === editedValues.study_id)?.name,
       }
+      const newActivitySDB = {
+        ...newActivity,
+        ...(isasharedstudy ? { isShared: true, parentResearcher: activitydata.creator } : {}),
+      }
+
       console.log("newActivity", newActivity)
-      await Service.addData("activities", [newActivity])
+      await Service.addData("activities", [newActivitySDB])
       const updatedActivities = [...(studiesObject?.activities || []), activitydata ?? newActivity]
+      const updatedActivitiesSDB = [...(studiesObject?.activities || []), activitydata ?? newActivitySDB]
       console.log("UPDATED ACTIVITIES", updatedActivities)
       const updatedStudy = {
         ...studiesObject,
         activities: updatedActivities,
         activity_count: updatedActivities.length ?? 1,
       }
+      const updatedStudySDB = {
+        ...studiesObject,
+        activities: updatedActivitiesSDB,
+        activity_count: updatedActivitiesSDB.length ?? 1,
+      }
       console.log("UPDATED STUDY", updatedStudy)
       await LAMP.Study.update(editedValues.study_id, updatedStudy)
+      const studyKey = isasharedstudy ? "sharedstudies" : "studies"
       await Service.update(
-        "studies",
+        studyKey,
         {
-          studies: [
+          [studyKey]: [
             {
               id: editedValues.study_id,
-              ...updatedStudy,
+              ...updatedStudySDB,
             },
           ],
         },
@@ -494,13 +514,13 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
         "id"
       )
       await Service.updateMultipleKeys(
-        "studies",
+        studyKey,
         {
-          studies: [
+          [studyKey]: [
             {
               id: studiesObject.id,
               activity_count: studiesObject.activity_count ? studiesObject.activity_count + 1 : 1,
-              activities: updatedActivities,
+              activities: updatedActivitiesSDB,
             },
           ],
         },
@@ -509,7 +529,7 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
       )
       if (isSubscribed) {
         enqueueSnackbar(t("Activity created successfully"), { variant: "success" })
-        const activitydata = await LAMP.Activity.view(newActivityId)
+        const activitydata = (await LAMP.Activity.view(newActivityId)) as any
         const newActivity = {
           id: newActivityId,
           ...activitydata,
@@ -520,7 +540,10 @@ const CreateActivity: React.FC<CreateActivityProps> = ({
           showFeed: editedValues.showInFeed,
           streak: editedValues.streak,
           study_id: editedValues.study_id,
-          study_name: studies.find((s) => s.id === editedValues.study_id)?.name,
+          study_name:
+            studies.find((s) => s.id === editedValues.study_id)?.name ||
+            sharedstudies.find((s) => s.id === editedValues.study_id)?.name,
+          ...(isasharedstudy ? { isShared: true, parentResearcher: activitydata.creator } : {}),
         }
         console.log("newActivity", newActivity)
         // Add to local DB

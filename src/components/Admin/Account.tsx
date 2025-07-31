@@ -427,7 +427,10 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
         await LAMP.Researcher.update(userId, updateResearcher)
       } else {
         // Update admin profile attachment
-        await LAMP.Type.setAttachment(userId, LAMP.Auth._type, "emersive.profile", updatedProfile.data)
+        await LAMP.Type.setAttachment(userId, LAMP.Auth._type, "emersive.profile", {
+          ...updatedProfile.data,
+          role: updatedProfile.data.role === "Admin" ? "admin" : "system_admin",
+        })
       }
 
       enqueueSnackbar(`${field} updated successfully`, { variant: "success" })

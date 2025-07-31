@@ -1651,7 +1651,7 @@ export default function ActivityList({
         <Header
           authType={"Researcher"}
           title={props.ptitle}
-          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Activities > ${
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Activities > ${
             viewingActivity.name
           }`}
         />
@@ -1691,7 +1691,7 @@ export default function ActivityList({
         <Header
           authType={"Researcher"}
           title={props.ptitle}
-          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Activities`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Activities`}
         />
         // <Header
         //   studies={studies}
@@ -1878,7 +1878,7 @@ export default function ActivityList({
                     setSelectedActivities((prev) => prev.filter((i) => i.id !== item.id))
                   }
                 }}
-                rowsPerPageOptions={[2, 5, 10, 25, 50, 100]}
+                rowsPerPageOptions={[5, 10, 25, 50, 100]}
                 currentPage={currentPage}
                 onPageChange={(newPage: number) => {
                   setCurrentPage(newPage)

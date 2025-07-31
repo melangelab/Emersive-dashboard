@@ -1616,7 +1616,10 @@ export default function ParticipantList({
               }}
               formatDate={formatDate}
               researcherId={researcherId}
-              pStudy={studies.find((s) => s.id === selectedParticipant.study_id)}
+              pStudy={
+                studies.find((s) => s.id === selectedParticipant.study_id) ||
+                sharedstudies.find((s) => s.id === selectedParticipant.study_id)
+              }
             />
           </>
         )}
@@ -1641,9 +1644,9 @@ export default function ParticipantList({
         <Header
           authType={"Researcher"}
           title={props.ptitle}
-          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Participants > ${
-            viewingParticipant.firstName
-          } ${viewingParticipant.lastName}`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${
+            props.ptitle
+          } (Researcher) > Participants > ${viewingParticipant.firstName} ${viewingParticipant.lastName}`}
         />
       ) : (
         // <ItemViewHeader
@@ -1698,7 +1701,7 @@ export default function ParticipantList({
         <Header
           authType={"Researcher"}
           title={props.ptitle}
-          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} > Participants`}
+          pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Participants`}
         />
       )}
       {viewingParticipant ? (
@@ -1756,6 +1759,7 @@ export default function ParticipantList({
                   mode={mode}
                   title={props.title}
                   resemail={props.resemail}
+                  sharedstudies={sharedstudies}
                 />
               }
               actions={["refresh", "search", "grid", "table", "filter", "download"]}
