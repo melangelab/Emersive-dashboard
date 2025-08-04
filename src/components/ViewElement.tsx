@@ -272,10 +272,27 @@ export default function ViewElement(props) {
 
   const renderField = (key) => {
     const label = props.columns[key]
-    const value = key.includes(".")
+    let value = key.includes(".")
       ? key.split(".").reduce((obj, part) => obj && obj[part], props.element)
       : props.element[key]
 
+    const isTimestamp =
+      typeof value === "number" &&
+      (key.toLowerCase().includes("timestamp") ||
+        key.toLowerCase().includes("time") ||
+        key.toLowerCase().includes("date"))
+    const isISOString = typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)
+    if (isTimestamp) {
+      try {
+        value = new Date(value).toLocaleString()
+      } catch (_) {}
+    } else if (isISOString) {
+      try {
+        value = new Date(value).toLocaleString()
+      } catch (_) {}
+    }
+
+    console.log("renderField", label, value, key, props.element)
     const isFieldEditable =
       props.editableColumns && props.editableColumns.includes(key) && props.actionOnViewElement === "edit"
 

@@ -40,42 +40,22 @@ export default function ForgotPasswordForm({ onBack }) {
 
   return (
     <div className="forgot-password-container">
-      <div style={{ position: "relative", width: "100%", display: "flex", flexDirection: "column" }}>
-        {/*<IconButton onClick={onBack} style={{ position: "absolute", left: -24, top: -24 }}>*/}
-        {/*  <ArrowBackIcon />*/}
-        {/*</IconButton>*/}
-        <h1
-          style={{
-            marginTop: "20px",
-            alignSelf: "flex-start",
-            fontWeight: "900",
-            fontSize: "40px",
-            marginBottom: "-15px",
-          }}
-        >
-          {t("Forgot Password ?")}
-        </h1>
+      <div className="forgot-password-wrapper">
+        <h1 className="forgot-password-title">{t("Forgot Password ?")}</h1>
 
-        <h4
-          style={{
-            marginTop: "20px",
-            alignSelf: "center",
-            fontWeight: "400",
-            marginBottom: "-15px",
-          }}
-        >
+        <h4 className="forgot-password-subtitle">
           {t("Please enter the address you'd like your password reset information sent to")}
         </h4>
 
-        <form onSubmit={handleSubmit} style={{ width: "100%" }}>
-          <Box style={{ width: "100%" }}>
+        <form onSubmit={handleSubmit} className="forgot-password-form">
+          <Box className="forgot-password-form-box">
             <TextField
               required
               name="email"
               type="email"
               margin="normal"
               variant="outlined"
-              style={{ width: "100%", height: 50, marginTop: "40px" }}
+              className="forgot-password-email-field"
               placeholder={t("Email address*")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -92,8 +72,8 @@ export default function ForgotPasswordForm({ onBack }) {
               labelId="select-label"
               value={userType || ""}
               onChange={(e) => setUserType(e.target.value)}
-              style={{ width: "100%", borderRadius: "10px", padding: "10px", marginTop: "10px" }}
-              displayEmpty // ✅ This makes the placeholder visible
+              className="forgot-password-select"
+              displayEmpty
             >
               <MenuItem value="" disabled>
                 Select an option
@@ -106,38 +86,18 @@ export default function ForgotPasswordForm({ onBack }) {
               ))}
             </Select>
 
-            <Box textAlign="center" width={1} mt={4}>
-              <Box className="buttonNav" width={1} textAlign="center">
-                <Fab
-                  variant="extended"
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    background: "#cf825a", // Match your image's purple shade
-                    color: "white",
-                    width: "100%",
-                    height: "56px", // Consistent height (adjust as needed)
-                    borderRadius: "999px", // Pill shape
-                    fontWeight: "500",
-                    fontSize: "16px",
-                    textTransform: "none",
-                    position: "relative",
-                  }}
-                >
+            <Box className="forgot-password-button-container">
+              <Box className="forgot-password-button-wrapper buttonNav">
+                <Fab variant="extended" type="submit" disabled={loading} className="forgot-password-submit-button">
                   {loading ? t("Sending...") : t("Send Reset Link")}
                 </Fab>
               </Box>
             </Box>
 
-            {/*<Box textAlign="center" width={1} mt={4}>*/}
-            {/*  <span onClick={onBack} className="linkBlue" style={{ cursor: "pointer" }}>*/}
-            {/*    {t("Return to Sign in")}*/}
-            {/*  </span>*/}
-            {/*</Box>*/}
-            <Box textAlign="left" width={1} mt={4}>
-              <span style={{ fontSize: "16px" }}>
+            <Box className="forgot-password-back-container">
+              <span className="forgot-password-back-text">
                 Return to{" "}
-                <a onClick={onBack} style={{ color: "#1a73e8", cursor: "pointer", textDecoration: "none" }}>
+                <a onClick={onBack} className="forgot-password-back-link">
                   Sign in
                 </a>
               </span>
