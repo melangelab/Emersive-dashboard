@@ -26,13 +26,13 @@
 .top-left-corner {
   top: 0;
   left: 0;
-  transform: translate(-245px, -141px);
+  transform: translate(-17.5vw, -14vh);
 }
 
 .bottom-right-corner {
   bottom: 0;
   right: 0;
-  transform: translate(270px, 250px);
+  transform: translate(19vw, 25vh);
 }
 
 .logo-component-login {
