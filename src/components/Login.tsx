@@ -34,8 +34,8 @@ import { ReactComponent as Logo } from "../icons/Logo.svg"
 import { ReactComponent as LineArt } from "../icons/login_line_drawing.svg"
 // import { ReactComponent as LoginBackground } from "../icons/login_background.svg"
 import LoginBackground from "../icons/blob_bg_1.png"
-import TopLeft from "../icons/corner-top-left.png"
-import BottomRight from "../icons/corner-bottom-right.png"
+import TopLeft from "../icons/NewIcons/Top-Left-Red-Shadow2.svg"
+import BottomRight from "../icons/NewIcons/Bottom-Right-Red.svg"
 import { ReactComponent as Logotext } from "../icons/mindLAMP.svg"
 
 import { useTranslation } from "react-i18next"
@@ -47,7 +47,6 @@ import { jwtDecode } from "jwt-decode"
 import HelpIcon from "@mui/icons-material/Help"
 import { HelpCenterOutlined } from "@mui/icons-material"
 import "./Login.css"
-// import jwtDecode from "jwt-decode"
 
 import ForgotPasswordForm from "./ForgotPasswordForm"
 
