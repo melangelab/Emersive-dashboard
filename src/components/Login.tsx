@@ -1163,7 +1163,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                         </Fab>
                       </Box>
 
-                      <div className="login-divider">-------or-------</div>
+                      <div className="login-divider">--------------------------- or ---------------------------</div>
 
                       {/* google login here */}
                       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
@@ -1177,13 +1177,13 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                             locale={selectedLanguage}
                             size="large"
                             width="100%"
-                            containerProps={{
-                              style: {
-                                width: "100%",
-                                display: "flex",
-                                justifyContent: "center",
-                              },
-                            }}
+                            // containerProps={{
+                            //   style: {
+                            //     width: "100%",
+                            //     display: "flex",
+                            //     justifyContent: "center",
+                            //   },
+                            // }}
                           />
                         </div>
                       </GoogleOAuthProvider>

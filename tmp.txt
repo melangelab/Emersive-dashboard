@@ -34,6 +34,7 @@ import {
   Switch,
   Divider,
   CircularProgress,
+  debounce,
 } from "@material-ui/core"
 import { useTranslation } from "react-i18next"
 import { useSnackbar } from "notistack"
@@ -358,6 +359,11 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     console.log("Activity view response", res)
   })
   const [creatorName, setcreatorName] = useState(activity?.creator || "")
+  const settingsRef = useRef({
+    settings: editedValues.settings,
+    formula4Fields: editedValues.formula4Fields
+  })
+
   useEffect(() => {
     const fetchname = async () => {
       const res = await LAMP.Researcher.view(activity?.creator)
@@ -454,6 +460,12 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
   useEffect(() => {
     setSchemaListObj(SchemaList())
   }, [])
+
+  const [currentSettings, setCurrentSettings] = useState(activity?.settings || {})
+  const [currentFBSettings, setCurrentFBSettings] = useState(activity?.settings || {})
+  const [currentFormula, setCurrentFormula] = useState(activity?.formula4Fields || "")
+  const [settingsHasUnsavedChanges, setSettingsHasUnsavedChanges] = useState(false)
+
   useEffect(() => {
     const initializeData = async () => {
       if (!activity?.id) return
@@ -493,6 +505,11 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         setStreakSettings(activity_streak)
         setShowInFeed(activity_showInFeed)
 
+        setCurrentSettings(activity?.settings || {})
+        setCurrentFBSettings(activity?.settings || {})
+        setCurrentFormula(activity?.formula4Fields || "")
+        setSettingsHasUnsavedChanges(false)
+
         // Set edited values with all fetched data
         setEditedValues({
           name: activity?.name || "",
@@ -512,6 +529,11 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
       } catch (error) {
         console.error("Error initializing activity data:", error)
         // Set default values in case of error
+        setCurrentSettings(activity?.settings || {})
+        setCurrentFBSettings(activity?.settings || {})
+        setCurrentFormula(activity?.formula4Fields || "")
+        setSettingsHasUnsavedChanges(false)
+
         setEditedValues({
           name: activity?.name || "",
           description: activity?.description || "",
@@ -653,10 +675,13 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
   const handleSave = async () => {
     setLoading(true)
     try {
+      const latestSettings = settingsRef.current.settings
+      const latestFormula = settingsRef.current.formula4Fields
+      console.log("handleSave", latestSettings, latestFormula)
       const updateData = {
         name: editedValues.name?.trim(),
         spec: editedValues.spec,
-        settings: editedValues.settings,
+        settings: currentSettings,
         activityGuide: editedValues.activityGuide,
         category: editedValues.category,
         groups: editedValues.groups,
@@ -664,7 +689,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         photo: editedValues.image,
         showFeed: showInFeed,
         streak: streakSettings,
-        formula4Fields: editedValues.formula4Fields,
+        formula4Fields: currentFormula,
       }
       // TODO Add more fields for updates
       const result = await LAMP.Activity.update(activity.id, updateData as any)
@@ -927,70 +952,124 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     </Box>
   )
 
-  // Create tab content for settings
   const SettingsContent = () => {
-    const [localSettings, setLocalSettings] = useState(editedValues.settings || {})
-    const [localFBSettings, setLocalFBSettings] = useState(editedValues.settings || {})
-    const [localFormula, setLocalFormula] = useState(editedValues.formula4Fields || "")
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+    // const [localSettings, setLocalSettings] = useState(editedValues.settings || {})
+    // const [localFBSettings, setLocalFBSettings] = useState(editedValues.settings || {})
+    // const [localFormula, setLocalFormula] = useState(editedValues.formula4Fields || "")
+    const [localSettings, setLocalSettings] = useState(currentSettings)
+    const [localFBSettings, setLocalFBSettings] = useState(currentFBSettings)
+    const [localFormula, setLocalFormula] = useState(currentFormula)
 
-    const handleSaveSettings = async () => {
-      setEditedValues((prev) => ({
-        ...prev,
-        formula4Fields: localFormula,
-        settings:
-          editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
-            ? localFBSettings
-            : localSettings,
-      }))
-      setHasUnsavedChanges(false)
-      const updatedSettings = {
-        settings:
-          editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
-            ? localFBSettings
-            : localSettings,
-        formula4Fields: localFormula,
-      }
-      try {
-        console.log("before calling update settings", updatedSettings, localFBSettings, localSettings)
-        const result = await LAMP.Activity.update(activity.id, updatedSettings as any)
-        await Service.updateMultipleKeys(
-          "activities",
-          {
-            activities: [
-              {
-                id: activity.id,
-                ...updatedSettings,
-              },
-            ],
-          },
-          Object.keys(updatedSettings),
-          "id"
-        )
+    const debouncedUpdateSettings = useRef(
+      debounce((newSettings: any) => {
+        setCurrentSettings(newSettings)
+        setSettingsHasUnsavedChanges(true)
+      }, 300)
+    ).current
 
-        onSave({
-          ...activity,
-          ...updatedSettings,
-        })
-        if (result) {
-          enqueueSnackbar(t("Settings saved."), {
-            variant: "success",
-          })
-        }
-      } catch (error) {
-        console.error("Error updating activity settings:", error)
-        enqueueSnackbar(t("An error occurred while updating the activity settings."), {
-          variant: "error",
-        })
-      }
-    }
+    const debouncedUpdateFBSettings = useRef(
+      debounce((newSettings: any) => {
+        setCurrentFBSettings(newSettings)
+        setSettingsHasUnsavedChanges(true)
+      }, 300)
+    ).current
+
+    const debouncedUpdateFormula = useRef(
+      debounce((newFormula: string) => {
+        setCurrentFormula(newFormula)
+        setSettingsHasUnsavedChanges(true)
+      }, 300)
+    ).current
 
     useEffect(() => {
-      setLocalSettings(editedValues.settings || {})
-      setLocalFBSettings(editedValues.settings || {})
-      setLocalFormula(editedValues.formula4Fields || "")
-      setHasUnsavedChanges(false)
-    }, [editedValues.spec]) // Only update when spec changes to prevent loops
+      setLocalSettings(currentSettings)
+      setLocalFBSettings(currentFBSettings)
+      setLocalFormula(currentFormula)
+    }, [editedValues.spec, activity?.id]) // Only update when spec or activity changes
+
+    console.log("SettingsContent render - localSettings:", localSettings, "localFBSettings:", localFBSettings, "localFormula:", localFormula)
+
+    // const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+    // useEffect(()=>{
+    //   if(settingsRef.current){
+    //     console.log("SettingsContent init",settingsRef.current)
+    //   }
+    //   const refval = settingsRef.current.settings
+    //   const refForm = settingsRef.current.formula4Fields
+    //   console.log(refForm, refval)
+    //   setLocalFBSettings(refval)
+    //   setLocalFormula(refForm)
+    //   setLocalSettings(refval)
+    // }, [])
+
+    // useEffect(() => {
+    //   console.log("SettingsContent updated", localSettings, localFBSettings, localFormula, settingsRef)
+    //   settingsRef.current = {
+    //     settings: 
+    //       editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
+    //         ? localFBSettings
+    //         : localSettings,
+    //     formula4Fields: localFormula
+    //   }
+    // }, [localSettings, localFBSettings, localFormula])
+
+    // const handleSaveSettings = async () => {
+    //   setEditedValues((prev) => ({
+    //     ...prev,
+    //     formula4Fields: localFormula,
+    //     settings:
+    //       editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
+    //         ? localFBSettings
+    //         : localSettings,
+    //   }))
+    //   setHasUnsavedChanges(false)
+    //   const updatedSettings = {
+    //     settings:
+    //       editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
+    //         ? localFBSettings
+    //         : localSettings,
+    //     formula4Fields: localFormula,
+    //   }
+    //   try {
+    //     console.log("before calling update settings", updatedSettings, localFBSettings, localSettings)
+    //     const result = await LAMP.Activity.update(activity.id, updatedSettings as any)
+    //     await Service.updateMultipleKeys(
+    //       "activities",
+    //       {
+    //         activities: [
+    //           {
+    //             id: activity.id,
+    //             ...updatedSettings,
+    //           },
+    //         ],
+    //       },
+    //       Object.keys(updatedSettings),
+    //       "id"
+    //     )
+
+    //     onSave({
+    //       ...activity,
+    //       ...updatedSettings,
+    //     })
+    //     if (result) {
+    //       enqueueSnackbar(t("Settings saved."), {
+    //         variant: "success",
+    //       })
+    //     }
+    //   } catch (error) {
+    //     console.error("Error updating activity settings:", error)
+    //     enqueueSnackbar(t("An error occurred while updating the activity settings."), {
+    //       variant: "error",
+    //     })
+    //   }
+    // }
+
+    // useEffect(() => {
+    //   setLocalSettings(editedValues.settings || {})
+    //   setLocalFBSettings(editedValues.settings || {})
+    //   setLocalFormula(editedValues.formula4Fields || "")
+    //   setHasUnsavedChanges(false)
+    // }, [editedValues.spec]) // Only update when spec changes to prevent loops
 
     return (
       <Box mt={3}>
@@ -999,12 +1078,12 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
             {t("Activity Settings")}
           </Typography>
           <Box>
-            {hasUnsavedChanges && (
+            {settingsHasUnsavedChanges && (
               <Typography variant="body2" color="error" style={{ marginRight: 16 }}>
-                {t("You have unsaved changes")}
+                {t("You have unsaved changes. Settings will be saved when you save the activity")}
               </Typography>
             )}
-            <Button
+            {/* <Button
               variant="contained"
               color="primary"
               onClick={handleSaveSettings}
@@ -1012,7 +1091,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
               // disabled={!hasUnsavedChanges || !isEditing}
             >
               {t("Save Settings")}
-            </Button>
+            </Button> */}
           </Box>
         </Box>
         {editedValues.spec === "lamp.form_builder" ? (
@@ -1020,9 +1099,10 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
             onChange={(formData) => {
               console.log("INSIDE THE DETAIL ITEM Form data changed:", formData)
               setLocalFormula(formData.formula)
-              setLocalSettings(formData.fields)
               setLocalFBSettings(formData.fields)
-              setHasUnsavedChanges(true)
+              debouncedUpdateFormula(formData.formula)
+              debouncedUpdateFBSettings(formData.fields)
+              setSettingsHasUnsavedChanges(true)
             }}
             formFieldsProp={localFBSettings}
             formula={localFormula}
@@ -1033,9 +1113,9 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
             oldFields={localFBSettings}
             onChange={(formData) => {
               console.log("INSIDE THE DETAILITEM Form data changed:", formData)
-              setLocalSettings(formData)
               setLocalFBSettings(formData)
-              setHasUnsavedChanges(true)
+              debouncedUpdateFBSettings(formData)
+              setSettingsHasUnsavedChanges(true)
             }}
           />
         ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
@@ -1048,7 +1128,8 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
             onChange={(x) => {
               console.log("Settings updated locally:", x)
               setLocalSettings(x.settings || {})
-              setHasUnsavedChanges(true)
+              debouncedUpdateSettings(x.settings || {})
+              setSettingsHasUnsavedChanges(true)
             }}
             viewMode={!isEditing}
           />
@@ -1061,7 +1142,1154 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     )
   }
 
+  const ActivityGuideContent = () => {
+    // References for media elements
+    const videoRef = useRef(null)
+    const previewRef = useRef(null)
+    const audioPreviewRef = useRef(null)
+    const videoInputRef = useRef(null)
+    const audioInputRef = useRef(null)
 
+    // Video recording states
+    const [stream, setStream] = useState(null)
+    const [recording, setRecording] = useState(false)
+    const [mediaRecorder, setMediaRecorder] = useState(null)
+    const [recordedChunks, setRecordedChunks] = useState([])
+    const [recordingTime, setRecordingTime] = useState(0)
+    const [audioEnabled, setAudioEnabled] = useState(true)
+    const [videoPreviewUrl, setVideoPreviewUrl] = useState(null)
+    const [videoPreviewBlob, setVideoPreviewBlob] = useState(null)
+    const [isPreviewReady, setIsPreviewReady] = useState(false)
+    const [videoStreamActive, setVideoStreamActive] = useState(false)
+
+    // Audio recording states
+    const [audioStream, setAudioStream] = useState(null)
+    const [audioRecording, setAudioRecording] = useState(false)
+    const [audioRecorder, setAudioRecorder] = useState(null)
+    const [audioChunks, setAudioChunks] = useState([])
+    const [audioRecordingTime, setAudioRecordingTime] = useState(0)
+    const [audioPreviewUrl, setAudioPreviewUrl] = useState(null)
+
+    useEffect(() => {
+      console.log("videoPreviewUrl changed : ", videoPreviewUrl)
+    }, [videoPreviewUrl])
+
+    // Initialize camera when tab changes to video
+    useEffect(() => {
+      if (guideTab === 1 && isEditing) {
+        startCamera()
+      }
+
+      return () => {
+        // Clean up resources when component unmounts or tab changes
+        stopCamera()
+        if (guideTab === 1 && videoPreviewUrl) {
+          URL.revokeObjectURL(videoPreviewUrl)
+        }
+        if (guideTab === 2 && audioPreviewUrl) {
+          URL.revokeObjectURL(audioPreviewUrl)
+        }
+      }
+    }, [guideTab, isEditing])
+
+    // Handle recording time updates
+    useEffect(() => {
+      let interval
+      if (recording) {
+        interval = setInterval(() => {
+          setRecordingTime((prev) => prev + 1)
+        }, 1000)
+      }
+      return () => clearInterval(interval)
+    }, [recording])
+
+    useEffect(() => {
+      let interval
+      if (audioRecording) {
+        interval = setInterval(() => {
+          setAudioRecordingTime((prev) => prev + 1)
+        }, 1000)
+      }
+      return () => clearInterval(interval)
+    }, [audioRecording])
+
+    // Start camera for video recording
+    const startCamera = async () => {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          enqueueSnackbar("Camera access not supported in this browser or insecure context.", { variant: "error" })
+          return
+        }
+
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: audioEnabled,
+        })
+
+        setStream(mediaStream)
+        setVideoStreamActive(true)
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream
+          videoRef.current.play().catch((err) => {
+            console.error("Error playing video:", err)
+            enqueueSnackbar(`Error playing video: ${err.message || err}`, { variant: "error" })
+          })
+        }
+      } catch (err) {
+        console.error("Error accessing camera:", err)
+        enqueueSnackbar(`Error accessing camera: ${err.message || err}`, { variant: "error" })
+      }
+    }
+
+    // Stop camera
+    const stopCamera = () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop())
+        setStream(null)
+        setVideoStreamActive(false)
+        if (videoRef.current) {
+          videoRef.current.srcObject = null
+        }
+      }
+    }
+
+    // Toggle microphone for video recording
+    const toggleMic = () => {
+      setAudioEnabled(!audioEnabled)
+      if (stream) {
+        stream.getAudioTracks().forEach((track) => {
+          track.enabled = !audioEnabled
+        })
+      }
+    }
+
+    // Toggle video recording
+    const toggleRecording = () => {
+      if (!recording) {
+        startRecording()
+      } else {
+        stopRecording()
+      }
+    }
+
+    // Start video recording
+    const startRecording = () => {
+      if (!stream || !videoStreamActive) {
+        enqueueSnackbar("Camera stream not available", { variant: "error" })
+        return
+      }
+
+      // Clear any previous recording data
+      if (videoPreviewUrl) {
+        URL.revokeObjectURL(videoPreviewUrl)
+        setVideoPreviewUrl(null)
+      }
+      setVideoPreviewBlob(null)
+      setRecordedChunks([])
+      setIsPreviewReady(false)
+
+      try {
+        const recorder = new MediaRecorder(stream, { mimeType: "video/webm" })
+        setMediaRecorder(recorder)
+        const chunks = []
+
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            chunks.push(e.data)
+          }
+        }
+
+        recorder.onstop = () => {
+          const videoBlob = new Blob(chunks, { type: "video/webm" })
+          setRecordedChunks(chunks)
+          setVideoPreviewBlob(videoBlob)
+
+          const videoURL = URL.createObjectURL(videoBlob)
+          setVideoPreviewUrl(videoURL)
+
+          // Load video preview
+          if (previewRef.current) {
+            previewRef.current.src = videoURL
+            previewRef.current.load()
+          }
+
+          // Save to activity guide
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            const updatedActivityGuide = {
+              ...editedValues.activityGuide,
+              video: {
+                data: reader.result,
+                fileType: "webm",
+                uploadedAt: new Date(),
+              },
+            }
+
+            setEditedValues((prev) => ({
+              ...prev,
+              activityGuide: updatedActivityGuide,
+            }))
+          }
+          reader.readAsDataURL(videoBlob)
+        }
+
+        recorder.start()
+        setRecording(true)
+        setRecordingTime(0)
+      } catch (err) {
+        console.error("Error starting recording:", err)
+        enqueueSnackbar(`Error starting recording: ${err.message || err}`, { variant: "error" })
+      }
+    }
+
+    // Stop video recording
+    const stopRecording = () => {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop()
+        setRecording(false)
+      }
+    }
+
+    // Handle video upload from file
+    const handleVideoUpload = (event) => {
+      const file = event.target.files?.[0]
+      if (!file) return
+
+      try {
+        // Clear previous video
+        if (videoPreviewUrl) {
+          URL.revokeObjectURL(videoPreviewUrl)
+        }
+
+        const newVideoUrl = URL.createObjectURL(file)
+        setVideoPreviewUrl(newVideoUrl)
+        setVideoPreviewBlob(file)
+        setIsPreviewReady(false)
+
+        // Read file as data URL for saving
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const fileType = file.type.split("/")[1] || "webm"
+          const updatedActivityGuide = {
+            ...editedValues.activityGuide,
+            video: {
+              data: reader.result,
+              fileType: fileType,
+              uploadedAt: new Date(),
+            },
+          }
+
+          setEditedValues((prev) => ({
+            ...prev,
+            activityGuide: updatedActivityGuide,
+          }))
+        }
+        reader.readAsDataURL(file)
+      } catch (err) {
+        console.error("Error handling video upload:", err)
+        enqueueSnackbar(`Error uploading video: ${err.message || err}`, { variant: "error" })
+      }
+    }
+
+    // Start audio recording
+    const startAudioRecording = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        setAudioStream(stream)
+
+        const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" })
+        setAudioRecorder(recorder)
+        const chunks = []
+
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            chunks.push(e.data)
+          }
+        }
+
+        recorder.onstop = () => {
+          const audioBlob = new Blob(chunks, { type: "audio/webm" })
+          setAudioChunks(chunks)
+
+          const audioURL = URL.createObjectURL(audioBlob)
+          setAudioPreviewUrl(audioURL)
+
+          if (audioPreviewRef.current) {
+            audioPreviewRef.current.src = audioURL
+            audioPreviewRef.current.load()
+          }
+
+          // Save to activity guide
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string
+            const correctedDataUrl = dataUrl.replace("data:video/webm", "data:audio/webm")
+            const updatedActivityGuide = {
+              ...editedValues.activityGuide,
+              audio: {
+                data: dataUrl,
+                fileType: "webm",
+                uploadedAt: new Date(),
+              },
+            }
+
+            setEditedValues((prev) => ({
+              ...prev,
+              activityGuide: updatedActivityGuide,
+            }))
+            console.log("Audio file uploaded:", updatedActivityGuide, dataUrl, correctedDataUrl)
+          }
+          reader.readAsDataURL(audioBlob)
+        }
+
+        recorder.start()
+        setAudioRecording(true)
+        setAudioRecordingTime(0)
+      } catch (err) {
+        console.error("Error accessing microphone:", err)
+        enqueueSnackbar(`Error accessing microphone: ${err.message || err}`, { variant: "error" })
+      }
+    }
+
+    // Stop audio recording
+    const stopAudioRecording = () => {
+      if (audioRecorder && audioRecorder.state !== "inactive") {
+        audioRecorder.stop()
+        setAudioRecording(false)
+
+        if (audioStream) {
+          audioStream.getTracks().forEach((track) => track.stop())
+          setAudioStream(null)
+        }
+      }
+    }
+
+    // Handle audio upload from file
+    const handleAudioUpload = (event) => {
+      const file = event.target.files?.[0]
+      if (!file) return
+
+      try {
+        if (audioPreviewUrl) {
+          URL.revokeObjectURL(audioPreviewUrl)
+        }
+
+        const audioURL = URL.createObjectURL(file)
+        setAudioPreviewUrl(audioURL)
+
+        if (audioPreviewRef.current) {
+          audioPreviewRef.current.src = audioURL
+          audioPreviewRef.current.load()
+        }
+
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const fileType = file.type.split("/")[1] || "webm"
+          const updatedActivityGuide = {
+            ...editedValues.activityGuide,
+            audio: {
+              data: reader.result,
+              fileType: fileType,
+              uploadedAt: new Date(),
+            },
+          }
+
+          setEditedValues((prev) => ({
+            ...prev,
+            activityGuide: updatedActivityGuide,
+          }))
+          console.log("Audio file uploaded:", updatedActivityGuide, file)
+        }
+        reader.readAsDataURL(file)
+      } catch (err) {
+        console.error("Error handling audio upload:", err)
+        enqueueSnackbar(`Error uploading audio: ${err.message || err}`, { variant: "error" })
+      }
+    }
+
+    // Helper function to get video mime type
+    const getVideoMimeType = (fileType) => {
+      if (!fileType) return "video/mp4"
+      if (fileType.startsWith("video/")) return fileType
+
+      const mimeTypeMap = {
+        webm: "video/webm",
+        mp4: "video/mp4",
+        mov: "video/quicktime",
+        avi: "video/x-msvideo",
+        m4v: "video/mp4",
+        mkv: "video/x-matroska",
+      }
+
+      return mimeTypeMap[fileType.toLowerCase()] || `video/${fileType}`
+    }
+
+    // Helper function to get audio mime type
+    const getAudioMimeType = (fileType) => {
+      if (!fileType) return "audio/mpeg"
+      if (fileType.startsWith("audio/")) return fileType
+
+      const mimeTypeMap = {
+        mp3: "audio/mpeg",
+        wav: "audio/wav",
+        ogg: "audio/ogg",
+        aac: "audio/aac",
+        m4a: "audio/mp4",
+        flac: "audio/flac",
+        webm: "audio/webm",
+      }
+
+      return mimeTypeMap[fileType.toLowerCase()] || `audio/${fileType}`
+    }
+
+    return (
+      <Box>
+        <Tabs
+          value={guideTab}
+          onChange={(e, newValue) => setGuideTab(newValue)}
+          indicatorColor="primary"
+          textColor="primary"
+          style={{ marginBottom: 16 }}
+        >
+          <Tab icon={<DescriptionOutlined />} label={t("Text")} />
+          <Tab icon={<VideocamOutlined />} label={t("Video")} />
+          <Tab icon={<AudiotrackOutlined />} label={t("Audio")} />
+        </Tabs>
+
+        {guideTab === 0 && (
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            label={t("Text Guide")}
+            value={editedValues.activityGuide?.text || ""}
+            disabled={!isEditing}
+            onChange={(e) => {
+              const updatedActivityGuide = {
+                ...editedValues.activityGuide,
+                text: e.target.value,
+              }
+
+              setEditedValues((prev) => ({
+                ...prev,
+                activityGuide: updatedActivityGuide,
+              }))
+            }}
+            placeholder={t("Enter instructions or description for the activity...")}
+          />
+        )}
+
+        {guideTab === 1 && (
+          <Box className={classes.videoContainer}>
+            {isEditing ? (
+              <>
+                {/* Video Recording Box */}
+                <Box
+                  className={classes.videoPreviewBox}
+                  style={{
+                    backgroundColor: "#1a237e",
+                    borderRadius: 2,
+                    position: "relative",
+                    overflow: "hidden",
+                    aspectRatio: "16/9",
+                    width: "100%",
+                    maxWidth: "600px",
+                    margin: "0 auto",
+                    marginBottom: 3,
+                  }}
+                >
+                  <video
+                    ref={videoRef}
+                    className={classes.videoFeed}
+                    autoPlay
+                    muted
+                    playsInline
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: "8px",
+                    }}
+                  />
+
+                  {recording && (
+                    <Typography
+                      style={{
+                        position: "absolute",
+                        top: 16,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        color: "#fff",
+                        fontSize: "2rem",
+                        fontWeight: "bold",
+                        backgroundColor: "rgba(0,0,0,0.3)",
+                        padding: "4px 12px",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      {new Date(recordingTime * 1000).toISOString().substr(14, 5)}
+                    </Typography>
+                  )}
+                </Box>
+
+                {/* Video Controls */}
+                <Box
+                  className={classes.controlsContainer}
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: 2,
+                    marginBottom: 3,
+                  }}
+                >
+                  {/* Video Preview Thumbnail */}
+                  {videoPreviewUrl && (
+                    <Box
+                      className={classes.previewThumbnail}
+                      onClick={() => handleViewMedia("video", videoPreviewUrl, "video/webm")}
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 1,
+                        overflow: "hidden",
+                        border: "2px solid #3f51b5",
+                        cursor: "pointer",
+                        position: "relative",
+                      }}
+                    >
+                      <video
+                        ref={previewRef}
+                        src={videoPreviewUrl}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onLoadedData={() => setIsPreviewReady(true)}
+                      />
+
+                      {!isPreviewReady && (
+                        <Box
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            backgroundColor: "rgba(0,0,0,0.3)",
+                          }}
+                        >
+                          <CircularProgress size={24} color="secondary" />
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Record Button */}
+                  <Box
+                    onClick={toggleRecording}
+                    style={{
+                      width: 64,
+                      height: 64,
+                      backgroundColor: "#f44336",
+                      borderRadius: recording ? 2 : "50%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      // "&:hover": {
+                      //   opacity: 0.9,
+                      //   transform: "scale(1.05)"
+                      // }
+                    }}
+                  >
+                    {recording ? <Stop /> : null}
+                  </Box>
+
+                  {/* Microphone Toggle Button */}
+                  <Box
+                    onClick={toggleMic}
+                    style={{
+                      width: 48,
+                      height: 48,
+                      backgroundColor: audioEnabled ? "#fff" : "#e0e0e0",
+                      borderRadius: "50%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      cursor: "pointer",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                      // "&:hover": {
+                      //   opacity: 0.9
+                      // }
+                    }}
+                  >
+                    {audioEnabled ? <Mic /> : <MicOff />}
+                  </Box>
+                </Box>
+
+                {/* Video Upload Box */}
+                <Box
+                  style={{
+                    backgroundColor: "#f5f5f5",
+                    borderRadius: 2,
+                    textAlign: "center",
+                    border: "2px dashed #ccc",
+                    cursor: "pointer",
+                    marginTop: 3,
+                    padding: 2,
+                    transition: "all 0.2s ease",
+                    // "&:hover": {
+                    //   borderColor: "#3f51b5",
+                    //   backgroundColor: "#f0f0f0"
+                    // }
+                  }}
+                  onClick={() => videoInputRef.current?.click()}
+                >
+                  <Typography variant="subtitle1" gutterBottom>
+                    {t("Or upload a video file:")}
+                  </Typography>
+                  <input
+                    type="file"
+                    hidden
+                    ref={videoInputRef}
+                    accept="video/*"
+                    onChange={handleVideoUpload}
+                    disabled={!isEditing}
+                  />
+                  <VideocamOutlined style={{ fontSize: 48, color: "#666" }} />
+                  <Typography>{t("Click to upload video guide")}</Typography>
+                </Box>
+              </>
+            ) : (
+              <>
+                {/* View Mode Video Preview */}
+                {editedValues.activityGuide?.video?.data ? (
+                  <Box className={classes.videoPreview} sx={{ mt: 2 }}>
+                    <video
+                      width="100%"
+                      height="auto"
+                      controls
+                      style={{
+                        borderRadius: 8,
+                        backgroundColor: "#f5f5f5",
+                        maxHeight: 400,
+                      }}
+                    >
+                      <source
+                        src={editedValues.activityGuide.video.data}
+                        type={getVideoMimeType(editedValues.activityGuide.video.fileType)}
+                      />
+                      {t("Your browser does not support the video tag.")}
+                    </video>
+                    <Box
+                      className={classes.mediaControls}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        // mt: 1
+                      }}
+                    >
+                      <Button
+                        startIcon={<VideocamOutlined />}
+                        onClick={() =>
+                          handleViewMedia(
+                            "video",
+                            editedValues.activityGuide.video.data,
+                            getVideoMimeType(editedValues.activityGuide.video.fileType)
+                          )
+                        }
+                      >
+                        {t("View Full Screen")}
+                      </Button>
+                      <IconButton
+                        onClick={() => {
+                          const link = document.createElement("a")
+                          link.href = editedValues.activityGuide.video.data
+                          link.download = `video_guide_${activity.id}_${new Date().getTime()}.${
+                            editedValues.activityGuide.video.fileType || "webm"
+                          }`
+                          document.body.appendChild(link)
+                          link.click()
+                          document.body.removeChild(link)
+                        }}
+                      >
+                        <GetApp />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                    py={4}
+                    sx={{
+                      // backgroundColor: "#f5f5f5",
+                      borderRadius: 1,
+                      mt: 2,
+                    }}
+                  >
+                    <Typography variant="body1" color="textSecondary">
+                      {t("No video guide available")}
+                    </Typography>
+                  </Box>
+                )}
+              </>
+            )}
+          </Box>
+        )}
+
+        {guideTab === 2 && (
+          <Box className={classes.videoContainer}>
+            {isEditing ? (
+              <>
+                {/* Audio Recording UI */}
+                <Box
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 3,
+                    backgroundColor: "#f5f5f5",
+                    borderRadius: 2,
+                    // mb: 3,
+                    position: "relative",
+                  }}
+                >
+                  {/* Audio Recording Timer */}
+                  {audioRecording && (
+                    <Typography
+                      variant="h4"
+                      style={{
+                        // mb: 2,
+                        fontWeight: "bold",
+                        color: "#f44336",
+                      }}
+                    >
+                      {new Date(audioRecordingTime * 1000).toISOString().substr(14, 5)}
+                    </Typography>
+                  )}
+
+                  {/* Audio Record Button */}
+                  <Box
+                    onClick={() => (audioRecording ? stopAudioRecording() : startAudioRecording())}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      backgroundColor: "#e74c3c",
+                      borderRadius: audioRecording ? 2 : "50%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      // "&:hover": {
+                      //   opacity: 0.9,
+                      //   transform: "scale(1.05)"
+                      // }
+                    }}
+                  >
+                    {audioRecording ? <Stop /> : <Mic style={{ fontSize: 32 }} />}
+                  </Box>
+
+                  <Typography
+                    variant="subtitle1"
+                    //  style={{ mt: 2 }}
+                  >
+                    {audioRecording ? t("Recording in progress...") : t("Click to start recording")}
+                  </Typography>
+                </Box>
+
+                {/* Audio File Upload */}
+                <Box
+                  style={{
+                    backgroundColor: "#f5f5f5",
+                    borderRadius: 2,
+                    textAlign: "center",
+                    border: "2px dashed #ccc",
+                    cursor: "pointer",
+                    padding: 2,
+                    transition: "all 0.2s ease",
+                    // "&:hover": {
+                    //   borderColor: "#3f51b5",
+                    //   backgroundColor: "#f0f0f0"
+                    // }
+                  }}
+                  onClick={() => audioInputRef.current?.click()}
+                >
+                  <Typography variant="subtitle1" align="center" gutterBottom>
+                    {t("Or upload an audio file:")}
+                  </Typography>
+                  <input type="file" hidden ref={audioInputRef} accept="audio/*" onChange={handleAudioUpload} />
+                  <AudiotrackOutlined
+                    style={{
+                      fontSize: 48,
+                      color: "#666",
+                      //  my: 1
+                    }}
+                  />
+                  <Typography>{t("Click to upload audio guide")}</Typography>
+                </Box>
+              </>
+            ) : null}
+
+            {/* Audio Preview */}
+            {(editedValues.activityGuide?.audio?.data || audioPreviewUrl) && (
+              <Box
+                sx={{
+                  mt: 3,
+                  p: 2,
+                  bgcolor: "#f5f5f5",
+                  borderRadius: 1,
+                  border: "1px solid #e0e0e0",
+                }}
+              >
+                <Box
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    width: "100%",
+                  }}
+                >
+                  {editedValues.activityGuide?.audio?.data ? (
+                    <audio controls style={{ flexGrow: 1 }}>
+                      <source
+                        src={editedValues.activityGuide.audio.data}
+                        type={getAudioMimeType(editedValues.activityGuide.audio.fileType)}
+                      />
+                      {t("Your browser does not support the audio element.")}
+                    </audio>
+                  ) : audioPreviewUrl ? (
+                    <audio controls src={audioPreviewUrl} style={{ flexGrow: 1 }} ref={audioPreviewRef} />
+                  ) : (
+                    <Typography variant="body2" color="textSecondary">
+                      {t("No audio available")}
+                    </Typography>
+                  )}
+
+                  <Box style={{ display: "flex", gap: 1 }}>
+                    <IconButton
+                      onClick={() => {
+                        const audioUrl = editedValues.activityGuide?.audio?.data || audioPreviewUrl
+                        if (!audioUrl) return
+                        const link = document.createElement("a")
+                        link.href = audioUrl
+                        const extension = editedValues.activityGuide?.audio?.fileType || "webm"
+                        link.download = `audio_guide_${activity.id}_${new Date().getTime()}.${extension}`
+                        // link.type = `audio/${extension}`
+                        document.body.appendChild(link)
+                        link.click()
+                        document.body.removeChild(link)
+                      }}
+                      size="small"
+                    >
+                      <GetApp />
+                    </IconButton>
+
+                    {isEditing && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="secondary"
+                        onClick={() => {
+                          const updatedActivityGuide = {
+                            ...editedValues.activityGuide,
+                            audio: null,
+                          }
+
+                          setEditedValues((prev) => ({
+                            ...prev,
+                            activityGuide: updatedActivityGuide,
+                          }))
+
+                          if (audioPreviewUrl) {
+                            URL.revokeObjectURL(audioPreviewUrl)
+                            setAudioPreviewUrl(null)
+                          }
+                          setAudioChunks([])
+                        }}
+                      >
+                        {t("Remove Audio")}
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            )}
+
+            {/* No Audio Message */}
+            {!editedValues.activityGuide?.audio?.data && !audioPreviewUrl && !isEditing && (
+              <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                py={4}
+                style={{
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: 1,
+                  // mt: 2
+                }}
+              >
+                <Typography variant="body1" color="textSecondary">
+                  {t("No audio guide available")}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+      </Box>
+    )
+  }
+
+  const ScoreInterpretationContent = () => (
+    <Box>
+      {isEditing && (
+        <Grid container spacing={2} style={{ marginBottom: 24 }}>
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel>{t("Score Section")}</InputLabel>
+              <Select
+                value={scoreSection}
+                onChange={(e: React.ChangeEvent<{ value: unknown }>) => setScoreSection(e.target.value as string)}
+              >
+                <MenuItem value="total">{t("Total Score")}</MenuItem>
+                <MenuItem value="speed">{t("Speed")}</MenuItem>
+                <MenuItem value="accuracy">{t("Accuracy")}</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {scoreSection && (
+            <>
+              <Grid item xs={3}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label={t("Min Score")}
+                  value={newRange.min}
+                  onChange={(e) => setNewRange({ ...newRange, min: Number(e.target.value) })}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label={t("Max Score")}
+                  value={newRange.max}
+                  onChange={(e) => setNewRange({ ...newRange, max: Number(e.target.value) })}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <TextField
+                  fullWidth
+                  label={t("Interpretation")}
+                  value={newRange.interpretation}
+                  onChange={(e) => setNewRange({ ...newRange, interpretation: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <FormControl fullWidth>
+                  <InputLabel>{t("Severity")}</InputLabel>
+                  <Select
+                    value={newRange.severity}
+                    onChange={(e) =>
+                      setNewRange({
+                        ...newRange,
+                        severity: e.target.value as "low" | "moderate" | "high" | "severe",
+                      })
+                    }
+                  >
+                    <MenuItem value="low">{t("Low")}</MenuItem>
+                    <MenuItem value="moderate">{t("Moderate")}</MenuItem>
+                    <MenuItem value="high">{t("High")}</MenuItem>
+                    <MenuItem value="severe">{t("Severe")}</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <Button variant="contained" color="primary" onClick={addScoreRange}>
+                  {t("Add Range")}
+                </Button>
+              </Grid>
+            </>
+          )}
+        </Grid>
+      )}
+
+      {Object.keys(editedValues.scoreInterpretation || {}).length > 0 ? (
+        Object.entries(editedValues.scoreInterpretation).map(([section, data]: [string, any]) => (
+          <Box key={section} mb={3}>
+            <Typography variant="subtitle1" gutterBottom>
+              {section.charAt(0).toUpperCase() + section.slice(1)}
+            </Typography>
+            <Paper elevation={0} className={classes.scoreRange}>
+              <List>
+                {data.ranges &&
+                  data.ranges.map((range, index) => (
+                    <ListItem key={index} className={classes.rangeItem}>
+                      <ListItemText
+                        primary={`${range.min} - ${range.max}: ${range.interpretation}`}
+                        secondary={`${t("Severity")}: ${range.severity}`}
+                      />
+                      {isEditing && (
+                        <ListItemSecondaryAction>
+                          <IconButton
+                            onClick={() => {
+                              const newRanges = [...(data.ranges || [])]
+                              newRanges.splice(index, 1)
+
+                              const updatedScoreInterpretation = {
+                                ...editedValues.scoreInterpretation,
+                                [section]: { ...data, ranges: newRanges },
+                              }
+
+                              setEditedValues((prev) => ({
+                                ...prev,
+                                scoreInterpretation: updatedScoreInterpretation,
+                              }))
+                            }}
+                          >
+                            <CloseIcon />
+                          </IconButton>
+                        </ListItemSecondaryAction>
+                      )}
+                    </ListItem>
+                  ))}
+              </List>
+            </Paper>
+          </Box>
+        ))
+      ) : (
+        <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+          <Typography variant="body1" color="textSecondary">
+            {t("No score interpretation available")}
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  )
+
+  const ScheduleContent = () => (
+    <Box>
+      {activity?.schedule && activity.schedule.length > 0 ? (
+        activity.schedule.map((item, index) => (
+          <Box key={index} className={classes.scheduleItem}>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Typography variant="subtitle2">{t("Start Date")}</Typography>
+                <Typography variant="body2">{new Date(item.start_date).toLocaleDateString()}</Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="subtitle2">{t("Time")}</Typography>
+                <Typography variant="body2">{new Date(item.time).toLocaleTimeString()}</Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="subtitle2">{t("Repeat Interval")}</Typography>
+                <Typography variant="body2">{item.repeat_interval || t("None")}</Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="subtitle2">{t("Custom Times")}</Typography>
+                <Typography variant="body2">
+                  {item.custom_time
+                    ? Array.isArray(item.custom_time)
+                      ? item.custom_time.map((t) => new Date(t).toLocaleTimeString()).join(", ")
+                      : t("No custom times")
+                    : t("No custom times")}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Box>
+        ))
+      ) : (
+        <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+          <Typography variant="body1" color="textSecondary">
+            {t("No schedule configured")}
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  )
+
+  // Create tab content for version history
+  const VersionHistoryContent = () => (
+    <Box>
+      <Box className={classes.tableContainer}>
+        <Table size="small" className={classes.table} stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell className={`${classes.tableCell} ${classes.tableHeader}`}>{t("Version")}</TableCell>
+              <TableCell className={`${classes.tableCell} ${classes.tableHeader}`}>{t("Name")}</TableCell>
+              <TableCell className={`${classes.tableCell} ${classes.tableHeader}`}>{t("Date")}</TableCell>
+              <TableCell className={`${classes.tableCell} ${classes.tableHeader}`}>{t("Time")}</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {activity?.versionHistory && activity.versionHistory.length > 0 ? (
+              activity.versionHistory.map((version, index) => (
+                <TableRow key={version.id || index}>
+                  <TableCell className={classes.tableCell}>{`v${index + 1}`}</TableCell>
+                  <TableCell className={classes.tableCell}>{version.name}</TableCell>
+                  <TableCell className={classes.tableCell}>
+                    {version.date ? new Date(version.date).toLocaleDateString() : "-"}
+                  </TableCell>
+                  <TableCell className={classes.tableCell}>{version.time || "-"}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  {t("No version history")}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Box>
+    </Box>
+  )
+
+  // Create submission info for the Developer tab
+  const getSubmissionInfo = () => {
+    // Ensure developer_info has default values to prevent TypeScript errors
+    const developerInfo: DeveloperInfo = {
+      version: editedValues.developer_info?.version || activity?.currentVersion?.name || "v1.0",
+      versionNumber: editedValues.developer_info?.versionNumber || "0",
+      userIp: editedValues.developer_info?.userIp || "NA",
+      sourceUrl: editedValues.developer_info?.sourceUrl || "NA",
+      browser: editedValues.developer_info?.browser || "NA",
+      device: editedValues.developer_info?.device || "NA",
+      user: editedValues.developer_info?.user || "NA",
+      status: editedValues.developer_info?.status || "Read",
+      submittedOn:
+        editedValues.developer_info?.submittedOn ||
+        (activity?.createdAt ? new Date(activity.createdAt).toLocaleString() : "NA"),
+    }
+    console.log("developerInfo", developerInfo)
+    return {
+      ...developerInfo,
+      onChangeStatus: () => {
+        const newStatus = developerInfo.status === "Read" ? "Active" : "Read"
+        handleChangeStatus(newStatus)
+      },
+      isEditing: isDeveloperInfoEditing,
+      onEdit: () => setIsDeveloperInfoEditing(true),
+      onSave: handleSaveDeveloperInfo,
+      // Let the component know which fields are editable
+      editableFields: ["sourceUrl", "user"],
+    }
+  }
 
   return (
     <React.Fragment>
