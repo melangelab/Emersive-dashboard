@@ -80,88 +80,6 @@ type SuggestedUrlOption = {
   label: string
 }
 
-// const useStyles = makeStyles((theme: Theme) =>
-//   createStyles({
-//     logoLogin: {
-//       width: 90,
-//       margin: "0 auto 30px",
-//       textAlign: "center",
-//       [theme.breakpoints.down("xs")]: {
-//         width: 69,
-//         marginBottom: 30,
-//       },
-//     },
-//     logoText: {
-//       width: "100%",
-//       textAlign: "center",
-//       [theme.breakpoints.down("xs")]: {
-//         width: "80%",
-//         margin: "0 auto",
-//       },
-//       "& svg": { width: "100%", height: 41, marginBottom: 10 },
-//     },
-//     textfieldStyle: {
-//       "& input": { backgroundColor: "#f5f5f5", borderRadius: 10 },
-//       "& fieldset": { border: 0 },
-//     },
-//     buttonNav: {
-//       "& button": { width: 200, "& span": { textTransform: "capitalize", fontSize: 16, fontWeight: "bold" } },
-//     },
-//     linkBlue: { color: "#6083E7", fontWeight: "bold", cursor: "pointer", "&:hover": { textDecoration: "underline" } },
-//     loginContainer: { height: "90vh", paddingTop: "3%" },
-//     loginInner: { maxWidth: 320 },
-//     loginDisabled: {
-//       opacity: 0.5,
-//     },
-//     dividerContainer: {
-//       display: "flex",
-//       alignItems: "center",
-//       margin: "20px 0",
-//     },
-//     divider: {
-//       flex: 1,
-//     },
-//     dividerText: {
-//       margin: "0 10px",
-//       color: theme.palette.text.secondary,
-//     },
-//     googleButton: {
-//       width: "100%",
-//       marginBottom: "20px",
-//       "& > div": {
-//         width: "100% !important",
-//       },
-//     },
-//     miniorangeButton: {
-//       width: "100%",
-//       marginBottom: "20px",
-//       backgroundColor: "#FF6B4A",
-//       color: "white",
-//       padding: "10px",
-//       borderRadius: "4px",
-//       cursor: "pointer",
-//       textAlign: "center",
-//       "&:hover": {
-//         backgroundColor: "#E85E40",
-//       },
-//     },
-//     miniOrangeButton: {
-//       width: "100%",
-//       marginBottom: "20px",
-//       backgroundColor: "#FF6B2B",
-//       color: "white",
-//       padding: "10px",
-//       borderRadius: "4px",
-//       cursor: "pointer",
-//       border: "none",
-//       fontWeight: "bold",
-//       "&:hover": {
-//         backgroundColor: "#E55A1A",
-//       },
-//     },
-//   })
-// )
-
 export default function Login({ setIdentity, lastDomain, onComplete, ...props }) {
   const { t, i18n } = useTranslation()
   // defaultaddress = "lamp-aiims.ihub-anubhuti-iiitd.org:3000" 192.168.21.214:3000
@@ -1156,7 +1074,7 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                           variant="extended"
                           type="submit"
                           onClick={handleLogin}
-                          className={`login-button ${loginClick ? "loginDisabled" : ""}`}
+                          className={`login-button ${loginClick ? "login-disabled" : ""}`}
                         >
                           {t("Sign in")}
                           <input type="submit" disabled={loginClick} className="login-button__hidden-submit" />

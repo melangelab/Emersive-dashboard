@@ -290,6 +290,18 @@ const useStyles = makeStyles((theme: Theme) =>
         fill: "#CCCCCC",
       },
     },
+    prodIcon: {
+      "& path": {
+        fill: "#CCCCCC",
+      },
+    },
+    statusLockIcon: {
+      width: "24px",
+      height: "24px",
+      "& path": {
+        fill: "#CCCCCC",
+      },
+    },
     accordionActions: {
       display: "flex",
       gap: "12px",
@@ -634,9 +646,17 @@ interface StudyAccordionProps {
   onSave: (updatedStudy: any) => void
   researcherId: string
   triggerSave?: boolean
+  authType?: any
 }
 
-const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSave, researcherId, triggerSave }) => {
+const StudyAccordion: React.FC<StudyAccordionProps> = ({
+  study,
+  isEditing,
+  onSave,
+  researcherId,
+  triggerSave,
+  authType,
+}) => {
   const history = useHistory()
   const classes = useStyles()
   const { t } = useTranslation()
@@ -1072,7 +1092,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
       id: "adminNote",
       label: t("Admin Notes"),
       value: study?.adminNote || "",
-      editable: true,
+      editable: authType == "admin",
       type: "multiline",
     },
     {
@@ -1174,7 +1194,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                 variant={tempEditedValues.hasFunding ? "contained" : "outlined"}
                 className={getButtonClasses(tempEditedValues.hasFunding, !isEditing, classes)}
                 onClick={() => handleValueChange("hasFunding", true)}
-                disabled={!isEditing}
+                disabled={!isEditing && study.state !== "development"}
                 // startIcon={<AttachMoney />}
               >
                 {t("Has Funding")}
@@ -1183,7 +1203,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                 variant={!tempEditedValues.hasFunding ? "contained" : "outlined"}
                 className={getButtonClasses(!tempEditedValues.hasFunding, !isEditing, classes)}
                 onClick={() => handleValueChange("hasFunding", false)}
-                disabled={!isEditing}
+                disabled={!isEditing || study.state !== "development"}
                 // startIcon={<MoneyOff />}
               >
                 {t("No Funding")}
@@ -1200,7 +1220,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
               label={t("Funding Agency")}
               defaultValue={tempEditedValues.fundingAgency}
               onBlur={(e) => handleValueChange("fundingAgency", e.target.value)}
-              disabled={!isEditing}
+              disabled={!isEditing || study.state !== "development"}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -1221,9 +1241,13 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
               <Button
                 variant={tempEditedValues.hasEthicsPermission ? "contained" : "outlined"}
                 // color={editedValues.hasEthicsPermission ? "primary" : "default"}
-                className={getButtonClasses(tempEditedValues.hasEthicsPermission, !isEditing, classes)}
+                className={getButtonClasses(
+                  tempEditedValues.hasEthicsPermission,
+                  !isEditing || study.state !== "development",
+                  classes
+                )}
                 onClick={() => handleValueChange("hasEthicsPermission", true)}
-                disabled={!isEditing}
+                disabled={!isEditing || study.state !== "development"}
                 // startIcon={<CheckCircle />}
               >
                 {t("Has Permission")}
@@ -1231,9 +1255,13 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
               <Button
                 variant={!tempEditedValues.hasEthicsPermission ? "contained" : "outlined"}
                 // color={!editedValues.hasEthicsPermission ? "primary" : "default"}
-                className={getButtonClasses(!tempEditedValues.hasEthicsPermission, !isEditing, classes)}
+                className={getButtonClasses(
+                  !tempEditedValues.hasEthicsPermission,
+                  !isEditing || study.state !== "development",
+                  classes
+                )}
                 onClick={() => handleValueChange("hasEthicsPermission", false)}
-                disabled={!isEditing}
+                disabled={!isEditing || study.state !== "development"}
                 // startIcon={<Cancel />}
               >
                 {t("No Permission")}
@@ -1251,7 +1279,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                     const EPfile = e.target.files?.[0]
                     if (EPfile) uploadDoc(EPfile)
                   }}
-                  disabled={!isEditing}
+                  disabled={!isEditing || study.state !== "development"}
                 />
 
                 <Box display="flex" flexDirection="column" alignItems="center">
@@ -1266,7 +1294,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                         variant="contained"
                         color="primary"
                         component="span"
-                        disabled={!isEditing}
+                        disabled={!isEditing || study.state !== "development"}
                         className={classes.uploadButton}
                         startIcon={<CloudUpload />}
                       >
@@ -1372,7 +1400,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
           ))}
         </List> */}
         <Grid container spacing={3}>
-          {isEditing && (
+          {isEditing && study.state === "development" && (
             <Grid item xs={6}>
               <Box>
                 {sharingFields.map((field) => (
@@ -1457,7 +1485,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                         className={classes.iconButton}
                         onClick={() => handleEditResearcher(index)}
                         title={t("Edit")}
-                        disabled={!isEditing}
+                        disabled={!isEditing || study.state !== "development"}
                       >
                         <Edit style={{ width: 16, height: 16 }} />
                       </IconButton>
@@ -1467,7 +1495,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                         className={classes.iconButton}
                         onClick={() => handleSaveResearcherEdit(index)}
                         title={t("Save")}
-                        disabled={editingResearcherIndex !== index || !isEditing}
+                        disabled={editingResearcherIndex !== index || !isEditing || study.state !== "development"}
                       >
                         <Save style={{ width: 16, height: 16 }} />
                       </IconButton>
@@ -1477,7 +1505,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                         className={classes.iconButton}
                         onClick={() => handleDeleteResearcher(index)}
                         title={t("Delete")}
-                        disabled={!isEditing}
+                        disabled={!isEditing || study.state !== "development"}
                       >
                         <DeleteIcon style={{ width: 16, height: 16 }} />
                       </IconButton>
@@ -1932,7 +1960,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
       <Box key={field.id} className={classes.fieldContainer}>
         <Typography className={classes.viewLabel}>{field.label}</Typography>
 
-        {isEditing && field.editable ? (
+        {isEditing && study.state === "development" && field.editable ? (
           field.type === "image" ? (
             <Box className={classes.imageUploader}>
               <ImageUploader
@@ -2125,9 +2153,13 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
   const studycardclasses = studycardStyles()
 
   const isAccordionComplete = (sectionId: string, editedValues: any) => {
-    if (editedValues.state !== "development" && editedValues.state !== undefined) {
-      return "locked"
-    }
+    // if (editedValues.state !== "development" && editedValues.state !== undefined) {
+    //   switch(editedValues.state){
+    //     case "production":  return "lockedProd"
+    //     case "complete":  return "lockedComp"
+    //   }
+    //   return "locked"
+    // }
 
     switch (sectionId) {
       case "study-basics":
@@ -2189,7 +2221,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
         <Box className={classes.tabContent}>
           <Grid container spacing={3}>
             {/* Left side - Group form */}
-            {isEditing && (
+            {isEditing && study.state === "development" && (
               <Grid item xs={6}>
                 <Box>
                   {groupFields.map((field) => (
@@ -2257,7 +2289,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                           className={classes.iconButton}
                           onClick={() => handleEditGroup(index)}
                           title={t("Edit")}
-                          disabled={!isEditing}
+                          disabled={!isEditing || study.state !== "development"}
                         >
                           <Edit style={{ width: 16, height: 16 }} />
                         </IconButton>
@@ -2267,7 +2299,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                           className={classes.iconButton}
                           onClick={() => handleSaveGroupEdit(index)}
                           title={t("Save")}
-                          disabled={editingGroupIndex !== index || !isEditing}
+                          disabled={editingGroupIndex !== index || !isEditing || study.state !== "development"}
                         >
                           <Save style={{ width: 16, height: 16 }} />
                         </IconButton>
@@ -2277,7 +2309,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                           className={classes.iconButton}
                           onClick={() => handleDeleteGroup(index)}
                           title={t("Delete")}
-                          disabled={!isEditing}
+                          disabled={!isEditing || study.state !== "development"}
                         >
                           <DeleteIcon style={{ width: 16, height: 16 }} />
                         </IconButton>
@@ -2435,9 +2467,10 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
       <StateSlide />
       <Box className={classes.accordionContainer}>
         {accordionSections.map((section, index) => {
-          const completionStatus = isAccordionComplete(section.id, editedValues)
+          const completionStatus = isAccordionComplete(section.id, study.state === "development" ? editedValues : study)
           const isComplete = completionStatus === true
-          const isLocked = completionStatus === "locked"
+          const isPLocked = study.state === "production"
+          const isCLocked = study.state === "complete"
           const isExpanded = expanded === section.id
 
           return (
@@ -2454,26 +2487,31 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
               >
                 <Box className={classes.accordionHeader}>
                   {section.showActions &&
-                    (isLocked ? (
-                      <LockIcon className={classes.statusIcon} />
-                    ) : isComplete ? (
-                      <CheckCircleIcon className={classes.statusIcon} />
+                    (isCLocked ? (
+                      <LockIcon className={classes.statusLockIcon} />
                     ) : (
-                      <EmptyCircleIcon className={`${classes.statusIcon} empty`} />
+                      <>
+                        {isComplete ? (
+                          <CheckCircleIcon className={`${classes.statusIcon} ${isPLocked && classes.prodIcon}`} />
+                        ) : (
+                          <EmptyCircleIcon className={`${classes.statusIcon} empty`} />
+                        )}
+                        {isPLocked && <LockIcon className={classes.statusLockIcon} />}
+                      </>
                     ))}
                   <Typography className={classes.accordionTitle}>{section.title}</Typography>
                 </Box>
               </AccordionSummary>
               <AccordionDetails className={classes.customAccordionDetails}>
                 <Box style={{ flex: 1 }}>{section.content}</Box>
-                {isEditing && section.showActions && (
+                {isEditing && study.state === "development" && section.showActions && (
                   <Box className={classes.accordionActions}>
                     {section.addHandler && (
                       <Button
                         className={`${classes.actionButton} add`}
                         variant="outlined"
                         onClick={section.addHandler}
-                        disabled={isLocked}
+                        disabled={isPLocked || isCLocked}
                       >
                         ADD
                       </Button>
@@ -2482,7 +2520,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                       className={`${classes.actionButton} save`}
                       variant="outlined"
                       onClick={() => handleSaveSection(section.id)}
-                      disabled={isLocked}
+                      disabled={isPLocked || isCLocked}
                     >
                       SAVE
                     </Button>
@@ -2499,7 +2537,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({ study, isEditing, onSav
                       }`}
                       variant="outlined"
                       onClick={() => handleMarkComplete(section.id)}
-                      disabled={isCompleting || isLocked}
+                      disabled={isCompleting || isPLocked || isCLocked}
                     >
                       <Box
                         className={`${classes.completeIcon} ${completedSections.has(section.id) ? "completed" : ""}`}

@@ -41,7 +41,7 @@
 
 .platform-name-login {
   display: inline-block;
-  font-family: Exo\2, sans-serif;
+  font-family: exo\2, sans-serif;
   color: #cf7f5a;
   font-size: 3.6rem;
   font-weight: 450;
@@ -204,9 +204,9 @@ div.MuiFormControl-root:nth-child(1)
   margin-top: 20px;
 }
 
-.MuiButtonBase-root .button-nav .MuiFab-root:hover .MuiFab-root:hover {
-  text-decoration: none;
+.login-button:hover {
   background-color: #b7714e;
+  text-decoration: none;
 }
 
 .button-nav button span {
@@ -217,7 +217,7 @@ div.MuiFormControl-root:nth-child(1)
 }
 
 .login-button {
-  background: #cf825a !important;
+  background: #cf825a;
   /* color: white !important; */
   width: 100%;
   height: 46px;
@@ -292,14 +292,4 @@ div.MuiFormControl-root:nth-child(1)
 .divider-text {
   margin: 0 10px;
   color: gray;
-}
-
-.forgot-container {
-  width: 40% !important;
-  margin: -10px auto 23px;
-}
-
-.forgot-container:hover {
-  border-radius: 10%;
-  background-color: lightgray;
 }

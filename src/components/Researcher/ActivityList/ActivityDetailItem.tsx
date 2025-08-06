@@ -236,6 +236,133 @@ export const fetchUserIp = async () => {
   }
 }
 
+interface SettingsContentProps {
+  activity: any
+  editedValues: any
+  currentSettings: any
+  setCurrentSettings: (settings: any) => void
+  currentFBSettings: any
+  setCurrentFBSettings: (settings: any) => void
+  currentFormula: any
+  setCurrentFormula: (formula: any) => void
+  settingsHasUnsavedChanges: boolean
+  setSettingsHasUnsavedChanges: (unsaved: boolean) => void
+  isEditing: boolean
+  schemaListObj: any
+  t: any
+}
+
+const SettingsContent = React.memo<SettingsContentProps>(
+  ({
+    activity,
+    editedValues,
+    currentSettings,
+    setCurrentSettings,
+    currentFBSettings,
+    setCurrentFBSettings,
+    currentFormula,
+    setCurrentFormula,
+    settingsHasUnsavedChanges,
+    setSettingsHasUnsavedChanges,
+    isEditing,
+    schemaListObj,
+    t,
+  }) => {
+    const [localSettings, setLocalSettings] = useState(currentSettings)
+    const [localFBSettings, setLocalFBSettings] = useState(currentFBSettings)
+    const [localFormula, setLocalFormula] = useState(currentFormula)
+
+    // Update local state when parent state changes (only on activity/spec change)
+    useEffect(() => {
+      setLocalSettings(currentSettings)
+      setLocalFBSettings(currentFBSettings)
+      setLocalFormula(currentFormula)
+    }, [editedValues.spec, activity?.id])
+
+    const handleSettingsChange = (newSettings) => {
+      setLocalSettings(newSettings)
+      setCurrentSettings(newSettings)
+      setSettingsHasUnsavedChanges(true)
+    }
+
+    const handleFBSettingsChange = (newSettings) => {
+      setLocalFBSettings(newSettings)
+      setCurrentFBSettings(newSettings)
+      setSettingsHasUnsavedChanges(true)
+    }
+
+    const handleFormulaChange = (newFormula) => {
+      setLocalFormula(newFormula)
+      setCurrentFormula(newFormula)
+      setSettingsHasUnsavedChanges(true)
+    }
+
+    return (
+      <Box mt={3}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h6" gutterBottom>
+            {t("Activity Settings")}
+          </Typography>
+          <Box>
+            {settingsHasUnsavedChanges && (
+              <Typography variant="body2" color="error" style={{ marginRight: 16 }}>
+                {t("You have unsaved changes. Settings will be saved when you save the activity")}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+        {editedValues.spec === "lamp.form_builder" ? (
+          <FormBuilder
+            onChange={(formData) => {
+              console.log("INSIDE THE DETAIL ITEM Form data changed:", formData)
+              handleFormulaChange(formData.formula)
+              handleFBSettingsChange(formData.fields)
+            }}
+            formFieldsProp={localFBSettings}
+            formula={localFormula}
+          />
+        ) : editedValues.spec === "lamp.mood_tracker" ? (
+          <MoodTrackerBuilder
+            oldFields={localFBSettings}
+            onChange={(formData) => {
+              console.log("INSIDE THE DETAILITEM Form data changed:", formData)
+              handleFBSettingsChange(formData)
+            }}
+          />
+        ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
+          <DynamicForm
+            schema={schemaListObj[editedValues.spec]}
+            initialData={{
+              settings: localSettings,
+              spec: editedValues.spec,
+            }}
+            onChange={(x) => {
+              console.log("Settings updated locally:", x)
+              handleSettingsChange(x.settings || {})
+            }}
+            viewMode={!isEditing}
+          />
+        ) : (
+          <Box
+            style={{
+              maxHeight: "300px",
+              overflow: "auto",
+              marginTop: "4px",
+              padding: "8px",
+              backgroundColor: "#f5f5f5",
+              borderRadius: 4,
+              fontFamily: "monospace",
+              fontSize: "0.875rem",
+            }}
+          >
+            <pre>{JSON.stringify(activity?.settings || {}, null, 2)}</pre>
+          </Box>
+        )}
+      </Box>
+    )
+  }
+)
+
 interface ActivityDetailItemProps {
   activity: any
   isEditing: boolean
@@ -358,6 +485,11 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     console.log("Activity view response", res)
   })
   const [creatorName, setcreatorName] = useState(activity?.creator || "")
+  const settingsRef = useRef({
+    settings: editedValues.settings,
+    formula4Fields: editedValues.formula4Fields,
+  })
+
   useEffect(() => {
     const fetchname = async () => {
       const res = await LAMP.Researcher.view(activity?.creator)
@@ -454,6 +586,12 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
   useEffect(() => {
     setSchemaListObj(SchemaList())
   }, [])
+
+  const [currentSettings, setCurrentSettings] = useState(activity?.settings || {})
+  const [currentFBSettings, setCurrentFBSettings] = useState(activity?.settings || {})
+  const [currentFormula, setCurrentFormula] = useState(activity?.formula4Fields || "")
+  const [settingsHasUnsavedChanges, setSettingsHasUnsavedChanges] = useState(false)
+
   useEffect(() => {
     const initializeData = async () => {
       if (!activity?.id) return
@@ -493,6 +631,11 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         setStreakSettings(activity_streak)
         setShowInFeed(activity_showInFeed)
 
+        setCurrentSettings(activity?.settings || {})
+        setCurrentFBSettings(activity?.settings || {})
+        setCurrentFormula(activity?.formula4Fields || "")
+        setSettingsHasUnsavedChanges(false)
+
         // Set edited values with all fetched data
         setEditedValues({
           name: activity?.name || "",
@@ -512,6 +655,11 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
       } catch (error) {
         console.error("Error initializing activity data:", error)
         // Set default values in case of error
+        setCurrentSettings(activity?.settings || {})
+        setCurrentFBSettings(activity?.settings || {})
+        setCurrentFormula(activity?.formula4Fields || "")
+        setSettingsHasUnsavedChanges(false)
+
         setEditedValues({
           name: activity?.name || "",
           description: activity?.description || "",
@@ -653,10 +801,11 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
   const handleSave = async () => {
     setLoading(true)
     try {
+      console.log("handleSave", currentSettings, currentFormula)
       const updateData = {
         name: editedValues.name?.trim(),
         spec: editedValues.spec,
-        settings: editedValues.settings,
+        settings: currentSettings,
         activityGuide: editedValues.activityGuide,
         category: editedValues.category,
         groups: editedValues.groups,
@@ -664,7 +813,7 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
         photo: editedValues.image,
         showFeed: showInFeed,
         streak: streakSettings,
-        formula4Fields: editedValues.formula4Fields,
+        formula4Fields: currentFormula,
       }
       // TODO Add more fields for updates
       const result = await LAMP.Activity.update(activity.id, updateData as any)
@@ -927,139 +1076,195 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
     </Box>
   )
 
-  // Create tab content for settings
-  const SettingsContent = () => {
-    const [localSettings, setLocalSettings] = useState(editedValues.settings || {})
-    const [localFBSettings, setLocalFBSettings] = useState(editedValues.settings || {})
-    const [localFormula, setLocalFormula] = useState(editedValues.formula4Fields || "")
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  // const SettingsContent = () => {
+  //   // const [localSettings, setLocalSettings] = useState(editedValues.settings || {})
+  //   // const [localFBSettings, setLocalFBSettings] = useState(editedValues.settings || {})
+  //   // const [localFormula, setLocalFormula] = useState(editedValues.formula4Fields || "")
+  //   const [localSettings, setLocalSettings] = useState(currentSettings)
+  //   const [localFBSettings, setLocalFBSettings] = useState(currentFBSettings)
+  //   const [localFormula, setLocalFormula] = useState(currentFormula)
 
-    const handleSaveSettings = async () => {
-      setEditedValues((prev) => ({
-        ...prev,
-        formula4Fields: localFormula,
-        settings:
-          editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
-            ? localFBSettings
-            : localSettings,
-      }))
-      setHasUnsavedChanges(false)
-      const updatedSettings = {
-        settings:
-          editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
-            ? localFBSettings
-            : localSettings,
-        formula4Fields: localFormula,
-      }
-      try {
-        console.log("before calling update settings", updatedSettings, localFBSettings, localSettings)
-        const result = await LAMP.Activity.update(activity.id, updatedSettings as any)
-        await Service.updateMultipleKeys(
-          "activities",
-          {
-            activities: [
-              {
-                id: activity.id,
-                ...updatedSettings,
-              },
-            ],
-          },
-          Object.keys(updatedSettings),
-          "id"
-        )
+  //   const debouncedUpdateSettings = useRef(
+  //     debounce((newSettings: any) => {
+  //       setCurrentSettings(newSettings)
+  //       setSettingsHasUnsavedChanges(true)
+  //     }, 300)
+  //   ).current
 
-        onSave({
-          ...activity,
-          ...updatedSettings,
-        })
-        if (result) {
-          enqueueSnackbar(t("Settings saved."), {
-            variant: "success",
-          })
-        }
-      } catch (error) {
-        console.error("Error updating activity settings:", error)
-        enqueueSnackbar(t("An error occurred while updating the activity settings."), {
-          variant: "error",
-        })
-      }
-    }
+  //   const debouncedUpdateFBSettings = useRef(
+  //     debounce((newSettings: any) => {
+  //       setCurrentFBSettings(newSettings)
+  //       setSettingsHasUnsavedChanges(true)
+  //     }, 300)
+  //   ).current
 
-    useEffect(() => {
-      setLocalSettings(editedValues.settings || {})
-      setLocalFBSettings(editedValues.settings || {})
-      setLocalFormula(editedValues.formula4Fields || "")
-      setHasUnsavedChanges(false)
-    }, [editedValues.spec]) // Only update when spec changes to prevent loops
+  //   const debouncedUpdateFormula = useRef(
+  //     debounce((newFormula: string) => {
+  //       setCurrentFormula(newFormula)
+  //       setSettingsHasUnsavedChanges(true)
+  //     }, 300)
+  //   ).current
 
-    return (
-      <Box mt={3}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6" gutterBottom>
-            {t("Activity Settings")}
-          </Typography>
-          <Box>
-            {hasUnsavedChanges && (
-              <Typography variant="body2" color="error" style={{ marginRight: 16 }}>
-                {t("You have unsaved changes")}
-              </Typography>
-            )}
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSaveSettings}
-              disabled={!hasUnsavedChanges}
-              // disabled={!hasUnsavedChanges || !isEditing}
-            >
-              {t("Save Settings")}
-            </Button>
-          </Box>
-        </Box>
-        {editedValues.spec === "lamp.form_builder" ? (
-          <FormBuilder
-            onChange={(formData) => {
-              console.log("INSIDE THE DETAIL ITEM Form data changed:", formData)
-              setLocalFormula(formData.formula)
-              setLocalSettings(formData.fields)
-              setLocalFBSettings(formData.fields)
-              setHasUnsavedChanges(true)
-            }}
-            formFieldsProp={localFBSettings}
-            formula={localFormula}
-            // viewMode={!isEditing}
-          />
-        ) : editedValues.spec === "lamp.mood_tracker" ? (
-          <MoodTrackerBuilder
-            oldFields={localFBSettings}
-            onChange={(formData) => {
-              console.log("INSIDE THE DETAILITEM Form data changed:", formData)
-              setLocalSettings(formData)
-              setLocalFBSettings(formData)
-              setHasUnsavedChanges(true)
-            }}
-          />
-        ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
-          <DynamicForm
-            schema={schemaListObj[editedValues.spec]}
-            initialData={{
-              settings: localSettings,
-              spec: editedValues.spec,
-            }}
-            onChange={(x) => {
-              console.log("Settings updated locally:", x)
-              setLocalSettings(x.settings || {})
-              setHasUnsavedChanges(true)
-            }}
-            viewMode={!isEditing}
-          />
-        ) : (
-          <Box className={classes.codeBlock}>
-            <pre>{JSON.stringify(activity?.settings || {}, null, 2)}</pre>
-          </Box>
-        )}
-      </Box>
-    )
-  }
+  //   useEffect(() => {
+  //     setLocalSettings(currentSettings)
+  //     setLocalFBSettings(currentFBSettings)
+  //     setLocalFormula(currentFormula)
+  //   }, [editedValues.spec, activity?.id]) // Only update when spec or activity changes
+
+  //   console.log("SettingsContent render - localSettings:", localSettings, "localFBSettings:", localFBSettings, "localFormula:", localFormula)
+
+  //   // const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  //   // useEffect(()=>{
+  //   //   if(settingsRef.current){
+  //   //     console.log("SettingsContent init",settingsRef.current)
+  //   //   }
+  //   //   const refval = settingsRef.current.settings
+  //   //   const refForm = settingsRef.current.formula4Fields
+  //   //   console.log(refForm, refval)
+  //   //   setLocalFBSettings(refval)
+  //   //   setLocalFormula(refForm)
+  //   //   setLocalSettings(refval)
+  //   // }, [])
+
+  //   // useEffect(() => {
+  //   //   console.log("SettingsContent updated", localSettings, localFBSettings, localFormula, settingsRef)
+  //   //   settingsRef.current = {
+  //   //     settings:
+  //   //       editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
+  //   //         ? localFBSettings
+  //   //         : localSettings,
+  //   //     formula4Fields: localFormula
+  //   //   }
+  //   // }, [localSettings, localFBSettings, localFormula])
+
+  //   // const handleSaveSettings = async () => {
+  //   //   setEditedValues((prev) => ({
+  //   //     ...prev,
+  //   //     formula4Fields: localFormula,
+  //   //     settings:
+  //   //       editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
+  //   //         ? localFBSettings
+  //   //         : localSettings,
+  //   //   }))
+  //   //   setHasUnsavedChanges(false)
+  //   //   const updatedSettings = {
+  //   //     settings:
+  //   //       editedValues.spec === "lamp.form_builder" || editedValues.spec === "lamp.mood_tracker"
+  //   //         ? localFBSettings
+  //   //         : localSettings,
+  //   //     formula4Fields: localFormula,
+  //   //   }
+  //   //   try {
+  //   //     console.log("before calling update settings", updatedSettings, localFBSettings, localSettings)
+  //   //     const result = await LAMP.Activity.update(activity.id, updatedSettings as any)
+  //   //     await Service.updateMultipleKeys(
+  //   //       "activities",
+  //   //       {
+  //   //         activities: [
+  //   //           {
+  //   //             id: activity.id,
+  //   //             ...updatedSettings,
+  //   //           },
+  //   //         ],
+  //   //       },
+  //   //       Object.keys(updatedSettings),
+  //   //       "id"
+  //   //     )
+
+  //   //     onSave({
+  //   //       ...activity,
+  //   //       ...updatedSettings,
+  //   //     })
+  //   //     if (result) {
+  //   //       enqueueSnackbar(t("Settings saved."), {
+  //   //         variant: "success",
+  //   //       })
+  //   //     }
+  //   //   } catch (error) {
+  //   //     console.error("Error updating activity settings:", error)
+  //   //     enqueueSnackbar(t("An error occurred while updating the activity settings."), {
+  //   //       variant: "error",
+  //   //     })
+  //   //   }
+  //   // }
+
+  //   // useEffect(() => {
+  //   //   setLocalSettings(editedValues.settings || {})
+  //   //   setLocalFBSettings(editedValues.settings || {})
+  //   //   setLocalFormula(editedValues.formula4Fields || "")
+  //   //   setHasUnsavedChanges(false)
+  //   // }, [editedValues.spec]) // Only update when spec changes to prevent loops
+
+  //   return (
+  //     <Box mt={3}>
+  //       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+  //         <Typography variant="h6" gutterBottom>
+  //           {t("Activity Settings")}
+  //         </Typography>
+  //         <Box>
+  //           {settingsHasUnsavedChanges && (
+  //             <Typography variant="body2" color="error" style={{ marginRight: 16 }}>
+  //               {t("You have unsaved changes. Settings will be saved when you save the activity")}
+  //             </Typography>
+  //           )}
+  //           {/* <Button
+  //             variant="contained"
+  //             color="primary"
+  //             onClick={handleSaveSettings}
+  //             disabled={!hasUnsavedChanges}
+  //             // disabled={!hasUnsavedChanges || !isEditing}
+  //           >
+  //             {t("Save Settings")}
+  //           </Button> */}
+  //         </Box>
+  //       </Box>
+  //       {editedValues.spec === "lamp.form_builder" ? (
+  //         <FormBuilder
+  //           onChange={(formData) => {
+  //             console.log("INSIDE THE DETAIL ITEM Form data changed:", formData)
+  //             setLocalFormula(formData.formula)
+  //             setLocalFBSettings(formData.fields)
+  //             debouncedUpdateFormula(formData.formula)
+  //             debouncedUpdateFBSettings(formData.fields)
+  //             setSettingsHasUnsavedChanges(true)
+  //           }}
+  //           formFieldsProp={localFBSettings}
+  //           formula={localFormula}
+  //           // viewMode={!isEditing}
+  //         />
+  //       ) : editedValues.spec === "lamp.mood_tracker" ? (
+  //         <MoodTrackerBuilder
+  //           oldFields={localFBSettings}
+  //           onChange={(formData) => {
+  //             console.log("INSIDE THE DETAILITEM Form data changed:", formData)
+  //             setLocalFBSettings(formData)
+  //             debouncedUpdateFBSettings(formData)
+  //             setSettingsHasUnsavedChanges(true)
+  //           }}
+  //         />
+  //       ) : Object.keys(schemaListObj).includes(editedValues.spec) ? (
+  //         <DynamicForm
+  //           schema={schemaListObj[editedValues.spec]}
+  //           initialData={{
+  //             settings: localSettings,
+  //             spec: editedValues.spec,
+  //           }}
+  //           onChange={(x) => {
+  //             console.log("Settings updated locally:", x)
+  //             setLocalSettings(x.settings || {})
+  //             debouncedUpdateSettings(x.settings || {})
+  //             setSettingsHasUnsavedChanges(true)
+  //           }}
+  //           viewMode={!isEditing}
+  //         />
+  //       ) : (
+  //         <Box className={classes.codeBlock}>
+  //           <pre>{JSON.stringify(activity?.settings || {}, null, 2)}</pre>
+  //         </Box>
+  //       )}
+  //     </Box>
+  //   )
+  // }
 
   const ActivityGuideContent = () => {
     // References for media elements
@@ -2218,7 +2423,23 @@ const ActivityDetailItem: React.FC<ActivityDetailItemProps> = ({
           {
             id: "settings",
             label: t("Settings"),
-            content: <SettingsContent />,
+            content: (
+              <SettingsContent
+                activity={activity}
+                editedValues={editedValues}
+                currentSettings={currentSettings}
+                setCurrentSettings={setCurrentSettings}
+                currentFBSettings={currentFBSettings}
+                setCurrentFBSettings={setCurrentFBSettings}
+                currentFormula={currentFormula}
+                setCurrentFormula={setCurrentFormula}
+                settingsHasUnsavedChanges={settingsHasUnsavedChanges}
+                setSettingsHasUnsavedChanges={setSettingsHasUnsavedChanges}
+                isEditing={isEditing}
+                schemaListObj={schemaListObj}
+                t={t}
+              />
+            ),
           },
           {
             id: "activityGuide",

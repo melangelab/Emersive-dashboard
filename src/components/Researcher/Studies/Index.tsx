@@ -1628,6 +1628,10 @@ export default function StudiesList({
   }
 
   const handleEditStudy = () => {
+    if (viewingStudy.state !== "development") {
+      enqueueSnackbar(t("Return to Design mode to make changes."), { variant: "warning", autoHideDuration: 2000 })
+      return
+    }
     if (!viewingStudy || !canEditStudy(viewingStudy, researcherId)) {
       enqueueSnackbar(t("You don't have permission to edit this study"), { variant: "error" })
       return
@@ -2353,20 +2357,21 @@ export default function StudiesList({
             }}
             onClose={handleCloseViewStudy}
           />
-          {/* <StudyAccordion
+          <StudyAccordion
+            study={viewingStudy}
+            isEditing={isEditing}
+            onSave={handleSaveComplete}
+            researcherId={researcherId}
+            triggerSave={triggerSave}
+            authType={props.authType}
+          />
+          {/* <StudyDetailItem
             study={viewingStudy}
             isEditing={isEditing}
             onSave={handleSaveComplete}
             researcherId={researcherId}
             triggerSave={triggerSave}
           /> */}
-          <StudyDetailItem
-            study={viewingStudy}
-            isEditing={isEditing}
-            onSave={handleSaveComplete}
-            researcherId={researcherId}
-            triggerSave={triggerSave}
-          />
         </div>
       ) : (
         <div className="body-container">
