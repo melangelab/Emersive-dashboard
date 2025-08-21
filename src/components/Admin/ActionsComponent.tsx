@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react"
 import dayjs from "dayjs"
 import AddUpdateResearcher from "./AddUpdateResearcher"
 
-import { Button, Menu, MenuItem, Checkbox, FormControlLabel, ListItemText } from "@material-ui/core"
+import { Button, Menu, MenuItem, Checkbox, FormControlLabel, ListItemText, Tooltip } from "@material-ui/core"
 
 import { useTranslation } from "react-i18next"
 
@@ -169,14 +169,16 @@ const ActionsComponent = ({ ...props }) => {
     }
 
     return (
-      <div
-        key={action}
-        className={`icon-container ${isSelected ? "selected" : ""}`}
-        onClick={handleClick}
-        title={actionData.name}
-      >
-        <IconComponent className={actionData.iconName} />
-      </div>
+      <Tooltip title={actionData.name}>
+        <div
+          key={action}
+          className={`icon-container ${isSelected ? "selected" : ""}`}
+          onClick={handleClick}
+          title={actionData.name}
+        >
+          <IconComponent className={actionData.iconName} />
+        </div>
+      </Tooltip>
     )
   }
 
@@ -186,7 +188,13 @@ const ActionsComponent = ({ ...props }) => {
 
   return (
     <div className="action-container">
-      {props.actions?.includes("search") && <SearchBox searchData={props.searchData} />}
+      {props.actions?.includes("search") && (
+        <Tooltip title={t("Search")}>
+          <div>
+            <SearchBox searchData={props.searchData} />
+          </div>
+        </Tooltip>
+      )}
 
       {props.actions?.includes("filter") && (
         <>
@@ -206,9 +214,11 @@ const ActionsComponent = ({ ...props }) => {
 
       {props.actions?.includes("table") && props.tabularView ? (
         <>
-          <div className="icon-container" onClick={handleColumnMenuOpen}>
-            <FilterColumns className={`filter-cols-icon ${selectedIcon === "filter-cols" ? "selected" : ""}`} />
-          </div>
+          <Tooltip title={t("Filter Columns")}>
+            <div className="icon-container" onClick={handleColumnMenuOpen}>
+              <FilterColumns className={`filter-cols-icon ${selectedIcon === "filter-cols" ? "selected" : ""}`} />
+            </div>
+          </Tooltip>
           <Menu
             anchorEl={columnMenuAnchor}
             open={Boolean(columnMenuAnchor)}
@@ -294,18 +304,24 @@ const ActionsComponent = ({ ...props }) => {
               </div>
             )} */}
           {props.actions?.includes("download") && (
-            <div className="icon-container" onClick={() => handleIconClick("download")}>
-              {/* <Download className={`download-icon ${selectedIcon === "download" ? "selected" : ""}`} /> */}
-              <DownloadComponent
-                studies={props?.studies}
-                researchers={props?.researchers}
-                target={props.downloadTarget}
-              />
-            </div>
+            <Tooltip title={t("Download Data")}>
+              <div className="icon-container" onClick={() => handleIconClick("download")}>
+                {/* <Download className={`download-icon ${selectedIcon === "download" ? "selected" : ""}`} /> */}
+                <DownloadComponent
+                  studies={props?.studies}
+                  researchers={props?.researchers}
+                  target={props.downloadTarget}
+                />
+              </div>
+            </Tooltip>
           )}
         </>
       ) : null}
-      {props.addComponent ?? null}
+      {props.addComponent && (
+        <Tooltip title={t("Add Activity")}>
+          <div>{props.addComponent}</div>
+        </Tooltip>
+      )}
     </div>
   )
 }

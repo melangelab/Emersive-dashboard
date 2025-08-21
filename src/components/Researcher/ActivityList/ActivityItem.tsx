@@ -45,6 +45,7 @@ import ActivityDetailsDialog from "./ActivityDetailsDialog"
 import { useSnackbar } from "notistack"
 import { Service } from "../../DBService/DBService"
 import { ReactComponent as DeleteIcon } from "../../../icons/NewIcons/trash-xmark.svg"
+import { Tooltip } from "@material-ui/core"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -363,60 +364,83 @@ export default function ActivityItem({
         {activity.isCommunityActivity ? (
           <>
             {activeButton.id === activity.id && activeButton.action === "view" ? (
-              <ViewFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "view" })
-                  onViewActivity(activity)
-                }}
-              />
+              <Tooltip title="View Activity">
+                <span>
+                  <ViewFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "view" })
+                      onViewActivity(activity)
+                    }}
+                  />
+                </span>
+              </Tooltip>
             ) : (
-              <ViewIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "view" })
-                  onViewActivity(activity)
-                }}
-              />
+              <Tooltip title="View Activity">
+                <span>
+                  <ViewIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "view" })
+                      onViewActivity(activity)
+                    }}
+                  />
+                </span>
+              </Tooltip>
             )}
-            <DuplicateActivity
-              activity={activity}
-              studies={studies}
-              researcherId={researcherId}
-              searchActivities={setActivities}
-              activeButton={activeButton}
-              setActiveButton={setActiveButton}
-            />
+            <Tooltip title="Duplicate Activity">
+              <span>
+                <DuplicateActivity
+                  activity={activity}
+                  studies={studies}
+                  researcherId={researcherId}
+                  searchActivities={setActivities}
+                  activeButton={activeButton}
+                  setActiveButton={setActiveButton}
+                />
+              </span>
+            </Tooltip>
           </>
         ) : (
           <>
             {activeButton.id === activity.id && activeButton.action === "view" ? (
-              <ViewFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "view" })
-                  setDetailsDialogOpen(true)
-                  onViewActivity(activity)
-                }}
-              />
+              <Tooltip title="View Activity">
+                <span>
+                  <ViewFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "view" })
+                      setDetailsDialogOpen(true)
+                      onViewActivity(activity)
+                    }}
+                  />
+                </span>
+              </Tooltip>
             ) : (
-              <ViewIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "view" })
-                  setDetailsDialogOpen(true)
-                  onViewActivity(activity)
-                }}
-              />
+              <Tooltip title="View Activity">
+                <span>
+                  <ViewIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "view" })
+                      setDetailsDialogOpen(true)
+                      onViewActivity(activity)
+                    }}
+                  />
+                </span>
+              </Tooltip>
             )}
             {canEdit && (
-              <ScheduleActivity
-                activity={activity}
-                setActivities={setActivities}
-                activities={activities}
-                activeButton={activeButton}
-                setActiveButton={setActiveButton}
-              />
+              <Tooltip title="Schedule Activity">
+                <span>
+                  <ScheduleActivity
+                    activity={activity}
+                    setActivities={setActivities}
+                    activities={activities}
+                    activeButton={activeButton}
+                  />
+                </span>
+              </Tooltip>
             )}
             {/* <UpdateActivity
               activity={activity}
@@ -431,21 +455,29 @@ export default function ActivityItem({
             {canView && (
               <>
                 {activeButton.id === activity.id && activeButton.action === "history" ? (
-                  <HistoryFilledIcon
-                    className={`${mtstyles.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "history" })
-                      setVersionHistoryOpen(true)
-                    }}
-                  />
+                  <Tooltip title="View Version History">
+                    <span>
+                      <HistoryFilledIcon
+                        className={`${mtstyles.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "history" })
+                          setVersionHistoryOpen(true)
+                        }}
+                      />
+                    </span>
+                  </Tooltip>
                 ) : (
-                  <HistoryIcon
-                    className={mtstyles.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "history" })
-                      setVersionHistoryOpen(true)
-                    }}
-                  />
+                  <Tooltip title="View Version History">
+                    <span>
+                      <HistoryIcon
+                        className={mtstyles.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "history" })
+                          setVersionHistoryOpen(true)
+                        }}
+                      />
+                    </span>
+                  </Tooltip>
                 )}
               </>
             )}
@@ -453,76 +485,108 @@ export default function ActivityItem({
               <>
                 {activeButton.id === activity.id && activeButton.action === "share" ? (
                   !activity.shareTocommunity ? (
-                    <ShareCommunityFilledIcon
-                      className={`${mtstyles.actionIcon} active`}
-                      onClick={() => {
-                        setActiveButton({ id: activity.id, action: "history" })
-                        setShareDialogOpen(true)
-                      }}
-                    />
+                    <Tooltip title="Share to Community">
+                      <span>
+                        <ShareCommunityFilledIcon
+                          className={`${mtstyles.actionIcon} active`}
+                          onClick={() => {
+                            setActiveButton({ id: activity.id, action: "history" })
+                            setShareDialogOpen(true)
+                          }}
+                        />
+                      </span>
+                    </Tooltip>
                   ) : (
-                    <RemoveCommunityFilledIcon
-                      className={`${mtstyles.actionIcon} active`}
-                      onClick={() => {
-                        setActiveButton({ id: activity.id, action: "share" })
-                        setShareDialogOpen(true)
-                      }}
-                    />
+                    <Tooltip title="Remove from Community">
+                      <span>
+                        <RemoveCommunityFilledIcon
+                          className={`${mtstyles.actionIcon} active`}
+                          onClick={() => {
+                            setActiveButton({ id: activity.id, action: "share" })
+                            setShareDialogOpen(true)
+                          }}
+                        />
+                      </span>
+                    </Tooltip>
                   )
                 ) : activity.shareTocommunity ? (
-                  <RemoveCommunityIcon
-                    className={`${mtstyles.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "share" })
-                      setShareDialogOpen(true)
-                    }}
-                  />
+                  <Tooltip title="Remove from Community">
+                    <span>
+                      <RemoveCommunityIcon
+                        className={`${mtstyles.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "share" })
+                          setShareDialogOpen(true)
+                        }}
+                      />
+                    </span>
+                  </Tooltip>
                 ) : (
-                  <ShareCommunityIcon
-                    className={mtstyles.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "share" })
-                      setShareDialogOpen(true)
-                    }}
-                  />
+                  <Tooltip title="Share to Community">
+                    <span>
+                      <ShareCommunityIcon
+                        className={mtstyles.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "share" })
+                          setShareDialogOpen(true)
+                        }}
+                      />
+                    </span>
+                  </Tooltip>
                 )}
               </>
             )}
             {activeButton.id === activity.id && activeButton.action === "version" ? (
-              <VersionThisFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "version" })
-                  setConfirmationVersionDialog(true)
-                }}
-              />
+              <Tooltip title="Version This Activity">
+                <span>
+                  <VersionThisFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "version" })
+                      setConfirmationVersionDialog(true)
+                    }}
+                  />
+                </span>
+              </Tooltip>
             ) : (
-              <VersionThisIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: activity.id, action: "version" })
-                  setConfirmationVersionDialog(true)
-                }}
-              />
+              <Tooltip title="Version This Activity">
+                <span>
+                  <VersionThisIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: activity.id, action: "version" })
+                      setConfirmationVersionDialog(true)
+                    }}
+                  />
+                </span>
+              </Tooltip>
             )}
             {!activity.isShared && (
               <>
                 {activeButton.id === activity.id && activeButton.action === "delete" ? (
-                  <DeleteFilledIcon
-                    className={`${mtstyles.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "delete" })
-                      setConfirmationDialog(true)
-                    }}
-                  />
+                  <Tooltip title="Delete Activity">
+                    <span>
+                      <DeleteFilledIcon
+                        className={`${mtstyles.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "delete" })
+                          setConfirmationDialog(true)
+                        }}
+                      />
+                    </span>
+                  </Tooltip>
                 ) : (
-                  <DeleteIcon
-                    className={mtstyles.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: activity.id, action: "delete" })
-                      setConfirmationDialog(true)
-                    }}
-                  />
+                  <Tooltip title="Delete Activity">
+                    <span>
+                      <DeleteIcon
+                        className={mtstyles.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: activity.id, action: "delete" })
+                          setConfirmationDialog(true)
+                        }}
+                      />
+                    </span>
+                  </Tooltip>
                 )}
               </>
             )}
