@@ -421,12 +421,12 @@ const useStyles = makeStyles((theme: Theme) =>
     iconButton: {
       width: "32px",
       height: "32px",
-      backgroundColor: "#ADC9E9",
+      backgroundColor: "#e0e0e0",
       "&.svg": {
         fill: "#ADC9E9",
       },
       "&:hover": {
-        backgroundColor: "#e0e0e0",
+        backgroundColor: "#ADC9E9",
       },
     },
     accordionIcon: {
@@ -583,6 +583,32 @@ const useStyles = makeStyles((theme: Theme) =>
       borderTop: "1px solid #dbdbdb",
       background: "#ffffff",
     },
+    statusIconYellow: {
+      width: "24px",
+      height: "24px",
+      "& path": {
+        fill: "#FF9800", // Yellow color for unsaved changes
+      },
+    },
+    statusIconGreen: {
+      width: "24px",
+      height: "24px",
+      "& path": {
+        fill: "#4CAF50", // Green color for saved changes
+      },
+    },
+    unsavedText: {
+      color: "#FF9800",
+      fontSize: "12px",
+      fontWeight: 400,
+      marginLeft: "8px",
+      textTransform: "none",
+    },
+    accordionTitleContainer: {
+      display: "flex",
+      alignItems: "center",
+      flexDirection: "column",
+    },
   })
 )
 const getButtonClasses = (isSelected: boolean, isDisabled: boolean, classes: any) => {
@@ -684,6 +710,7 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
   const [availableResearchers, setAvailableResearchers] = useState([])
   const [showStateSlide, setShowStateSlide] = useState(false)
   const [selectedStateAction, setSelectedStateAction] = useState(null)
+  const [unsavedSections, setUnsavedSections] = useState<Set<string>>(new Set())
 
   console.log(study)
   // Form state
@@ -729,6 +756,14 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
     },
   })
   const [tempEditedValues, setTempEditedValues] = useState(editedValues)
+
+  useEffect(() => {
+    console.log("editedValues changed", editedValues)
+  }, [editedValues])
+
+  useEffect(() => {
+    console.log("tempEditedValues changed", tempEditedValues)
+  }, [tempEditedValues])
 
   useEffect(() => {
     const fetchInstitutions = async () => {
@@ -782,8 +817,56 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
     fetchAvailableResearchers()
   }, [])
 
-  const handleSaveSection = (sectionId: string) => {
+  useEffect(() => {
+    const newUnsavedSections = new Set<string>()
+
+    // Check study-basics section
+    const basicsFields = [
+      "name",
+      "description",
+      "purpose",
+      "studyType",
+      "piInstitution",
+      "mobile",
+      "email",
+      "adminNote",
+    ]
+    const hasBasicsChanges = basicsFields.some((field) => tempEditedValues[field] !== editedValues[field])
+    if (hasBasicsChanges) newUnsavedSections.add("study-basics")
+
+    // Check funding-ethics section
+    const fundingEthicsFields = ["hasFunding", "fundingAgency", "hasEthicsPermission", "ethicsPermissionDoc"]
+    const hasFundingEthicsChanges = fundingEthicsFields.some((field) => tempEditedValues[field] !== editedValues[field])
+    if (hasFundingEthicsChanges) newUnsavedSections.add("funding-ethics")
+
+    // Check groups section
+    if (JSON.stringify(tempEditedValues.gname) !== JSON.stringify(editedValues.gname)) {
+      newUnsavedSections.add("groups")
+    }
+
+    // Check researchers section
+    if (JSON.stringify(tempEditedValues.sub_researchers) !== JSON.stringify(editedValues.sub_researchers)) {
+      newUnsavedSections.add("researchers")
+    }
+
+    setUnsavedSections(newUnsavedSections)
+  }, [tempEditedValues, editedValues])
+
+  const handleSaveSection = async (sectionId: string) => {
+    if (sectionId === "groups" && editingGroupIndex !== null) {
+      await handleSaveGroupEdit(editingGroupIndex)
+    }
+
+    if (sectionId === "researchers" && editingResearcherIndex !== null) {
+      await handleSaveResearcherEdit(editingResearcherIndex)
+    }
     setEditedValues(tempEditedValues)
+    setUnsavedSections((prev) => {
+      const newSet = new Set(prev)
+      newSet.delete(sectionId)
+      return newSet
+    })
+    console.log("saved section", sectionId, tempEditedValues, editedValues)
     enqueueSnackbar(t("Changes saved"), { variant: "success" })
   }
 
@@ -807,14 +890,45 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
       setEditingResearcherIndex(null)
     }
     setExpanded(false)
+    setUnsavedSections((prev) => {
+      const newSet = new Set(prev)
+      newSet.delete(sectionId)
+      return newSet
+    })
     enqueueSnackbar(t("Changes discarded"), { variant: "info" })
   }
 
   const handleMarkComplete = async (sectionId: string) => {
     setIsCompleting(true)
     try {
-      setEditedValues(tempEditedValues)
-      await handleSave()
+      let updatedTempValues = { ...tempEditedValues }
+
+      // Handle any pending edits first
+      if (sectionId === "groups" && editingGroupIndex !== null) {
+        handleSaveGroupEdit(editingGroupIndex)
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        updatedTempValues = { ...tempEditedValues }
+      }
+
+      if (sectionId === "researchers" && editingResearcherIndex !== null) {
+        handleSaveResearcherEdit(editingResearcherIndex)
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        updatedTempValues = { ...tempEditedValues }
+      }
+
+      setEditedValues(updatedTempValues)
+      await handleSaveWithValues(updatedTempValues)
+      setEditedValues(updatedTempValues)
+
+      // setEditedValues(tempEditedValues)
+      // await handleSaveWithValues(tempEditedValues)
+      // await handleSave()
+
+      setUnsavedSections((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(sectionId)
+        return newSet
+      })
       setCompletedSections((prev) => new Set([...prev, sectionId]))
       enqueueSnackbar(t("Section marked as complete"), { variant: "success" })
     } catch (error) {
@@ -853,29 +967,37 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
     enqueueSnackbar(t("Edit the group name in the form and click save"), { variant: "info" })
   }
 
-  const handleSaveGroupEdit = (index: number) => {
-    if (groupFormData.name.trim() && editingGroupIndex === index) {
-      const currentGroups = [...(tempEditedValues.gname || [])]
-      const newName = groupFormData.name.trim()
+  const handleSaveGroupEdit = (index: number): Promise<void> => {
+    return new Promise((resolve) => {
+      if (groupFormData.name.trim() && editingGroupIndex === index) {
+        const currentGroups = [...(tempEditedValues.gname || [])]
+        const newName = groupFormData.name.trim()
 
-      const nameExists = currentGroups.some((name, i) => i !== index && name === newName)
+        const nameExists = currentGroups.some((name, i) => i !== index && name === newName)
 
-      if (!nameExists) {
-        currentGroups[index] = newName
-        handleValueChange("gname", currentGroups)
-        setEditingGroupIndex(null)
-        setGroupFormData({
-          name: "",
-          nickname: "",
-          description: "",
-          type: "",
-          notes: "",
-        })
-        enqueueSnackbar(t("Group updated"), { variant: "success" })
+        if (!nameExists) {
+          currentGroups[index] = newName
+          // handleValueChange("gname", currentGroups)
+          setTempEditedValues((prev) => ({ ...prev, gname: currentGroups }))
+          setEditingGroupIndex(null)
+          setGroupFormData({
+            name: "",
+            nickname: "",
+            description: "",
+            type: "",
+            notes: "",
+          })
+          console.log("handleSaveGroupEdit", tempEditedValues, currentGroups)
+          enqueueSnackbar(t("Group updated"), { variant: "success" })
+          setTimeout(resolve, 0)
+        } else {
+          enqueueSnackbar(t("Group name already exists"), { variant: "warning" })
+          resolve()
+        }
       } else {
-        enqueueSnackbar(t("Group name already exists"), { variant: "warning" })
+        resolve()
       }
-    }
+    })
   }
 
   const handleDeleteGroup = (index: number) => {
@@ -936,32 +1058,38 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
     enqueueSnackbar(t("Edit the researcher details in the form and click save"), { variant: "info" })
   }
 
-  const handleSaveResearcherEdit = (index: number) => {
-    if (researcherFormData.researcherId && editingResearcherIndex === index) {
-      const currentResearchers = [...(tempEditedValues.sub_researchers || [])]
+  const handleSaveResearcherEdit = (index: number): Promise<void> => {
+    return new Promise((resolve) => {
+      if (researcherFormData.researcherId && editingResearcherIndex === index) {
+        const currentResearchers = [...(tempEditedValues.sub_researchers || [])]
 
-      // Check if new researcher ID already exists (excluding current index)
-      const researcherExists = currentResearchers.some(
-        (r, i) => i !== index && r.ResearcherID === researcherFormData.researcherId
-      )
+        // Check if new researcher ID already exists (excluding current index)
+        const researcherExists = currentResearchers.some(
+          (r, i) => i !== index && r.ResearcherID === researcherFormData.researcherId
+        )
 
-      if (!researcherExists) {
-        currentResearchers[index] = {
-          ResearcherID: researcherFormData.researcherId,
-          access_scope: researcherFormData.accessScope,
+        if (!researcherExists) {
+          currentResearchers[index] = {
+            ResearcherID: researcherFormData.researcherId,
+            access_scope: researcherFormData.accessScope,
+          }
+          // handleValueChange("sub_researchers", currentResearchers)
+          setTempEditedValues((prev) => ({ ...prev, sub_researchers: currentResearchers }))
+          setEditingResearcherIndex(null)
+          setResearcherFormData({
+            researcherId: "",
+            accessScope: 1,
+          })
+          enqueueSnackbar(t("Researcher updated"), { variant: "success" })
+          setTimeout(resolve, 0)
+        } else {
+          enqueueSnackbar(t("Researcher already exists in this study"), { variant: "warning" })
+          resolve()
         }
-
-        handleValueChange("sub_researchers", currentResearchers)
-        setEditingResearcherIndex(null)
-        setResearcherFormData({
-          researcherId: "",
-          accessScope: 1,
-        })
-        enqueueSnackbar(t("Researcher updated"), { variant: "success" })
       } else {
-        enqueueSnackbar(t("Researcher already exists in this study"), { variant: "warning" })
+        resolve()
       }
-    }
+    })
   }
 
   const handleDeleteResearcher = (index: number) => {
@@ -1402,68 +1530,81 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
         <Grid container spacing={3}>
           {isEditing && study.state === "development" && (
             <Grid item xs={6}>
-              <Box>
-                {sharingFields.map((field) => (
-                  <Box key={field.id} className={classes.fieldContainer}>
-                    <Typography className={classes.viewLabel}>{field.label}</Typography>
-                    {
-                      isEditing &&
-                        (field.type === "select" ? (
-                          <TextField
-                            className={classes.viewInput}
-                            value={field.value}
-                            onChange={(e) => {
-                              console.log("sharing clicked", field.options, field.id, availableResearchers)
-                              const newValue =
-                                field.id === "accessPrivilege" ? parseInt(e.target.value) : e.target.value
-                              setResearcherFormData((prev) => ({
-                                ...prev,
-                                [field.id]: newValue,
-                              }))
-                            }}
-                            fullWidth
-                            variant="outlined"
-                            size="small"
-                            select
-                          >
-                            {field.options?.map((option) => (
-                              <MenuItem key={option.value} value={option.value}>
-                                {option.label}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                        ) : (
-                          <TextField
-                            className={classes.viewInput}
-                            value={field.value}
-                            onChange={(e) => {
-                              const fieldMap = {
-                                researcherName: "researcherName",
-                                accessPrivilege: "accessPrivilege",
-                              }
-                              setResearcherFormData((prev) => ({
-                                ...prev,
-                                [fieldMap[field.id]]: e.target.value,
-                              }))
-                            }}
-                            fullWidth
-                            variant="outlined"
-                            size="small"
-                          />
-                        ))
-                      //   : (
-                      //   <Typography className={classes.viewValue}>
-                      //     {field.type === "select" && field.options ?
-                      //       field.options.find(opt => opt.value === field.value)?.label || field.value :
-                      //       field.value || "-"
-                      //     }
-                      //   </Typography>
-                      // )
-                    }
-                    <Divider className={classes.viewDivider} />
-                  </Box>
-                ))}
-              </Box>
+              <>
+                {editingResearcherIndex !== null && (
+                  <Typography variant="body2" color="primary" style={{ marginBottom: "8px", fontStyle: "italic" }}>
+                    {t("Currently editing")}:{" "}
+                    {(() => {
+                      const researcher = tempEditedValues.sub_researchers[editingResearcherIndex]
+                      const researcherInfo = availableResearchers.find((r) => r.id === researcher?.ResearcherID)
+                      const displayName = researcherInfo?.name || researcher?.ResearcherID || "Unknown"
+                      return `${displayName} (${t("Position")} ${editingResearcherIndex + 1})`
+                    })()}
+                  </Typography>
+                )}
+                <Box>
+                  {sharingFields.map((field) => (
+                    <Box key={field.id} className={classes.fieldContainer}>
+                      <Typography className={classes.viewLabel}>{field.label}</Typography>
+                      {
+                        isEditing &&
+                          (field.type === "select" ? (
+                            <TextField
+                              className={classes.viewInput}
+                              value={field.value}
+                              onChange={(e) => {
+                                console.log("sharing clicked", field.options, field.id, availableResearchers)
+                                const newValue =
+                                  field.id === "accessPrivilege" ? parseInt(e.target.value) : e.target.value
+                                setResearcherFormData((prev) => ({
+                                  ...prev,
+                                  [field.id]: newValue,
+                                }))
+                              }}
+                              fullWidth
+                              variant="outlined"
+                              size="small"
+                              select
+                            >
+                              {field.options?.map((option) => (
+                                <MenuItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          ) : (
+                            <TextField
+                              className={classes.viewInput}
+                              value={field.value}
+                              onChange={(e) => {
+                                const fieldMap = {
+                                  researcherName: "researcherName",
+                                  accessPrivilege: "accessPrivilege",
+                                }
+                                setResearcherFormData((prev) => ({
+                                  ...prev,
+                                  [fieldMap[field.id]]: e.target.value,
+                                }))
+                              }}
+                              fullWidth
+                              variant="outlined"
+                              size="small"
+                            />
+                          ))
+                        //   : (
+                        //   <Typography className={classes.viewValue}>
+                        //     {field.type === "select" && field.options ?
+                        //       field.options.find(opt => opt.value === field.value)?.label || field.value :
+                        //       field.value || "-"
+                        //     }
+                        //   </Typography>
+                        // )
+                      }
+                      <Divider className={classes.viewDivider} />
+                    </Box>
+                  ))}
+                </Box>
+              </>
             </Grid>
           )}
           <Grid item xs={6}>
@@ -1475,41 +1616,47 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
                 {tempEditedValues.sub_researchers.map((SR, index) => (
                   <ListItem key={index} className={classes.sharedItem}>
                     <ListItemText
-                      primary={`${index + 1}. ${getName(SR.ResearcherID)}`}
+                      primary={`${index + 1}. ${getName(SR.ResearcherID)} ${
+                        editingResearcherIndex === index ? " (editing)" : ""
+                      }`}
                       secondary={` Access: ${getAccessLevelLabel(SR.access_scope)}`}
+                      primaryTypographyProps={{
+                        style: editingResearcherIndex === index ? { color: "#FF9800", fontWeight: "bold" } : {},
+                      }}
                     />
+                    {isEditing && study.state === "development" && (
+                      <Box className={classes.sharedItemActions}>
+                        <IconButton
+                          size="small"
+                          className={classes.iconButton}
+                          onClick={() => handleEditResearcher(index)}
+                          title={t("Edit")}
+                          disabled={!isEditing || study.state !== "development"}
+                        >
+                          <Edit style={{ width: 16, height: 16 }} />
+                        </IconButton>
 
-                    <Box className={classes.sharedItemActions}>
-                      <IconButton
-                        size="small"
-                        className={classes.iconButton}
-                        onClick={() => handleEditResearcher(index)}
-                        title={t("Edit")}
-                        disabled={!isEditing || study.state !== "development"}
-                      >
-                        <Edit style={{ width: 16, height: 16 }} />
-                      </IconButton>
+                        <IconButton
+                          size="small"
+                          className={classes.iconButton}
+                          onClick={() => handleSaveResearcherEdit(index)}
+                          title={t("Save")}
+                          disabled={editingResearcherIndex !== index || !isEditing || study.state !== "development"}
+                        >
+                          <Save style={{ width: 16, height: 16 }} />
+                        </IconButton>
 
-                      <IconButton
-                        size="small"
-                        className={classes.iconButton}
-                        onClick={() => handleSaveResearcherEdit(index)}
-                        title={t("Save")}
-                        disabled={editingResearcherIndex !== index || !isEditing || study.state !== "development"}
-                      >
-                        <Save style={{ width: 16, height: 16 }} />
-                      </IconButton>
-
-                      <IconButton
-                        size="small"
-                        className={classes.iconButton}
-                        onClick={() => handleDeleteResearcher(index)}
-                        title={t("Delete")}
-                        disabled={!isEditing || study.state !== "development"}
-                      >
-                        <DeleteIcon style={{ width: 16, height: 16 }} />
-                      </IconButton>
-                    </Box>
+                        <IconButton
+                          size="small"
+                          className={classes.iconButton}
+                          onClick={() => handleDeleteResearcher(index)}
+                          title={t("Delete")}
+                          disabled={!isEditing || study.state !== "development"}
+                        >
+                          <DeleteIcon style={{ width: 16, height: 16 }} />
+                        </IconButton>
+                      </Box>
+                    )}
                   </ListItem>
                 ))}
               </List>
@@ -1943,7 +2090,14 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
   // Handle trigger save
   useEffect(() => {
     if (triggerSave && isEditing) {
-      handleSave()
+      // handleSave()
+      if (unsavedSections.size > 0) {
+        console.log("Saving with temp values due to unsaved changes:", tempEditedValues)
+        handleSave()
+      } else {
+        console.log("Saving with edited values:", editedValues, tempEditedValues)
+        handleSaveWithValues(tempEditedValues)
+      }
     }
   }, [triggerSave])
 
@@ -2223,45 +2377,53 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
             {/* Left side - Group form */}
             {isEditing && study.state === "development" && (
               <Grid item xs={6}>
-                <Box>
-                  {groupFields.map((field) => (
-                    <Box key={field.id} className={classes.fieldContainer}>
-                      <Typography className={classes.viewLabel}>{field.label}</Typography>
-                      {
-                        isEditing && (
-                          <TextField
-                            className={classes.viewInput}
-                            value={field.value}
-                            onChange={(e) => {
-                              const fieldMap = {
-                                groupName: "name",
-                                // groupNickname: 'nickname',
-                                // groupDescription: 'description',
-                                // groupType: 'type',
-                                // notes: 'notes'
-                              }
-                              setGroupFormData((prev) => ({
-                                ...prev,
-                                [fieldMap[field.id]]: e.target.value,
-                              }))
-                            }}
-                            fullWidth
-                            variant="outlined"
-                            size="small"
-                            multiline={field.type === "multiline"}
-                            minRows={field.type === "multiline" ? 3 : 1}
-                          />
-                        )
-                        // : (
-                        //   <Typography className={classes.viewValue}>
-                        //     {field.value || "-"}
-                        //   </Typography>
-                        // )
-                      }
-                      <Divider className={classes.viewDivider} />
-                    </Box>
-                  ))}
-                </Box>
+                <>
+                  {editingGroupIndex !== null && (
+                    <Typography variant="body2" color="primary" style={{ marginBottom: "8px", fontStyle: "italic" }}>
+                      {t("Currently editing")}: {t("Group")} {editingGroupIndex + 1} -{" "}
+                      {tempEditedValues.gname[editingGroupIndex]}
+                    </Typography>
+                  )}
+                  <Box>
+                    {groupFields.map((field) => (
+                      <Box key={field.id} className={classes.fieldContainer}>
+                        <Typography className={classes.viewLabel}>{field.label}</Typography>
+                        {
+                          isEditing && (
+                            <TextField
+                              className={classes.viewInput}
+                              value={field.value}
+                              onChange={(e) => {
+                                const fieldMap = {
+                                  groupName: "name",
+                                  // groupNickname: 'nickname',
+                                  // groupDescription: 'description',
+                                  // groupType: 'type',
+                                  // notes: 'notes'
+                                }
+                                setGroupFormData((prev) => ({
+                                  ...prev,
+                                  [fieldMap[field.id]]: e.target.value,
+                                }))
+                              }}
+                              fullWidth
+                              variant="outlined"
+                              size="small"
+                              multiline={field.type === "multiline"}
+                              minRows={field.type === "multiline" ? 3 : 1}
+                            />
+                          )
+                          // : (
+                          //   <Typography className={classes.viewValue}>
+                          //     {field.value || "-"}
+                          //   </Typography>
+                          // )
+                        }
+                        <Divider className={classes.viewDivider} />
+                      </Box>
+                    ))}
+                  </Box>
+                </>
               </Grid>
             )}
             {/* Right side - Groups list */}
@@ -2277,43 +2439,47 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
                       <Box className={classes.sharedItemInfo}>
                         <Typography className={classes.sharedItemName}>
                           {t("Group")} {index + 1}: {groupName}
+                          {editingGroupIndex === index && (
+                            <span style={{ color: "#FF9800", fontWeight: "bold", marginLeft: "8px" }}>(editing)</span>
+                          )}
                         </Typography>
                         <Typography className={classes.sharedItemDate}>
                           {/* Add additional group info here if needed */}
                         </Typography>
                       </Box>
+                      {isEditing && study.state === "development" && (
+                        <Box className={classes.sharedItemActions}>
+                          <IconButton
+                            size="small"
+                            className={classes.iconButton}
+                            onClick={() => handleEditGroup(index)}
+                            title={t("Edit")}
+                            disabled={!isEditing || study.state !== "development"}
+                          >
+                            <Edit style={{ width: 16, height: 16 }} />
+                          </IconButton>
 
-                      <Box className={classes.sharedItemActions}>
-                        <IconButton
-                          size="small"
-                          className={classes.iconButton}
-                          onClick={() => handleEditGroup(index)}
-                          title={t("Edit")}
-                          disabled={!isEditing || study.state !== "development"}
-                        >
-                          <Edit style={{ width: 16, height: 16 }} />
-                        </IconButton>
+                          <IconButton
+                            size="small"
+                            className={classes.iconButton}
+                            onClick={() => handleSaveGroupEdit(index)}
+                            title={t("Save")}
+                            disabled={editingGroupIndex !== index || !isEditing || study.state !== "development"}
+                          >
+                            <Save style={{ width: 16, height: 16 }} />
+                          </IconButton>
 
-                        <IconButton
-                          size="small"
-                          className={classes.iconButton}
-                          onClick={() => handleSaveGroupEdit(index)}
-                          title={t("Save")}
-                          disabled={editingGroupIndex !== index || !isEditing || study.state !== "development"}
-                        >
-                          <Save style={{ width: 16, height: 16 }} />
-                        </IconButton>
-
-                        <IconButton
-                          size="small"
-                          className={classes.iconButton}
-                          onClick={() => handleDeleteGroup(index)}
-                          title={t("Delete")}
-                          disabled={!isEditing || study.state !== "development"}
-                        >
-                          <DeleteIcon style={{ width: 16, height: 16 }} />
-                        </IconButton>
-                      </Box>
+                          <IconButton
+                            size="small"
+                            className={classes.iconButton}
+                            onClick={() => handleDeleteGroup(index)}
+                            title={t("Delete")}
+                            disabled={!isEditing || study.state !== "development"}
+                          >
+                            <DeleteIcon style={{ width: 16, height: 16 }} />
+                          </IconButton>
+                        </Box>
+                      )}
                     </ListItem>
                   ))}
                 </List>
@@ -2468,7 +2634,10 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
       <Box className={classes.accordionContainer}>
         {accordionSections.map((section, index) => {
           const completionStatus = isAccordionComplete(section.id, study.state === "development" ? editedValues : study)
-          const isComplete = completionStatus === true
+          const hasUnsavedChanges = unsavedSections.has(section.id)
+          const isComplete = completionStatus === true && !hasUnsavedChanges
+          const hasSavedChanges = completionStatus === true && !hasUnsavedChanges
+          // const isComplete = completionStatus === true
           const isPLocked = study.state === "production"
           const isCLocked = study.state === "complete"
           const isExpanded = expanded === section.id
@@ -2491,15 +2660,25 @@ const StudyAccordion: React.FC<StudyAccordionProps> = ({
                       <LockIcon className={classes.statusLockIcon} />
                     ) : (
                       <>
-                        {isComplete ? (
-                          <CheckCircleIcon className={`${classes.statusIcon} ${isPLocked && classes.prodIcon}`} />
+                        {/* {isComplete ? (
+                          <CheckCircleIcon className={`${classes.statusIcon} ${isPLocked && classes.prodIcon}`} /> */}
+                        {hasSavedChanges ? (
+                          <CheckCircleIcon className={`${classes.statusIconGreen} ${isPLocked && classes.prodIcon}`} />
+                        ) : hasUnsavedChanges ? (
+                          <CheckCircleIcon className={classes.statusIconYellow} />
                         ) : (
                           <EmptyCircleIcon className={`${classes.statusIcon} empty`} />
                         )}
                         {isPLocked && <LockIcon className={classes.statusLockIcon} />}
                       </>
                     ))}
-                  <Typography className={classes.accordionTitle}>{section.title}</Typography>
+                  {/* <Typography className={classes.accordionTitle}>{section.title}</Typography> */}
+                  <Box className={classes.accordionTitleContainer}>
+                    <Box display="flex" alignItems="center">
+                      <Typography className={classes.accordionTitle}>{section.title}</Typography>
+                      {hasUnsavedChanges && <Typography className={classes.unsavedText}>(unsaved changes)</Typography>}
+                    </Box>
+                  </Box>
                 </Box>
               </AccordionSummary>
               <AccordionDetails className={classes.customAccordionDetails}>
