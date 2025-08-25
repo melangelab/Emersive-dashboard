@@ -676,6 +676,7 @@ const SensorTable: React.FC<SensorTableProps> = ({
     }
   }
   // Action buttons for sensors
+  // Wrap icons in controlled Tooltips so tooltips remain visible while the action is active
   const sensorActions = (sensor) => {
     const canEdit = canEditSensor(sensor, studies, researcherId, sharedstudies)
 
@@ -684,143 +685,201 @@ const SensorTable: React.FC<SensorTableProps> = ({
         {sensor.isCommunity ? (
           // Community sensor actions
           <>
-            {activeButton.id === sensor.id && activeButton.action === "view" ? (
-              <ViewFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "view" })
-                  onViewSensor(sensor)
-                }}
-              />
-            ) : (
-              <ViewIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "view" })
-                  onViewSensor(sensor)
-                }}
-              />
-            )}
+            <Tooltip
+              title="View sensor details"
+              open={activeButton.id === sensor.id && activeButton.action === "view" ? true : undefined}
+              placement="top"
+            >
+              <span style={{ display: "inline-block" }}>
+                {activeButton.id === sensor.id && activeButton.action === "view" ? (
+                  <ViewFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "view" })
+                      onViewSensor(sensor)
+                    }}
+                  />
+                ) : (
+                  <ViewIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "view" })
+                      onViewSensor(sensor)
+                    }}
+                  />
+                )}
+              </span>
+            </Tooltip>
 
-            {activeButton.id === sensor.id && activeButton.action === "copy" ? (
-              <CopyFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "copy" })
-                  onCopySensor(sensor)
-                }}
-              />
-            ) : (
-              <CopyIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "copy" })
-                  onCopySensor(sensor)
-                }}
-              />
-            )}
+            <Tooltip
+              title="Copy sensor"
+              open={activeButton.id === sensor.id && activeButton.action === "copy" ? true : undefined}
+              placement="top"
+            >
+              <span style={{ display: "inline-block" }}>
+                {activeButton.id === sensor.id && activeButton.action === "copy" ? (
+                  <CopyFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "copy" })
+                      onCopySensor(sensor)
+                    }}
+                  />
+                ) : (
+                  <CopyIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "copy" })
+                      onCopySensor(sensor)
+                    }}
+                  />
+                )}
+              </span>
+            </Tooltip>
           </>
         ) : (
           // Custom sensor actions
           <>
-            {activeButton.id === sensor.id && activeButton.action === "view" ? (
-              <ViewFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "view" })
-                  onViewSensor(sensor)
-                }}
-              />
-            ) : (
-              <ViewIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "view" })
-                  onViewSensor(sensor)
-                }}
-              />
-            )}
+            <Tooltip
+              title="View sensor details"
+              open={activeButton.id === sensor.id && activeButton.action === "view" ? true : undefined}
+              placement="top"
+            >
+              <span style={{ display: "inline-block" }}>
+                {activeButton.id === sensor.id && activeButton.action === "view" ? (
+                  <ViewFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "view" })
+                      onViewSensor(sensor)
+                    }}
+                  />
+                ) : (
+                  <ViewIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "view" })
+                      onViewSensor(sensor)
+                    }}
+                  />
+                )}
+              </span>
+            </Tooltip>
 
             {canEdit && (
               <>
-                {activeButton.id === sensor.id && activeButton.action === "edit" ? (
-                  <EditFilledIcon
-                    className={`${mtstyles.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: null, action: null })
-                      setEditingCellSensorSpec(null)
-                      setEditingSensorDuration(null)
-                      setEditingSensorFrequency(null)
-                      onEditSensor(sensor)
-                      // setEditingCellSensorSpec(sensor.spec)
-                    }}
-                  />
-                ) : (
-                  <EditIcon
-                    className={mtstyles.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: sensor.id, action: "edit" })
-                      onEditSensor(sensor)
-                      setEditingCellSensorSpec(sensor.spec)
-                    }}
-                  />
-                )}
-                {activeButton.id === sensor.id && activeButton.action === "save" ? (
-                  <SaveFilledIcon
-                    className={`${mtstyles.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: sensor.id, action: "save" })
-                      onSaveSensor(sensor)
-                    }}
-                  />
-                ) : (
-                  <SaveIcon
-                    className={mtstyles.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: sensor.id, action: "save" })
-                      onSaveSensor(sensor)
-                    }}
-                  />
-                )}
+                <Tooltip
+                  title="Edit sensor"
+                  open={activeButton.id === sensor.id && activeButton.action === "edit" ? true : undefined}
+                  placement="top"
+                >
+                  <span style={{ display: "inline-block" }}>
+                    {activeButton.id === sensor.id && activeButton.action === "edit" ? (
+                      <EditFilledIcon
+                        className={`${mtstyles.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: null, action: null })
+                          setEditingCellSensorSpec(null)
+                          setEditingSensorDuration(null)
+                          setEditingSensorFrequency(null)
+                          onEditSensor(sensor)
+                          // setEditingCellSensorSpec(sensor.spec)
+                        }}
+                      />
+                    ) : (
+                      <EditIcon
+                        className={mtstyles.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: sensor.id, action: "edit" })
+                          onEditSensor(sensor)
+                          setEditingCellSensorSpec(sensor.spec)
+                        }}
+                      />
+                    )}
+                  </span>
+                </Tooltip>
+
+                <Tooltip
+                  title="Save sensor"
+                  open={activeButton.id === sensor.id && activeButton.action === "save" ? true : undefined}
+                  placement="top"
+                >
+                  <span style={{ display: "inline-block" }}>
+                    {activeButton.id === sensor.id && activeButton.action === "save" ? (
+                      <SaveFilledIcon
+                        className={`${mtstyles.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: sensor.id, action: "save" })
+                          onSaveSensor(sensor)
+                        }}
+                      />
+                    ) : (
+                      <SaveIcon
+                        className={mtstyles.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: sensor.id, action: "save" })
+                          onSaveSensor(sensor)
+                        }}
+                      />
+                    )}
+                  </span>
+                </Tooltip>
               </>
             )}
-            {activeButton.id === sensor.id && activeButton.action === "copy" ? (
-              <CopyFilledIcon
-                className={`${mtstyles.actionIcon} active`}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "copy" })
-                  onCopySensor(sensor)
-                }}
-              />
-            ) : (
-              <CopyIcon
-                className={mtstyles.actionIcon}
-                onClick={() => {
-                  setActiveButton({ id: sensor.id, action: "copy" })
-                  onCopySensor(sensor)
-                }}
-              />
-            )}
+
+            <Tooltip
+              title="Copy sensor"
+              open={activeButton.id === sensor.id && activeButton.action === "copy" ? true : undefined}
+              placement="top"
+            >
+              <span style={{ display: "inline-block" }}>
+                {activeButton.id === sensor.id && activeButton.action === "copy" ? (
+                  <CopyFilledIcon
+                    className={`${mtstyles.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "copy" })
+                      onCopySensor(sensor)
+                    }}
+                  />
+                ) : (
+                  <CopyIcon
+                    className={mtstyles.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: sensor.id, action: "copy" })
+                      onCopySensor(sensor)
+                    }}
+                  />
+                )}
+              </span>
+            </Tooltip>
 
             {!sensor.isShared && (
               <>
-                {activeButton.id === sensor.id && activeButton.action === "delete" ? (
-                  <DeleteFilledIcon
-                    className={`${mtstyles.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: sensor.id, action: "delete" })
-                      onDeleteSensor(sensor)
-                    }}
-                  />
-                ) : (
-                  <DeleteIcon
-                    className={mtstyles.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: sensor.id, action: "delete" })
-                      onDeleteSensor(sensor)
-                    }}
-                  />
-                )}
+                <Tooltip
+                  title="Delete sensor"
+                  open={activeButton.id === sensor.id && activeButton.action === "delete" ? true : undefined}
+                  placement="top"
+                >
+                  <span style={{ display: "inline-block" }}>
+                    {activeButton.id === sensor.id && activeButton.action === "delete" ? (
+                      <DeleteFilledIcon
+                        className={`${mtstyles.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: sensor.id, action: "delete" })
+                          onDeleteSensor(sensor)
+                        }}
+                      />
+                    ) : (
+                      <DeleteIcon
+                        className={mtstyles.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: sensor.id, action: "delete" })
+                          onDeleteSensor(sensor)
+                        }}
+                      />
+                    )}
+                  </span>
+                </Tooltip>
               </>
             )}
           </>

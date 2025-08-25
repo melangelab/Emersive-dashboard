@@ -13,6 +13,7 @@ import {
   Divider,
   Backdrop,
   CircularProgress,
+  Tooltip,
 } from "@material-ui/core"
 import UpdateSensor from "./UpdateSensor"
 import { useTranslation } from "react-i18next"
@@ -98,21 +99,40 @@ export const ModularCard: React.FC<ModularCardProps> = ({
     action: string,
     onClick: () => void
   ) => {
-    return activeButton.id === item.id && activeButton.action === action
-      ? React.cloneElement(filledIcon as React.ReactElement, {
-          className: `${styles.mtstyles.actionIcon} active`,
-          onClick: () => {
-            setActiveButton({ id: item.id, action })
-            onClick()
-          },
-        })
-      : React.cloneElement(defaultIcon as React.ReactElement, {
-          className: styles.mtstyles.actionIcon,
-          onClick: () => {
-            setActiveButton({ id: item.id, action })
-            onClick()
-          },
-        })
+    const titleMap = {
+      view: "View",
+      copy: "Copy",
+      update: "Edit",
+      version: "Version",
+      delete: "Delete",
+      update_history: "History",
+      default: action,
+    }
+    const title = (titleMap as any)[action] || (titleMap as any).default
+
+    const iconElem =
+      activeButton.id === item.id && activeButton.action === action
+        ? React.cloneElement(filledIcon as React.ReactElement, {
+            className: `${styles.mtstyles.actionIcon} active`,
+            onClick: () => {
+              setActiveButton({ id: item.id, action })
+              onClick()
+            },
+          })
+        : React.cloneElement(defaultIcon as React.ReactElement, {
+            className: styles.mtstyles.actionIcon,
+            onClick: () => {
+              setActiveButton({ id: item.id, action })
+              onClick()
+            },
+          })
+
+    // Tooltip requires a DOM element as child for refs when child is an SVG; wrap in span
+    return (
+      <Tooltip title={title} placement="top">
+        <span style={{ display: "inline-block" }}>{iconElem}</span>
+      </Tooltip>
+    )
   }
   // ${isSharedItem ? styles.activitycardclasses.sharedCard : ""}
 
