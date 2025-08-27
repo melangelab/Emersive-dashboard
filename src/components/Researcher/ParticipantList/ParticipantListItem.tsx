@@ -578,32 +578,14 @@ export default function ParticipantListItem({
         </Box>
         <Box className={participantcardclasses.actionButtons}>
           {!!notificationColumn && <NotificationSettings participant={participant} />}
-          {/* {activeButton.id === participant.id && activeButton.action === "enter" ? (
-            <VisualiseFilledIcon
-              className={`${participantcardclasses.actionIcon} ${hasCredentials === false ? 'disabled' : 'active'}`}
-              onClick={() => {
-                setActiveButton({ id: participant.id, action: "enter" })
-                hasCredentials && onParticipantSelect(participant.id)
-                setActiveButton({ id: null, action: null })
-              }}
-              style={{ transform: "scaleX(-1)" }}
-            />
-          ) : (
-            <VisualiseIcon
-              className={`${participantcardclasses.actionIcon}  ${hasCredentials === false ? 'disabled' : ''} ${
-                activeButton.id === participant.id && activeButton.action === "enter" ? "active" : ""
-              }`}
-              onClick={() => {
-                setActiveButton({ id: participant.id, action: "enter" })
-                hasCredentials && onParticipantSelect(participant.id)
-                setActiveButton({ id: null, action: null })
-              }}
-              style={{ transform: "scaleX(-1)" }}
-            />
-          )} */}
+          {/* Visualise Icon Tooltip */}
           <Tooltip
-            title={hasCredentials === false ? "This participant has not created their credentials yet" : ""}
-            open={credentialTooltipOpen}
+            title={
+              hasCredentials === false
+                ? "This participant has not created their credentials yet"
+                : "Visualise Participant"
+            }
+            open={credentialTooltipOpen || undefined}
             arrow
           >
             <div>
@@ -624,29 +606,32 @@ export default function ParticipantListItem({
               )}
             </div>
           </Tooltip>
-          {activeButton.id === participant.id && activeButton.action === "view" ? (
-            <ViewFilledIcon
-              className={`${participantcardclasses.actionIcon} active`}
-              onClick={() => {
-                setActiveButton({ id: participant.id, action: "view" })
-                onViewParticipant(participant)
-                // onParticipantSelect(participant.id)
-                setActiveButton({ id: null, action: null })
-              }}
-            />
-          ) : (
-            <ViewIcon
-              className={`${participantcardclasses.actionIcon} ${
-                activeButton.id === participant.id && activeButton.action === "view" ? "active" : ""
-              }`}
-              onClick={() => {
-                setActiveButton({ id: participant.id, action: "view" })
-                onViewParticipant(participant)
-                // onParticipantSelect(participant.id)
-                setActiveButton({ id: null, action: null })
-              }}
-            />
-          )}
+          {/* View Icon Tooltip */}
+          <Tooltip title="View Participant" arrow>
+            <div>
+              {activeButton.id === participant.id && activeButton.action === "view" ? (
+                <ViewFilledIcon
+                  className={`${participantcardclasses.actionIcon} active`}
+                  onClick={() => {
+                    setActiveButton({ id: participant.id, action: "view" })
+                    onViewParticipant(participant)
+                    setActiveButton({ id: null, action: null })
+                  }}
+                />
+              ) : (
+                <ViewIcon
+                  className={`${participantcardclasses.actionIcon} ${
+                    activeButton.id === participant.id && activeButton.action === "view" ? "active" : ""
+                  }`}
+                  onClick={() => {
+                    setActiveButton({ id: participant.id, action: "view" })
+                    onViewParticipant(participant)
+                    setActiveButton({ id: null, action: null })
+                  }}
+                />
+              )}
+            </div>
+          </Tooltip>
           {/* {activeButton.id === participant.id && activeButton.action === "edit" ? (
             <EditFilledIcon
               className={`${participantcardclasses.actionIcon} active`}
@@ -667,81 +652,98 @@ export default function ParticipantListItem({
           )} */}
           {canEdit && (
             <>
-              {activeButton?.id === participant.id && activeButton?.action === "credentials" ? (
-                <PasswordFilledIcon
-                  className={`${participantcardclasses.actionIcon} active`}
-                  onClick={() => {
-                    setActiveButton?.({ id: participant.id, action: "credentials" })
-                    setShowPasswordDialog(true)
-                  }}
-                />
-              ) : (
-                <PasswordIcon
-                  className={participantcardclasses.actionIcon}
-                  onClick={() => {
-                    setActiveButton?.({ id: participant.id, action: "credentials" })
-                    setShowPasswordDialog(true)
-                  }}
-                />
-              )}
-              {/* <Credentials user={participant} activeButton={activeButton} setActiveButton={setActiveButton} /> */}
+              {/* Password Icon Tooltip */}
+              <Tooltip title="Set/Reset Password" arrow>
+                <div>
+                  {activeButton?.id === participant.id && activeButton?.action === "credentials" ? (
+                    <PasswordFilledIcon
+                      className={`${participantcardclasses.actionIcon} active`}
+                      onClick={() => {
+                        setActiveButton?.({ id: participant.id, action: "credentials" })
+                        setShowPasswordDialog(true)
+                      }}
+                    />
+                  ) : (
+                    <PasswordIcon
+                      className={participantcardclasses.actionIcon}
+                      onClick={() => {
+                        setActiveButton?.({ id: participant.id, action: "credentials" })
+                        setShowPasswordDialog(true)
+                      }}
+                    />
+                  )}
+                </div>
+              </Tooltip>
+              {/* Suspend/Unsuspend Icon Tooltip */}
               {!participant.systemTimestamps?.suspensionTime ? (
-                activeButton.id === participant.id && activeButton.action === "suspend" ? (
-                  <SuspendFilledIcon
-                    className={`${participantcardclasses.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: participant.id, action: "suspend" })
-                      props.onSuspend(participant, setActiveButton)
-                    }}
-                  />
-                ) : (
-                  <SuspendIcon
-                    className={participantcardclasses.actionIcon}
-                    onClick={() => {
-                      setActiveButton({ id: participant.id, action: "suspend" })
-                      props.onSuspend(participant, setActiveButton)
-                    }}
-                  />
-                )
-              ) : activeButton.id === participant.id && activeButton.action === "suspend" ? (
-                <SuspendFilledIcon
-                  className={`${participantcardclasses.actionIcon} active`}
-                  onClick={() => {
-                    setActiveButton({ id: participant.id, action: "suspend" })
-                    props.onUnSuspend(participant, setActiveButton)
-                  }}
-                />
+                <Tooltip title="Suspend Participant" arrow>
+                  <div>
+                    {activeButton.id === participant.id && activeButton.action === "suspend" ? (
+                      <SuspendFilledIcon
+                        className={`${participantcardclasses.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: participant.id, action: "suspend" })
+                          props.onSuspend(participant, setActiveButton)
+                        }}
+                      />
+                    ) : (
+                      <SuspendIcon
+                        className={participantcardclasses.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: participant.id, action: "suspend" })
+                          props.onSuspend(participant, setActiveButton)
+                        }}
+                      />
+                    )}
+                  </div>
+                </Tooltip>
               ) : (
-                <SuspendIcon
-                  className={participantcardclasses.actionIcon}
-                  onClick={() => {
-                    setActiveButton({ id: participant.id, action: "suspend" })
-                    props.onUnSuspend(participant, setActiveButton)
-                  }}
-                />
+                <Tooltip title="Unsuspend Participant" arrow>
+                  <div>
+                    {activeButton.id === participant.id && activeButton.action === "suspend" ? (
+                      <SuspendFilledIcon
+                        className={`${participantcardclasses.actionIcon} active`}
+                        onClick={() => {
+                          setActiveButton({ id: participant.id, action: "suspend" })
+                          props.onUnSuspend(participant, setActiveButton)
+                        }}
+                      />
+                    ) : (
+                      <SuspendIcon
+                        className={participantcardclasses.actionIcon}
+                        onClick={() => {
+                          setActiveButton({ id: participant.id, action: "suspend" })
+                          props.onUnSuspend(participant, setActiveButton)
+                        }}
+                      />
+                    )}
+                  </div>
+                </Tooltip>
               )}
             </>
           )}
           {!participant.isShared && (
-            <>
-              {activeButton.id === participant.id && activeButton.action === "delete" ? (
-                <DeleteFilledIcon
-                  className={`${participantcardclasses.actionIcon} active`}
-                  onClick={() => {
-                    setActiveButton({ id: participant.id, action: "delete" })
-                    setConfirmationDialog(true)
-                  }}
-                />
-              ) : (
-                <DeleteIcon
-                  className={participantcardclasses.actionIcon}
-                  onClick={() => {
-                    setActiveButton({ id: participant.id, action: "delete" })
-                    setConfirmationDialog(true)
-                  }}
-                />
-              )}
-            </>
+            <Tooltip title="Delete Participant" arrow>
+              <div>
+                {activeButton.id === participant.id && activeButton.action === "delete" ? (
+                  <DeleteFilledIcon
+                    className={`${participantcardclasses.actionIcon} active`}
+                    onClick={() => {
+                      setActiveButton({ id: participant.id, action: "delete" })
+                      setConfirmationDialog(true)
+                    }}
+                  />
+                ) : (
+                  <DeleteIcon
+                    className={participantcardclasses.actionIcon}
+                    onClick={() => {
+                      setActiveButton({ id: participant.id, action: "delete" })
+                      setConfirmationDialog(true)
+                    }}
+                  />
+                )}
+              </div>
+            </Tooltip>
           )}
           {/* {activeButton.id === participant.id && activeButton.action === "settings" ? (
             <CopyFilledIcon
