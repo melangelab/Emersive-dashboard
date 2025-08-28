@@ -759,22 +759,25 @@ function Download({ studies = null, researchers = null, target = "studies" }) {
       })
     }
 
-    // First, flatten the data to handle nested objects
     const flattenedData = data.map((item) => {
       const flattened = {}
+      console.log("FLATTENED data before", item)
 
       // Flatten first level properties
       for (const key in item) {
         if (Array.isArray(item[key])) {
-          flattened[key] = item[key].join(", ")
+          // Handle arrays - stringify the entire array instead of joining
+          flattened[key] = JSON.stringify(item[key])
         } else if (typeof item[key] === "object" && item[key] !== null) {
           // Handle nested objects by adding them as stringified values
           flattened[key] = JSON.stringify(item[key])
         } else {
+          // Handle primitive values - no need to stringify primitives for CSV
           flattened[key] = item[key]
         }
       }
 
+      console.log("FLATTENED DATA after", flattened)
       return flattened
     })
 
@@ -823,22 +826,23 @@ function Download({ studies = null, researchers = null, target = "studies" }) {
     // First, flatten the data to handle nested objects
     const flattenedData = data.map((item) => {
       const flattened = {}
+      console.log("FLATTENED data before", item)
 
       // Flatten first level properties
       for (const key in item) {
         if (Array.isArray(item[key])) {
-          flattened[key] = item[key].join(", ")
+          // Handle arrays - stringify the entire array instead of joining
+          flattened[key] = JSON.stringify(item[key])
         } else if (typeof item[key] === "object" && item[key] !== null) {
-          // Handle nested objects - Truncate if needed to avoid Excel's 32767 character limit
-          const stringified = JSON.stringify(item[key])
-          flattened[key] = stringified.length > 32000 ? stringified.substring(0, 32000) + "..." : stringified
+          // Handle nested objects by adding them as stringified values
+          flattened[key] = JSON.stringify(item[key])
         } else {
-          // For primitive values, ensure they're strings and truncate if needed
-          const stringValue = String(item[key] || "")
-          flattened[key] = stringValue.length > 32000 ? stringValue.substring(0, 32000) + "..." : stringValue
+          // Handle primitive values - no need to stringify primitives for CSV
+          flattened[key] = item[key]
         }
       }
 
+      console.log("FLATTENED DATA after", flattened)
       return flattened
     })
 

@@ -1,4 +1,4 @@
-FROM node:16 AS build
+FROM node:16-bookworm AS build
 WORKDIR /usr/src/app
 
 # Install jq first
