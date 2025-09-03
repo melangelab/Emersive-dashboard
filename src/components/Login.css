@@ -41,7 +41,7 @@
 
 .platform-name-login {
   display: inline-block;
-  font-family: exo\2, sans-serif;
+  font-family: "Exo 2", sans-serif;
   color: #cf7f5a;
   font-size: 3.6rem;
   font-weight: 450;
@@ -54,6 +54,7 @@
 .platform-tag-login {
   display: inline-block;
   color: #808080;
+  font-family: "Exo 2", sans-serif;
   font-optical-sizing: auto;
   font-size: 0.9rem;
   font-style: normal;
