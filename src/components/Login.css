@@ -65,8 +65,9 @@
 
 .grid-item {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
   overflow-y: scroll;
   height: 100dvh;
 }
