@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from "react"
-import { Box, Fab, Button, Icon, makeStyles, Theme, createStyles, useMediaQuery, useTheme } from "@material-ui/core"
+import {
+  Box,
+  Fab,
+  Button,
+  Icon,
+  makeStyles,
+  Theme,
+  createStyles,
+  useMediaQuery,
+  useTheme,
+  Tooltip,
+} from "@material-ui/core"
 import { useTranslation } from "react-i18next"
 import { Add as AddIcon, FilterList as FilterListIcon, Search as SearchIcon } from "@material-ui/icons"
 import { useHeaderStyles } from "../SharedStyles/HeaderStyles"
@@ -93,22 +104,26 @@ export default function StudyFilter({ setShowFilterStudies, setOrder, order, ...
 
   return (
     <React.Fragment>
-      <div className="icon-container">
-        <FilterIcon
-          className="filter-icon"
-          onClick={() => {
-            showFilter === true ? setShowFilter(false) : setShowFilter(true)
-          }}
-        />
-      </div>
-      <div className="sort-icon-container" onClick={setOrder}>
-        <Icon className="sort-icon">sort_by_alpha</Icon>
-        {order === true ? (
-          <Icon className="sort-icon">arrow_downward</Icon>
-        ) : (
-          <Icon className="sort-icon">arrow_upward</Icon>
-        )}
-      </div>
+      <Tooltip title={t("Filter Activities")}>
+        <div className="icon-container">
+          <FilterIcon
+            className="filter-icon"
+            onClick={() => {
+              showFilter === true ? setShowFilter(false) : setShowFilter(true)
+            }}
+          />
+        </div>
+      </Tooltip>
+      <Tooltip title={t("Sort Activities")}>
+        <div className="sort-icon-container" onClick={setOrder}>
+          <Icon className="sort-icon">sort_by_alpha</Icon>
+          {order === true ? (
+            <Icon className="sort-icon">arrow_downward</Icon>
+          ) : (
+            <Icon className="sort-icon">arrow_upward</Icon>
+          )}
+        </div>
+      </Tooltip>
     </React.Fragment>
   )
 }
