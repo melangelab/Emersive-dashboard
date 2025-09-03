@@ -21,6 +21,10 @@ import {
 import { ResponsiveMargin } from "./Utils"
 import { ReactComponent as Logo } from "../icons/Logo.svg"
 import { ReactComponent as LineArt } from "../icons/login_line_drawing.svg"
+import LoginBackground from "../icons/blob_bg_1.png"
+import TopLeft from "../icons/NewIcons/Top-Left-Red-Shadow2.svg"
+import BottomRight from "../icons/NewIcons/Bottom-Right-Red.svg"
+import "./Login.css"
 import { useTranslation } from "react-i18next"
 import { Autocomplete } from "@mui/material"
 import LAMP from "lamp-core"
@@ -107,22 +111,26 @@ const SetPassword = ({ token, onComplete, title, userType }) => {
           >
             {supportsSidebar && (
               <Grid item xs={12} md={7} className="line-art-container">
+                <img className="corner top-left-corner" src={TopLeft} alt="top left corner" />
+                <img className="corner bottom-right-corner" src={BottomRight} alt="bottom right corner" />
+
                 <div className="line-art-div">
                   <LineArt className="line-art" />
                 </div>
-                <span className="platform-name">emersive</span>
-                <span className="platform-desc">MOBILE SENSING FOR RESEARCH</span>
+                <Logo className="logo-component-login" />
+                <span className="platform-name-login">emersive</span>
+                <span className="platform-tag-login">MOBILE SENSING FOR RESEARCH</span>
               </Grid>
             )}
             <Grid item xs={12} md={supportsSidebar ? 5 : 12} className="grid-item">
               <div className="card-container">
-                <Logo className="logo-component" />
                 <h1
                   style={{
                     margin: "0px",
                     marginBottom: "20px",
                     alignSelf: "center",
-                    fontWeight: "300",
+                    fontWeight: "400",
+                    fontSize: "34px",
                   }}
                 >
                   {title}
@@ -135,6 +143,7 @@ const SetPassword = ({ token, onComplete, title, userType }) => {
                       type="password"
                       margin="normal"
                       variant="outlined"
+                      className="login-input"
                       style={{ width: "100%", height: 50 }}
                       placeholder={`${t("New Password")}`}
                       value={password}
@@ -152,6 +161,7 @@ const SetPassword = ({ token, onComplete, title, userType }) => {
                       type="password"
                       margin="normal"
                       variant="outlined"
+                      className="login-input"
                       style={{ width: "100%", height: 50, marginBottom: "25px" }}
                       placeholder={`${t("Confirm Password")}`}
                       value={confirmPassword}
