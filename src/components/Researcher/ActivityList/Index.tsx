@@ -1771,6 +1771,7 @@ export default function ActivityList({
             setSelectedColumns={setVisibleColumns}
             VisibleColumns={columns}
             setVisibleColumns={setVisibleColumns}
+            addLabel={t("Add Activity")}
             addComponent={
               <AddActivity
                 activities={activities}
