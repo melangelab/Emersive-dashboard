@@ -258,14 +258,16 @@
 }
 
 .add-icon-container {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 50px;
-  width: 50px;
+  /* allow child to determine size (for pill buttons) */
+  height: auto;
+  width: auto;
   border-radius: 50%;
   position: relative;
-  overflow: auto;
+  overflow: visible;
+  padding: 4px;
 }
 
 .add-icon-container:hover {
@@ -300,6 +302,7 @@
   transition: fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
   flex-shrink: 0;
   -moz-user-select: none;
+  user-select: none;
 }
 
 .add-fab-btn:hover {
@@ -310,6 +313,41 @@
 .add-icon,
 .add-icon path {
   cursor: pointer;
+}
+
+/* Pill style add button: circular green plus on left + label on right */
+.add-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 2px solid #d1d5db; /* light gray border */
+  background: #ffffff;
+  color: #374151; /* text color */
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.add-pill-btn .plus-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #008607; /* green */
+  color: #ffffff;
+}
+
+.add-pill-btn .pill-label {
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+}
+
+.add-pill-btn:hover .plus-circle {
+  background: #57a05d;
 }
 
 .body-container {
