@@ -41,7 +41,7 @@
 
 .platform-name-login {
   display: inline-block;
-  font-family: exo\2, sans-serif;
+  font-family: "Exo 2", sans-serif;
   color: #cf7f5a;
   font-size: 3.6rem;
   font-weight: 450;
@@ -54,6 +54,7 @@
 .platform-tag-login {
   display: inline-block;
   color: #808080;
+  font-family: "Exo 2", sans-serif;
   font-optical-sizing: auto;
   font-size: 0.9rem;
   font-style: normal;
@@ -64,8 +65,9 @@
 
 .grid-item {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
   overflow-y: scroll;
   height: 100dvh;
 }
@@ -97,8 +99,7 @@
 }
 
 .login-input {
-  /* width: 100%;
-  height: 50px; */
+  width: 100%;
 }
 
 .login-input > .MuiInputBase-root {
@@ -121,6 +122,11 @@
 
 .login-input > .MuiOutlinedInput-root:hover {
   border-color: #2196f3;
+}
+
+/* Target the actual notched outline used by MUI to change border color on hover/focus */
+.login-input .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: #2196f3 !important;
 }
 
 .login-input .MuiOutlinedInput-input {
@@ -244,25 +250,33 @@ div.MuiFormControl-root:nth-child(1)
   padding: 0;
 }
 
-.login-divider {
-  align-self: center;
+.divider-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.divider {
+  flex: 1 1 auto;
+  height: 1px;
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+.divider-text {
+  color: #666;
   font-size: 13px;
   font-weight: 300;
-  margin: 20px auto;
-  color: #666;
+  white-space: nowrap;
 }
 
 .google-login-container {
   margin: 0px auto 40px auto;
   width: 100%;
-  height: 48px;
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.google-login-container > :first-child {
-  width: 100%;
 }
 
 .login-disabled {
