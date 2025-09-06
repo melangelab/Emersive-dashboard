@@ -607,7 +607,7 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
 
   return (
     <React.Fragment>
-      <Header authType={userType} title={title} pageLocation={pageLocation} />
+      <Header authType={userType} title={title} pageLocation={pageLocation} onLogout={onLogout} />
       <div className="body-container">
         <div className={classes.formContainer}>
           <Grid container spacing={2}>

@@ -365,6 +365,7 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
                   adminType={adminType}
                   authType={authType}
                   title={props.ptitle}
+                  onLogout={onLogout}
                 />
               )}
             />
@@ -403,7 +404,13 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
             <Route
               path={`${path}/admins`}
               render={(routeProps) => (
-                <Admins history={props.history} adminType={adminType} authType={authType} title={props.ptitle} />
+                <Admins
+                  history={props.history}
+                  adminType={adminType}
+                  authType={authType}
+                  title={props.ptitle}
+                  onLogout={onLogout}
+                />
               )}
             />
 

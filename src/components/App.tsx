@@ -488,12 +488,13 @@ function AppRouter({ ...props }) {
         auth: null,
         authType: null,
         activeTab: null,
-        lastDomain: ["api.lamp.digital", "demo.lamp.digital"].includes(state.auth.serverAddress)
+        lastDomain: ["api.lamp.digital", "demo.lamp.digital"].includes(state.auth?.serverAddress || "")
           ? undefined
-          : state.auth.serverAddress,
+          : state.auth?.serverAddress,
       }))
       localStorage.setItem("verified", JSON.stringify({ value: false }))
-      window.location.href = "/#/"
+      // Force redirect to login page and reload to clear any cached state
+      window.location.href = window.location.origin + "/#/"
     }
   }
 
