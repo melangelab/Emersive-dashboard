@@ -1081,7 +1081,13 @@ export default function Login({ setIdentity, lastDomain, onComplete, ...props })
                         </Fab>
                       </Box>
 
-                      <div className="login-divider">--------------------------- or ---------------------------</div>
+                      <div className="divider-container">
+                        <Divider className="divider" />
+                        <Typography variant="body2" className="divider-text">
+                          {t("or")}
+                        </Typography>
+                        <Divider className="divider" />
+                      </div>
 
                       {/* google login here */}
                       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>

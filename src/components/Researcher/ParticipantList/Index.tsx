@@ -1748,6 +1748,7 @@ export default function ParticipantList({
               setSelectedColumns={setColumns}
               VisibleColumns={columns}
               setVisibleColumns={setColumns}
+              addLabel={t("Add Participant")}
               addComponent={
                 <AddButton
                   researcherId={researcherId}

@@ -225,14 +225,12 @@ export default function AddUpdateResearcher({
           <Icon>edit</Icon>
         </Fab>
       ) : (
-        <Fab
-          className="add-fab-btn"
-          ref={anchorRef}
-          onClick={() => setOpen((prev) => !prev)}
-          style={{ backgroundColor: "#008607", color: "white" }}
-        >
-          <AddIcon className="add-icon" />
-        </Fab>
+        <button className="add-pill-btn" ref={anchorRef as any} onClick={() => setOpen((prev) => !prev)} type="button">
+          <span className="plus-circle">
+            <AddIcon className="add-icon" />
+          </span>
+          <span className="pill-label">RESEARCHER</span>
+        </button>
       )}
 
       {open &&

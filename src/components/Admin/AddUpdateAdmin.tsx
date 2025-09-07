@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useRef } from "react"
 import {
   Box,
   DialogContent,
@@ -112,6 +112,7 @@ export default function AddUpdateAdmin({
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
 
   const sliderclasses = slideStyles()
+  const anchorRef = useRef(null)
 
   const handleInputChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -223,9 +224,12 @@ export default function AddUpdateAdmin({
 
   return (
     <Box>
-      <Fab className="add-fab-btn">
-        <AddIcon onClick={() => setOpen(true)} />
-      </Fab>
+      <button className="add-pill-btn" ref={anchorRef as any} onClick={() => setOpen((prev) => !prev)} type="button">
+        <span className="plus-circle">
+          <AddIcon className="add-icon" />
+        </span>
+        <span className="pill-label">ADMIN</span>
+      </button>
 
       {open &&
         createPortal(
