@@ -318,7 +318,7 @@ const ActionsComponent = ({ ...props }) => {
         </>
       ) : null}
       {props.addComponent && (
-        <Tooltip title={t("Add Activity")}>
+        <Tooltip title={props.addLabel ? props.addLabel : t("Add")}>
           <div>{props.addComponent}</div>
         </Tooltip>
       )}

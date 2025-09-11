@@ -723,8 +723,8 @@ export default function ParticipantListItem({
             </>
           )}
           {!participant.isShared && (
-            <Tooltip title="Delete Participant" arrow>
-              <div>
+            <Tooltip title="Delete Participant" arrow enterDelay={200} leaveDelay={0}>
+              <div style={{ display: "inline-flex" }}>
                 {activeButton.id === participant.id && activeButton.action === "delete" ? (
                   <DeleteFilledIcon
                     className={`${participantcardclasses.actionIcon} active`}
@@ -735,7 +735,7 @@ export default function ParticipantListItem({
                   />
                 ) : (
                   <DeleteIcon
-                    className={participantcardclasses.actionIcon}
+                    className={`${participantcardclasses.actionIcon}`}
                     onClick={() => {
                       setActiveButton({ id: participant.id, action: "delete" })
                       setConfirmationDialog(true)

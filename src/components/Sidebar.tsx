@@ -12,6 +12,7 @@ import {
   Paper,
   Box,
   Typography,
+  Tooltip,
 } from "@material-ui/core"
 import { useSnackbar } from "notistack"
 
@@ -170,7 +171,16 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const [activeIndex, setActiveIndex] = useState(0)
   const [activeBottomIndex, setActiveBottomIndex] = useState(0)
-  const [sidebarCollapse, setSidebarCollapse] = useState(true)
+  const [sidebarCollapse, setSidebarCollapse] = useState(() => {
+    // Check if user is admin
+    const isAdmin = LAMP.Auth._type === "admin"
+    if (isAdmin) {
+      // Get stored state from localStorage, default to true if not found
+      const storedState = localStorage.getItem("adminSidebarCollapsed")
+      return storedState === null ? true : storedState === "true"
+    }
+    return true // Default state for non-admin users
+  })
   const [logoutAnchorEl, setLogoutAnchorEl] = useState<HTMLElement | null>(null)
   const [roleDetailsAnchorEl, setRoleDetailsAnchorEl] = useState<HTMLElement | null>(null)
   const [activeOption, setActiveOption] = useState<string | null>(null)
@@ -264,7 +274,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   const handleBottomNavigation = (text, index, event) => {
     setActiveBottomIndex(index)
     if (text === "expand-collapse") {
-      setSidebarCollapse(!sidebarCollapse)
+      const newState = !sidebarCollapse
+      setSidebarCollapse(newState)
+      // Store state in localStorage if user is admin
+      if (LAMP.Auth._type === "admin") {
+        localStorage.setItem("adminSidebarCollapsed", String(newState))
+      }
     } else if (text === "Logout") {
       if (logoutAnchorEl) {
         setLogoutAnchorEl(null)
@@ -417,16 +432,17 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="list-container">
         <List className="sidebar-list">
           {filteredMenuItems.map((item, index) => (
-            <ListItem
-              key={index}
-              className={`sidebar-item ${item.path.includes(activeRoute) ? "active" : ""}`}
-              onClick={() => handleSidebarNavigation(item, index)}
-            >
-              <ListItemIcon className={`sidebar-icon`}>
-                {item.path.includes(activeRoute) ? item.filledIcon : item.icon}
-              </ListItemIcon>
-              {sidebarCollapse ? null : <ListItemText primary={item.text} />}
-            </ListItem>
+            <Tooltip key={index} title={sidebarCollapse ? t(item.text) : ""} placement="right">
+              <ListItem
+                className={`sidebar-item ${item.path.includes(activeRoute) ? "active" : ""}`}
+                onClick={() => handleSidebarNavigation(item, index)}
+              >
+                <ListItemIcon className={`sidebar-icon`}>
+                  {item.path.includes(activeRoute) ? item.filledIcon : item.icon}
+                </ListItemIcon>
+                {sidebarCollapse ? null : <ListItemText primary={item.text} />}
+              </ListItem>
+            </Tooltip>
           ))}
         </List>
       </div>
@@ -434,25 +450,30 @@ const Sidebar: React.FC<SidebarProps> = ({
         <List className={`bottom-list ${sidebarCollapse ? "collapse" : ""}`}>
           {bottomNavigationItems.map((item, index) =>
             sidebarCollapse && (item.text === "Web" || item.text === "Mail") ? null : (
-              <ListItem
-                className="sidebar-bottom-item"
+              <Tooltip
                 key={index}
-                onClick={(event) => handleBottomNavigation(item.text, index, event)}
+                title={sidebarCollapse ? (item.text === "expand-collapse" ? t("Expand Sidebar") : t(item.text)) : ""}
+                placement="right"
               >
-                <ListItemIcon className="sidebar-bottom-icon">
-                  {index === activeBottomIndex
-                    ? item.text === "expand-collapse"
+                <ListItem
+                  className="sidebar-bottom-item"
+                  onClick={(event) => handleBottomNavigation(item.text, index, event)}
+                >
+                  <ListItemIcon className="sidebar-bottom-icon">
+                    {index === activeBottomIndex
+                      ? item.text === "expand-collapse"
+                        ? sidebarCollapse
+                          ? item.icon
+                          : item.filledIcon
+                        : item.filledIcon
+                      : item.text === "expand-collapse"
                       ? sidebarCollapse
                         ? item.icon
                         : item.filledIcon
-                      : item.filledIcon
-                    : item.text === "expand-collapse"
-                    ? sidebarCollapse
-                      ? item.icon
-                      : item.filledIcon
-                    : item.icon}
-                </ListItemIcon>
-              </ListItem>
+                      : item.icon}
+                  </ListItemIcon>
+                </ListItem>
+              </Tooltip>
             )
           )}
         </List>

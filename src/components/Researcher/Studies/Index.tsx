@@ -2381,6 +2381,7 @@ export default function StudiesList({
             setSelectedColumns={setColumns}
             VisibleColumns={columns}
             setVisibleColumns={setColumns}
+            addLabel={t("Add Study")}
             addComponent={
               <AddStudy
                 researcherId={researcherId}
