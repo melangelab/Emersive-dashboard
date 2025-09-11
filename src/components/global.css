@@ -205,29 +205,59 @@
 }
 
 .sidebar-bottom-item {
-  height: 30px;
-  width: 30px;
-  padding: 0 !important;
+  height: auto;
+  width: 100%;
+  padding: 12px 16px !important;
   cursor: pointer;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 8px;
+  padding-top: 16px !important;
+  transition: background-color 0.3s ease;
+}
+
+.sidebar-bottom-item:hover {
+  background-color: rgba(228, 124, 98, 0.1);
+}
+
+.sidebar-bottom-item:hover .sidebar-bottom-text .MuiListItemText-primary {
+  color: #e47c62;
 }
 
 .sidebar-bottom-icon {
-  min-width: 30px;
+  min-width: 24px;
   cursor: pointer;
+  margin-right: 12px;
 }
 
 .sidebar-bottom-icon svg {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
 }
 
 .sidebar-bottom-icon svg path {
-  fill: Gray;
+  fill: #666;
 }
 
 .sidebar-bottom-icon:hover svg path {
   cursor: pointer;
   fill: #e47c62;
+}
+
+.sidebar-bottom-text {
+  margin: 0;
+  flex: 1;
+}
+
+.sidebar-bottom-text .MuiListItemText-primary {
+  font-size: 14px;
+  font-weight: 400;
+  color: #4d555b;
+  letter-spacing: -0.2px;
+  font-family: inherit;
+  text-transform: uppercase;
 }
 
 .bottom-list.collapse {
@@ -237,6 +267,18 @@
   margin-left: auto;
   gap: 4px;
   min-width: 100px;
+}
+
+.bottom-list.collapse .sidebar-bottom-item {
+  height: 40px;
+  width: 40px;
+  padding: 8px !important;
+  border-top: none;
+  margin-top: 0;
+  padding-top: 8px !important;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
 }
 
 .view-field-container {
