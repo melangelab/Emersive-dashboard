@@ -149,6 +149,7 @@ const AdminDashboard = (props) => {
         title={props.title}
         pageLocation="Dashboard"
         onLogout={props.onLogout}
+        setIdentity={props.setIdentity}
       />
       <Grid container spacing={2} className="admin-dashboard-container">
         <Grid item xs={12} sm={6} md={6} className="dashboard-column">

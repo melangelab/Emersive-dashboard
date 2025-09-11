@@ -188,6 +188,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const fetchOtherUser = async () => {
       console.log("INSIDE FetchOtherUser-", LAMP.Auth._auth)
       const userType = LAMP.Auth._type
+      console.log("Current userType in fetchOtherUser:", userType)
       try {
         if (userType === "admin") {
           const temp: any = LAMP.Auth._me
@@ -295,6 +296,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     try {
       setIsLoading(true)
       console.log("Switching role...", otherRole)
+      console.log("Current user type:", LAMP.Auth._type)
+      console.log("Current auth:", LAMP.Auth._auth)
+      console.log("setIdentity prop available:", typeof setIdentity === "function")
       handleRoleDetailsPopoverClose()
       handleLogoutPopoverClose()
 

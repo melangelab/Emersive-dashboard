@@ -103,6 +103,7 @@ export default function ArchivedList({
         authType={"Researcher"}
         title={props.ptitle}
         pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Archived Items`}
+        setIdentity={props.setIdentity}
       />
 
       <div className="body-container">

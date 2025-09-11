@@ -1654,6 +1654,7 @@ export default function ActivityList({
           pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Activities > ${
             viewingActivity.name
           }`}
+          setIdentity={props.setIdentity}
         />
       ) : (
         // <ItemViewHeader
@@ -1692,6 +1693,7 @@ export default function ActivityList({
           authType={"Researcher"}
           title={props.ptitle}
           pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Activities`}
+          setIdentity={props.setIdentity}
         />
         // <Header
         //   studies={studies}

@@ -366,6 +366,7 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
                   authType={authType}
                   title={props.ptitle}
                   onLogout={onLogout}
+                  setIdentity={setIdentity}
                 />
               )}
             />
@@ -380,6 +381,7 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
                   adminType={adminType}
                   authType={authType}
                   onLogout={onLogout}
+                  setIdentity={setIdentity}
                   title={props.ptitle}
                 />
               )}
@@ -410,6 +412,7 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
                   authType={authType}
                   title={props.ptitle}
                   onLogout={onLogout}
+                  setIdentity={setIdentity}
                 />
               )}
             />

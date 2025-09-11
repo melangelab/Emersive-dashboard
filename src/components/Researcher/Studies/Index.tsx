@@ -2315,12 +2315,14 @@ export default function StudiesList({
           pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Studies > ${
             viewingStudy.name
           }`}
+          setIdentity={props.setIdentity}
         />
       ) : (
         <Header
           authType={"Researcher"}
           title={props.ptitle}
           pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Studies`}
+          setIdentity={props.setIdentity}
         />
       )}
       {viewingStudy ? (

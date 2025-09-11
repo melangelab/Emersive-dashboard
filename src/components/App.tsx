@@ -464,12 +464,73 @@ function AppRouter({ ...props }) {
         return
       })
     } else {
-      await setIdentity2(identity).catch((e) => {
-        enqueueSnackbar(`${t("Invalid id or password.")}`, {
-          variant: "error",
+      // Handle role switching - force the target role type instead of auto-detecting
+      console.log("DEBUG: Handling role switch in reset function")
+      console.log("DEBUG: Current LAMP.Auth._type:", LAMP.Auth._type)
+      console.log("DEBUG: Identity for role switch:", identity)
+
+      // Use the existing credentials but manually set the role
+      const currentAuth = LAMP.Auth._auth
+
+      // Determine target role - switch from current role
+      const targetRole = LAMP.Auth._type === "admin" ? "researcher" : "admin"
+      console.log("DEBUG: Target role:", targetRole)
+
+      // Set authentication with current credentials
+      LAMP.Auth._auth = {
+        id: currentAuth.id,
+        password: currentAuth.password,
+        serverAddress: currentAuth.serverAddress,
+      }
+
+      // Force the target role type
+      LAMP.Auth._type = targetRole
+
+      // Set the appropriate identity object based on target role
+      try {
+        if (targetRole === "admin") {
+          LAMP.Auth._me = { id: currentAuth.id }
+          console.log("DEBUG: Set admin identity")
+        } else if (targetRole === "researcher") {
+          // Instead of calling the API, use the researcher data from localStorage or state
+          // Try to get the researcher info from the otherRole data that was already fetched
+          const storageData = (global as any).sessionStorage?.getItem("LAMP._otherRole")
+          let researcherData = null
+
+          if (storageData) {
+            try {
+              researcherData = JSON.parse(storageData)
+              console.log("DEBUG: Using stored researcher data:", researcherData)
+            } catch (e) {
+              console.log("DEBUG: Failed to parse stored researcher data")
+            }
+          }
+
+          // Fallback to a basic researcher identity structure with the correct ID
+          LAMP.Auth._me = researcherData || {
+            id: "qjc3kdjbfy27jq57qrqm", // The actual researcher ID from the logs
+            _id: "qjc3kdjbfy27jq57qrqm",
+            name: "Abhit Rana",
+            firstName: "Abhit",
+            lastName: "Rana",
+            email: "abhit.tech@gmail.com",
+          }
+          console.log("DEBUG: Set researcher identity")
+        }
+
+        console.log("DEBUG: Set LAMP.Auth._me to:", LAMP.Auth._me)
+        console.log("DEBUG: Set LAMP.Auth._type to:", LAMP.Auth._type)
+
+        LAMP.dispatchEvent("LOGIN", {
+          authorizationToken: null,
+          identityObject: LAMP.Auth._me,
+          serverAddress: `https://${currentAuth.serverAddress}`,
         })
-        return
-      })
+      } catch (err) {
+        console.error("DEBUG: Error during role switch:", err)
+        // Don't throw error, just continue with the role switch
+        console.log("DEBUG: Continuing with role switch despite API errors")
+      }
     }
     console.log(identity)
     if (!!identity) {

@@ -285,9 +285,9 @@ export default function SensorsList({
   //   statusInUsers: "Status in participants",
   //   studies: "Studies/Groups",
   // }
-  const selectedColumns = useMemo(() => columns.filter((col) => col.visible).map((col) => col.id), [columns])
+  const selectedColumns = useMemo(() => (columns || []).filter((col) => col.visible).map((col) => col.id), [columns])
   const columnsConfig = useMemo(() => {
-    return columns.reduce((acc, col) => {
+    return (columns || []).reduce((acc, col) => {
       acc[col.id] = col.label
       return acc
     }, {} as ColumnConfig)
@@ -540,12 +540,14 @@ export default function SensorsList({
           pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${ptitle} (Researcher) > Sensors > ${
             viewingSensor.name
           }`}
+          setIdentity={props.setIdentity}
         />
       ) : (
         <Header
           authType={"Researcher"}
           title={ptitle}
           pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${ptitle} (Researcher) > Sensors`}
+          setIdentity={props.setIdentity}
         />
       )}
       {viewingSensor ? (
@@ -659,10 +661,10 @@ export default function SensorsList({
                 onSaveSensor={handleSaveSensorRow}
                 onCopySensor={handleCopySensor}
                 onDeleteSensor={handleDeleteSensor}
-                visibleColumns={columns.filter((col) => col.visible).map((col) => col.id)}
+                visibleColumns={(columns || []).filter((col) => col.visible).map((col) => col.id)}
                 setVisibleColumns={(newColumns) => {
                   setColumns((prevColumns) =>
-                    prevColumns.map((col) => ({
+                    (prevColumns || []).map((col) => ({
                       ...col,
                       visible: newColumns.includes(col.id),
                     }))
