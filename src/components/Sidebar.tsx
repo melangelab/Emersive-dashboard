@@ -108,7 +108,6 @@ interface SidebarProps {
   history: any
   activeRoute: any
   setActiveRoute: any
-  onLogout: any
   setIdentity: any
   // onComplete: any
 }
@@ -120,7 +119,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   history,
   activeRoute,
   setActiveRoute,
-  onLogout,
   setIdentity,
   // onComplete
 }) => {

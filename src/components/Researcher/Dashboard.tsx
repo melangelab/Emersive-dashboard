@@ -447,7 +447,6 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
           history={props.history}
           activeRoute={activeRoute}
           setActiveRoute={setActiveRoute}
-          onLogout={onLogout}
           setIdentity={props.setIdentity}
         />
 

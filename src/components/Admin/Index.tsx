@@ -345,7 +345,6 @@ export default function Root({ updateStore, adminType, authType, goBack, onLogou
           history={props.history}
           activeRoute={activeRoute}
           setActiveRoute={setActiveRoute}
-          onLogout={onLogout}
           setIdentity={setIdentity}
         />
 
