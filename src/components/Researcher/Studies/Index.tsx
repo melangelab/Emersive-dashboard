@@ -167,14 +167,22 @@ export const studycardStyles = makeStyles((theme: Theme) =>
     },
     statItem: {
       textAlign: "center",
-      cursor: "pointer",
+      cursor: "pointer !important",
       padding: theme.spacing(1),
       borderRadius: theme.spacing(1),
-      // '&:hover': {
-      //   backgroundColor: '#FDEDE8',
-      // },
+      "&:hover": {
+        cursor: "pointer !important",
+        backgroundColor: "rgba(255, 223, 212, 0.1)",
+      },
       "&.selected": {
         backgroundColor: "rgba(255, 223, 212, 0.3)", // '#FDEDE8',
+        cursor: "pointer !important",
+      },
+      "& *": {
+        cursor: "pointer !important",
+      },
+      "&:hover *": {
+        cursor: "pointer !important",
       },
     },
     statNumber: {
@@ -371,52 +379,83 @@ export const studycardStyles = makeStyles((theme: Theme) =>
     actionIcon: {
       width: 24,
       height: 24,
-      cursor: "pointer",
+      cursor: "pointer !important",
       transition: "all 0.3s ease",
       opacity: 0.4,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: "4px",
+      padding: "2px",
+      "& svg": {
+        width: "100%",
+        height: "100%",
+        cursor: "pointer !important",
+        pointerEvents: "none",
+      },
       "& path": {
         fill: "#000000",
+        cursor: "pointer !important",
+        pointerEvents: "none",
       },
       "&:hover": {
         opacity: 1,
+        cursor: "pointer !important",
+        backgroundColor: "rgba(6, 176, 240, 0.1)",
+        "& svg": {
+          cursor: "pointer !important",
+        },
         "& path": {
           fill: "#06B0F0",
+          cursor: "pointer !important",
         },
       },
       "&.selected": {
         opacity: 1,
+        cursor: "pointer !important",
+        backgroundColor: "rgba(79, 149, 218, 0.1)",
+        "& svg": {
+          cursor: "pointer !important",
+        },
         "& path": {
           fill: "#4F95DA",
+          cursor: "pointer !important",
         },
       },
       "&.active": {
         opacity: 1,
+        cursor: "pointer !important",
+        backgroundColor: "rgba(33, 89, 154, 0.1)",
+        "& svg": {
+          cursor: "pointer !important",
+        },
         "& path": {
           fill: "#215F9A",
+          cursor: "pointer !important",
         },
       },
       "&.disabled": {
         opacity: 0.5,
         pointerEvents: "none",
-        cursor: "not-allowed",
+        cursor: "not-allowed !important",
+        "& svg": {
+          cursor: "not-allowed !important",
+        },
         "& path": {
           fill: "#9fabb6ff",
+          cursor: "not-allowed !important",
         },
       },
       "&.alert": {
         opacity: 0.5,
+        cursor: "pointer !important",
+        "& svg": {
+          cursor: "pointer !important",
+        },
         "& path": {
           fill: "#9fabb6ff",
+          cursor: "pointer !important",
         },
-      },
-      "&:hover path": {
-        fill: "#06B0F0",
-      },
-      "&.selected path": {
-        fill: "#4F95DA",
-      },
-      "&.active path": {
-        fill: "#215F9A",
       },
     },
     sharedCard: {

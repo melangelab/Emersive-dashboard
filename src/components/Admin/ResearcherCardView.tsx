@@ -129,11 +129,14 @@ export default function ResearcherCardView({
     researcher: ResearcherWithStats
   }) => {
     const [items, setItems] = useState<any[]>([])
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(false)
 
     useEffect(() => {
       const fetchTabData = async () => {
-        setLoading(true)
+        // Only show loading for participants tab as it requires API calls
+        if (selectedTab.tab === "participants") {
+          setLoading(true)
+        }
         try {
           if (selectedTab.tab === "studies") {
             const allStudies = studyDetails[researcher.id]?.all || []
@@ -209,8 +212,12 @@ export default function ResearcherCardView({
           paddingBottom: 24,
         }}
       >
-        {items.length === 0 ? (
-          <Typography>
+        {loading ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "20px" }}>
+            <CircularProgress size={24} />
+          </div>
+        ) : items.length === 0 ? (
+          <Typography style={{ fontSize: "0.8rem" }}>
             {selectedTab.tab === "studies"
               ? "No studies at the present moment."
               : "No participants at the present moment."}
@@ -218,32 +225,34 @@ export default function ResearcherCardView({
         ) : selectedTab.tab === "studies" ? (
           items.map((item, index) => (
             <Box key={index} style={{ marginBottom: 8 }}>
-              <Typography style={{ fontWeight: 700 }}>{`Study ${index + 1}: ${item.name}`}</Typography>
+              <Typography style={{ fontWeight: 700, fontSize: "0.8rem" }}>{`Study ${index + 1}: ${
+                item.name
+              }`}</Typography>
               {item.description && (
-                <Typography style={{ marginBottom: 4 }}>
+                <Typography style={{ marginBottom: 4, fontSize: "0.8rem" }}>
                   Description: <strong>{item.description}</strong>
                 </Typography>
               )}
               <ul style={{ paddingLeft: 16 }}>
                 <li>
-                  <Typography>
+                  <Typography style={{ fontSize: "0.8rem" }}>
                     Groups: <strong>{Array.isArray(item.gname) ? item.gname.length : item.gname ? 1 : 0}</strong>
                   </Typography>
                 </li>
                 <li>
-                  <Typography>
+                  <Typography style={{ fontSize: "0.8rem" }}>
                     Patients: <strong>{item.participants?.length || 0}</strong> | Sensors:{" "}
                     <strong>{item.sensors?.length || 0}</strong> | Activities:{" "}
                     <strong>{item.activities?.length || 0}</strong>
                   </Typography>
                 </li>
                 <li>
-                  <Typography>
+                  <Typography style={{ fontSize: "0.8rem" }}>
                     Status: <strong>{item.state || "Production"}</strong>
                   </Typography>
                 </li>
                 <li>
-                  <Typography>
+                  <Typography style={{ fontSize: "0.8rem" }}>
                     Creator:{" "}
                     <strong
                       style={{
@@ -258,7 +267,7 @@ export default function ResearcherCardView({
                   </Typography>
                 </li>
                 <li>
-                  <Typography>
+                  <Typography style={{ fontSize: "0.8rem" }}>
                     Shared with:{" "}
                     {item.sharedWithNames && item.sharedWithNames.length > 0 ? (
                       item.sharedWithNames.map((name: string, i: number) => (
@@ -286,7 +295,7 @@ export default function ResearcherCardView({
         ) : (
           items.map((item, index) => (
             <Box key={index} style={{ marginBottom: 8 }}>
-              <Typography className={classes.indentText}>
+              <Typography className={classes.indentText} style={{ fontSize: "0.8rem" }}>
                 Participant Name:{" "}
                 <strong style={{ color: item.category === "joined" ? "rgb(202,116,200)" : undefined }}>
                   {(() => {
@@ -297,13 +306,13 @@ export default function ResearcherCardView({
                   })()}
                 </strong>
               </Typography>
-              <Typography className={classes.indentText}>
+              <Typography className={classes.indentText} style={{ fontSize: "0.8rem" }}>
                 Participant ID:{" "}
                 <strong style={{ color: item.category === "joined" ? "rgb(202,116,200)" : undefined }}>
                   {item.id}
                 </strong>
               </Typography>
-              <Typography className={classes.indentText}>
+              <Typography className={classes.indentText} style={{ fontSize: "0.8rem" }}>
                 Groups:{" "}
                 <strong style={{ color: item.category === "joined" ? "rgb(202,116,200)" : undefined }}>
                   {item.groups && item.groups.length > 0 ? item.groups.join(", ") : "No Groups Assigned"}
@@ -470,56 +479,60 @@ export default function ResearcherCardView({
                     <Grid
                       item
                       xs={4}
-                      style={{ textAlign: "center", cursor: "pointer", padding: "8px" }}
+                      style={{ textAlign: "center", padding: "8px" }}
                       onClick={() => handleStatClick(researcher, "studies")}
                       className={`${participantcardclasses.statItem} ${
                         selectedTab.id === researcher.id && selectedTab.tab === "studies" ? "selected" : ""
                       }`}
                     >
-                      <Typography
-                        className={participantcardclasses.statNumber}
-                        style={{ color: "#f2aa85", fontSize: "2rem", fontWeight: 500, lineHeight: 1 }}
-                      >
-                        {researcher.studyCount || 0}
-                      </Typography>
-                      <Typography
-                        className={participantcardclasses.statLabel}
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "rgba(0, 0, 0, 0.6)",
-                          textTransform: "uppercase",
-                          marginTop: "2px",
-                        }}
-                      >
-                        STUDIES
-                      </Typography>
+                      <div style={{ cursor: "pointer" }}>
+                        <Typography
+                          className={participantcardclasses.statNumber}
+                          style={{ color: "#f2aa85", fontSize: "2rem", fontWeight: 500, lineHeight: 1 }}
+                        >
+                          {researcher.studyCount || 0}
+                        </Typography>
+                        <Typography
+                          className={participantcardclasses.statLabel}
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "rgba(0, 0, 0, 0.6)",
+                            textTransform: "uppercase",
+                            marginTop: "2px",
+                          }}
+                        >
+                          STUDIES
+                        </Typography>
+                      </div>
                     </Grid>
                     <Grid
                       item
                       xs={4}
-                      style={{ textAlign: "center", cursor: "pointer", padding: "8px" }}
+                      style={{ textAlign: "center", padding: "8px" }}
                       onClick={() => handleStatClick(researcher, "participants")}
                       className={`${participantcardclasses.statItem} ${
                         selectedTab.id === researcher.id && selectedTab.tab === "participants" ? "selected" : ""
                       }`}
                     >
-                      <Typography
-                        className={participantcardclasses.statNumber}
-                        style={{ color: "#06B0F0", fontSize: "2rem", fontWeight: 500, lineHeight: 1 }}
-                      >
-                        {researcher.participantCount || 0}
-                      </Typography>
-                      <Typography
-                        className={participantcardclasses.statLabel}
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "rgba(0, 0, 0, 0.6)",
-                          textTransform: "uppercase",
-                          marginTop: "2px",
-                        }}
-                      >
-                        PARTICIPANTS
-                      </Typography>
+                      <div style={{ cursor: "pointer" }}>
+                        <Typography
+                          className={participantcardclasses.statNumber}
+                          style={{ color: "#06B0F0", fontSize: "2rem", fontWeight: 500, lineHeight: 1 }}
+                        >
+                          {researcher.participantCount || 0}
+                        </Typography>
+                        <Typography
+                          className={participantcardclasses.statLabel}
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "rgba(0, 0, 0, 0.6)",
+                            textTransform: "uppercase",
+                            marginTop: "2px",
+                          }}
+                        >
+                          PARTICIPANTS
+                        </Typography>
+                      </div>
                     </Grid>
                   </Grid>
                   {selectedTab.id === researcher.id ? (
