@@ -344,6 +344,17 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   }
 
+  // Helper to get the final segment of a path (eg. '/admin/dashboard' -> 'dashboard')
+  const getRouteName = (path: string) => {
+    try {
+      const parts = path.split("/")
+      const last = parts.pop()
+      return last || "dashboard"
+    } catch (e) {
+      return "dashboard"
+    }
+  }
+
   const filteredMenuItems = menuItems.filter((item) => {
     if (item.text === "Admins") {
       return LAMP.Auth._type === "admin"
@@ -361,18 +372,20 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       <div className="list-container">
         <List className="sidebar-list">
-          {filteredMenuItems.map((item, index) => (
-            <ListItem
-              key={index}
-              className={`sidebar-item ${item.path.includes(activeRoute) ? "active" : ""}`}
-              onClick={() => handleSidebarNavigation(item, index)}
-            >
-              <ListItemIcon className={`sidebar-icon`}>
-                {item.path.includes(activeRoute) ? item.filledIcon : item.icon}
-              </ListItemIcon>
-              {sidebarCollapse ? null : <ListItemText primary={item.text} />}
-            </ListItem>
-          ))}
+          {filteredMenuItems.map((item, index) => {
+            const routeName = getRouteName(item.path)
+            const isActive = routeName === activeRoute
+            return (
+              <ListItem
+                key={index}
+                className={`sidebar-item ${isActive ? "active" : ""}`}
+                onClick={() => handleSidebarNavigation(item, index)}
+              >
+                <ListItemIcon className={`sidebar-icon`}>{isActive ? item.filledIcon : item.icon}</ListItemIcon>
+                {sidebarCollapse ? null : <ListItemText primary={item.text} />}
+              </ListItem>
+            )
+          })}
         </List>
       </div>
       <div className="bottom-list-container">
