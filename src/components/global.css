@@ -150,6 +150,12 @@
   transition: background-color 0.3s ease, width 0.3s ease, height 0.3s ease;
   cursor: pointer;
 }
+.icon-container.selected {
+  background-color: #e47c62;
+}
+.icon-container.selected svg path {
+  fill: #fff !important;
+}
 
 /* Default state for icon */
 .sidebar-icon svg {

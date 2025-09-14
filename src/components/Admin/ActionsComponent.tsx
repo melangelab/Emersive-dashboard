@@ -158,7 +158,13 @@ const ActionsComponent = ({ ...props }) => {
     if (!actionData || !actionData.icon) return null
 
     const IconComponent = actionData.icon
-    const isSelected = selectedIcon === actionData.handlerName
+    // For grid/table actions, derive selected state from props.tabularView
+    let isSelected = selectedIcon === actionData.handlerName
+    if (action === "grid") {
+      isSelected = !props.tabularView
+    } else if (action === "table") {
+      isSelected = Boolean(props.tabularView)
+    }
 
     const handleClick = (e) => {
       if (action === "filter-cols") {
