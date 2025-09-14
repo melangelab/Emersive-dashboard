@@ -722,29 +722,39 @@ export default function ParticipantListItem({
               )}
             </>
           )}
-          {!participant.isShared && (
-            <Tooltip title="Delete Participant" arrow enterDelay={200} leaveDelay={0}>
-              <div style={{ display: "inline-flex" }}>
-                {activeButton.id === participant.id && activeButton.action === "delete" ? (
-                  <DeleteFilledIcon
-                    className={`${participantcardclasses.actionIcon} active`}
-                    onClick={() => {
-                      setActiveButton({ id: participant.id, action: "delete" })
-                      setConfirmationDialog(true)
-                    }}
-                  />
-                ) : (
-                  <DeleteIcon
-                    className={`${participantcardclasses.actionIcon}`}
-                    onClick={() => {
-                      setActiveButton({ id: participant.id, action: "delete" })
-                      setConfirmationDialog(true)
-                    }}
-                  />
-                )}
-              </div>
-            </Tooltip>
-          )}
+          <Tooltip title={"Delete Participant"} open={deleteTooltipOpen} arrow>
+            <div>
+              {!participant.isShared && (
+                <>
+                  {activeButton.id === participant.id && activeButton.action === "delete" ? (
+                    <DeleteFilledIcon
+                      className={`${participantcardclasses.actionIcon} active`}
+                      onClick={() => {
+                        setActiveButton({ id: participant.id, action: "delete" })
+                        setConfirmationDialog(true)
+                        setdeleteTooltipOpen(true)
+                      }}
+                      onFocus={() => {
+                        setdeleteTooltipOpen(true)
+                      }}
+                    />
+                  ) : (
+                    <DeleteIcon
+                      className={participantcardclasses.actionIcon}
+                      onClick={() => {
+                        setActiveButton({ id: participant.id, action: "delete" })
+                        setConfirmationDialog(true)
+                        setdeleteTooltipOpen(true)
+                      }}
+                      onFocus={() => {
+                        setdeleteTooltipOpen(true)
+                      }}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          </Tooltip>
           {/* {activeButton.id === participant.id && activeButton.action === "settings" ? (
             <CopyFilledIcon
               className={`${participantcardclasses.actionIcon} active`}
