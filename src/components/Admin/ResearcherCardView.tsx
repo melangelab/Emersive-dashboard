@@ -436,9 +436,11 @@ export default function ResearcherCardView({
 
   return (
     <>
-      <Backdrop open={loading} style={{ zIndex: 111111, color: "#fff" }}>
-        <CircularProgress color="inherit" />
-      </Backdrop>
+      {loading && (
+        <Backdrop open style={{ zIndex: 111111, color: "#fff" }}>
+          <CircularProgress color="inherit" />
+        </Backdrop>
+      )}
       <div className="content-container">
         <Grid container spacing={3}>
           {detailedResearchers.map((researcher, idx) => (
@@ -547,9 +549,6 @@ export default function ResearcherCardView({
                     />
                   )}
                   <div className={classes.researcherCardStudiesCountCotainer}>
-                    <Typography variant="subtitle1" align="center">
-                      Studies Count
-                    </Typography>
                     <div className={classes.researcherCardStudiesCountContent}>
                       <Typography
                         className={participantcardclasses.cardSubtitle}
