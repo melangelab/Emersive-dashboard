@@ -445,7 +445,7 @@ const EmersiveTable: React.FC<EmersiveTableProps> = ({
       {/* <div className="table-header-snap-point"></div> */}
       <TableContainer component={Paper} className={customClasses?.tableContainer || "emersive-table-container"}>
         {/* <div className="table-content-wrapper"> */}
-        <Table stickyHeader className="emersive-table">
+        <Table className="emersive-table">
           <TableHead>
             <TableRow>
               {selectable && (

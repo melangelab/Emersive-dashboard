@@ -587,6 +587,7 @@ export default function SensorsList({
             setSelectedColumns={setColumns}
             VisibleColumns={columns}
             setVisibleColumns={setColumns}
+            addLabel={t("Add Sensor")}
             addComponent={
               <AddSensor
                 studies={studies}

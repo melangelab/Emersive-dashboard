@@ -697,6 +697,7 @@ export default function Researchers({ history, updateStore, adminType, authType,
             <ActionsComponent
               searchData={(data) => setSearch(data)}
               refreshElements={refreshResearchers}
+              addLabel={t("Add Researcher")}
               addComponent={<AddUpdateResearcher refreshResearchers={refreshResearchers} researchers={researchers} />}
               actions={["refresh", "search", "grid", "table", "filter-cols", "download"]}
               tabularView={tabularView}

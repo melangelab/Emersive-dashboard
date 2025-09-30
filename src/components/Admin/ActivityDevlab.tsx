@@ -877,6 +877,7 @@ export default function ActivityDevLab({ assessments, refreshData, isLoading, se
             setSelectedColumns={setVisibleColumns}
             VisibleColumns={columns}
             setVisibleColumns={setVisibleColumns}
+            addLabel={t("Add Activity")}
             addComponent={
               <AddActivity
                 activities={activities}

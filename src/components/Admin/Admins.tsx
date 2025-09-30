@@ -643,6 +643,7 @@ export default function Admins({ title, authType, adminType, history, onLogout, 
         <ActionsComponent
           searchData={(data) => setSearch(data)}
           refreshElements={refreshAdmins}
+          addLabel={t("Add Admin")}
           addComponent={<AddUpdateAdmin refreshAdmins={refreshAdmins} admin={null} admins={admins} />}
           actions={["refresh", "search"]}
         />
