@@ -447,7 +447,6 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
           history={props.history}
           activeRoute={activeRoute}
           setActiveRoute={setActiveRoute}
-          onLogout={onLogout}
           setIdentity={props.setIdentity}
         />
 
@@ -475,6 +474,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   sharedstudies={sharedstudies}
                   setSharedStudies={setsharedStudies}
                   adminName={props.adminName}
+                  setIdentity={props.setIdentity}
                 />
               )}
               {tab === "activities" && (
@@ -494,6 +494,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   sharedstudies={sharedstudies}
                   setSharedStudies={setsharedStudies}
                   adminName={props.adminName}
+                  setIdentity={props.setIdentity}
                 />
               )}
               {tab === "sensors" && (
@@ -516,6 +517,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   sharedstudies={sharedstudies}
                   setSharedStudies={setsharedStudies}
                   adminName={props.adminName}
+                  setIdentity={props.setIdentity}
                 />
               )}
               {tab === "studies" && (
@@ -536,6 +538,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   sharedstudies={sharedstudies}
                   setSharedStudies={setsharedStudies}
                   adminName={props.adminName}
+                  setIdentity={props.setIdentity}
                 />
               )}
               {tab === "sharedstudies" && (
@@ -570,6 +573,7 @@ export default function Dashboard({ onParticipantSelect, researcherId, mode, tab
                   selectedStudies={selectedStudies}
                   setSelectedStudies={setSelectedStudies}
                   adminName={props.adminName}
+                  setIdentity={props.setIdentity}
                 />
               )}
               {tab === "portal" && (

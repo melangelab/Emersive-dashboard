@@ -18,14 +18,9 @@ import { useSnackbar } from "notistack"
 
 import LAMP from "lamp-core"
 
-import { ReactComponent as Envelope } from "../icons/NewIcons/envelope.svg"
-import { ReactComponent as Web } from "../icons/NewIcons/site-alt.svg"
-import { ReactComponent as WebFilled } from "../icons/NewIcons/site-alt-filled.svg"
-import { ReactComponent as Logout } from "../icons/NewIcons/power.svg"
 import { ReactComponent as SidebarCollapse } from "../icons/NewIcons/sidebar-collapse.svg"
 import { ReactComponent as SidebarExpand } from "../icons/NewIcons/sidebar-expand.svg"
 import { makeStyles } from "@material-ui/core/styles"
-import { ReactComponent as LogOutIcon } from "../icons/NewIcons/exit.svg"
 import { ReactComponent as SwitchRoleIcon } from "../icons/NewIcons/replace.svg"
 
 import { Service } from "./DBService/DBService"
@@ -37,17 +32,6 @@ const useStyles = makeStyles((theme) => ({
   popover: {
     pointerEvents: "auto",
   },
-  logoutOption: {
-    display: "flex",
-    alignItems: "center",
-    padding: theme.spacing(1.5),
-    cursor: "pointer",
-    borderRadius: theme.spacing(1),
-    marginBottom: theme.spacing(1),
-    "&:hover": {
-      backgroundColor: "#f5f5f5",
-    },
-  },
   optionText: {
     fontSize: "15px",
     color: "#666",
@@ -55,25 +39,6 @@ const useStyles = makeStyles((theme) => ({
   },
   activeOption: {
     backgroundColor: "#FADCD3",
-  },
-  popoverContent: {
-    pointerEvents: "auto",
-    padding: theme.spacing(1.5),
-    borderRadius: theme.spacing(2),
-    boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
-    width: "180px",
-    position: "relative",
-    overflow: "visible",
-    "&::after": {
-      content: '""',
-      position: "absolute",
-      top: -8,
-      left: "50%",
-      marginLeft: -8,
-      borderWidth: 8,
-      borderStyle: "solid",
-      borderColor: "transparent transparent #fff transparent",
-    },
   },
   optionIcon: {
     width: 20,
@@ -144,24 +109,17 @@ interface SidebarProps {
   history: any
   activeRoute: any
   setActiveRoute: any
-  onLogout: any
   setIdentity: any
   // onComplete: any
 }
 
-const bottomNavigationItems = [
-  { text: "Mail", icon: <Envelope />, filledIcon: <Envelope /> },
-  { text: "Web", icon: <Web />, filledIcon: <WebFilled /> },
-  { text: "Logout", icon: <Logout />, filledIcon: <Logout /> },
-  { text: "expand-collapse", icon: <SidebarExpand />, filledIcon: <SidebarCollapse /> },
-]
+const bottomNavigationItems = [{ text: "expand-collapse", icon: <SidebarExpand />, filledIcon: <SidebarCollapse /> }]
 
 const Sidebar: React.FC<SidebarProps> = ({
   menuItems,
   history,
   activeRoute,
   setActiveRoute,
-  onLogout,
   setIdentity,
   // onComplete
 }) => {
@@ -198,6 +156,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const fetchOtherUser = async () => {
       console.log("INSIDE FetchOtherUser-", LAMP.Auth._auth)
       const userType = LAMP.Auth._type
+      console.log("Current userType in fetchOtherUser:", userType)
       try {
         if (userType === "admin") {
           const temp: any = LAMP.Auth._me
@@ -297,11 +256,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     setRoleDetailsAnchorEl(null)
   }
 
-  const handleLogOut = () => {
-    onLogout()
-    handleLogoutPopoverClose()
-  }
-
   const timezoneVal = () => {
     return Intl.DateTimeFormat().resolvedOptions().timeZone
   }
@@ -310,8 +264,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     try {
       setIsLoading(true)
       console.log("Switching role...", otherRole)
+      console.log("Current user type:", LAMP.Auth._type)
+      console.log("Current auth:", LAMP.Auth._auth)
+      console.log("setIdentity prop available:", typeof setIdentity === "function")
       handleRoleDetailsPopoverClose()
-      handleLogoutPopoverClose()
 
       const baseURL = "https://" + (LAMP.Auth._auth.serverAddress || "api.lamp.digital")
       const authString = LAMP.Auth._auth.id + ":" + LAMP.Auth._auth.password
@@ -414,6 +370,17 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   }
 
+  // Helper to get the final segment of a path (eg. '/admin/dashboard' -> 'dashboard')
+  const getRouteName = (path: string) => {
+    try {
+      const parts = path.split("/")
+      const last = parts.pop()
+      return last || "dashboard"
+    } catch (e) {
+      return "dashboard"
+    }
+  }
+
   const filteredMenuItems = menuItems.filter((item) => {
     if (item.text === "Admins") {
       return LAMP.Auth._type === "admin"
@@ -431,6 +398,20 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       <div className="list-container">
         <List className="sidebar-list">
+          {filteredMenuItems.map((item, index) => {
+            const routeName = getRouteName(item.path)
+            const isActive = routeName === activeRoute
+            return (
+              <ListItem
+                key={index}
+                className={`sidebar-item ${isActive ? "active" : ""}`}
+                onClick={() => handleSidebarNavigation(item, index)}
+              >
+                <ListItemIcon className={`sidebar-icon`}>{isActive ? item.filledIcon : item.icon}</ListItemIcon>
+                {sidebarCollapse ? null : <ListItemText primary={item.text} />}
+              </ListItem>
+            )
+          })}
           {filteredMenuItems.map((item, index) => (
             <Tooltip key={index} title={sidebarCollapse ? t(item.text) : ""} placement="right">
               <ListItem
@@ -448,6 +429,20 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
       <div className="bottom-list-container">
         <List className={`bottom-list ${sidebarCollapse ? "collapse" : ""}`}>
+          {bottomNavigationItems.map((item, index) => (
+            <ListItem
+              className="sidebar-bottom-item"
+              key={index}
+              onClick={(event) => handleBottomNavigation(item.text, index, event)}
+            >
+              <ListItemIcon className="sidebar-bottom-icon">
+                {item.text === "expand-collapse" ? (sidebarCollapse ? item.icon : item.filledIcon) : item.icon}
+              </ListItemIcon>
+              {!sidebarCollapse && item.text === "expand-collapse" && (
+                <ListItemText primary="COLLAPSE" className="sidebar-bottom-text" />
+              )}
+            </ListItem>
+          ))}
           {bottomNavigationItems.map((item, index) =>
             sidebarCollapse && (item.text === "Web" || item.text === "Mail") ? null : (
               <Tooltip
@@ -478,53 +473,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </List>
       </div>
-
-      {/* Logout Popover */}
-      <Popover
-        open={Boolean(logoutAnchorEl)}
-        anchorEl={logoutAnchorEl}
-        onClose={handleLogoutPopoverClose}
-        className={classes.popover}
-        anchorOrigin={{
-          vertical: "top",
-          horizontal: "center",
-        }}
-        transformOrigin={{
-          vertical: "bottom",
-          horizontal: "center",
-        }}
-        disableRestoreFocus
-        PaperProps={{
-          style: {
-            overflowY: "visible",
-            overflowX: "visible",
-          },
-        }}
-      >
-        <Paper className={classes.popoverContent}>
-          <Box
-            className={`${classes.logoutOption} ${activeOption === "logout" ? classes.activeOption : ""}`}
-            onClick={() => {
-              setActiveOption(activeOption === "logout" ? null : "logout")
-              handleLogOut()
-            }}
-          >
-            <LogOutIcon className={classes.optionIcon} />
-            <Typography className={classes.optionText}>Log Out</Typography>
-          </Box>
-
-          <Box
-            className={`${classes.switchRoleOption} ${activeOption === "switchRole" ? classes.activeOption : ""}`}
-            onClick={(event) => {
-              setActiveOption(activeOption === "switchRole" ? null : "switchRole")
-              handleSwitchRoleClick(event)
-            }}
-          >
-            <SwitchRoleIcon className={classes.optionIcon} />
-            <Typography className={classes.optionText}>Switch Role</Typography>
-          </Box>
-        </Paper>
-      </Popover>
 
       {/* Role Details Popover */}
       <Popover

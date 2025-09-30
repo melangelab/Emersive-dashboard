@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Box, InputBase, Icon, makeStyles, Theme, createStyles, useMediaQuery, useTheme } from "@material-ui/core"
 import { useTranslation } from "react-i18next"
 import "./Admin/admin.css"
@@ -62,6 +62,7 @@ export default function Header({ searchData, ...props }: { searchData: Function 
   const [isExpanded, setIsExpanded] = useState(false)
   const classes = useStyles({ isExpanded })
   const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     searchData(search)
@@ -75,8 +76,26 @@ export default function Header({ searchData, ...props }: { searchData: Function 
     }
   }
 
+  // Close the expanded search when clicking/tapping anywhere outside the component
+  useEffect(() => {
+    function handleOutsideClick(e: MouseEvent | TouchEvent) {
+      const target = e.target as Node
+      if (isExpanded && containerRef.current && !containerRef.current.contains(target)) {
+        setIsExpanded(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick)
+    document.addEventListener("touchstart", handleOutsideClick)
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick)
+      document.removeEventListener("touchstart", handleOutsideClick)
+    }
+  }, [isExpanded])
+
   return (
-    <div className={`search-icon-container ${isExpanded ? "expanded" : ""}`}>
+    <div ref={containerRef} className={`search-icon-container ${isExpanded ? "expanded" : ""}`}>
       <div className={`search ${isExpanded ? "search-expanded" : ""}`}>
         <div className="search-icon" onClick={handleSearchClick}>
           <Icon className="search-icon-inner">search</Icon>

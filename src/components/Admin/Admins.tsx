@@ -65,7 +65,7 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-export default function Admins({ title, authType, adminType, history }) {
+export default function Admins({ title, authType, adminType, history, onLogout, setIdentity }) {
   const mtstyles = useModularTableStyles()
   const [search, setSearch] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -631,7 +631,14 @@ export default function Admins({ title, authType, adminType, history }) {
 
   return (
     <>
-      <AdminHeader adminType={adminType} authType={authType} title={title} pageLocation="Admins" />
+      <AdminHeader
+        adminType={adminType}
+        authType={authType}
+        title={title}
+        pageLocation="Admins"
+        onLogout={onLogout}
+        setIdentity={setIdentity}
+      />
       <div className="body-container">
         <ActionsComponent
           searchData={(data) => setSearch(data)}

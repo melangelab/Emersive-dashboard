@@ -1647,6 +1647,7 @@ export default function ParticipantList({
           pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${
             props.ptitle
           } (Researcher) > Participants > ${viewingParticipant.firstName} ${viewingParticipant.lastName}`}
+          setIdentity={props.setIdentity}
         />
       ) : (
         // <ItemViewHeader
@@ -1702,6 +1703,7 @@ export default function ParticipantList({
           authType={"Researcher"}
           title={props.ptitle}
           pageLocation={`${props.adminName ? props.adminName + " >" : ""} ${props.ptitle} (Researcher) > Participants`}
+          setIdentity={props.setIdentity}
         />
       )}
       {viewingParticipant ? (
