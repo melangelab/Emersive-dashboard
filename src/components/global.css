@@ -437,3 +437,17 @@
   color: #555;
   font-weight: 500;
 }
+
+/* Ensure consistent cursor behavior for action icons */
+.actionIcon svg,
+.actionIcon svg path,
+.actionIcon svg * {
+  cursor: pointer !important;
+}
+
+/* Ensure consistent cursor behavior for all clickable SVG elements */
+[class*="actionIcon"] svg,
+[class*="actionIcon"] svg path,
+[class*="actionIcon"] svg * {
+  cursor: pointer !important;
+}

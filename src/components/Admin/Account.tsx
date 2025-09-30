@@ -261,23 +261,65 @@ const normalizeProfileData = (data, userType) => {
       photo: data.photo || null,
       role: data.role === "admin" ? "Admin" : "System Admin",
       token: data.token,
+      // Optional admin profile details
+      address: data.address || "",
+      institution: data.institution || "",
+      mobile: data.mobile || "",
     }
   }
 }
 
 // Field configuration for different user types
-const getEditableFields = (userType, userId) => {
+const getEditableFields = (userType, userId, isDefaultProfile = false) => {
+  // If using default profile (N/A values), no fields should be editable
+  if (isDefaultProfile) {
+    return []
+  }
+
   const baseFields = ["firstName", "lastName"]
 
   if (userType === "Researcher") {
     return [...baseFields, "userName", "address", "institution", "mobile"]
   } else {
     // Admin fields - email not editable for system admin
-    const adminFields = [...baseFields, "userName"]
+    const adminFields = [...baseFields, "userName", "address", "institution", "mobile"]
     // if (userId !== "admin") {
     //   adminFields.push('emailAddress')
     // }
     return adminFields
+  }
+}
+
+// Default profile helpers
+const getDefaultProfile = (userType, userId) => {
+  if (userType !== "Researcher" && (userId === "admin" || userType === "System Admin")) {
+    return {
+      id: "admin",
+      userName: "admin",
+      firstName: "System",
+      lastName: "Administrator",
+      emailAddress: "N/A",
+      password: "",
+      photo: null,
+      role: "System Admin",
+      token: undefined,
+      address: "",
+      institution: "",
+      mobile: "",
+    }
+  }
+  return {
+    id: userId || "N/A",
+    userName: "N/A",
+    firstName: "N/A",
+    lastName: "N/A",
+    emailAddress: "N/A",
+    password: "",
+    photo: null,
+    role: userType || "N/A",
+    address: "",
+    institution: "",
+    mobile: "",
   }
 }
 
@@ -303,8 +345,11 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
   const [editingFields, setEditingFields] = useState({})
   const [tempValues, setTempValues] = useState({})
 
+  // Determine if we're using a default profile (N/A values)
+  const isDefaultProfile = profile?.data?.firstName === "N/A" || profile?.data?.firstName === "System"
+
   // Get editable fields based on user type
-  const editableFields = getEditableFields(userType, userId)
+  const editableFields = getEditableFields(userType, userId, isDefaultProfile)
 
   useEffect(() => {
     fetchUserData()
@@ -326,10 +371,11 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
         const response: any = await LAMP.Type.getAttachment(userId, "emersive.profile")
 
         if (!response || !response.data || !response.data[0]) {
-          throw new Error("Invalid profile data structure")
+          // Fallback to hard-coded system admin profile or N/A profile
+          userData = getDefaultProfile(userType, userId)
+        } else {
+          userData = response.data[0]
         }
-
-        userData = response.data[0]
 
         // Add current user ID
         const temp: any = LAMP.Auth._me
@@ -364,15 +410,33 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
       const normalizedData = normalizeProfileData(userData, userType)
       setProfile({ data: normalizedData })
 
+      // Determine if this is a default profile
+      const isDefaultProfile = normalizedData.firstName === "N/A" || normalizedData.firstName === "System"
+
+      // Get editable fields based on whether it's a default profile
+      const currentEditableFields = getEditableFields(userType, userId, isDefaultProfile)
+
       // Initialize temp values
       const initialTempValues = {}
-      editableFields.forEach((field) => {
+      currentEditableFields.forEach((field) => {
         initialTempValues[field] = normalizedData[field] || ""
       })
       setTempValues(initialTempValues)
     } catch (error) {
       console.error("Error fetching user data:", error)
-      setError("Failed to load profile data")
+      // Graceful fallback: use default profile and render with N/A values
+      const fallback = getDefaultProfile(userType, userId)
+      setProfile({ data: fallback })
+
+      // Initialize temp values for default profile (no editable fields)
+      const currentEditableFields = getEditableFields(userType, userId, true)
+      const initialTempValues = {}
+      currentEditableFields.forEach((field) => {
+        initialTempValues[field] = fallback[field] || ""
+      })
+      setTempValues(initialTempValues)
+
+      setError(null)
     } finally {
       setIsLoading(false)
     }
@@ -595,15 +659,12 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
     )
   }
 
-  if (error) {
-    return (
-      <div className={classes.loadingContainer}>
-        <Typography color="error">{error}</Typography>
-      </div>
-    )
-  }
+  // Do not hard-stop on error; render page with N/A/defaults instead
 
-  const canDeleteAccount = userId !== "admin" && userType !== "System Admin"
+  const canDeleteAccount = userId !== "admin" && userType !== "System Admin" && !isDefaultProfile
+  const disableGoogleConnect =
+    (userType !== "Researcher" && !!(profile?.data?.emailAddress && profile.data.emailAddress !== "N/A")) ||
+    isDefaultProfile
 
   return (
     <React.Fragment>
@@ -672,7 +733,7 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
-                        {userId !== "admin" && (
+                        {userId !== "admin" && !isDefaultProfile && (
                           <IconButton onClick={() => setShowPasswordDialog(true)}>
                             <Edit className={classes.editIcon} />
                           </IconButton>
@@ -716,6 +777,7 @@ const Account = ({ onLogout, setIdentity, userType, userId, title, pageLocation,
                 <div className={classes.socialConnectButtons}>
                   <Button
                     variant="contained"
+                    disabled={disableGoogleConnect}
                     style={{
                       backgroundColor: "#4285F4",
                       color: "#FFFFFF",
