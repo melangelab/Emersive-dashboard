@@ -412,19 +412,6 @@ const Sidebar: React.FC<SidebarProps> = ({
               </ListItem>
             )
           })}
-          {filteredMenuItems.map((item, index) => (
-            <Tooltip key={index} title={sidebarCollapse ? t(item.text) : ""} placement="right">
-              <ListItem
-                className={`sidebar-item ${item.path.includes(activeRoute) ? "active" : ""}`}
-                onClick={() => handleSidebarNavigation(item, index)}
-              >
-                <ListItemIcon className={`sidebar-icon`}>
-                  {item.path.includes(activeRoute) ? item.filledIcon : item.icon}
-                </ListItemIcon>
-                {sidebarCollapse ? null : <ListItemText primary={item.text} />}
-              </ListItem>
-            </Tooltip>
-          ))}
         </List>
       </div>
       <div className="bottom-list-container">
@@ -443,7 +430,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               )}
             </ListItem>
           ))}
-          {bottomNavigationItems.map((item, index) =>
+          {/* {bottomNavigationItems.map((item, index) =>
             sidebarCollapse && (item.text === "Web" || item.text === "Mail") ? null : (
               <Tooltip
                 key={index}
@@ -470,7 +457,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </ListItem>
               </Tooltip>
             )
-          )}
+          )} */}
         </List>
       </div>
 

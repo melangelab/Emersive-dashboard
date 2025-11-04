@@ -336,6 +336,7 @@ export default function Header({ authType, title, ...props }) {
         )}
         <p className="page-name">{props?.pageLocation || ""}</p>
       </div>
+
       <div className="profile-container" onClick={handleProfileClick} role="button" tabIndex={0}>
         <ProfileIcon className="profile-icon" />
         <div className="profile-text-container">

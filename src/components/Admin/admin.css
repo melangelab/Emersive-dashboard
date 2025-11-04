@@ -41,8 +41,16 @@
   flex-direction: row;
   gap: 5px;
   align-items: center;
-  padding-left: 20px;
-  padding-right: 10px;
+  /* padding-left: 5px; */
+  padding: 5px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
+.profile-container * {
+  cursor: pointer;
 }
 
 .profile-text-container {

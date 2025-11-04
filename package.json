@@ -120,7 +120,7 @@
   },
   "scripts": {
     "preinstall": "npx npm-force-resolutions",
-    "start": "node buildEnv.js dev && react-scripts start",
+    "start": "NODE_OPTIONS='--max-old-space-size=4096' react-scripts start",
     "build-test": "node buildEnv.js test && react-scripts build",
     "start-test": "node buildEnv.js test && node --max-old-space-size=8192 node_modules/react-scripts/scripts/start.js",
     "start-sw": "http-server -p 3000 ./build",
