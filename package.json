@@ -88,7 +88,8 @@
     "react-oauth": "^0.0.1",
     "react-pdf": "^9.2.1",
     "react-router-dom": "^5.2.1",
-    "react-vega": "^7.5.1",
+    "react-vega": "^8.0.0",
+    "react-vega-lite": "^6.1.0",
     "react-window": "^1.8.11",
     "recharts": "^2.15.1",
     "remark-emoji": "^3.0.2",
@@ -96,9 +97,9 @@
     "rjsf-autosuggest": "^0.0.1",
     "stacktrace-js": "^2.0.2",
     "stream": "^0.0.2",
-    "vega": "^5.22.1",
-    "vega-embed": "^6.20.8",
-    "vega-lite": "^5.2.0",
+    "vega": "^5.33.0",
+    "vega-embed": "^6.29.0",
+    "vega-lite": "^5.23.0",
     "vega-tooltip": "^0.28.0",
     "xlsx": "^0.18.5"
   },
@@ -119,7 +120,6 @@
     "@babel/plugin-proposal-numeric-separator": "7.18.6"
   },
   "scripts": {
-    "preinstall": "npx npm-force-resolutions",
     "start": "NODE_OPTIONS='--max-old-space-size=4096' react-scripts start",
     "build-test": "node buildEnv.js test && react-scripts build",
     "start-test": "node buildEnv.js test && node --max-old-space-size=8192 node_modules/react-scripts/scripts/start.js",

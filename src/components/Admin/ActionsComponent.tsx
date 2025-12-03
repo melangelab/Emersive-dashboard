@@ -180,7 +180,7 @@ const ActionsComponent = ({ ...props }) => {
           key={action}
           className={`icon-container ${isSelected ? "selected" : ""}`}
           onClick={handleClick}
-          title={actionData.name}
+          // title={actionData.name}
         >
           <IconComponent className={actionData.iconName} />
         </div>

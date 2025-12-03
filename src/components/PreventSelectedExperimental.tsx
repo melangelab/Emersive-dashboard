@@ -2,8 +2,7 @@
 import React from "react"
 import { Typography, Grid, Card, Box, makeStyles, Theme, createStyles } from "@material-ui/core"
 import { Participant as ParticipantObj } from "lamp-core"
-import { useTranslation } from "react-i18next"
-import { Vega } from "react-vega"
+import VegaLite from "react-vega-lite"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -58,11 +57,13 @@ export default function PreventSelectedExperimental({
     <React.Fragment>
       {(selectedExperimental || []).map((experimentalKey) => {
         let visualizationKey = experimentalKey
+
         if (!visualizationKey.startsWith("lamp.dashboard.experimental.")) {
           visualizationKey = "lamp.dashboard.experimental." + visualizationKey
         }
 
         const visualization = visualizations[visualizationKey]
+
         if (typeof visualization === "object" && visualization !== null) {
           return (
             <Grid item xs={12} sm={12} md={12} lg={12}>
@@ -70,10 +71,11 @@ export default function PreventSelectedExperimental({
                 <Typography component="h6" variant="h6">
                   {experimentalKey}
                 </Typography>
+
                 <Grid container justifyContent="center">
                   <Box className={classes.vega}>
-                    {/* image rendering here TODO */}
-                    <Vega spec={visualization} />
+                    {/* Render Vega-Lite visualization */}
+                    <VegaLite spec={visualization} renderer="canvas" actions={false} />
                   </Box>
                 </Grid>
               </Card>

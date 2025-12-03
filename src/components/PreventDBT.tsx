@@ -11,7 +11,7 @@ import {
   Divider,
   Typography,
 } from "@material-ui/core"
-import { Vega } from "react-vega"
+import VegaLite from "react-vega-lite"
 import { useTranslation } from "react-i18next"
 import { emotions } from "./charts/emotions_chart"
 import { effective } from "./charts/effective_chart"
@@ -511,8 +511,11 @@ export default function PreventDBT({ selectedEvents, ...props }) {
                   <option value={dateString.timestamp}>{dateString.date}</option>
                 ))}
               </NativeSelect>
-              {emotionsData !== null && <Vega spec={emotionsData} />}
+
+              {emotionsData !== null && <VegaLite renderer="canvas" spec={emotionsData} />}
+
               <div className={classes.separator} />
+
               <NativeSelect
                 className={classes.selector}
                 value={effectiverange}
@@ -522,8 +525,11 @@ export default function PreventDBT({ selectedEvents, ...props }) {
                   <option value={dateString.timestamp}>{dateString.date}</option>
                 ))}
               </NativeSelect>
-              {effectiveData !== null && <Vega spec={effectiveData} />}
+
+              {effectiveData !== null && <VegaLite renderer="canvas" spec={effectiveData} />}
+
               <div className={classes.separator} />
+
               <NativeSelect
                 className={classes.selector}
                 value={inEffectiverange}
@@ -533,8 +539,11 @@ export default function PreventDBT({ selectedEvents, ...props }) {
                   <option value={dateString.timestamp}>{dateString.date}</option>
                 ))}
               </NativeSelect>
-              {ineffectiveData !== null && <Vega spec={ineffectiveData} />}
+
+              {ineffectiveData !== null && <VegaLite renderer="canvas" spec={ineffectiveData} />}
+
               <div className={classes.separator} />
+
               <NativeSelect
                 className={classes.selector}
                 value={summaryRange}
@@ -544,8 +553,11 @@ export default function PreventDBT({ selectedEvents, ...props }) {
                   <option value={dateString.timestamp}>{dateString.date}</option>
                 ))}
               </NativeSelect>
-              {actionsData !== null && <Vega spec={actionsData} />}
+
+              {actionsData !== null && <VegaLite renderer="canvas" spec={actionsData} />}
+
               <div className={classes.separator} />
+
               <NativeSelect
                 className={classes.selector}
                 value={actionrange}
@@ -555,7 +567,8 @@ export default function PreventDBT({ selectedEvents, ...props }) {
                   <option value={dateString.timestamp}>{dateString.date}</option>
                 ))}
               </NativeSelect>
-              {selfcareData !== null && <Vega spec={selfcareData} />}
+
+              {selfcareData !== null && <VegaLite renderer="canvas" spec={selfcareData} />}
 
               <PreventSkills
                 selectedEvents={selectedEvents}

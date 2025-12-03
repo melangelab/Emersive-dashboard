@@ -24,7 +24,8 @@ import hi from "javascript-time-ago/locale/hi"
 import fr from "javascript-time-ago/locale/fr"
 import TimeAgo from "javascript-time-ago"
 import { useTranslation } from "react-i18next"
-import { VegaLite } from "react-vega"
+import VegaLite from "react-vega-lite"
+
 TimeAgo.addLocale(en)
 const timeAgo = new TimeAgo("en-US")
 
@@ -478,6 +479,7 @@ export default function PreventSelectedActivities({
                     {!!activityEvents?.[activity.name] && (
                       <VegaLite
                         actions={false}
+                        renderer="canvas"
                         style={{ backgroundColor: "#00000000" }}
                         spec={{
                           data: {
@@ -527,14 +529,15 @@ export default function PreventSelectedActivities({
                               symbolType: "circle",
                               offset: 0,
                             },
-                            axisX: {
-                              disable: true,
-                            },
-                            axisY: {
-                              disable: true,
-                            },
+                            axisX: { disable: true },
+                            axisY: { disable: true },
                           },
-                          mark: { type: "line", interpolate: "cardinal", tension: 0.8, color: "#3C5DDD" },
+                          mark: {
+                            type: "line",
+                            interpolate: "cardinal",
+                            tension: 0.8,
+                            color: "#3C5DDD",
+                          },
                           encoding: {
                             x: { field: "x", type: "ordinal", timeUnit: "utcyearmonthdate" },
                             y: { field: "y", type: "quantitative" },
